@@ -44,7 +44,7 @@ namespace BottleShaders
         private void Start()
         {
             mainCam = Camera.main;
-            if (mainCam == null) mainCam = FindObjectOfType<Camera>();
+            if (mainCam == null) mainCam = FindAnyObjectByType<Camera>();
             InitializePourLinePool();
             EnsureCameraPostFx();
         }
@@ -131,22 +131,13 @@ namespace BottleShaders
                 pointerDown = true;
                 pointerPos = Touchscreen.current.primaryTouch.position.ReadValue();
             }
-#endif
-
-            // Fallback for projects using the old Input Manager
-            if (!pointerDown)
+#else
+            if (Input.GetMouseButtonDown(0))
             {
-                if (Input.GetMouseButtonDown(0))
-                {
-                    pointerDown = true;
-                    pointerPos = Input.mousePosition;
-                }
-                else if (Input.touchCount > 0 && Input.GetTouch(0).phase == UnityEngine.TouchPhase.Began)
-                {
-                    pointerDown = true;
-                    pointerPos = Input.GetTouch(0).position;
-                }
+                pointerDown = true;
+                pointerPos = Input.mousePosition;
             }
+#endif
 
             if (pointerDown)
             {
@@ -296,12 +287,12 @@ namespace BottleShaders
             Vector3 targetMouth = target.transform.position + target.transform.up * 2.1f;
 
             float pourTime = 0.55f;
-            float startTime = Time.time;
-            float endTime = startTime + pourTime;
+            float pourElapsed = 0f;
 
-            while (Time.time < endTime)
+            while (pourElapsed < pourTime)
             {
-                float pourT = (Time.time - startTime) / pourTime;
+                pourElapsed += Time.deltaTime;
+                float pourT = Mathf.Clamp01(pourElapsed / pourTime);
 
                 Vector3 midPoint = Vector3.Lerp(sourceMouth, targetMouth, 0.5f) + Vector3.down * 0.25f;
                 Vector3 controlPoint = Vector3.Lerp(sourceMouth, midPoint, pourT) + Vector3.down * (pourT * 0.22f);
@@ -377,7 +368,7 @@ namespace BottleShaders
 
         private void CheckWinCondition()
         {
-            var bottles = FindObjectsByType<BottleController>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            var bottles = FindObjectsByType<BottleController>(FindObjectsInactive.Exclude);
             if (bottles == null || bottles.Length == 0) return;
 
             bool hasLiquid = false;

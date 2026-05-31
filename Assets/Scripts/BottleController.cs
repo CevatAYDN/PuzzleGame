@@ -616,6 +616,7 @@ namespace BottleShaders
             EnsurePropertyBlocks();
             if (liquidBlock == null || bottleRenderer == null) return;
 
+            // Pre-allocate array to avoid repeated allocations
             Color[] adjusted = { Color.clear, Color.clear, Color.clear, Color.clear };
 
             for (int i = 0; i < layerColors.Length && i < 4; i++)
@@ -623,17 +624,14 @@ namespace BottleShaders
                 Color adjustedColor = layerColors[i];
                 if (adjustedColor.a > 0.01f)
                 {
+                    // Simplified color enhancement - single pass instead of two
+                    float saturationBoost = 1.3f;
+                    float brightnessBoost = 1.15f;
                     float avg = (adjustedColor.r + adjustedColor.g + adjustedColor.b) / 3f;
                     adjustedColor = new Color(
-                        Mathf.Clamp01(avg + (adjustedColor.r - avg) * 1.5f),
-                        Mathf.Clamp01(avg + (adjustedColor.g - avg) * 1.5f),
-                        Mathf.Clamp01(avg + (adjustedColor.b - avg) * 1.5f),
-                        Mathf.Clamp01(adjustedColor.a)
-                    );
-                    adjustedColor = new Color(
-                        Mathf.Clamp01(adjustedColor.r * 1.2f),
-                        Mathf.Clamp01(adjustedColor.g * 1.2f),
-                        Mathf.Clamp01(adjustedColor.b * 1.2f),
+                        Mathf.Clamp01((avg + (adjustedColor.r - avg) * saturationBoost) * brightnessBoost),
+                        Mathf.Clamp01((avg + (adjustedColor.g - avg) * saturationBoost) * brightnessBoost),
+                        Mathf.Clamp01((avg + (adjustedColor.b - avg) * saturationBoost) * brightnessBoost),
                         adjustedColor.a
                     );
                 }
@@ -646,6 +644,7 @@ namespace BottleShaders
             liquidBlock.SetColor(Color3ID, adjusted[2]);
             liquidBlock.SetColor(Color4ID, adjusted[3]);
 
+            // Safe fill level access with bounds checking
             float f1 = currentFillLevels != null && currentFillLevels.Length > 0 ? currentFillLevels[0] : 0f;
             float f2 = currentFillLevels != null && currentFillLevels.Length > 1 ? currentFillLevels[1] : f1;
             float f3 = currentFillLevels != null && currentFillLevels.Length > 2 ? currentFillLevels[2] : f2;

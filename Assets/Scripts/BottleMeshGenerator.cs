@@ -178,10 +178,11 @@ namespace BottleShaders
             if (mr == null) mr = GetComponent<MeshRenderer>();
             if (mr == null) return;
 
+            // Always use sharedMaterials for consistency
             if (glassMaterial != null && liquidMaterial != null)
                 mr.sharedMaterials = new[] { glassMaterial, liquidMaterial };
             else if (glassMaterial != null)
-                mr.sharedMaterial = glassMaterial;
+                mr.sharedMaterials = new[] { glassMaterial };
         }
 
 #if UNITY_EDITOR

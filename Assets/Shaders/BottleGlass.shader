@@ -5,7 +5,6 @@ Shader "Custom/BottleGlass"
         [Header(Glass Appearance)]
         _Color("Glass Tint Color", Color) = (1, 1, 1, 0.1)
         _Smoothness("Smoothness", Range(0.0, 1.0)) = 0.9
-        _Metallic("Metallic", Range(0.0, 1.0)) = 0.0
 
         [Header(Fresnel Rim)]
         _FresnelPower("Fresnel Power", Range(0.5, 8.0)) = 3.0
@@ -22,7 +21,6 @@ Shader "Custom/BottleGlass"
 
         [Header(Alpha)]
         _AlphaClip("Alpha Clip Threshold", Range(0.0, 1.0)) = 0.01
-        _AlphaToCoverage("Alpha to Coverage", Float) = 0.0
     }
 
     SubShader
@@ -40,7 +38,6 @@ Shader "Custom/BottleGlass"
         ZTest LEqual
         Blend SrcAlpha OneMinusSrcAlpha
         Cull Back
-        AlphaToMask [_AlphaToCoverage]
 
         // ═══════════════════════════════════════════════════════
         //  Forward Lit Pass — Main rendering
@@ -54,11 +51,9 @@ Shader "Custom/BottleGlass"
             #pragma vertex vert
             #pragma fragment frag
 
-            // Multi-compile for mobile feature levels
-            #pragma multi_compile_fragment _ _MAIN_LIGHT_SHADOWS
-            #pragma multi_compile_fragment _ _MAIN_LIGHT_SHADOWS_CASCADE
+            // Mobile-optimized: only essential shadow/light variants
+            #pragma multi_compile_fragment _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma multi_compile_fragment _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
-            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
@@ -70,7 +65,6 @@ Shader "Custom/BottleGlass"
             CBUFFER_START(UnityPerMaterial)
                 float4 _Color;
                 float _Smoothness;
-                float _Metallic;
                 float _FresnelPower;
                 float _FresnelIntensity;
                 float4 _FresnelColor;
@@ -79,7 +73,6 @@ Shader "Custom/BottleGlass"
                 float _RefractionStrength;
                 float _RefractionScale;
                 float _AlphaClip;
-                float _AlphaToCoverage;
             CBUFFER_END
 
             struct Attributes

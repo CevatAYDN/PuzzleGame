@@ -62,11 +62,9 @@ Shader "Custom/LayeredLiquid"
             #pragma vertex vert
             #pragma fragment frag
 
-            // Multi-compile for mobile feature levels
-            #pragma multi_compile_fragment _ _MAIN_LIGHT_SHADOWS
-            #pragma multi_compile_fragment _ _MAIN_LIGHT_SHADOWS_CASCADE
+            // Mobile-optimized: only essential shadow/light variants
+            #pragma multi_compile_fragment _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma multi_compile_fragment _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
-            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
@@ -290,6 +288,76 @@ Shader "Custom/LayeredLiquid"
 
             half frag(Varyings input) : SV_TARGET
             {
+                return 0;
+            }
+            ENDHLSL
+        }
+
+        // ═══════════════════════════════════════════════════════
+        //  Shadow Caster Pass — Liquid casts shadows
+        // ═══════════════════════════════════════════════════════
+        Pass
+        {
+            Name "ShadowCaster"
+            Tags { "LightMode" = "ShadowCaster" }
+
+            ZWrite On
+            ZTest LEqual
+            ColorMask 0
+            Cull Back
+
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma multi_compile_fragment _ _CASTING_PUNCTUAL_LIGHT_SHADOW
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
+
+            CBUFFER_START(UnityPerMaterial)
+                float _Fill1;
+                float _Fill2;
+                float _Fill3;
+                float _Fill4;
+                float _BottleHeight;
+                float _SurfaceHeight;
+            CBUFFER_END
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+                float2 uv : TEXCOORD0;
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float objectY : TEXCOORD0;
+            };
+
+            Varyings vert(Attributes input)
+            {
+                Varyings output;
+                VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
+                output.positionCS = vertexInput.positionCS;
+                output.objectY = input.positionOS.y;
+                return output;
+            }
+
+            half4 frag(Varyings input) : SV_Target
+            {
+                // Only cast shadows where there is liquid
+                float bottleHeight = max(_BottleHeight, 0.001);
+                float normalizedY = saturate(input.objectY / bottleHeight);
+
+                // Get maximum fill level to determine shadow bounds
+                float maxFill = max(max(_Fill1, _Fill2), max(_Fill3, _Fill4));
+                
+                // Discard pixels above the liquid surface
+                clip(normalizedY - maxFill - 0.001);
+                clip(maxFill - normalizedY + 0.001);
+
                 return 0;
             }
             ENDHLSL
