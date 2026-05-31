@@ -32,10 +32,14 @@ namespace BottleShaders
             mf = GetComponent<MeshFilter>();
             mr = GetComponent<MeshRenderer>();
 
+            // Only build at runtime if the mesh was never generated (e.g. not via Editor tool).
+            // Avoids double-building when CreateBottleTestScene already called BuildMesh().
             if (mf != null && (mf.sharedMesh == null || mf.sharedMesh.vertexCount == 0))
                 BuildMesh();
 
-            ApplyMaterials();
+            // Apply materials only if they haven't been set externally already
+            if (mr != null && (mr.sharedMaterials == null || mr.sharedMaterials.Length == 0))
+                ApplyMaterials();
         }
 
         public void BuildMesh()

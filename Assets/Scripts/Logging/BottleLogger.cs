@@ -2,91 +2,66 @@ using UnityEngine;
 
 namespace BottleShaders.Logging
 {
-    public enum LogType
-    {
-        Info,
-        Warning,
-        Error,
-        Debug
-    }
-
+    /// <summary>
+    /// Thin wrapper around Unity's Debug logger.
+    /// Uses a project-specific enum to avoid the name clash with UnityEngine.LogType.
+    /// Verbose logs are stripped in release builds automatically.
+    /// </summary>
     public static class BottleLogger
     {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        private static bool enableDebugLogs = true;
-        private static bool enableInfoLogs = true;
-#else
-        private static bool enableDebugLogs = false;
-        private static bool enableInfoLogs = false;
-#endif
-        private static bool enableWarningLogs = true;
-        private static bool enableErrorLogs = true;
+        public enum Level { Info, Warning, Error, Debug }
 
-        public static void Log(string message, LogType type = LogType.Info, Object context = null)
-        {
-            switch (type)
-            {
-                case LogType.Info:
-                    if (enableInfoLogs)
-                        Debug.Log($"[BottleGame - INFO] {message}", context);
-                    break;
-                case LogType.Warning:
-                    if (enableWarningLogs)
-                        Debug.LogWarning($"[BottleGame - WARNING] {message}", context);
-                    break;
-                case LogType.Error:
-                    if (enableErrorLogs)
-                        Debug.LogError($"[BottleGame - ERROR] {message}", context);
-                    break;
-                case LogType.Debug:
-                    if (enableDebugLogs)
-                        Debug.Log($"[BottleGame - DEBUG] {message}", context);
-                    break;
-            }
-        }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private static bool _debugEnabled = true;
+        private static bool _infoEnabled  = true;
+#else
+        private static bool _debugEnabled = false;
+        private static bool _infoEnabled  = false;
+#endif
+        private static bool _warningEnabled = true;
+        private static bool _errorEnabled   = true;
+
+        // ── Public API ───────────────────────────────────────────────────────
 
         public static void LogInfo(string message, Object context = null)
         {
-            if (enableInfoLogs)
-                Debug.Log($"[BottleGame - INFO] {message}", context);
+            if (_infoEnabled)
+                Debug.Log($"[BottleGame | INFO] {message}", context);
         }
 
         public static void LogWarning(string message, Object context = null)
         {
-            if (enableWarningLogs)
-                Debug.LogWarning($"[BottleGame - WARNING] {message}", context);
+            if (_warningEnabled)
+                Debug.LogWarning($"[BottleGame | WARN] {message}", context);
         }
 
         public static void LogError(string message, Object context = null)
         {
-            if (enableErrorLogs)
-                Debug.LogError($"[BottleGame - ERROR] {message}", context);
+            if (_errorEnabled)
+                Debug.LogError($"[BottleGame | ERROR] {message}", context);
         }
 
         public static void LogDebug(string message, Object context = null)
         {
-            if (enableDebugLogs)
-                Debug.Log($"[BottleGame - DEBUG] {message}", context);
+            if (_debugEnabled)
+                Debug.Log($"[BottleGame | DEBUG] {message}", context);
         }
 
-        public static void SetLogLevel(LogType type, bool enabled)
+        /// <summary>Runtime toggle — useful for in-game debug menus.</summary>
+        public static void SetLevel(Level level, bool enabled)
         {
-            switch (type)
+            switch (level)
             {
-                case LogType.Info:
+                case Level.Info:
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    enableInfoLogs = enabled;
+                    _infoEnabled = enabled;
 #endif
                     break;
-                case LogType.Warning:
-                    enableWarningLogs = enabled;
-                    break;
-                case LogType.Error:
-                    enableErrorLogs = enabled;
-                    break;
-                case LogType.Debug:
+                case Level.Warning: _warningEnabled = enabled; break;
+                case Level.Error:   _errorEnabled   = enabled; break;
+                case Level.Debug:
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    enableDebugLogs = enabled;
+                    _debugEnabled = enabled;
 #endif
                     break;
             }
