@@ -4,8 +4,7 @@ using System.Collections.Generic;
 namespace BottleShaders
 {
     /// <summary>
-    /// Generates a bottle-shaped mesh using a simple ring-to-ring approach.
-    /// Each ring has exactly `segments` vertices. Caps are handled by zero-radius rings.
+    /// Generates a bottle mesh procedurally.
     /// </summary>
     [RequireComponent(typeof(MeshFilter))]
     [RequireComponent(typeof(MeshRenderer))]
@@ -19,8 +18,7 @@ namespace BottleShaders
         public float capRadius = 0.17f;
         public float capHeight = 0.1f;
 
-        [Range(8, 64)]
-        public int segments = 24;
+        [Range(8, 64)] public int segments = 24;
 
         [Header("Materials")]
         public Material glassMaterial;
@@ -29,11 +27,14 @@ namespace BottleShaders
         private MeshFilter mf;
         private MeshRenderer mr;
 
-        void Start()
+        private void Start()
         {
             mf = GetComponent<MeshFilter>();
             mr = GetComponent<MeshRenderer>();
-            BuildMesh();
+
+            if (mf != null && (mf.sharedMesh == null || mf.sharedMesh.vertexCount == 0))
+                BuildMesh();
+
             ApplyMaterials();
         }
 
@@ -43,148 +44,113 @@ namespace BottleShaders
             if (mr == null) mr = GetComponent<MeshRenderer>();
             if (mf == null || mr == null) return;
 
+            segments = Mathf.Clamp(segments, 8, 64);
+
+            float safeHeight = Mathf.Max(0.5f, height);
+            float safeCapHeight = Mathf.Clamp(capHeight, 0.02f, safeHeight * 0.25f);
+            float safeNeckHeight = Mathf.Clamp(neckHeight, 0.05f, safeHeight * 0.5f);
+            float bodyH = Mathf.Max(0.15f, safeHeight - safeNeckHeight - safeCapHeight);
+
+            float safeBodyRadius = Mathf.Max(0.05f, bodyRadius);
+            float safeNeckRadius = Mathf.Clamp(neckRadius, 0.03f, safeBodyRadius);
+            float safeCapRadius = Mathf.Max(safeNeckRadius, capRadius);
+
             var verts = new List<Vector3>();
             var norms = new List<Vector3>();
-            var uvs   = new List<Vector2>();
+            var uvs = new List<Vector2>();
+            var tris = new List<int>();
+            var ringStarts = new List<int>();
 
-            float bodyH = height - neckHeight - capHeight;
             float angleStep = Mathf.PI * 2f / segments;
 
-            // ── Ring 0: Bottom cap center (r=0) ──
+            void AddRing(float y, float radius)
+            {
+                ringStarts.Add(verts.Count);
+                for (int s = 0; s < segments; s++)
+                {
+                    float a = s * angleStep;
+                    float x = Mathf.Cos(a) * radius;
+                    float z = Mathf.Sin(a) * radius;
+                    verts.Add(new Vector3(x, y, z));
+                    norms.Add(new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)));
+                    uvs.Add(new Vector2((float)s / segments, Mathf.Clamp01(y / safeHeight)));
+                }
+            }
+
+            // Bottom center
+            int bottomCenter = verts.Count;
             verts.Add(Vector3.zero);
             norms.Add(Vector3.down);
             uvs.Add(new Vector2(0.5f, 0f));
 
-            // ── Ring 1: Bottom edge ──
-            for (int s = 0; s < segments; s++)
-            {
-                float a = s * angleStep;
-                verts.Add(new Vector3(Mathf.Cos(a) * bodyRadius, 0, Mathf.Sin(a) * bodyRadius));
-                norms.Add(new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)));
-                uvs.Add(new Vector2((float)s / segments, 0f));
-            }
-
-            // ── Body rings ──
-            for (int i = 1; i < 4; i++)
+            // Full rings from bottom to top
+            AddRing(0f, safeBodyRadius);                 // 0 bottom edge
+            for (int i = 1; i <= 3; i++)                 // 1..3 body transition
             {
                 float t = i / 4f;
                 float y = t * bodyH;
-                float bulge = Mathf.Sin(t * Mathf.PI) * bodyRadius * 0.08f;
-                float r = bodyRadius + bulge;
-                for (int s = 0; s < segments; s++)
-                {
-                    float a = s * angleStep;
-                    verts.Add(new Vector3(Mathf.Cos(a) * r, y, Mathf.Sin(a) * r));
-                    norms.Add(new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)));
-                    uvs.Add(new Vector2((float)s / segments, y / height));
-                }
+                float bulge = Mathf.Sin(t * Mathf.PI) * safeBodyRadius * 0.08f;
+                AddRing(y, safeBodyRadius + bulge);
             }
+            AddRing(bodyH, safeBodyRadius);              // 4 body top
 
-            // ── Ring: Body top ──
-            for (int s = 0; s < segments; s++)
-            {
-                float a = s * angleStep;
-                verts.Add(new Vector3(Mathf.Cos(a) * bodyRadius, bodyH, Mathf.Sin(a) * bodyRadius));
-                norms.Add(new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)));
-                uvs.Add(new Vector2((float)s / segments, bodyH / height));
-            }
-
-            // ── Neck rings ──
-            for (int i = 1; i < 4; i++)
+            for (int i = 1; i <= 3; i++)                 // 5..7 neck transition
             {
                 float t = i / 4f;
-                float y = bodyH + t * neckHeight;
-                float r = Mathf.Lerp(bodyRadius, neckRadius, t);
-                for (int s = 0; s < segments; s++)
-                {
-                    float a = s * angleStep;
-                    verts.Add(new Vector3(Mathf.Cos(a) * r, y, Mathf.Sin(a) * r));
-                    norms.Add(new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)));
-                    uvs.Add(new Vector2((float)s / segments, y / height));
-                }
+                float y = bodyH + t * safeNeckHeight;
+                float r = Mathf.Lerp(safeBodyRadius, safeNeckRadius, t);
+                AddRing(y, r);
             }
 
-            // ── Ring: Neck top ──
-            for (int s = 0; s < segments; s++)
-            {
-                float a = s * angleStep;
-                verts.Add(new Vector3(Mathf.Cos(a) * neckRadius, bodyH + neckHeight, Mathf.Sin(a) * neckRadius));
-                norms.Add(new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)));
-                uvs.Add(new Vector2((float)s / segments, (bodyH + neckHeight) / height));
-            }
+            AddRing(bodyH + safeNeckHeight, safeNeckRadius);                  // 8 neck top
+            AddRing(bodyH + safeNeckHeight, safeCapRadius);                   // 9 cap lip bottom
+            AddRing(bodyH + safeNeckHeight + safeCapHeight, safeCapRadius);   // 10 cap top
 
-            // ── Ring: Cap bottom (same Y, wider) ──
-            for (int s = 0; s < segments; s++)
-            {
-                float a = s * angleStep;
-                verts.Add(new Vector3(Mathf.Cos(a) * capRadius, bodyH + neckHeight, Mathf.Sin(a) * capRadius));
-                norms.Add(new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)));
-                uvs.Add(new Vector2((float)s / segments, (bodyH + neckHeight) / height));
-            }
-
-            // ── Ring: Cap top ──
-            for (int s = 0; s < segments; s++)
-            {
-                float a = s * angleStep;
-                float y = bodyH + neckHeight + capHeight;
-                verts.Add(new Vector3(Mathf.Cos(a) * capRadius, y, Mathf.Sin(a) * capRadius));
-                norms.Add(new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)));
-                uvs.Add(new Vector2((float)s / segments, y / height));
-            }
-
-            // ── Ring 11: Cap top center ──
-            float topY = bodyH + neckHeight + capHeight;
-            verts.Add(new Vector3(0, topY, 0));
+            // Top center
+            int topCenter = verts.Count;
+            float topY = bodyH + safeNeckHeight + safeCapHeight;
+            verts.Add(new Vector3(0f, topY, 0f));
             norms.Add(Vector3.up);
             uvs.Add(new Vector2(0.5f, 1f));
 
-            // ══════════════════════════════════════════════════
-            //  Triangles
-            //  Ring layout:
-            //    0: center (1 vert)
-            //    1-10: rings (segments verts each)
-            //    11: center (1 vert)
-            //  Index = ringStart[r] + s  (for non-center rings)
-            // ═══════════════════════════════════════════════════
-            var tris = new List<int>();
-
-            // Ring start indices
-            int[] ringStart = new int[12];
-            ringStart[0] = 0;                              // 1 vert
-            for (int r = 1; r <= 10; r++) ringStart[r] = 1 + (r - 1) * segments;
-            ringStart[11] = 1 + 10 * segments;             // center
-
-            // Bottom cap fan: ring 0 (center) → ring 1
+            // Bottom cap fan
+            int firstRing = ringStarts[0];
             for (int s = 0; s < segments; s++)
             {
-                tris.Add(ringStart[0]);
-                tris.Add(ringStart[1] + ((s + 1) % segments));
-                tris.Add(ringStart[1] + s);
+                int s1 = (s + 1) % segments;
+                tris.Add(bottomCenter);
+                tris.Add(firstRing + s1);
+                tris.Add(firstRing + s);
             }
 
-            // Side strips: rings 1→2, 2→3, ..., 9→10, 10→11
-            for (int r = 1; r <= 10; r++)
+            // Side strips only between FULL rings (fixes out-of-range triangle indices)
+            for (int r = 0; r < ringStarts.Count - 1; r++)
             {
-                int rNext = r + 1;
+                int aStart = ringStarts[r];
+                int bStart = ringStarts[r + 1];
+
                 for (int s = 0; s < segments; s++)
                 {
                     int s1 = (s + 1) % segments;
-                    int a0 = ringStart[r] + s;
-                    int a1 = ringStart[r] + s1;
-                    int b0 = ringStart[rNext] + s;
-                    int b1 = ringStart[rNext] + s1;
+
+                    int a0 = aStart + s;
+                    int a1 = aStart + s1;
+                    int b0 = bStart + s;
+                    int b1 = bStart + s1;
 
                     tris.Add(a0); tris.Add(b0); tris.Add(a1);
                     tris.Add(a1); tris.Add(b0); tris.Add(b1);
                 }
             }
 
-            // Top cap fan: ring 10 → ring 11 (center)
+            // Top cap fan
+            int lastRing = ringStarts[ringStarts.Count - 1];
             for (int s = 0; s < segments; s++)
             {
-                tris.Add(ringStart[11]);
-                tris.Add(ringStart[10] + s);
-                tris.Add(ringStart[10] + ((s + 1) % segments));
+                int s1 = (s + 1) % segments;
+                tris.Add(topCenter);
+                tris.Add(lastRing + s);
+                tris.Add(lastRing + s1);
             }
 
             var mesh = new Mesh { name = "Bottle" };
@@ -194,38 +160,43 @@ namespace BottleShaders
             mesh.SetTriangles(tris, 0);
             mesh.RecalculateBounds();
             mesh.RecalculateNormals();
-            mesh.Optimize();
+            mesh.RecalculateTangents();
 
             if (mf.sharedMesh != null)
-                DestroyImmediate(mf.sharedMesh);
+            {
+                if (Application.isPlaying)
+                    Destroy(mf.sharedMesh);
+                else
+                    DestroyImmediate(mf.sharedMesh);
+            }
+
             mf.sharedMesh = mesh;
         }
 
-        void ApplyMaterials()
+        private void ApplyMaterials()
         {
             if (mr == null) mr = GetComponent<MeshRenderer>();
             if (mr == null) return;
 
             if (glassMaterial != null && liquidMaterial != null)
-                mr.sharedMaterials = new Material[] { glassMaterial, liquidMaterial };
+                mr.sharedMaterials = new[] { glassMaterial, liquidMaterial };
             else if (glassMaterial != null)
                 mr.sharedMaterial = glassMaterial;
         }
 
 #if UNITY_EDITOR
-        void OnValidate()
+        private void OnValidate()
         {
-            if (!Application.isPlaying)
+            if (Application.isPlaying) return;
+
+            UnityEditor.EditorApplication.delayCall += () =>
             {
-                UnityEditor.EditorApplication.delayCall += () =>
-                {
-                    if (this == null) return;
-                    mf = GetComponent<MeshFilter>();
-                    mr = GetComponent<MeshRenderer>();
-                    BuildMesh();
-                    ApplyMaterials();
-                };
-            }
+                if (this == null) return;
+                mf = GetComponent<MeshFilter>();
+                mr = GetComponent<MeshRenderer>();
+                BuildMesh();
+                ApplyMaterials();
+            };
         }
 #endif
     }

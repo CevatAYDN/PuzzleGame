@@ -1,7 +1,10 @@
-using UnityEngine;
-using UnityEngine.InputSystem;
-using BottleShaders.Logging;
 using System.Collections;
+using BottleShaders.Logging;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 namespace BottleShaders
 {
@@ -10,60 +13,138 @@ namespace BottleShaders
         private BottleController selectedBottle;
         private Vector3 selectedOriginalPos;
 
+        [Header("Bottle Animation")]
         public float liftHeight = 1.0f;
         public float animationDuration = 0.4f;
 
-        private bool isAnimating = false;
-        private Camera mainCam;
+        [Header("Raycast")]
+        public LayerMask bottleLayerMask = ~0;
+
+        [Header("HUD")]
+        [SerializeField] private bool showRuntimeHud = true;
 
         [Header("Pour Line")]
-        public int pourLinePoolSize = 5;
+        public int pourLinePoolSize = 6;
+
+        private bool isAnimating = false;
+        private bool gameWon = false;
+        private int moveCount = 0;
+
+        private Camera mainCam;
+
         private Material pourLineMaterial;
         private LineRenderer[] pourLinePool;
         private int currentPourLineIndex = 0;
         private Color lastPourColor;
 
-        void Start()
+        private GUIStyle hudTitleStyle;
+        private GUIStyle hudTextStyle;
+        private GUIStyle hudButtonStyle;
+
+        private void Start()
         {
             mainCam = Camera.main;
             if (mainCam == null) mainCam = FindObjectOfType<Camera>();
             InitializePourLinePool();
+            EnsureCameraPostFx();
+        }
+
+        private void OnDestroy()
+        {
+            if (pourLinePool != null)
+            {
+                foreach (var line in pourLinePool)
+                {
+                    if (line != null)
+                    {
+                        if (Application.isPlaying) Destroy(line.gameObject);
+                        else DestroyImmediate(line.gameObject);
+                    }
+                }
+            }
+
+            if (pourLineMaterial != null)
+            {
+                if (Application.isPlaying) Destroy(pourLineMaterial);
+                else DestroyImmediate(pourLineMaterial);
+            }
         }
 
         private void InitializePourLinePool()
         {
             Shader unlitShader = Shader.Find("Universal Render Pipeline/Unlit");
-            pourLineMaterial = new Material(unlitShader);
-            pourLinePool = new LineRenderer[pourLinePoolSize];
-            for (int i = 0; i < pourLinePoolSize; i++)
+            if (unlitShader == null)
+                unlitShader = Shader.Find("Unlit/Color");
+
+            if (unlitShader == null)
             {
-                GameObject lineObj = new GameObject("PourLinePool");
-                pourLinePool[i] = lineObj.AddComponent<LineRenderer>();
-                pourLinePool[i].material = pourLineMaterial;
-                pourLinePool[i].enabled = false;
-                DontDestroyOnLoad(lineObj);
+                BottleLogger.LogWarning("No suitable shader found for pour line rendering.");
+                return;
+            }
+
+            pourLineMaterial = new Material(unlitShader);
+            pourLinePool = new LineRenderer[Mathf.Max(1, pourLinePoolSize)];
+
+            for (int i = 0; i < pourLinePool.Length; i++)
+            {
+                GameObject lineObj = new GameObject($"PourLine_{i}");
+                lineObj.transform.SetParent(transform, false);
+
+                LineRenderer lr = lineObj.AddComponent<LineRenderer>();
+                lr.material = pourLineMaterial;
+                lr.useWorldSpace = true;
+                lr.numCapVertices = 8;
+                lr.positionCount = 3;
+                lr.enabled = false;
+
+                pourLinePool[i] = lr;
             }
         }
 
-        void Update()
+        private void EnsureCameraPostFx()
         {
-            if (isAnimating) return;
+            if (mainCam == null) return;
+
+            // Keep camera aligned for puzzle readability
+            mainCam.transform.position = new Vector3(0f, 0.5f, -14f);
+            mainCam.transform.LookAt(new Vector3(0f, 0.5f, 0f));
+            mainCam.fieldOfView = 52f;
+            mainCam.clearFlags = CameraClearFlags.SolidColor;
+            mainCam.backgroundColor = new Color(0.08f, 0.05f, 0.16f, 1f);
+        }
+
+        private void Update()
+        {
+            if (isAnimating || gameWon) return;
 
             bool pointerDown = false;
             Vector2 pointerPos = Vector2.zero;
 
+#if ENABLE_INPUT_SYSTEM
             if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
             {
                 pointerDown = true;
                 pointerPos = Mouse.current.position.ReadValue();
             }
-            else if (Touchscreen.current != null && Touchscreen.current.touches.Count > 0)
+            else if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame)
             {
-                var touch = Touchscreen.current.touches[0];
-                if (touch.phase.ReadValue() == UnityEngine.InputSystem.TouchPhase.Began)
+                pointerDown = true;
+                pointerPos = Touchscreen.current.primaryTouch.position.ReadValue();
+            }
+#endif
+
+            // Fallback for projects using the old Input Manager
+            if (!pointerDown)
+            {
+                if (Input.GetMouseButtonDown(0))
                 {
                     pointerDown = true;
-                    pointerPos = touch.position.ReadValue();
+                    pointerPos = Input.mousePosition;
+                }
+                else if (Input.touchCount > 0 && Input.GetTouch(0).phase == UnityEngine.TouchPhase.Began)
+                {
+                    pointerDown = true;
+                    pointerPos = Input.GetTouch(0).position;
                 }
             }
 
@@ -82,71 +163,58 @@ namespace BottleShaders
             }
 
             Ray ray = mainCam.ScreenPointToRay(screenPos);
-            if (Physics.Raycast(ray, out RaycastHit hit))
+            if (Physics.Raycast(ray, out RaycastHit hit, 100f, bottleLayerMask))
             {
                 BottleController clickedBottle = hit.collider.GetComponent<BottleController>();
-                if (clickedBottle != null)
+                if (clickedBottle == null)
                 {
-                    BottleLogger.LogDebug($"Clicked on bottle: {clickedBottle.gameObject.name}");
-
-                    if (selectedBottle == null)
+                    if (selectedBottle != null)
                     {
-                        if (!clickedBottle.IsEmpty())
-                        {
-                            BottleLogger.LogDebug("Selecting bottle for pouring");
-                            selectedBottle = clickedBottle;
-                            selectedOriginalPos = selectedBottle.transform.position;
-                            StartCoroutine(LiftBottle(selectedBottle));
-                        }
-                        else
-                        {
-                            BottleLogger.LogDebug("Cannot select empty bottle");
-                        }
+                        StartCoroutine(PutDownBottle(selectedBottle, selectedOriginalPos));
+                        selectedBottle = null;
                     }
-                    else
+                    return;
+                }
+
+                if (selectedBottle == null)
+                {
+                    if (!clickedBottle.IsEmpty())
                     {
-                        if (selectedBottle == clickedBottle)
-                        {
-                            BottleLogger.LogDebug("Deselecting same bottle");
-                            StartCoroutine(PutDownBottle(selectedBottle, selectedOriginalPos));
-                            selectedBottle = null;
-                        }
-                        else
-                        {
-                            int topLayer = selectedBottle.GetTopLayerIndex();
-                            if (topLayer >= 0)
-                            {
-                                lastPourColor = selectedBottle.GetLayerColor(topLayer);
-                                BottleLogger.LogDebug($"Attempting to pour from {selectedBottle.gameObject.name} to {clickedBottle.gameObject.name}");
+                        selectedBottle = clickedBottle;
+                        selectedOriginalPos = selectedBottle.transform.position;
+                        StartCoroutine(LiftBottle(selectedBottle));
+                    }
+                    return;
+                }
 
-                                if (selectedBottle.TryPourTo(clickedBottle))
-                                {
-                                    BottleLogger.LogDebug("Pour successful, starting animation");
-                                    StartCoroutine(PourAnimation(selectedBottle, clickedBottle, selectedOriginalPos));
-                                    selectedBottle = null;
-                                    return;
-                                }
-                                else
-                                {
-                                    BottleLogger.LogDebug("Pour failed, putting down bottle");
-                                }
-                            }
+                if (selectedBottle == clickedBottle)
+                {
+                    StartCoroutine(PutDownBottle(selectedBottle, selectedOriginalPos));
+                    selectedBottle = null;
+                    return;
+                }
 
-                            StartCoroutine(PutDownBottle(selectedBottle, selectedOriginalPos));
-                            selectedBottle = null;
-                        }
+                int topLayer = selectedBottle.GetTopLayerIndex();
+                if (topLayer >= 0)
+                {
+                    lastPourColor = selectedBottle.GetLayerColor(topLayer);
+
+                    if (selectedBottle.TryPourTo(clickedBottle))
+                    {
+                        moveCount++;
+                        StartCoroutine(PourAnimation(selectedBottle, clickedBottle, selectedOriginalPos));
+                        selectedBottle = null;
+                        return;
                     }
                 }
-                else
-                {
-                    BottleLogger.LogDebug("No bottle found at click position");
-                }
+
+                StartCoroutine(PutDownBottle(selectedBottle, selectedOriginalPos));
+                selectedBottle = null;
             }
             else
             {
                 if (selectedBottle != null)
                 {
-                    BottleLogger.LogDebug("No valid click target, deselecting current bottle");
                     StartCoroutine(PutDownBottle(selectedBottle, selectedOriginalPos));
                     selectedBottle = null;
                 }
@@ -159,14 +227,16 @@ namespace BottleShaders
             Vector3 startPos = bottle.transform.position;
             Vector3 endPos = startPos + Vector3.up * liftHeight;
             float elapsed = 0f;
-            float liftDuration = animationDuration * 1.5f;
-            while (elapsed < liftDuration)
+            float duration = animationDuration * 1.35f;
+
+            while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
-                float t = Mathf.SmoothStep(0, 1, elapsed / liftDuration);
+                float t = Mathf.SmoothStep(0, 1, elapsed / duration);
                 bottle.transform.position = Vector3.Lerp(startPos, endPos, t);
                 yield return null;
             }
+
             bottle.transform.position = endPos;
             isAnimating = false;
         }
@@ -176,14 +246,16 @@ namespace BottleShaders
             isAnimating = true;
             Vector3 startPos = bottle.transform.position;
             float elapsed = 0f;
-            float dropDuration = animationDuration * 1.5f;
-            while (elapsed < dropDuration)
+            float duration = animationDuration * 1.35f;
+
+            while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
-                float t = Mathf.SmoothStep(0, 1, elapsed / dropDuration);
+                float t = Mathf.SmoothStep(0, 1, elapsed / duration);
                 bottle.transform.position = Vector3.Lerp(startPos, targetPos, t);
                 yield return null;
             }
+
             bottle.transform.position = targetPos;
             isAnimating = false;
         }
@@ -223,28 +295,25 @@ namespace BottleShaders
             Vector3 sourceMouth = source.transform.position + source.transform.up * 1.0f;
             Vector3 targetMouth = target.transform.position + target.transform.up * 2.1f;
 
-            float pourTime = 0.6f;
-            float pourStartTime = Time.time;
-            float pourEndTime = pourStartTime + pourTime;
+            float pourTime = 0.55f;
+            float startTime = Time.time;
+            float endTime = startTime + pourTime;
 
-            while (Time.time < pourEndTime)
+            while (Time.time < endTime)
             {
-                float pourT = (Time.time - pourStartTime) / pourTime;
+                float pourT = (Time.time - startTime) / pourTime;
 
-                Vector3 midPoint = Vector3.Lerp(sourceMouth, targetMouth, 0.5f) + Vector3.down * 0.3f;
-                Vector3 pourEndPos = Vector3.Lerp(midPoint, targetMouth, pourT * 1.2f);
+                Vector3 midPoint = Vector3.Lerp(sourceMouth, targetMouth, 0.5f) + Vector3.down * 0.25f;
+                Vector3 controlPoint = Vector3.Lerp(sourceMouth, midPoint, pourT) + Vector3.down * (pourT * 0.22f);
+                Vector3 streamStart = Vector3.Lerp(sourceMouth, controlPoint, pourT);
+                Vector3 streamEnd = Vector3.Lerp(midPoint, targetMouth, pourT * 1.2f);
+                if (streamEnd.y < targetMouth.y) streamEnd = targetMouth;
 
-                if (pourEndPos.y < targetMouth.y) pourEndPos = targetMouth;
-
-                Vector3 controlPoint = Vector3.Lerp(sourceMouth, midPoint, pourT) + Vector3.down * (pourT * 0.2f);
-                Vector3 pourStartPos = Vector3.Lerp(sourceMouth, controlPoint, pourT);
-
-                CreatePourLine(pourStartPos, pourEndPos, lastPourColor);
-
+                CreatePourLine(streamStart, streamEnd, lastPourColor);
                 yield return null;
             }
 
-            yield return new WaitForSeconds(0.1f);
+            yield return new WaitForSeconds(0.08f);
             DestroyPourLine();
 
             elapsed = 0f;
@@ -268,7 +337,9 @@ namespace BottleShaders
 
             source.transform.position = originalSourcePos;
             source.transform.rotation = startRot;
+
             isAnimating = false;
+            CheckWinCondition();
         }
 
         private void CreatePourLine(Vector3 start, Vector3 end, Color color)
@@ -278,28 +349,94 @@ namespace BottleShaders
             LineRenderer line = pourLinePool[currentPourLineIndex];
             line.enabled = true;
 
-            Color startColor = new Color(color.r, color.g, color.b, 0.8f);
-            Color endColor = new Color(color.r * 0.8f, color.g * 0.8f, color.b * 0.8f, 0.3f);
+            Color startColor = new Color(color.r, color.g, color.b, 0.82f);
+            Color endColor = new Color(color.r * 0.8f, color.g * 0.8f, color.b * 0.8f, 0.28f);
             line.startColor = startColor;
             line.endColor = endColor;
             line.startWidth = 0.1f;
-            line.endWidth = 0.05f;
-            line.positionCount = 2;
-            line.SetPosition(0, start);
-            line.SetPosition(1, end);
-            line.numCapVertices = 8;
-            line.useWorldSpace = true;
+            line.endWidth = 0.04f;
 
-            currentPourLineIndex = (currentPourLineIndex + 1) % pourLinePoolSize;
+            Vector3 mid = Vector3.Lerp(start, end, 0.5f) + Vector3.down * 0.14f;
+            line.positionCount = 3;
+            line.SetPosition(0, start);
+            line.SetPosition(1, mid);
+            line.SetPosition(2, end);
+
+            currentPourLineIndex = (currentPourLineIndex + 1) % pourLinePool.Length;
         }
 
         private void DestroyPourLine()
         {
-            if (pourLinePool != null)
+            if (pourLinePool == null) return;
+
+            foreach (var line in pourLinePool)
             {
-                foreach (var line in pourLinePool)
+                if (line != null) line.enabled = false;
+            }
+        }
+
+        private void CheckWinCondition()
+        {
+            var bottles = FindObjectsByType<BottleController>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            if (bottles == null || bottles.Length == 0) return;
+
+            bool hasLiquid = false;
+            foreach (var bottle in bottles)
+            {
+                if (bottle == null) continue;
+                if (bottle.IsEmpty()) continue;
+
+                hasLiquid = true;
+                if (!bottle.HasSingleColorContent() || !bottle.IsFull())
+                    return;
+            }
+
+            if (!hasLiquid) return;
+
+            gameWon = true;
+            BottleLogger.LogInfo($"Puzzle solved in {moveCount} moves!");
+        }
+
+        private void OnGUI()
+        {
+            if (!showRuntimeHud) return;
+
+            if (hudTitleStyle == null)
+            {
+                hudTitleStyle = new GUIStyle(GUI.skin.label)
                 {
-                    if (line != null) line.enabled = false;
+                    fontSize = 24,
+                    fontStyle = FontStyle.Bold,
+                    alignment = TextAnchor.UpperCenter,
+                    normal = { textColor = Color.white }
+                };
+
+                hudTextStyle = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 18,
+                    alignment = TextAnchor.UpperCenter,
+                    normal = { textColor = new Color(0.9f, 0.92f, 1f, 1f) }
+                };
+
+                hudButtonStyle = new GUIStyle(GUI.skin.button)
+                {
+                    fontSize = 16,
+                    fontStyle = FontStyle.Bold
+                };
+            }
+
+            Rect panel = new Rect(Screen.width * 0.5f - 170f, 16f, 340f, gameWon ? 140f : 80f);
+            GUI.Box(panel, GUIContent.none);
+
+            GUI.Label(new Rect(panel.x, panel.y + 8f, panel.width, 28f), "Puzzle Bottle Sort", hudTitleStyle);
+            GUI.Label(new Rect(panel.x, panel.y + 40f, panel.width, 24f), $"Hamle: {moveCount}", hudTextStyle);
+
+            if (gameWon)
+            {
+                GUI.Label(new Rect(panel.x, panel.y + 64f, panel.width, 24f), "🎉 Tebrikler, level tamamlandı!", hudTextStyle);
+                if (GUI.Button(new Rect(panel.x + 95f, panel.y + 94f, 150f, 34f), "Yeniden Başlat", hudButtonStyle))
+                {
+                    SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
                 }
             }
         }

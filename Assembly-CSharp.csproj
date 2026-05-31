@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\TutorialInfo\Readme.cs" />
+    <Compile Include="Assets\Scripts\PuzzleSceneBootstrap.cs" />
     <Compile Include="Assets\Scripts\Logging\BottleLogger.cs" />
     <Compile Include="Assets\Scripts\BottleController.cs" />
     <Compile Include="Assets\Scripts\GameManager.cs" />
