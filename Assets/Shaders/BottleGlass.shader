@@ -6,7 +6,7 @@ Shader "Custom/BottleGlass"
         _Color("Glass Tint Color", Color) = (1, 1, 1, 0.1)
         _Smoothness("Smoothness", Range(0.0, 1.0)) = 0.9
 
-        [Header(Fresnel Rim)]
+                [Header(Fresnel Rim)]
         _FresnelPower("Fresnel Power", Range(0.5, 8.0)) = 3.0
         _FresnelIntensity("Fresnel Intensity", Range(0.0, 2.0)) = 0.6
         _FresnelColor("Fresnel Color", Color) = (1, 1, 1, 0.8)
@@ -14,6 +14,11 @@ Shader "Custom/BottleGlass"
         [Header(Specular)]
         _SpecularColor("Specular Color", Color) = (1, 1, 1, 1)
         _SpecularIntensity("Specular Intensity", Range(0.0, 2.0)) = 0.8
+
+        [Header(Glow Effect)]
+        _GlowIntensity("Glow Intensity", Range(0.0, 2.0)) = 0.3
+        _GlowColor("Glow Color", Color) = (0.8, 0.9, 1.0, 1.0)
+        _GlowPower("Glow Power", Range(1.0, 8.0)) = 2.5
 
         [Header(Refraction)]
         _RefractionStrength("Refraction Strength", Range(0.0, 0.2)) = 0.05
@@ -62,7 +67,7 @@ Shader "Custom/BottleGlass"
             // ═══════════════════════════════════════════════════
             //  CBUFFER — SRP Batcher compatible
             // ═══════════════════════════════════════════════════
-            CBUFFER_START(UnityPerMaterial)
+                        CBUFFER_START(UnityPerMaterial)
                 float4 _Color;
                 float _Smoothness;
                 float _FresnelPower;
@@ -70,6 +75,9 @@ Shader "Custom/BottleGlass"
                 float4 _FresnelColor;
                 float4 _SpecularColor;
                 float _SpecularIntensity;
+                float _GlowIntensity;
+                float4 _GlowColor;
+                float _GlowPower;
                 float _RefractionStrength;
                 float _RefractionScale;
                 float _AlphaClip;
@@ -118,13 +126,23 @@ Shader "Custom/BottleGlass"
                 return spec * _SpecularColor.rgb * _SpecularIntensity * lightIntensity;
             }
 
-            // ═══════════════════════════════════════════════════
+                        // ═══════════════════════════════════════════════════
             //  Schlick Fresnel approximation
             // ═══════════════════════════════════════════════════
             float CalculateFresnel(float3 normalWS, float3 viewDirWS)
             {
                 float NdotV = max(0.0, dot(normalWS, viewDirWS));
                 return pow(abs(1.0 - NdotV), _FresnelPower) * _FresnelIntensity;
+            }
+
+            // ═══════════════════════════════════════════════════
+            //  Glow effect based on view angle
+            // ═══════════════════════════════════════════════════
+            float CalculateGlow(float3 normalWS, float3 viewDirWS)
+            {
+                float NdotV = max(0.0, dot(normalWS, viewDirWS));
+                float glowBase = pow(1.0 - NdotV, _GlowPower);
+                return glowBase * _GlowIntensity;
             }
 
             // ═══════════════════════════════════════════════════
@@ -151,6 +169,11 @@ Shader "Custom/BottleGlass"
                 //  Fresnel rim
                 // ═══════════════════════════════════════════
                 float fresnel = CalculateFresnel(normalWS, viewDir);
+                
+                // ═══════════════════════════════════════════
+                //  Glow effect
+                // ═══════════════════════════════════════════
+                float glow = CalculateGlow(normalWS, viewDir);
 
                 // ═══════════════════════════════════════════
                 //  Main light contribution
@@ -195,6 +218,10 @@ Shader "Custom/BottleGlass"
                 // Add fresnel rim color on top
                 float3 rimColor = _FresnelColor.rgb * fresnel * mainLight.color;
                 finalColor += rimColor;
+                
+                // Add glow effect
+                float3 glowColor = _GlowColor.rgb * glow;
+                finalColor += glowColor;
 
                 // Subtle refraction tint
                 finalColor += refraction * 0.1;
@@ -236,8 +263,11 @@ Shader "Custom/BottleGlass"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
 
-            CBUFFER_START(UnityPerMaterial)
+                        CBUFFER_START(UnityPerMaterial)
                 float _AlphaClip;
+                float4 _Color;
+                float _FresnelPower;
+                float _FresnelIntensity;
             CBUFFER_END
 
             struct Attributes
@@ -249,6 +279,8 @@ Shader "Custom/BottleGlass"
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
+                float3 normalWS : TEXCOORD0;
+                float3 positionWS : TEXCOORD1;
             };
 
             Varyings vert(Attributes input)
@@ -256,11 +288,30 @@ Shader "Custom/BottleGlass"
                 Varyings output;
                 VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
                 output.positionCS = vertexInput.positionCS;
+                output.positionWS = vertexInput.positionWS;
+                
+                VertexNormalInputs normalInput = GetVertexNormalInputs(input.normalOS);
+                output.normalWS = normalInput.normalWS;
                 return output;
             }
 
             half4 frag(Varyings input) : SV_Target
             {
+                // Calculate fresnel for proper shadow edge
+                float3 viewDirWS = GetWorldSpaceViewDir(input.positionWS);
+                float3 viewDir = normalize(viewDirWS);
+                float3 normalWS = normalize(input.normalWS);
+                
+                float NdotV = max(0.0, dot(normalWS, viewDir));
+                float fresnel = pow(abs(1.0 - NdotV), _FresnelPower) * _FresnelIntensity;
+                
+                // Only cast shadow where glass is visible (not fully transparent)
+                float alpha = _Color.a;
+                alpha = lerp(alpha, 1.0, fresnel * 0.5);
+                
+                // Discard fully transparent pixels from shadow
+                clip(alpha - _AlphaClip);
+                
                 return 0;
             }
             ENDHLSL

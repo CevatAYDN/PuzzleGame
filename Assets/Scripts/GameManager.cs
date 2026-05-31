@@ -2,6 +2,7 @@ using System.Collections;
 using BottleShaders.Logging;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -22,6 +23,11 @@ namespace BottleShaders
 
         [Header("HUD")]
         [SerializeField] private bool showRuntimeHud = true;
+        [SerializeField] private Canvas hudCanvas;
+        [SerializeField] private Text moveCountText;
+        [SerializeField] private Text titleText;
+        [SerializeField] private GameObject winPanel;
+        [SerializeField] private Button restartButton;
 
         [Header("Pour Line")]
         public int pourLinePoolSize = 6;
@@ -37,16 +43,141 @@ namespace BottleShaders
         private int currentPourLineIndex = 0;
         private Color lastPourColor;
 
-        private GUIStyle hudTitleStyle;
-        private GUIStyle hudTextStyle;
-        private GUIStyle hudButtonStyle;
-
         private void Start()
         {
             mainCam = Camera.main;
             if (mainCam == null) mainCam = FindAnyObjectByType<Camera>();
             InitializePourLinePool();
+            InitializeHUD();
             EnsureCameraPostFx();
+        }
+
+        private void InitializeHUD()
+        {
+            if (!showRuntimeHud) return;
+
+            // Create Canvas if not assigned
+            if (hudCanvas == null)
+            {
+                GameObject canvasObj = new GameObject("HUDCanvas");
+                hudCanvas = canvasObj.AddComponent<Canvas>();
+                hudCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                hudCanvas.sortingOrder = 100;
+                canvasObj.AddComponent<CanvasScaler>();
+                canvasObj.AddComponent<GraphicRaycaster>();
+            }
+
+            // Create title text
+            if (titleText == null)
+            {
+                GameObject titleObj = new GameObject("TitleText");
+                titleObj.transform.SetParent(hudCanvas.transform, false);
+                titleText = titleObj.AddComponent<Text>();
+                titleText.text = "Puzzle Bottle Sort";
+                titleText.fontSize = 28;
+                titleText.fontStyle = FontStyle.Bold;
+                titleText.alignment = TextAnchor.UpperCenter;
+                titleText.color = Color.white;
+                RectTransform titleRect = titleText.rectTransform;
+                titleRect.anchorMin = new Vector2(0.5f, 1f);
+                titleRect.anchorMax = new Vector2(0.5f, 1f);
+                titleRect.pivot = new Vector2(0.5f, 1f);
+                titleRect.anchoredPosition = new Vector2(0, -20);
+                titleRect.sizeDelta = new Vector2(400, 50);
+            }
+
+            // Create move count text
+            if (moveCountText == null)
+            {
+                GameObject moveObj = new GameObject("MoveCountText");
+                moveObj.transform.SetParent(hudCanvas.transform, false);
+                moveCountText = moveObj.AddComponent<Text>();
+                moveCountText.text = "Hamle: 0";
+                moveCountText.fontSize = 20;
+                moveCountText.alignment = TextAnchor.UpperCenter;
+                moveCountText.color = new Color(0.9f, 0.92f, 1f);
+                RectTransform moveRect = moveCountText.rectTransform;
+                moveRect.anchorMin = new Vector2(0.5f, 1f);
+                moveRect.anchorMax = new Vector2(0.5f, 1f);
+                moveRect.pivot = new Vector2(0.5f, 1f);
+                moveRect.anchoredPosition = new Vector2(0, -70);
+                moveRect.sizeDelta = new Vector2(400, 40);
+            }
+
+            // Create win panel
+            if (winPanel == null)
+            {
+                GameObject panelObj = new GameObject("WinPanel");
+                panelObj.transform.SetParent(hudCanvas.transform, false);
+                winPanel = panelObj;
+                RectTransform panelRect = winPanel.AddComponent<RectTransform>();
+                panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+                panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+                panelRect.pivot = new Vector2(0.5f, 0.5f);
+                panelRect.anchoredPosition = Vector2.zero;
+                panelRect.sizeDelta = new Vector2(350, 180);
+
+                // Add background image
+                Image panelBg = winPanel.AddComponent<Image>();
+                panelBg.color = new Color(0.1f, 0.08f, 0.2f, 0.95f);
+
+                // Add outline
+                Outline panelOutline = winPanel.AddComponent<Outline>();
+                panelOutline.effectColor = new Color(0.5f, 0.4f, 0.8f);
+                panelOutline.effectDistance = new Vector2(2, 2);
+
+                // Create win text
+                GameObject winTextObj = new GameObject("WinText");
+                winTextObj.transform.SetParent(winPanel.transform, false);
+                Text winText = winTextObj.AddComponent<Text>();
+                winText.text = "🎉 Tebrikler!\nLevel tamamlandı!";
+                winText.fontSize = 24;
+                winText.fontStyle = FontStyle.Bold;
+                winText.alignment = TextAnchor.MiddleCenter;
+                winText.color = Color.white;
+                RectTransform winTextRect = winText.rectTransform;
+                winTextRect.anchorMin = Vector2.zero;
+                winTextRect.anchorMax = Vector2.one;
+                winTextRect.sizeDelta = new Vector2(-20, -80);
+                winTextRect.anchoredPosition = Vector2.zero;
+
+                // Create restart button
+                GameObject buttonObj = new GameObject("RestartButton");
+                buttonObj.transform.SetParent(winPanel.transform, false);
+                restartButton = buttonObj.AddComponent<Button>();
+                Image buttonImg = buttonObj.AddComponent<Image>();
+                buttonImg.color = new Color(0.3f, 0.5f, 0.8f);
+                restartButton.targetGraphic = buttonImg;
+
+                RectTransform buttonRect = restartButton.transform.GetComponent<RectTransform>();
+                buttonRect.anchorMin = new Vector2(0.5f, 0f);
+                buttonRect.anchorMax = new Vector2(0.5f, 0f);
+                buttonRect.pivot = new Vector2(0.5f, 0f);
+                buttonRect.anchoredPosition = new Vector2(0, 25);
+                buttonRect.sizeDelta = new Vector2(160, 40);
+
+                // Button text
+                GameObject buttonTextObj = new GameObject("ButtonText");
+                buttonTextObj.transform.SetParent(buttonObj.transform, false);
+                Text buttonTxt = buttonTextObj.AddComponent<Text>();
+                buttonTxt.text = "Yeniden Başlat";
+                buttonTxt.fontSize = 16;
+                buttonTxt.fontStyle = FontStyle.Bold;
+                buttonTxt.alignment = TextAnchor.MiddleCenter;
+                buttonTxt.color = Color.white;
+                RectTransform buttonTxtRect = buttonTxt.rectTransform;
+                buttonTxtRect.anchorMin = Vector2.zero;
+                buttonTxtRect.anchorMax = Vector2.one;
+                buttonTxtRect.sizeDelta = Vector2.zero;
+
+                // Add click listener
+                restartButton.onClick.AddListener(() =>
+                {
+                    SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+                });
+
+                winPanel.SetActive(false);
+            }
         }
 
         private void OnDestroy()
@@ -61,12 +192,14 @@ namespace BottleShaders
                         else DestroyImmediate(line.gameObject);
                     }
                 }
+                pourLinePool = null;
             }
 
             if (pourLineMaterial != null)
             {
                 if (Application.isPlaying) Destroy(pourLineMaterial);
                 else DestroyImmediate(pourLineMaterial);
+                pourLineMaterial = null;
             }
         }
 
@@ -190,9 +323,10 @@ namespace BottleShaders
                 {
                     lastPourColor = selectedBottle.GetLayerColor(topLayer);
 
-                    if (selectedBottle.TryPourTo(clickedBottle))
+                                        if (selectedBottle.TryPourTo(clickedBottle))
                     {
                         moveCount++;
+                        UpdateHUD();
                         StartCoroutine(PourAnimation(selectedBottle, clickedBottle, selectedOriginalPos));
                         selectedBottle = null;
                         return;
@@ -366,7 +500,7 @@ namespace BottleShaders
             }
         }
 
-        private void CheckWinCondition()
+                private void CheckWinCondition()
         {
             var bottles = FindObjectsByType<BottleController>(FindObjectsInactive.Exclude);
             if (bottles == null || bottles.Length == 0) return;
@@ -386,49 +520,21 @@ namespace BottleShaders
 
             gameWon = true;
             BottleLogger.LogInfo($"Puzzle solved in {moveCount} moves!");
+            UpdateHUD();
         }
 
-        private void OnGUI()
+        private void UpdateHUD()
         {
             if (!showRuntimeHud) return;
 
-            if (hudTitleStyle == null)
+            if (moveCountText != null)
             {
-                hudTitleStyle = new GUIStyle(GUI.skin.label)
-                {
-                    fontSize = 24,
-                    fontStyle = FontStyle.Bold,
-                    alignment = TextAnchor.UpperCenter,
-                    normal = { textColor = Color.white }
-                };
-
-                hudTextStyle = new GUIStyle(GUI.skin.label)
-                {
-                    fontSize = 18,
-                    alignment = TextAnchor.UpperCenter,
-                    normal = { textColor = new Color(0.9f, 0.92f, 1f, 1f) }
-                };
-
-                hudButtonStyle = new GUIStyle(GUI.skin.button)
-                {
-                    fontSize = 16,
-                    fontStyle = FontStyle.Bold
-                };
+                moveCountText.text = $"Hamle: {moveCount}";
             }
 
-            Rect panel = new Rect(Screen.width * 0.5f - 170f, 16f, 340f, gameWon ? 140f : 80f);
-            GUI.Box(panel, GUIContent.none);
-
-            GUI.Label(new Rect(panel.x, panel.y + 8f, panel.width, 28f), "Puzzle Bottle Sort", hudTitleStyle);
-            GUI.Label(new Rect(panel.x, panel.y + 40f, panel.width, 24f), $"Hamle: {moveCount}", hudTextStyle);
-
-            if (gameWon)
+            if (gameWon && winPanel != null)
             {
-                GUI.Label(new Rect(panel.x, panel.y + 64f, panel.width, 24f), "🎉 Tebrikler, level tamamlandı!", hudTextStyle);
-                if (GUI.Button(new Rect(panel.x + 95f, panel.y + 94f, 150f, 34f), "Yeniden Başlat", hudButtonStyle))
-                {
-                    SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-                }
+                winPanel.SetActive(true);
             }
         }
     }

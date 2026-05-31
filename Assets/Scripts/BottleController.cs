@@ -51,46 +51,70 @@ namespace BottleShaders
         [SerializeField] [Range(0.1f, 3f)] private float fillTransitionDuration = 0.5f;
 
         [Header("Interaction")]
-        [Tooltip("Can this bottle be selected for pouring?")]
-        [SerializeField] private bool isInteractive = true;
+                [Tooltip("Can this bottle be selected for pouring?")]
+                [SerializeField] private bool isInteractive = true;
 
-        [Tooltip("Maximum number of layers this bottle can hold")]
-        [SerializeField] [Range(1, 4)] private int maxLayers = 4;
+                [Tooltip("Maximum number of layers this bottle can hold")]
+                [SerializeField] [Range(1, 4)] private int maxLayers = 4;
 
-        #endregion
+                [Header("Color Matching")]
+                [Tooltip("Tolerance for color matching during pour validation")]
+                [SerializeField] [Range(0.01f, 0.2f)] private float colorMatchTolerance = 0.05f;
 
-        #region Private Fields
+                [Header("Visual Enhancement")]
+                [Tooltip("Enable glow effect on liquid surface")]
+                [SerializeField] private bool enableLiquidGlow = true;
 
-        private const float Epsilon = 0.001f;
+                [Tooltip("Glow intensity multiplier")]
+                [SerializeField] [Range(0f, 2f)] private float glowIntensity = 0.35f;
 
-        private Renderer bottleRenderer;
-        private MaterialPropertyBlock glassBlock;
-        private MaterialPropertyBlock liquidBlock;
-        private float[] targetFillLevels;
-        private float[] currentFillLevels;
-        private float[] startFillLevels;
+                [Tooltip("Enhanced color saturation boost")]
+                [SerializeField] [Range(1f, 2f)] private float saturationBoost = 1.35f;
 
-        private bool isAnimating = false;
-        private float animationProgress = 0f;
-        private float animationDuration = 0f;
-        private Action onAnimationComplete;
+                [Tooltip("Enhanced color brightness boost")]
+                [SerializeField] [Range(1f, 1.5f)] private float brightnessBoost = 1.2f;
 
-        private static readonly int Color1ID = Shader.PropertyToID("_Color1");
-        private static readonly int Color2ID = Shader.PropertyToID("_Color2");
-        private static readonly int Color3ID = Shader.PropertyToID("_Color3");
-        private static readonly int Color4ID = Shader.PropertyToID("_Color4");
-        private static readonly int Fill1ID = Shader.PropertyToID("_Fill1");
-        private static readonly int Fill2ID = Shader.PropertyToID("_Fill2");
-        private static readonly int Fill3ID = Shader.PropertyToID("_Fill3");
-        private static readonly int Fill4ID = Shader.PropertyToID("_Fill4");
-        private static readonly int TimeXID = Shader.PropertyToID("_TimeX");
-        private static readonly int SurfaceRippleAmplitudeID = Shader.PropertyToID("_SurfaceRippleAmplitude");
-        private static readonly int SurfaceRippleSpeedID = Shader.PropertyToID("_SurfaceRippleSpeed");
-        private static readonly int SurfaceHeightID = Shader.PropertyToID("_SurfaceHeight");
-        private static readonly int BottleHeightID = Shader.PropertyToID("_BottleHeight");
-        private static readonly int ColorID = Shader.PropertyToID("_Color");
+                #endregion
 
-        #endregion
+                #region Private Fields
+
+                private const float Epsilon = 0.001f;
+
+                private Renderer bottleRenderer;
+                private MaterialPropertyBlock glassBlock;
+                private MaterialPropertyBlock liquidBlock;
+                                private float[] targetFillLevels;
+                private float[] currentFillLevels;
+                // Pre-allocated array for animation start values - avoids GC allocations
+                private float[] animationStartLevels;
+
+                private bool isAnimating = false;
+                private float animationProgress = 0f;
+                private float animationDuration = 0f;
+                private Action onAnimationComplete;
+
+                // Pre-allocated arrays to avoid GC allocations
+                private Color[] adjustedColors = new Color[4];
+                private float[] shaderFills = new float[4];
+
+                private static readonly int Color1ID = Shader.PropertyToID("_Color1");
+                private static readonly int Color2ID = Shader.PropertyToID("_Color2");
+                private static readonly int Color3ID = Shader.PropertyToID("_Color3");
+                private static readonly int Color4ID = Shader.PropertyToID("_Color4");
+                private static readonly int Fill1ID = Shader.PropertyToID("_Fill1");
+                private static readonly int Fill2ID = Shader.PropertyToID("_Fill2");
+                private static readonly int Fill3ID = Shader.PropertyToID("_Fill3");
+                private static readonly int Fill4ID = Shader.PropertyToID("_Fill4");
+                private static readonly int TimeXID = Shader.PropertyToID("_TimeX");
+                private static readonly int SurfaceRippleAmplitudeID = Shader.PropertyToID("_SurfaceRippleAmplitude");
+                private static readonly int SurfaceRippleSpeedID = Shader.PropertyToID("_SurfaceRippleSpeed");
+                private static readonly int SurfaceHeightID = Shader.PropertyToID("_SurfaceHeight");
+                private static readonly int BottleHeightID = Shader.PropertyToID("_BottleHeight");
+                private static readonly int ColorID = Shader.PropertyToID("_Color");
+                private static readonly int GlowIntensityID = Shader.PropertyToID("_GlowIntensity");
+                private static readonly int EnableGlowID = Shader.PropertyToID("_EnableGlow");
+
+                #endregion
 
         #region Unity Lifecycle
 
@@ -99,62 +123,91 @@ namespace BottleShaders
             Initialize();
         }
 
-        private void OnEnable()
+                private void OnEnable()
         {
             EnsurePropertyBlocks();
         }
 
-        private void Update()
+        private void OnDisable()
+        {
+            // Safely cleanup animation callback to prevent memory leaks
+            onAnimationComplete = null;
+        }
+
+                private void Update()
         {
             if (isAnimating)
             {
-                float duration = Mathf.Max(0.01f, animationDuration);
-                animationProgress += Time.deltaTime / duration;
-
-                if (animationProgress >= 1f)
-                {
-                    animationProgress = 1f;
-                    isAnimating = false;
-
-                    for (int i = 0; i < currentFillLevels.Length; i++)
-                    {
-                        currentFillLevels[i] = targetFillLevels[i];
-                    }
-
-                    SyncSerializedFields();
-                    UpdateLiquidShader();
-                    onAnimationComplete?.Invoke();
-                }
-                else
-                {
-                    float t = EaseOutCubic(animationProgress);
-
-                    if (startFillLevels == null || startFillLevels.Length == 0)
-                    {
-                        for (int i = 0; i < currentFillLevels.Length; i++)
-                            currentFillLevels[i] = targetFillLevels[i];
-                        UpdateLiquidShader();
-                        return;
-                    }
-
-                    for (int i = 0; i < currentFillLevels.Length; i++)
-                    {
-                        float start = i < startFillLevels.Length ? startFillLevels[i] : 0f;
-                        currentFillLevels[i] = Mathf.Lerp(start, targetFillLevels[i], t);
-                    }
-
-                    UpdateLiquidShader();
-                }
+                UpdateAnimation();
             }
 
-            if (liquidBlock != null && bottleRenderer != null)
+                        if (liquidBlock != null && bottleRenderer != null)
             {
                 liquidBlock.SetFloat(TimeXID, Time.time);
                 liquidBlock.SetFloat(SurfaceRippleAmplitudeID, rippleAmplitude);
                 liquidBlock.SetFloat(SurfaceRippleSpeedID, rippleSpeed);
+                liquidBlock.SetFloat(GlowIntensityID, glowIntensity);
+                liquidBlock.SetFloat(EnableGlowID, enableLiquidGlow ? 1f : 0f);
 
                 if (bottleRenderer.sharedMaterials != null && bottleRenderer.sharedMaterials.Length > 1)
                     bottleRenderer.SetPropertyBlock(liquidBlock, 1);
+            }
+        }
+
+                #endregion
+
+        #region Animation System
+
+        private void UpdateAnimation()
+        {
+            if (currentFillLevels == null || targetFillLevels == null)
+            {
+                isAnimating = false;
+                return;
+            }
+
+            float duration = Mathf.Max(0.01f, animationDuration);
+            animationProgress += Time.deltaTime / duration;
+
+            if (animationProgress >= 1f)
+            {
+                animationProgress = 1f;
+                isAnimating = false;
+
+                // Copy target values directly
+                for (int i = 0; i < currentFillLevels.Length; i++)
+                {
+                    currentFillLevels[i] = targetFillLevels[i];
+                }
+
+                SyncSerializedFields();
+                UpdateLiquidShader();
+                
+                // Null-check before invoking to prevent NullReferenceException
+                Action callback = onAnimationComplete;
+                onAnimationComplete = null;
+                callback?.Invoke();
+            }
+            else
+            {
+                float t = EaseOutCubic(animationProgress);
+
+                // Use pre-allocated animationStartLevels array safely
+                if (animationStartLevels == null || animationStartLevels.Length == 0)
+                {
+                    for (int i = 0; i < currentFillLevels.Length; i++)
+                        currentFillLevels[i] = targetFillLevels[i];
+                    UpdateLiquidShader();
+                    return;
+                }
+
+                for (int i = 0; i < currentFillLevels.Length; i++)
+                {
+                    float start = i < animationStartLevels.Length ? animationStartLevels[i] : 0f;
+                    currentFillLevels[i] = Mathf.Lerp(start, targetFillLevels[i], t);
+                }
+
+                UpdateLiquidShader();
             }
         }
 
@@ -175,13 +228,15 @@ namespace BottleShaders
                 bottleRenderer.sharedMaterial = glassMaterial;
             }
 
-            if (currentFillLevels == null) currentFillLevels = new float[maxLayers];
+                        if (currentFillLevels == null) currentFillLevels = new float[maxLayers];
             if (targetFillLevels == null) targetFillLevels = new float[maxLayers];
+            if (animationStartLevels == null) animationStartLevels = new float[maxLayers];
 
             for (int i = 0; i < maxLayers; i++)
             {
                 currentFillLevels[i] = fillLevels[i];
                 targetFillLevels[i] = fillLevels[i];
+                animationStartLevels[i] = fillLevels[i];
             }
 
             CompactLayers();
@@ -211,13 +266,14 @@ namespace BottleShaders
             }
         }
 
-        private void EnsureFillArraySizes()
+                private void EnsureFillArraySizes()
         {
             maxLayers = Mathf.Clamp(maxLayers, 1, 4);
             EnsureArraySize(ref layerColors, maxLayers);
             EnsureArraySize(ref fillLevels, maxLayers);
             EnsureArraySize(ref currentFillLevels, maxLayers);
             EnsureArraySize(ref targetFillLevels, maxLayers);
+            EnsureArraySize(ref animationStartLevels, maxLayers);
         }
 
         private void NormalizeSerializedState()
@@ -284,19 +340,24 @@ namespace BottleShaders
         /// Set fill levels for each layer (cumulative, 0-1).
         /// Animate to new values over time.
         /// </summary>
-        public void SetFillLevels(float[] levels, float? animationDuration = null, Action onComplete = null)
+                public void SetFillLevels(float[] levels, float? animationDuration = null, Action onComplete = null)
         {
             EnsureFillArraySizes();
 
-            startFillLevels = new float[maxLayers];
-            Array.Copy(currentFillLevels, startFillLevels, Mathf.Min(currentFillLevels.Length, maxLayers));
+            // Use pre-allocated array instead of creating new one each time
+            if (animationStartLevels == null)
+                animationStartLevels = new float[maxLayers];
+            
+            Array.Copy(currentFillLevels, animationStartLevels, Mathf.Min(currentFillLevels.Length, maxLayers));
 
             targetFillLevels = SanitizeFillLevels(levels);
 
             this.animationDuration = animationDuration ?? fillTransitionDuration;
             this.animationProgress = 0f;
             this.isAnimating = true;
-            this.onAnimationComplete = onComplete;
+            
+            // Store callback - will be nulled after completion to prevent memory leaks
+            onAnimationComplete = onComplete;
         }
 
         /// <summary>
@@ -578,11 +639,11 @@ namespace BottleShaders
             return -1;
         }
 
-        private bool ColorsMatch(Color a, Color b)
+                private bool ColorsMatch(Color a, Color b)
         {
-            return Mathf.Abs(a.r - b.r) < 0.05f &&
-                   Mathf.Abs(a.g - b.g) < 0.05f &&
-                   Mathf.Abs(a.b - b.b) < 0.05f;
+            return Mathf.Abs(a.r - b.r) < colorMatchTolerance &&
+                   Mathf.Abs(a.g - b.g) < colorMatchTolerance &&
+                   Mathf.Abs(a.b - b.b) < colorMatchTolerance;
         }
 
         #endregion
@@ -611,23 +672,24 @@ namespace BottleShaders
             bottleRenderer.SetPropertyBlock(glassBlock, 0);
         }
 
-        private void UpdateLiquidShader()
+                private void UpdateLiquidShader()
         {
             EnsurePropertyBlocks();
             if (liquidBlock == null || bottleRenderer == null) return;
 
-            // Pre-allocate array to avoid repeated allocations
-            Color[] adjusted = { Color.clear, Color.clear, Color.clear, Color.clear };
+            // Reset pre-allocated arrays
+            for (int i = 0; i < adjustedColors.Length; i++)
+                adjustedColors[i] = Color.clear;
 
             for (int i = 0; i < layerColors.Length && i < 4; i++)
             {
                 Color adjustedColor = layerColors[i];
                 if (adjustedColor.a > 0.01f)
                 {
-                    // Simplified color enhancement - single pass instead of two
-                    float saturationBoost = 1.3f;
-                    float brightnessBoost = 1.15f;
+                    // Enhanced color processing with configurable saturation and brightness
                     float avg = (adjustedColor.r + adjustedColor.g + adjustedColor.b) / 3f;
+                    
+                    // Apply saturation and brightness boost
                     adjustedColor = new Color(
                         Mathf.Clamp01((avg + (adjustedColor.r - avg) * saturationBoost) * brightnessBoost),
                         Mathf.Clamp01((avg + (adjustedColor.g - avg) * saturationBoost) * brightnessBoost),
@@ -636,28 +698,30 @@ namespace BottleShaders
                     );
                 }
 
-                adjusted[i] = adjustedColor;
+                adjustedColors[i] = adjustedColor;
             }
 
-            liquidBlock.SetColor(Color1ID, adjusted[0]);
-            liquidBlock.SetColor(Color2ID, adjusted[1]);
-            liquidBlock.SetColor(Color3ID, adjusted[2]);
-            liquidBlock.SetColor(Color4ID, adjusted[3]);
+            liquidBlock.SetColor(Color1ID, adjustedColors[0]);
+            liquidBlock.SetColor(Color2ID, adjustedColors[1]);
+            liquidBlock.SetColor(Color3ID, adjustedColors[2]);
+            liquidBlock.SetColor(Color4ID, adjustedColors[3]);
 
-            // Safe fill level access with bounds checking
-            float f1 = currentFillLevels != null && currentFillLevels.Length > 0 ? currentFillLevels[0] : 0f;
-            float f2 = currentFillLevels != null && currentFillLevels.Length > 1 ? currentFillLevels[1] : f1;
-            float f3 = currentFillLevels != null && currentFillLevels.Length > 2 ? currentFillLevels[2] : f2;
-            float f4 = currentFillLevels != null && currentFillLevels.Length > 3 ? currentFillLevels[3] : f3;
+            // Safe fill level access with bounds checking - use pre-allocated array
+            shaderFills[0] = currentFillLevels != null && currentFillLevels.Length > 0 ? currentFillLevels[0] : 0f;
+            shaderFills[1] = currentFillLevels != null && currentFillLevels.Length > 1 ? currentFillLevels[1] : shaderFills[0];
+            shaderFills[2] = currentFillLevels != null && currentFillLevels.Length > 2 ? currentFillLevels[2] : shaderFills[1];
+            shaderFills[3] = currentFillLevels != null && currentFillLevels.Length > 3 ? currentFillLevels[3] : shaderFills[2];
 
-            liquidBlock.SetFloat(Fill1ID, f1);
-            liquidBlock.SetFloat(Fill2ID, f2);
-            liquidBlock.SetFloat(Fill3ID, f3);
-            liquidBlock.SetFloat(Fill4ID, f4);
+            liquidBlock.SetFloat(Fill1ID, shaderFills[0]);
+            liquidBlock.SetFloat(Fill2ID, shaderFills[1]);
+            liquidBlock.SetFloat(Fill3ID, shaderFills[2]);
+            liquidBlock.SetFloat(Fill4ID, shaderFills[3]);
 
             float topFill = GetUsedFillAmount();
             liquidBlock.SetFloat(SurfaceHeightID, topFill);
             liquidBlock.SetFloat(BottleHeightID, Mathf.Max(0.001f, bottleHeight));
+            liquidBlock.SetFloat(GlowIntensityID, glowIntensity);
+            liquidBlock.SetFloat(EnableGlowID, enableLiquidGlow ? 1f : 0f);
 
             if (bottleRenderer.sharedMaterials != null && bottleRenderer.sharedMaterials.Length > 1)
             {

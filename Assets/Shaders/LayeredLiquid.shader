@@ -131,21 +131,22 @@ Shader "Custom/LayeredLiquid"
             }
 
 // ═══════════════════════════════════════════════════
-            //  Ripple effect (optimized)
+            //  Ripple effect (optimized for mobile)
+            //  Uses simplified math to reduce GPU load
             // ═══════════════════════════════════════════════════
             float CalculateRipple(float3 positionWS, float time)
             {
                 float angle = atan2(positionWS.z, positionWS.x);
                 float radius = length(positionWS.xz);
 
-                float2 wave = float2(angle * _SurfaceRippleFrequency + time * _SurfaceRippleSpeed,
-                                     radius * 3.0 - time * _SurfaceRippleSpeed * 0.7);
-                float ripple1 = sin(wave.x) * cos(wave.y);
+                // Optimized: Combine waves into single calculation
+                float wavePhase = angle * _SurfaceRippleFrequency + radius * 2.5 - time * _SurfaceRippleSpeed;
+                float ripple = sin(wavePhase) * _SurfaceRippleAmplitude;
 
-                float2 wave2 = float2(angle * _SurfaceRippleFrequency * 0.7 - radius * 2.0 - time * _SurfaceRippleSpeed * 1.3, 0);
-                float ripple2 = sin(wave2.x) * 0.5;
+                // Secondary subtle wave for variation
+                float ripple2 = sin(angle * _SurfaceRippleFrequency * 0.5 - time * _SurfaceRippleSpeed * 0.8) * _SurfaceRippleAmplitude * 0.3;
 
-                return (ripple1 + ripple2) * _SurfaceRippleAmplitude;
+                return ripple + ripple2;
             }
 
             void GetLayerColor(float localY,
@@ -187,7 +188,7 @@ Shader "Custom/LayeredLiquid"
                 }
             }
 
-            half4 frag(Varyings input) : SV_Target
+                        half4 frag(Varyings input) : SV_Target
             {
                 // Normalize against object-space mesh height so fill 0..1 maps to
                 // the full bottle regardless of world position or scale.
@@ -199,7 +200,13 @@ Shader "Custom/LayeredLiquid"
 
                 float effectiveSurfaceHeight = _SurfaceHeight + surfaceRipple;
 
-                clip(effectiveSurfaceHeight - normalizedY - 0.001);
+                // Fix edge artifacts: use smooth transition instead of hard clip
+                float surfaceDist = effectiveSurfaceHeight - normalizedY;
+                if (surfaceDist < -0.002) discard;
+                
+                // Soft edge fade for anti-aliasing
+                float edgeSoftness = 0.002;
+                float surfaceAlpha = smoothstep(-edgeSoftness, edgeSoftness, surfaceDist);
 
                 float4 colors[4] = { _Color1, _Color2, _Color3, _Color4 };
                 float fills[4] = { _Fill1, _Fill2, _Fill3, _Fill4 };
@@ -218,7 +225,6 @@ Shader "Custom/LayeredLiquid"
                     {
                         float t = distToBoundary / _LayerBoundaryWidth;
                         // Smooth falloff: darkest at exact boundary
-                        float boundaryDarken = lerp(1.0, 0.0, t * t);
                         boundaryFactor = min(boundaryFactor, lerp(1.0 - _LayerBoundaryDarken, 1.0, t * t));
                     }
                 }
@@ -246,7 +252,7 @@ Shader "Custom/LayeredLiquid"
                 finalColor += specular * mainLight.color;
                 finalColor += surfaceHighlight * mainLight.color;
 
-                float finalAlpha = layerColor.a * layerAlpha * (1.0 - _Transparency);
+                float finalAlpha = layerColor.a * layerAlpha * (1.0 - _Transparency) * surfaceAlpha;
                 finalAlpha = saturate(finalAlpha);
 
                 return half4(finalColor, finalAlpha);
