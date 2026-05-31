@@ -3,210 +3,423 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using BottleShaders.Domain.Models;
 using BottleShaders.Domain.Services;
 using BottleShaders.Domain.Interfaces;
 using BottleShaders.Infrastructure.Interfaces;
 using BottleShaders.Infrastructure.Implementations;
+using BottleShaders.Logging;
 
 namespace BottleShaders.Editor
 {
-    /// <summary>
-    /// Editor utility that builds a ready-to-play test scene from scratch.
-    /// Run via  Tools → Bottle Shader → Create Test Scene.
-    /// </summary>
     public static class CreateBottleTestScene
     {
+        private const float GroundScale  = 8f;
+        private const float BottleHeight = 2.4f;
+        private const float BottleRadius = 0.35f;
+        private const float FogDensity   = 0.015f;
+
+        private static readonly Color AmbientColor   = new Color(0.08f, 0.06f, 0.15f);
+        private static readonly Color FogColor       = new Color(0.05f, 0.03f, 0.12f);
+        private static readonly Color GroundColor    = new Color(0.08f, 0.05f, 0.12f);
+        private static readonly Color WallColor      = new Color(0.03f, 0.02f, 0.08f);
+        private static readonly Color CamBackground  = new Color(0.05f, 0.03f, 0.12f, 1f);
+        private static readonly Color MainLightColor = new Color(1.0f, 0.95f, 0.85f);
+
+        private static readonly Color FillLightColor = new Color(0.3f, 0.4f, 0.8f);
+        private static readonly Vector3 FillLightPos  = new Vector3(-8f, 5f, 5f);
+
+        private static readonly Color RimLightColor = new Color(0.8f, 0.6f, 0.3f);
+        private static readonly Vector3 RimLightPos  = new Vector3(10f, 8f, -5f);
+
+        private static readonly Color CauldronColor = new Color(0.15f, 0.1f, 0.1f);
+        private static readonly Color CauldronGlow  = new Color(1f, 0.4f, 0.6f);
+        private static readonly Vector3 CauldronPos  = new Vector3(0f, -1f, 9f);
+
+        private static readonly Color DustTint = new Color(1f, 0.9f, 0.7f);
+
         [MenuItem("Tools/Bottle Shader/Create Test Scene")]
         public static void CreateScene()
         {
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-            // ── Infrastructure ───────────────────────────────────────────────
-            IRendererService rendererService = new RendererService();
-            IBottleValidator validator       = new BottleValidationService();
+            IRendererService renderer = new RendererService();
+            IBottleValidator validator = new BottleValidationService();
 
-            // ── GameManager ──────────────────────────────────────────────────
-            new GameObject("GameManager").AddComponent<GameManager>();
-
-            // ── Camera ───────────────────────────────────────────────────────
-            var camObj = new GameObject("Main Camera");
-            camObj.tag = "MainCamera";
-            var cam = camObj.AddComponent<Camera>();
-            cam.backgroundColor = new Color(0.12f, 0.05f, 0.35f);
-            cam.clearFlags      = CameraClearFlags.SolidColor;
-            cam.fieldOfView     = 60f;
-            camObj.transform.position = new Vector3(0f, 0f, -14f);
-            camObj.transform.LookAt(new Vector3(0f, 1f, 0f));
-
-            // ── Directional Light ────────────────────────────────────────────
-            var lightObj = new GameObject("Directional Light");
-            var light    = lightObj.AddComponent<Light>();
-            light.type      = LightType.Directional;
-            light.color     = Color.white;
-            light.intensity = 1f;
-            lightObj.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
-
-            RenderSettings.ambientMode  = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.4f, 0.4f, 0.6f);
-
-            // ── Cauldron ─────────────────────────────────────────────────────
+            SetupLighting();
+            SetupGround();
+            SetupCamera();
+            SetupPostProcessing();
             CreateCauldron();
-
-            // ── Bottles ──────────────────────────────────────────────────────
-            Color cRed    = new Color(0.9f, 0.2f, 0.2f);
-            Color cBlue   = new Color(0.2f, 0.6f, 1.0f);
-            Color cGreen  = new Color(0.5f, 0.9f, 0.1f);
-            Color cYellow = new Color(0.9f, 0.9f, 0.1f);
-
-            // Row 1
-            float y1 = 4.5f;
-            CreateBottle(new Vector3(-2.4f, y1, 0), "Bottle1_1", new[] { cYellow, cRed,   cBlue,  cBlue  }, rendererService, validator);
-            CreateBottle(new Vector3(-1.2f, y1, 0), "Bottle1_2", new[] { cRed,   cBlue,  cYellow, cGreen }, rendererService, validator);
-            CreateBottle(new Vector3( 0.0f, y1, 0), "Bottle1_3", new[] { cRed,   cBlue,  cGreen,  cYellow}, rendererService, validator);
-            CreateBottle(new Vector3( 1.2f, y1, 0), "Bottle1_4", new[] { cRed,   cBlue,  cGreen,  cBlue  }, rendererService, validator);
-            CreateBottle(new Vector3( 2.4f, y1, 0), "Bottle1_5", new[] { cYellow, cRed,  cBlue,   cRed   }, rendererService, validator);
-
-            // Row 2
-            float y2 = 1.5f;
-            CreateBottle(new Vector3(-2.4f, y2, 0), "Bottle2_1", new[] { cGreen, cYellow, cRed,   cBlue  }, rendererService, validator);
-            CreateBottle(new Vector3(-1.2f, y2, 0), "Bottle2_2", new[] { cGreen, cRed,   cGreen,  cYellow}, rendererService, validator);
-            CreateBottle(new Vector3( 0.0f, y2, 0), "Bottle2_3", new[] { cRed,   cYellow, cYellow, cBlue  }, rendererService, validator);
-            CreateBottle(new Vector3( 1.2f, y2, 0), "Bottle2_4", new Color[0],                              rendererService, validator); // empty
-            CreateBottle(new Vector3( 2.4f, y2, 0), "Bottle2_5", new Color[0],                              rendererService, validator); // empty
-
-            // Row 3
-            float y3 = -1.5f;
-            CreateBottle(new Vector3(-2.4f, y3, 0), "Bottle3_1", new[] { cRed,   cBlue,  cYellow, cGreen }, rendererService, validator);
-            CreateBottle(new Vector3(-1.2f, y3, 0), "Bottle3_2", new[] { cRed,   cYellow, cBlue,  cYellow}, rendererService, validator);
-            CreateBottle(new Vector3( 0.0f, y3, 0), "Bottle3_3", new[] { cYellow, cGreen, cRed,   cBlue  }, rendererService, validator);
-            CreateBottle(new Vector3( 1.2f, y3, 0), "Bottle3_4", new[] { cGreen, cYellow, cRed,   cBlue  }, rendererService, validator);
-            CreateBottle(new Vector3( 2.4f, y3, 0), "Bottle3_5", new[] { cRed,   cBlue,  cGreen,  cYellow}, rendererService, validator);
-
-            // Row 4
-            float y4 = -4.5f;
-            CreateBottle(new Vector3(-2.4f, y4, 0), "Bottle4_1", new[] { cRed,   cBlue,  cGreen,  cYellow}, rendererService, validator);
-            CreateBottle(new Vector3(-1.2f, y4, 0), "Bottle4_2", new[] { cYellow, cRed,  cYellow, cBlue  }, rendererService, validator);
-            CreateBottle(new Vector3( 0.0f, y4, 0), "Bottle4_3", new[] { cYellow, cRed,  cGreen,  cBlue  }, rendererService, validator);
-            CreateBottle(new Vector3( 1.2f, y4, 0), "Bottle4_4", new[] { cYellow, cRed,  cBlue,   cGreen }, rendererService, validator);
-            CreateBottle(new Vector3( 2.4f, y4, 0), "Bottle4_5", new[] { cBlue,  cGreen, cYellow, cRed   }, rendererService, validator);
+            CreateBottlesInGridLayout(renderer, validator);
+            CreateGameManager();
 
             EditorSceneManager.MarkSceneDirty(scene);
-            Debug.Log("[Bottle Shader] Test scene created.");
+            BottleLogger.LogInfo("Enhanced test scene created.");
         }
 
-        // ── Private helpers ──────────────────────────────────────────────────
+        // ── Lighting ────────────────────────────────────────────────────────
+
+        private static void SetupLighting()
+        {
+            RenderSettings.ambientMode  = AmbientMode.Flat;
+            RenderSettings.ambientLight = AmbientColor;
+            RenderSettings.fog          = true;
+            RenderSettings.fogMode     = FogMode.Exponential;
+            RenderSettings.fogColor    = FogColor;
+            RenderSettings.fogDensity  = FogDensity;
+
+            Light mainLight = CreateDirectionalLight(
+                "MainLight", MainLightColor, 1.2f, Quaternion.Euler(50f, -30f, 0f));
+
+            CreatePointLight("FillLight", FillLightColor, 0.3f, 30f, FillLightPos);
+            CreatePointLight("RimLight", RimLightColor, 0.5f, 25f, RimLightPos);
+        }
+
+        private static Light CreateDirectionalLight(string name, Color color,
+            float intensity, Quaternion rotation)
+        {
+            GameObject go = new GameObject(name);
+            Light light = go.AddComponent<Light>();
+            light.type = LightType.Directional;
+            light.color = color;
+            light.intensity = intensity;
+            light.transform.rotation = rotation;
+            return light;
+        }
+
+        private static Light CreatePointLight(string name, Color color,
+            float intensity, float range, Vector3 position)
+        {
+            GameObject go = new GameObject(name);
+            Light light = go.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = color;
+            light.intensity = intensity;
+            light.range = range;
+            light.transform.position = position;
+            return light;
+        }
+
+        // ── Ground ──────────────────────────────────────────────────────────
+
+        private static void SetupGround()
+        {
+            GameObject ground = CreatePrimitive("Ground", PrimitiveType.Plane);
+            ground.transform.localScale = new Vector3(GroundScale, 1f, GroundScale);
+            ground.transform.position = new Vector3(0f, -1.5f, 0f);
+
+            Material groundMat = CreateLitMaterial(GroundColor, 0.1f, 0.3f);
+            ground.GetComponent<MeshRenderer>().sharedMaterial = groundMat;
+
+            GameObject backWall = CreatePrimitive("BackWall", PrimitiveType.Plane);
+            backWall.transform.position = new Vector3(0f, 5f, 12f);
+            backWall.transform.Rotate(0f, 180f, 0f);
+
+            Material wallMat = CreateLitMaterial(WallColor, 0f, 0f);
+            backWall.GetComponent<MeshRenderer>().sharedMaterial = wallMat;
+
+            for (int i = 0; i < 12; i++)
+            {
+                Vector3 pos = new Vector3(
+                    Random.Range(-15f, 15f),
+                    Random.Range(0f, 12f),
+                    Random.Range(3f, 15f)
+                );
+                CreateDustParticle(pos);
+            }
+        }
+
+        private static void CreateDustParticle(Vector3 position)
+        {
+            GameObject go = CreatePrimitive("DustParticle", PrimitiveType.Sphere);
+            float alpha = Random.Range(0.02f, 0.08f);
+            float scale = Random.Range(0.02f, 0.08f);
+
+            Material mat = CreateUnlitMaterial(new Color(DustTint.r, DustTint.g, DustTint.b, alpha));
+            go.GetComponent<MeshRenderer>().sharedMaterial = mat;
+            go.transform.localScale = Vector3.one * scale;
+            go.transform.position = position;
+            Object.DestroyImmediate(go.GetComponent<Collider>());
+        }
+
+        // ── Camera ──────────────────────────────────────────────────────────
+
+        private static void SetupCamera()
+        {
+            GameObject go = new GameObject("Main Camera");
+            go.tag = "MainCamera";
+
+            Camera cam = go.AddComponent<Camera>();
+            cam.backgroundColor = CamBackground;
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.fieldOfView = 45f;
+
+            go.transform.position = new Vector3(0f, 2f, -16f);
+            go.transform.LookAt(new Vector3(0f, 2.5f, 0f));
+        }
+
+        // ── Post-Processing ─────────────────────────────────────────────────
+
+        private static void SetupPostProcessing()
+        {
+            GameObject go = new GameObject("PostProcessing");
+            Volume volume = go.AddComponent<Volume>();
+            volume.isGlobal = true;
+            volume.priority = 1f;
+
+            VolumeProfile profile = ScriptableObject.CreateInstance<VolumeProfile>();
+
+            Bloom bloom = profile.Add<Bloom>(overrides: true);
+            bloom.intensity.overrideState = true;
+            bloom.intensity.value = 0.3f;
+            bloom.threshold.overrideState = true;
+            bloom.threshold.value = 0.8f;
+
+            Vignette vignette = profile.Add<Vignette>(overrides: true);
+            vignette.intensity.overrideState = true;
+            vignette.intensity.value = 0.35f;
+            vignette.smoothness.overrideState = true;
+            vignette.smoothness.value = 0.6f;
+
+            volume.profile = profile;
+        }
+
+        // ── Cauldron ───────────────────────────────────────────────────────-
 
         private static void CreateCauldron()
         {
-            var cauldron = new GameObject("Cauldron");
-            cauldron.transform.position = new Vector3(0f, -7.5f, 0f);
+            GameObject cauldron = new GameObject("Cauldron");
+            cauldron.transform.position = CauldronPos;
 
-            var cauldronMat = new Material(Shader.Find("Universal Render Pipeline/Lit"))
-            {
-                color = new Color(0.8f, 0.2f, 0.8f)
-            };
+            Material cauldronMat = CreateLitMaterial(CauldronColor, 0.8f, 0.4f);
 
             // Body
-            var body = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            GameObject body = CreatePrimitive("CauldronBody", PrimitiveType.Sphere);
             body.transform.SetParent(cauldron.transform);
             body.transform.localPosition = Vector3.zero;
-            body.transform.localScale    = new Vector3(3f, 2f, 3f);
+            body.transform.localScale = new Vector3(3.5f, 2.5f, 3.5f);
             body.GetComponent<MeshRenderer>().sharedMaterial = cauldronMat;
 
-            // Rim
-            var rim = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            // Rim: use a cylinder flattened as a ring
+            GameObject rim = CreatePrimitive("CauldronRim", PrimitiveType.Cylinder);
             rim.transform.SetParent(cauldron.transform);
-            rim.transform.localPosition = new Vector3(0f, 0.9f, 0f);
-            rim.transform.localScale    = new Vector3(2.8f, 0.1f, 2.8f);
+            rim.transform.localPosition = new Vector3(0f, 1.1f, 0f);
+            rim.transform.localScale = new Vector3(3.5f, 0.08f, 3.5f);
             rim.GetComponent<MeshRenderer>().sharedMaterial = cauldronMat;
 
-            // Liquid surface
-            var liquidMat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-            liquidMat.SetColor("_BaseColor", new Color(1f, 0.5f, 1f, 0.8f));
+            // Inner glow
+            GameObject innerMatObj = CreatePrimitive("CauldronInner", PrimitiveType.Cylinder);
+            innerMatObj.transform.SetParent(cauldron.transform);
+            innerMatObj.transform.localPosition = new Vector3(0f, 0.9f, 0f);
+            innerMatObj.transform.localScale = new Vector3(2.8f, 0.1f, 2.8f);
 
-            var liquid = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            liquid.transform.SetParent(cauldron.transform);
-            liquid.transform.localPosition = new Vector3(0f, 0.8f, 0f);
-            liquid.transform.localScale    = new Vector3(2.6f, 0.05f, 2.6f);
-            liquid.GetComponent<MeshRenderer>().sharedMaterial = liquidMat;
+            Material innerMat = CreateUnlitMaterial(new Color(1f, 0.4f, 0.6f, 0.6f));
+            innerMatObj.GetComponent<MeshRenderer>().sharedMaterial = innerMat;
 
             // Glow light
-            var glowObj = new GameObject("CauldronLight");
-            glowObj.transform.SetParent(cauldron.transform);
-            glowObj.transform.localPosition = new Vector3(0f, 2f, 0f);
-            var l = glowObj.AddComponent<Light>();
-            l.type      = LightType.Point;
-            l.color     = new Color(1f, 0.5f, 1f);
-            l.range     = 5f;
-            l.intensity = 2f;
+            Light glow = CreatePointLight("CauldronGlow", CauldronGlow, 3f, 8f,
+                new Vector3(0f, 1.5f, 0f));
+            glow.transform.SetParent(cauldron.transform);
+
+            CreateFireParticles(cauldron.transform);
         }
 
-        private static Shader FindCustomShader(string name)
+        // ── Fire Particles ─────────────────────────────────────────────────
+
+        private static void CreateFireParticles(Transform parent)
         {
-            string[] guids = AssetDatabase.FindAssets("t:Shader " + name);
-            if (guids.Length == 0) return null;
-            return AssetDatabase.LoadAssetAtPath<Shader>(AssetDatabase.GUIDToAssetPath(guids[0]));
+            GameObject go = new GameObject("FireEffect");
+            go.transform.SetParent(parent);
+            go.transform.localPosition = new Vector3(0f, 1.2f, 0f);
+
+            ParticleSystem ps = go.AddComponent<ParticleSystem>();
+            ParticleSystem.MainModule main = ps.main;
+            main.startLifetime = 1.5f;
+            main.startSpeed = 1.5f;
+            main.startSize = 0.3f;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.maxParticles = 50;
+
+            ParticleSystem.ColorOverLifetimeModule colorModule = ps.colorOverLifetime;
+            colorModule.enabled = true;
+
+            Gradient gradient = new Gradient();
+            gradient.SetKeys(
+                new[] {
+                    new GradientColorKey(new Color(1f, 0.8f, 0.2f), 0f),
+                    new GradientColorKey(new Color(1f, 0.3f, 0.1f), 0.5f),
+                    new GradientColorKey(new Color(0.3f, 0.1f, 0.1f), 1f)
+                },
+                new[] {
+                    new GradientAlphaKey(0.8f, 0f),
+                    new GradientAlphaKey(0.5f, 0.5f),
+                    new GradientAlphaKey(0f, 1f)
+                }
+            );
+            colorModule.color = gradient;
+
+            ParticleSystem.EmissionModule emission = ps.emission;
+            emission.enabled = true;
+            emission.rateOverTime = 15f;
+
+            ParticleSystem.ShapeModule shape = ps.shape;
+            shape.enabled = true;
+            shape.shapeType = ParticleSystemShapeType.Cone;
+            shape.angle = 30f;
+            shape.radius = 0.5f;
         }
 
-        private static void CreateBottle(Vector3 position, string bottleName,
-                                         Color[] colors,
-                                         IRendererService rendererService,
-                                         IBottleValidator validator)
-        {
-            var obj = new GameObject(bottleName);
-            obj.transform.position = position;
+        // ── Bottles ─────────────────────────────────────────────────────────
 
-            // Collider
-            var col    = obj.AddComponent<CapsuleCollider>();
+        private static void CreateBottlesInGridLayout(
+            IRendererService renderer, IBottleValidator validator)
+        {
+            Color red    = new Color(0.9f, 0.2f, 0.2f);
+            Color blue   = new Color(0.2f, 0.6f, 1.0f);
+            Color green  = new Color(0.5f, 0.9f, 0.1f);
+            Color yellow = new Color(0.9f, 0.9f, 0.1f);
+
+            (Vector3 position, Color[] colors)[] bottles =
+            {
+                (new Vector3(-2.4f, 4.5f, 0), new[] { yellow, red,    blue,   blue   }),
+                (new Vector3(-1.2f, 4.5f, 0), new[] { red,    blue,   yellow, green  }),
+                (new Vector3( 0.0f, 4.5f, 0), new[] { red,    blue,   green,  yellow }),
+                (new Vector3( 1.2f, 4.5f, 0), new[] { red,    blue,   green,  blue   }),
+                (new Vector3( 2.4f, 4.5f, 0), new[] { yellow, red,    blue,   red    }),
+
+                (new Vector3(-2.4f, 1.5f, 0), new[] { green,  yellow, red,    blue   }),
+                (new Vector3(-1.2f, 1.5f, 0), new[] { green,  red,    green,  yellow }),
+                (new Vector3( 0.0f, 1.5f, 0), new[] { red,    yellow, yellow, blue   }),
+                (new Vector3( 1.2f, 1.5f, 0), new Color[0]                               ),
+                (new Vector3( 2.4f, 1.5f, 0), new Color[0]                               ),
+
+                (new Vector3(-2.4f, -1.5f, 0), new[] { red,    blue,   yellow, green  }),
+                (new Vector3(-1.2f, -1.5f, 0), new[] { red,    yellow, blue,   yellow }),
+                (new Vector3( 0.0f, -1.5f, 0), new[] { yellow, green,  red,    blue   }),
+                (new Vector3( 1.2f, -1.5f, 0), new[] { green,  yellow, red,    blue   }),
+                (new Vector3( 2.4f, -1.5f, 0), new[] { red,    blue,   green,  yellow }),
+
+                (new Vector3(-2.4f, -4.5f, 0), new[] { red,    blue,   green,  yellow }),
+                (new Vector3(-1.2f, -4.5f, 0), new[] { yellow, red,    yellow, blue   }),
+                (new Vector3( 0.0f, -4.5f, 0), new[] { yellow, red,    green,  blue   }),
+                (new Vector3( 1.2f, -4.5f, 0), new[] { yellow, red,    blue,   green  }),
+                (new Vector3( 2.4f, -4.5f, 0), new[] { blue,   green,  yellow, red    }),
+            };
+
+            for (int i = 0; i < bottles.Length; i++)
+            {
+                var (pos, colors) = bottles[i];
+                CreateBottle(pos, $"Bottle_{i:D2}", colors, renderer, validator);
+            }
+        }
+
+        private static void CreateBottle(Vector3 position, string name,
+            Color[] colors, IRendererService renderer, IBottleValidator validator)
+        {
+            GameObject go = new GameObject(name);
+            go.transform.position = position;
+
+            CapsuleCollider col = go.AddComponent<CapsuleCollider>();
             col.radius = 0.4f;
-            col.height = 2.4f;
-            col.center = new Vector3(0f, 1.2f, 0f);
+            col.height = BottleHeight;
+            col.center = new Vector3(0f, BottleHeight * 0.5f, 0f);
 
-            // Renderer components
-            obj.AddComponent<MeshFilter>();
-            obj.AddComponent<MeshRenderer>();
+            go.AddComponent<MeshFilter>();
+            MeshRenderer mr = go.AddComponent<MeshRenderer>();
 
-            // Materials — prefer custom shaders, fall back to URP built-ins
-            Shader glassShader  = FindCustomShader("BottleGlass")  ?? Shader.Find("Universal Render Pipeline/Lit");
-            Shader liquidShader = FindCustomShader("LayeredLiquid") ?? Shader.Find("Universal Render Pipeline/Unlit");
+            Shader glassShader  = FindShader("BottleGlass")  ?? Shader.Find("Universal Render Pipeline/Lit");
+            Shader liquidShader = FindShader("LayeredLiquid") ?? Shader.Find("Universal Render Pipeline/Unlit");
 
-            var glassMat  = new Material(glassShader)  { name = bottleName + "_Glass"  };
-            var liquidMat = new Material(liquidShader) { name = bottleName + "_Liquid" };
+            Material glassMat  = new Material(glassShader)  { name = $"{name}_Glass"  };
+            Material liquidMat = new Material(liquidShader) { name = $"{name}_Liquid" };
 
-            // Mesh
-            var meshGen          = obj.AddComponent<BottleMeshGenerator>();
-            meshGen.height       = 2.4f;
-            meshGen.bodyRadius   = 0.35f;
-            meshGen.neckRadius   = 0.15f;
-            meshGen.neckHeight   = 0.4f;
-            meshGen.capRadius    = 0.17f;
-            meshGen.capHeight    = 0.1f;
-            meshGen.glassMaterial  = glassMat;
+            glassMat.SetColor("_Color", new Color(1f, 1f, 1f, 0.08f));
+            glassMat.SetFloat("_Smoothness", 0.95f);
+
+            BottleMeshGenerator meshGen = go.AddComponent<BottleMeshGenerator>();
+            meshGen.height = BottleHeight;
+            meshGen.bodyRadius = BottleRadius;
+            meshGen.neckRadius = 0.15f;
+            meshGen.neckHeight = 0.4f;
+            meshGen.capRadius = 0.17f;
+            meshGen.capHeight = 0.1f;
+            meshGen.glassMaterial = glassMat;
             meshGen.liquidMaterial = liquidMat;
             meshGen.BuildMesh();
 
-            obj.GetComponent<MeshRenderer>().sharedMaterials = new[] { glassMat, liquidMat };
+            mr.sharedMaterials = new[] { glassMat, liquidMat };
 
-            // BottleController — inject both services
-            var ctrl          = obj.AddComponent<BottleController>();
-            ctrl.glassMaterial  = glassMat;
+            BottleController ctrl = go.AddComponent<BottleController>();
+            ctrl.glassMaterial = glassMat;
             ctrl.liquidMaterial = liquidMat;
 
-            // Build initial layers
-            var layers      = new List<LiquidLayer>();
+            List<LiquidLayer> layers = BuildLayers(colors);
+            ctrl.Initialize(renderer, validator, layers);
+        }
+
+        private static List<LiquidLayer> BuildLayers(Color[] colors)
+        {
+            var layers = new List<LiquidLayer>();
             float[] heights = { 0.25f, 0.50f, 0.75f, 1.0f };
 
             for (int i = 0; i < colors.Length && i < 4; i++)
             {
                 if (colors[i].a > 0.01f)
                 {
-                    float amount = (i == 0) ? heights[0] : heights[i] - heights[i - 1];
+                    float amount = i == 0 ? heights[0] : heights[i] - heights[i - 1];
                     layers.Add(new LiquidLayer(colors[i], amount));
                 }
             }
 
-            ctrl.Initialize(rendererService, validator, layers);
+            return layers;
+        }
+
+        // ── GameManager ─────────────────────────────────────────────────────
+
+        private static void CreateGameManager()
+        {
+            new GameObject("GameManager").AddComponent<GameManager>();
+        }
+
+        // ── Material helpers ────────────────────────────────────────────────
+
+        private static Material CreateLitMaterial(Color color, float metallic, float smoothness)
+        {
+            Material mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            mat.SetColor("_BaseColor", color);
+            mat.SetFloat("_Metallic", metallic);
+            mat.SetFloat("_Smoothness", smoothness);
+            return mat;
+        }
+
+        private static Material CreateUnlitMaterial(Color color)
+        {
+            Material mat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+            mat.SetColor("_BaseColor", color);
+            return mat;
+        }
+
+        // ── Primitive helper ─────────────────────────────────────────────────
+
+        private static GameObject CreatePrimitive(string name, PrimitiveType type)
+        {
+            GameObject go = GameObject.CreatePrimitive(type);
+            go.name = name;
+            return go;
+        }
+
+        // ── Shader lookup ───────────────────────────────────────────────────
+
+        private static Shader FindShader(string name)
+        {
+            string[] guids = AssetDatabase.FindAssets($"t:Shader {name}");
+            if (guids.Length == 0) return null;
+
+            string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+            return AssetDatabase.LoadAssetAtPath<Shader>(path);
         }
     }
 }
