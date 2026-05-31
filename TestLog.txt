@@ -1,0 +1,27 @@
+disk I/O error
+disk I/O error
+[Licensing::Module] Trying to connect to existing licensing client channel...
+Built from '6000.4/staging' branch; Version is '6000.4.8f1 (f8b72d3d7343) revision 16299821'; Using compiler version '194234433'; Build Type 'Release'
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Cevat" at "2026-05-31T22:13:16.7162008Z"
+OS: 'Windows 11  (10.0.26200) Professional' Language: 'tr' Physical Memory: 65448 MB
+BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1
+System  architecture: x64
+Process architecture: x64
+Date: 2026-05-31T22:13:16Z
+
+COMMAND LINE ARGUMENTS:
+C:\Program Files\Unity\Hub\Editor\6000.4.8f1\Editor\Unity.exe
+-projectPath
+c:\Users\Cevat\Documents\Github\PuzzleGame
+-batchmode
+-runTests
+-testPlatform
+editmode
+-testResults
+c:\Users\Cevat\Documents\Github\PuzzleGame\TestResults.xml
+-logFile
+c:\Users\Cevat\Documents\Github\PuzzleGame\TestLog.txt
+-nographics
+Successfully changed project path to: c:\Users\Cevat\Documents\Github\PuzzleGame
+C:/Users/Cevat/Documents/Github/PuzzleGame
+Exiting without the bug reporter. Application will terminate with return code 1

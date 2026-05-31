@@ -49,10 +49,14 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.4.8f1\Editor\Data\Tools\BuildPipeline\Unity.SourceGenerators\Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Tests\Application\BottleSelectionServiceTests.cs" />
     <Compile Include="Assets\Scripts\Events\EventAggregator.cs" />
     <Compile Include="Assets\Scripts\Events\GameEvents.cs" />
+    <Compile Include="Assets\Tests\Domain\Services\BottleValidationServiceTests.cs" />
     <Compile Include="Assets\Scripts\Domain\Services\BottleValidationService.cs" />
     <Compile Include="Assets\TutorialInfo\Readme.cs" />
+    <Compile Include="Assets\Tests\Domain\Models\LiquidLayerTests.cs" />
+    <Compile Include="Assets\Tests\Domain\Models\BottleStateTests.cs" />
     <Compile Include="Assets\Scripts\Application\Services\BottleSelectionService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Interfaces\IInputHandler.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\BottleState.cs" />
@@ -69,6 +73,7 @@
     <Compile Include="Assets\Scripts\Configuration\GameConfig.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\InputHandler.cs" />
     <Compile Include="Assets\Scripts\GameManager.cs" />
+    <Compile Include="Assets\Tests\Events\EventAggregatorTests.cs" />
     <Compile Include="Assets\Scripts\URPConfigHelper.cs" />
     <Compile Include="Assets\Scripts\BottleMeshGenerator.cs" />
   </ItemGroup>

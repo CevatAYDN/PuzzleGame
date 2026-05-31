@@ -168,7 +168,7 @@ namespace BottleShaders
 
             if (mf.sharedMesh != null)
             {
-                if (Application.isPlaying)
+                if (UnityEngine.Application.isPlaying)
                     Destroy(mf.sharedMesh);
                 else
                     DestroyImmediate(mf.sharedMesh);
@@ -192,7 +192,7 @@ namespace BottleShaders
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (Application.isPlaying) return;
+            if (UnityEngine.Application.isPlaying) return;
 
             UnityEditor.EditorApplication.delayCall += () =>
             {
