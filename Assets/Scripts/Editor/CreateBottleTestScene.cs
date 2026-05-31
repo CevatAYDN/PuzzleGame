@@ -21,14 +21,14 @@ namespace BottleShaders.Editor
         private const float BottleRadius = 0.35f;
         private const float FogDensity   = 0.015f;
 
-        private static readonly Color AmbientColor   = new Color(0.08f, 0.06f, 0.15f);
-        private static readonly Color FogColor       = new Color(0.05f, 0.03f, 0.12f);
-        private static readonly Color GroundColor    = new Color(0.08f, 0.05f, 0.12f);
+        private static readonly Color AmbientColor   = new Color(0.12f, 0.10f, 0.20f);
+        private static readonly Color FogColor       = new Color(0.08f, 0.05f, 0.15f);
+        private static readonly Color GroundColor    = new Color(0.05f, 0.03f, 0.10f);
         private static readonly Color WallColor      = new Color(0.03f, 0.02f, 0.08f);
-        private static readonly Color CamBackground  = new Color(0.05f, 0.03f, 0.12f, 1f);
-        private static readonly Color MainLightColor = new Color(1.0f, 0.95f, 0.85f);
+        private static readonly Color CamBackground  = new Color(0.08f, 0.05f, 0.15f, 1f);
+        private static readonly Color MainLightColor = new Color(1.0f, 0.95f, 0.90f);
 
-        private static readonly Color FillLightColor = new Color(0.3f, 0.4f, 0.8f);
+        private static readonly Color FillLightColor = new Color(0.4f, 0.5f, 0.9f);
         private static readonly Vector3 FillLightPos  = new Vector3(-8f, 5f, 5f);
 
         private static readonly Color RimLightColor = new Color(0.8f, 0.6f, 0.3f);
@@ -109,24 +109,19 @@ namespace BottleShaders.Editor
         {
             GameObject ground = CreatePrimitive("Ground", PrimitiveType.Plane);
             ground.transform.localScale = new Vector3(GroundScale, 1f, GroundScale);
-            ground.transform.position = new Vector3(0f, -1.5f, 0f);
+            ground.transform.position = new Vector3(0f, -5f, 0f); // Kazan ve şişelerin altına indir
 
-            Material groundMat = CreateLitMaterial(GroundColor, 0.1f, 0.3f);
+            Material groundMat = CreateLitMaterial(GroundColor, 0.2f, 0.5f);
             ground.GetComponent<MeshRenderer>().sharedMaterial = groundMat;
 
-            GameObject backWall = CreatePrimitive("BackWall", PrimitiveType.Plane);
-            backWall.transform.position = new Vector3(0f, 5f, 12f);
-            backWall.transform.Rotate(0f, 180f, 0f);
-
-            Material wallMat = CreateLitMaterial(WallColor, 0f, 0f);
-            backWall.GetComponent<MeshRenderer>().sharedMaterial = wallMat;
-
-            for (int i = 0; i < 12; i++)
+            // Arka duvar yerine koyu gökyüzü (Solid Color Camera ile)
+            
+            for (int i = 0; i < 20; i++)
             {
                 Vector3 pos = new Vector3(
-                    Random.Range(-15f, 15f),
-                    Random.Range(0f, 12f),
-                    Random.Range(3f, 15f)
+                    Random.Range(-8f, 8f),
+                    Random.Range(-4f, 8f),
+                    Random.Range(-2f, 8f)
                 );
                 CreateDustParticle(pos);
             }
@@ -155,10 +150,11 @@ namespace BottleShaders.Editor
             Camera cam = go.AddComponent<Camera>();
             cam.backgroundColor = CamBackground;
             cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.fieldOfView = 45f;
+            cam.fieldOfView = 55f; // Geniş açılı perspektif
 
-            go.transform.position = new Vector3(0f, 2f, -16f);
-            go.transform.LookAt(new Vector3(0f, 2.5f, 0f));
+            // Hafif yukarıdan aşağıya doğru bakan açı
+            go.transform.position = new Vector3(0f, 3f, -14f);
+            go.transform.LookAt(new Vector3(0f, 0f, 0f));
         }
 
         // ── Post-Processing ─────────────────────────────────────────────────
@@ -236,6 +232,11 @@ namespace BottleShaders.Editor
             go.transform.localPosition = new Vector3(0f, 1.2f, 0f);
 
             ParticleSystem ps = go.AddComponent<ParticleSystem>();
+            
+            // Render component and material fix (Magenta issue)
+            ParticleSystemRenderer psRenderer = go.GetComponent<ParticleSystemRenderer>();
+            psRenderer.sharedMaterial = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
+
             ParticleSystem.MainModule main = ps.main;
             main.startLifetime = 1.5f;
             main.startSpeed = 1.5f;
@@ -277,36 +278,38 @@ namespace BottleShaders.Editor
         private static void CreateBottlesInGridLayout(
             IRendererService renderer, IBottleValidator validator)
         {
-            Color red    = new Color(0.9f, 0.2f, 0.2f);
-            Color blue   = new Color(0.2f, 0.6f, 1.0f);
-            Color green  = new Color(0.5f, 0.9f, 0.1f);
-            Color yellow = new Color(0.9f, 0.9f, 0.1f);
+            Color red    = new Color(0.9f, 0.3f, 0.4f); // Yumuşak Kırmızı
+            Color blue   = new Color(0.3f, 0.7f, 1.0f); // Yumuşak Mavi
+            Color green  = new Color(0.4f, 0.8f, 0.5f); // Yumuşak Yeşil
+            Color yellow = new Color(0.95f, 0.85f, 0.2f); // Pastel Sarı
+            Color purple = new Color(0.7f, 0.4f, 0.9f); // Mor
+            Color orange = new Color(0.9f, 0.6f, 0.2f); // Turuncu
 
             (Vector3 position, Color[] colors)[] bottles =
             {
-                (new Vector3(-2.4f, 4.5f, 0), new[] { yellow, red,    blue,   blue   }),
-                (new Vector3(-1.2f, 4.5f, 0), new[] { red,    blue,   yellow, green  }),
+                (new Vector3(-2.4f, 4.5f, 0), new[] { yellow, purple, blue,   blue   }),
+                (new Vector3(-1.2f, 4.5f, 0), new[] { purple, blue,   orange, green  }),
                 (new Vector3( 0.0f, 4.5f, 0), new[] { red,    blue,   green,  yellow }),
-                (new Vector3( 1.2f, 4.5f, 0), new[] { red,    blue,   green,  blue   }),
-                (new Vector3( 2.4f, 4.5f, 0), new[] { yellow, red,    blue,   red    }),
+                (new Vector3( 1.2f, 4.5f, 0), new[] { red,    green,  orange, blue   }),
+                (new Vector3( 2.4f, 4.5f, 0), new[] { yellow, red,    purple, red    }),
 
                 (new Vector3(-2.4f, 1.5f, 0), new[] { green,  yellow, red,    blue   }),
-                (new Vector3(-1.2f, 1.5f, 0), new[] { green,  red,    green,  yellow }),
-                (new Vector3( 0.0f, 1.5f, 0), new[] { red,    yellow, yellow, blue   }),
+                (new Vector3(-1.2f, 1.5f, 0), new[] { orange, red,    green,  yellow }),
+                (new Vector3( 0.0f, 1.5f, 0), new[] { red,    yellow, purple, orange }),
                 (new Vector3( 1.2f, 1.5f, 0), new Color[0]                               ),
                 (new Vector3( 2.4f, 1.5f, 0), new Color[0]                               ),
 
-                (new Vector3(-2.4f, -1.5f, 0), new[] { red,    blue,   yellow, green  }),
-                (new Vector3(-1.2f, -1.5f, 0), new[] { red,    yellow, blue,   yellow }),
+                (new Vector3(-2.4f, -1.5f, 0), new[] { red,    purple, yellow, green  }),
+                (new Vector3(-1.2f, -1.5f, 0), new[] { orange, yellow, blue,   purple }),
                 (new Vector3( 0.0f, -1.5f, 0), new[] { yellow, green,  red,    blue   }),
-                (new Vector3( 1.2f, -1.5f, 0), new[] { green,  yellow, red,    blue   }),
+                (new Vector3( 1.2f, -1.5f, 0), new[] { green,  orange, red,    blue   }),
                 (new Vector3( 2.4f, -1.5f, 0), new[] { red,    blue,   green,  yellow }),
 
                 (new Vector3(-2.4f, -4.5f, 0), new[] { red,    blue,   green,  yellow }),
-                (new Vector3(-1.2f, -4.5f, 0), new[] { yellow, red,    yellow, blue   }),
-                (new Vector3( 0.0f, -4.5f, 0), new[] { yellow, red,    green,  blue   }),
-                (new Vector3( 1.2f, -4.5f, 0), new[] { yellow, red,    blue,   green  }),
-                (new Vector3( 2.4f, -4.5f, 0), new[] { blue,   green,  yellow, red    }),
+                (new Vector3(-1.2f, -4.5f, 0), new[] { yellow, orange, yellow, blue   }),
+                (new Vector3( 0.0f, -4.5f, 0), new[] { yellow, red,    green,  orange }),
+                (new Vector3( 1.2f, -4.5f, 0), new[] { purple, red,    blue,   green  }),
+                (new Vector3( 2.4f, -4.5f, 0), new[] { blue,   green,  purple, orange }),
             };
 
             for (int i = 0; i < bottles.Length; i++)
