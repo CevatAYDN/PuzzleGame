@@ -3,29 +3,29 @@ Shader "Custom/BottleGlass"
     Properties
     {
         [Header(Glass Appearance)]
-        _Color("Glass Tint Color", Color) = (1, 1, 1, 0.1)
-        _Smoothness("Smoothness", Range(0.0, 1.0)) = 0.9
+        _Color("Glass Tint Color", Color) = (1, 1, 1, 0.15)
+        _Smoothness("Smoothness", Range(0.0, 1.0)) = 0.95
 
                 [Header(Fresnel Rim)]
-        _FresnelPower("Fresnel Power", Range(0.5, 8.0)) = 3.0
-        _FresnelIntensity("Fresnel Intensity", Range(0.0, 2.0)) = 0.6
+        _FresnelPower("Fresnel Power", Range(0.5, 8.0)) = 4.0
+        _FresnelIntensity("Fresnel Intensity", Range(0.0, 2.0)) = 0.8
         _FresnelColor("Fresnel Color", Color) = (1, 1, 1, 0.8)
 
         [Header(Specular)]
         _SpecularColor("Specular Color", Color) = (1, 1, 1, 1)
-        _SpecularIntensity("Specular Intensity", Range(0.0, 2.0)) = 0.8
+        _SpecularIntensity("Specular Intensity", Range(0.0, 2.0)) = 1.0
 
         [Header(Glow Effect)]
-        _GlowIntensity("Glow Intensity", Range(0.0, 2.0)) = 0.3
+        _GlowIntensity("Glow Intensity", Range(0.0, 2.0)) = 0.4
         _GlowColor("Glow Color", Color) = (0.8, 0.9, 1.0, 1.0)
-        _GlowPower("Glow Power", Range(1.0, 8.0)) = 2.5
+        _GlowPower("Glow Power", Range(1.0, 8.0)) = 3.0
 
         [Header(Refraction)]
-        _RefractionStrength("Refraction Strength", Range(0.0, 0.2)) = 0.05
-        _RefractionScale("Refraction Scale", Range(0.5, 3.0)) = 1.0
+        _RefractionStrength("Refraction Strength", Range(0.0, 0.2)) = 0.07
+        _RefractionScale("Refraction Scale", Range(0.5, 3.0)) = 1.2
 
         [Header(Alpha)]
-        _AlphaClip("Alpha Clip Threshold", Range(0.0, 1.0)) = 0.01
+        _AlphaClip("Alpha Clip Threshold", Range(0.0, 1.0)) = 0.005
     }
 
     SubShader
@@ -64,9 +64,9 @@ Shader "Custom/BottleGlass"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
 
-            // ═══════════════════════════════════════════════════
+            // ═════════════════════════════════════════════════════
             //  CBUFFER — SRP Batcher compatible
-            // ═══════════════════════════════════════════════════
+            // ════════════════════════════════════════════════════
                         CBUFFER_START(UnityPerMaterial)
                 float4 _Color;
                 float _Smoothness;
@@ -110,7 +110,7 @@ Shader "Custom/BottleGlass"
                 return output;
             }
 
-            // ═══════════════════════════════════════════════════
+            // ════════════════════════════════════════════════════
             //  Blinn-Phong specular for mobile efficiency
             // ═══════════════════════════════════════════════════
             float3 CalculateSpecular(
@@ -126,18 +126,18 @@ Shader "Custom/BottleGlass"
                 return spec * _SpecularColor.rgb * _SpecularIntensity * lightIntensity;
             }
 
-                        // ═══════════════════════════════════════════════════
+                        // ═══════════════════════════════════════════
             //  Schlick Fresnel approximation
-            // ═══════════════════════════════════════════════════
+            // ══════════════════════════════════════════════════
             float CalculateFresnel(float3 normalWS, float3 viewDirWS)
             {
                 float NdotV = max(0.0, dot(normalWS, viewDirWS));
                 return pow(abs(1.0 - NdotV), _FresnelPower) * _FresnelIntensity;
             }
 
-            // ═══════════════════════════════════════════════════
+            // ══════════════════════════════════════════════════
             //  Glow effect based on view angle
-            // ═══════════════════════════════════════════════════
+            // ════════════════════════════════════════════════
             float CalculateGlow(float3 normalWS, float3 viewDirWS)
             {
                 float NdotV = max(0.0, dot(normalWS, viewDirWS));
@@ -145,15 +145,17 @@ Shader "Custom/BottleGlass"
                 return glowBase * _GlowIntensity;
             }
 
-            // ═══════════════════════════════════════════════════
+            // ═════════════════════════════════════════════════
             //  Simple refraction via normal distortion
             //  Works without CameraOpaqueTexture for mobile
-            // ══════════════════════════════════════════════════
+            // ════════════════════════════════════════════════
             float3 CalculateSimpleRefraction(float3 normalWS)
             {
                 // Distort based on normal direction for glass-like refraction
                 float3 refractDir = normalWS * _RefractionStrength * _RefractionScale;
-                return refractDir;
+                // Add subtle normal perturbation for realism
+                float3 perturb = normalize(normalWS + sin(_Time.y + normalWS.x * 10.0 + normalWS.y * 13.0) * 0.003);
+                return refractDir + perturb * 0.02;
             }
 
             half4 frag(Varyings input) : SV_Target
@@ -165,17 +167,17 @@ Shader "Custom/BottleGlass"
                 // Normal
                 float3 normalWS = normalize(input.normalWS);
 
-                // ═══════════════════════════════════════════
+                // ════════════════════════════════════════════
                 //  Fresnel rim
-                // ═══════════════════════════════════════════
+                // ════════════════════════════════════════════
                 float fresnel = CalculateFresnel(normalWS, viewDir);
                 
-                // ═══════════════════════════════════════════
+                // ════════════════════════════════════════════
                 //  Glow effect
-                // ═══════════════════════════════════════════
+                // ══════════════════════════════════════════
                 float glow = CalculateGlow(normalWS, viewDir);
 
-                // ═══════════════════════════════════════════
+                // ══════════════════════════════════════════
                 //  Main light contribution
                 // ═══════════════════════════════════════════
                 Light mainLight = GetMainLight();
@@ -189,9 +191,9 @@ Shader "Custom/BottleGlass"
                 // Specular
                 float3 specular = CalculateSpecular(normalWS, viewDir, lightDir, lightIntensity);
 
-                // ═══════════════════════════════════════════
+                // ════════════════════════════════════════════
                 //  Additional lights (up to 4, per URP mobile settings)
-                // ═══════════════════════════════════════════
+                // ════════════════════════════════════════════
                 #if defined(_ADDITIONAL_LIGHTS)
                     uint additionalLightsCount = GetAdditionalLightsCount();
                     for (uint i = 0u; i < additionalLightsCount; i++)
@@ -205,14 +207,14 @@ Shader "Custom/BottleGlass"
                     }
                 #endif
 
-                // ══════════════════════════════════════════
+                // ═══════════════════════════════════════════
                 //  Refraction (subtle color shift)
                 // ═══════════════════════════════════════════
                 float3 refraction = CalculateSimpleRefraction(normalWS);
 
-                // ═══════════════════════════════════════════
+                // ═════════════════════════════════════════
                 //  Combine final color
-                // ═══════════════════════════════════════════
+                // ═════════════════════════════════════════
                 float3 finalColor = diffuse + specular;
 
                 // Add fresnel rim color on top
@@ -226,9 +228,9 @@ Shader "Custom/BottleGlass"
                 // Subtle refraction tint
                 finalColor += refraction * 0.1;
 
-                // ═══════════════════════════════════════════
+                // ══════════════════════════════════════════
                 //  Alpha calculation
-                // ═══════════════════════════════════════════
+                // ═════════════════════════════════════════
                 float alpha = _Color.a;
                 // Increase alpha at edges for glass-like look
                 alpha = lerp(alpha, 1.0, fresnel * 0.5);
@@ -297,29 +299,16 @@ Shader "Custom/BottleGlass"
 
             half4 frag(Varyings input) : SV_Target
             {
-                // Calculate fresnel for proper shadow edge
-                float3 viewDirWS = GetWorldSpaceViewDir(input.positionWS);
-                float3 viewDir = normalize(viewDirWS);
-                float3 normalWS = normalize(input.normalWS);
-                
-                float NdotV = max(0.0, dot(normalWS, viewDir));
-                float fresnel = pow(abs(1.0 - NdotV), _FresnelPower) * _FresnelIntensity;
-                
-                // Only cast shadow where glass is visible (not fully transparent)
-                float alpha = _Color.a;
-                alpha = lerp(alpha, 1.0, fresnel * 0.5);
-                
-                // Discard fully transparent pixels from shadow
-                clip(alpha - _AlphaClip);
-                
+                // Only cast shadows where there is glass
+                clip(input.positionWS.y - (_Color.a * 2.0)); // rough approximation
                 return 0;
             }
             ENDHLSL
         }
 
         // ═══════════════════════════════════════════════════════
-        //  Depth Only Pass — For proper transparency sorting
-        // ═══════════════════════════════════════════════════════
+        //  Depth Only Pass
+        // ══════════════════════════════════════════════════════
         Pass
         {
             Name "DepthOnly"

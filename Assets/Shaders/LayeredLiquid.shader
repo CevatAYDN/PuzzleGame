@@ -18,20 +18,20 @@ Shader "Custom/LayeredLiquid"
         _BottleHeight("Bottle Mesh Height (object space)", Float) = 2.0
         _SurfaceHeight("Surface Height", Range(0.0, 1.0)) = 1.0
         _SurfaceSmoothness("Surface Edge Smoothness", Range(0.0, 0.05)) = 0.01
-        _SurfaceRippleAmplitude("Ripple Amplitude", Range(0.0, 0.1)) = 0.005
-        _SurfaceRippleFrequency("Ripple Frequency", Range(0.0, 50.0)) = 15.0
-        _SurfaceRippleSpeed("Ripple Speed", Range(0.0, 5.0)) = 1.0
+        _SurfaceRippleAmplitude("Ripple Amplitude", Range(0.0, 0.1)) = 0.008
+        _SurfaceRippleFrequency("Ripple Frequency", Range(0.0, 50.0)) = 20.0
+        _SurfaceRippleSpeed("Ripple Speed", Range(0.0, 5.0)) = 1.5
 
         [Header(Optical Properties)]
-        _Transparency("Transparency", Range(0.0, 1.0)) = 0.1
-        _EdgeDarken("Edge Darken", Range(0.0, 1.0)) = 0.2
-        _EdgeWidth("Edge Width", Range(0.0, 0.5)) = 0.15
-        _SpecularIntensity("Specular Intensity", Range(0.0, 2.0)) = 0.5
-        _SpecularSmoothness("Specular Smoothness", Range(0.0, 1.0)) = 0.5
+        _Transparency("Transparency", Range(0.0, 1.0)) = 0.08
+        _EdgeDarken("Edge Darken", Range(0.0, 1.0)) = 0.25
+        _EdgeWidth("Edge Width", Range(0.0, 0.5)) = 0.18
+        _SpecularIntensity("Specular Intensity", Range(0.0, 2.0)) = 0.7
+        _SpecularSmoothness("Specular Smoothness", Range(0.0, 1.0)) = 0.6
 
         [Header(Layer Boundary)]
-        _LayerBoundaryWidth("Layer Boundary Width", Range(0.0, 0.05)) = 0.02
-        _LayerBoundaryDarken("Layer Boundary Darken", Range(0.0, 1.0)) = 0.35
+        _LayerBoundaryWidth("Layer Boundary Width", Range(0.0, 0.05)) = 0.025
+        _LayerBoundaryDarken("Layer Boundary Darken", Range(0.0, 1.0)) = 0.4
 
         [Header(Time)]
         _TimeX("Time X", Float) = 0.0
@@ -133,7 +133,7 @@ Shader "Custom/LayeredLiquid"
 // ═══════════════════════════════════════════════════
             //  Ripple effect (optimized for mobile)
             //  Uses simplified math to reduce GPU load
-            // ═══════════════════════════════════════════════════
+            // ═════════════════════════════════════════════
             float CalculateRipple(float3 positionWS, float time)
             {
                 float angle = atan2(positionWS.z, positionWS.x);
@@ -198,10 +198,8 @@ Shader "Custom/LayeredLiquid"
                 float time = _TimeX > 0.0 ? _TimeX : _Time.y;
                 float surfaceRipple = CalculateRipple(input.positionWS, time);
 
-                float effectiveSurfaceHeight = _SurfaceHeight + surfaceRipple;
-
                 // Fix edge artifacts: use smooth transition instead of hard clip
-                float surfaceDist = effectiveSurfaceHeight - normalizedY;
+                float surfaceDist = _SurfaceHeight + surfaceRipple - normalizedY;
                 if (surfaceDist < -0.002) discard;
                 
                 // Soft edge fade for anti-aliasing
@@ -244,8 +242,8 @@ Shader "Custom/LayeredLiquid"
                 float specular = pow(NdotH, _SpecularSmoothness * 128.0) * _SpecularIntensity;
 
                 // Surface highlight — brighter and wider for visual pop
-                float surfaceProximity = 1.0 - saturate((effectiveSurfaceHeight - normalizedY) / 0.04);
-                float surfaceHighlight = pow(surfaceProximity, 3.0) * 0.5;
+                float surfaceProximity = 1.0 - saturate((_SurfaceHeight + surfaceRipple - normalizedY) / 0.03);
+                float surfaceHighlight = pow(surfaceProximity, 3.0) * 0.7;
 
                 float3 finalColor = layerColor.rgb * boundaryFactor * edgeDarken;
 
