@@ -85,7 +85,7 @@ namespace BottleShaders.Editor
             Debug.Log("[Bottle Shader] Test scene created!");
         }
 
-                private static void CreateCauldron()
+        private static void CreateCauldron()
         {
             GameObject cauldronObj = new GameObject("Cauldron");
             cauldronObj.transform.position = new Vector3(0, -7.5f, 0);

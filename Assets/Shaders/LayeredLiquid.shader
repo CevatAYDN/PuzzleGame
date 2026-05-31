@@ -62,11 +62,11 @@ Shader "Custom/LayeredLiquid"
             #pragma vertex vert
             #pragma fragment frag
 
+            // Multi-compile for mobile feature levels
             #pragma multi_compile_fragment _ _MAIN_LIGHT_SHADOWS
             #pragma multi_compile_fragment _ _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma multi_compile_fragment _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
             #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
-            #pragma multi_compile_fragment _ _SHADOWS_SOFT
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
@@ -132,15 +132,20 @@ Shader "Custom/LayeredLiquid"
                 return output;
             }
 
+// ═══════════════════════════════════════════════════
+            //  Ripple effect (optimized)
+            // ═══════════════════════════════════════════════════
             float CalculateRipple(float3 positionWS, float time)
             {
                 float angle = atan2(positionWS.z, positionWS.x);
                 float radius = length(positionWS.xz);
 
-                float ripple1 = sin(angle * _SurfaceRippleFrequency + radius * 3.0 + time * _SurfaceRippleSpeed)
-                              * cos(radius * 5.0 - time * _SurfaceRippleSpeed * 0.7);
-                float ripple2 = sin(angle * _SurfaceRippleFrequency * 0.7 - radius * 2.0 - time * _SurfaceRippleSpeed * 1.3)
-                              * 0.5;
+                float2 wave = float2(angle * _SurfaceRippleFrequency + time * _SurfaceRippleSpeed,
+                                     radius * 3.0 - time * _SurfaceRippleSpeed * 0.7);
+                float ripple1 = sin(wave.x) * cos(wave.y);
+
+                float2 wave2 = float2(angle * _SurfaceRippleFrequency * 0.7 - radius * 2.0 - time * _SurfaceRippleSpeed * 1.3, 0);
+                float ripple2 = sin(wave2.x) * 0.5;
 
                 return (ripple1 + ripple2) * _SurfaceRippleAmplitude;
             }

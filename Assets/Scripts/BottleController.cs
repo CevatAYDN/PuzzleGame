@@ -1,6 +1,5 @@
 using UnityEngine;
 using System;
-using System.Collections.Generic;
 using BottleShaders.Logging;
 
 namespace BottleShaders
@@ -19,10 +18,10 @@ namespace BottleShaders
         [Tooltip("Colors for each liquid layer (max 4). Empty entries are ignored.")]
         [SerializeField] private Color[] layerColors = new Color[]
         {
-            new Color(0.2f, 0.6f, 1.0f),   // Blue
-            new Color(0.1f, 0.5f, 0.3f),   // Green
-            new Color(0.8f, 0.2f, 0.3f),   // Red
-            new Color(0.9f, 0.7f, 0.1f)    // Yellow
+            new Color(0.2f, 0.6f, 1.0f),
+            new Color(0.1f, 0.5f, 0.3f),
+            new Color(0.8f, 0.2f, 0.3f),
+            new Color(0.9f, 0.7f, 0.1f)
         };
 
         [Tooltip("Fill levels for each layer (0-1). Each represents the cumulative fill.")]
@@ -73,7 +72,6 @@ namespace BottleShaders
         private float animationDuration = 0f;
         private Action onAnimationComplete;
 
-        // Cached property IDs for performance
         private static readonly int Color1ID = Shader.PropertyToID("_Color1");
         private static readonly int Color2ID = Shader.PropertyToID("_Color2");
         private static readonly int Color3ID = Shader.PropertyToID("_Color3");
@@ -87,6 +85,7 @@ namespace BottleShaders
         private static readonly int SurfaceRippleSpeedID = Shader.PropertyToID("_SurfaceRippleSpeed");
         private static readonly int SurfaceHeightID = Shader.PropertyToID("_SurfaceHeight");
         private static readonly int BottleHeightID = Shader.PropertyToID("_BottleHeight");
+        private static readonly int ColorID = Shader.PropertyToID("_Color");
 
         #endregion
 
@@ -99,13 +98,11 @@ namespace BottleShaders
 
         private void OnEnable()
         {
-            // In Editor, OnEnable ensures property blocks exist without Awake
             EnsurePropertyBlocks();
         }
 
         private void Update()
         {
-            // Animate fill level transitions
             if (isAnimating)
             {
                 animationProgress += Time.deltaTime / animationDuration;
@@ -115,21 +112,27 @@ namespace BottleShaders
                     animationProgress = 1f;
                     isAnimating = false;
 
-                    // Snap to target values
                     for (int i = 0; i < currentFillLevels.Length; i++)
                     {
                         currentFillLevels[i] = targetFillLevels[i];
                     }
 
-                    // Update shader with final values
                     UpdateLiquidShader();
-
                     onAnimationComplete?.Invoke();
                 }
                 else
                 {
-                    // Smooth interpolation from snapshotted start toward target
                     float t = EaseOutCubic(animationProgress);
+
+                    if (startFillLevels == null || startFillLevels.Length == 0)
+                    {
+                        for (int i = 0; i < currentFillLevels.Length; i++)
+                        {
+                            currentFillLevels[i] = targetFillLevels[i];
+                        }
+                        UpdateLiquidShader();
+                        return;
+                    }
 
                     for (int i = 0; i < currentFillLevels.Length; i++)
                     {
@@ -140,22 +143,12 @@ namespace BottleShaders
                     UpdateLiquidShader();
                 }
             }
-            
-            // Update ripple time in shader and re-apply so the surface animates
-            // even when fill levels are static. Pass raw time; the shader applies
-            // _SurfaceRippleSpeed itself (don't pre-multiply or speed squares).
+
             if (liquidBlock != null && bottleRenderer != null)
             {
-                // Only update ripple effect when needed to improve performance
-                float currentTime = Time.time;
-                liquidBlock.SetFloat(TimeXID, currentTime);
+                liquidBlock.SetFloat(TimeXID, Time.time);
                 liquidBlock.SetFloat(SurfaceRippleAmplitudeID, rippleAmplitude);
                 liquidBlock.SetFloat(SurfaceRippleSpeedID, rippleSpeed);
-
-                // Always try to apply the liquid block. Unity silently ignores
-                // SetPropertyBlock when materialIndex >= materialCount, so the
-                // block will start rendering automatically once BottleMeshGenerator
-                // sets up the second material slot.
                 bottleRenderer.SetPropertyBlock(liquidBlock, 1);
             }
         }
@@ -169,30 +162,15 @@ namespace BottleShaders
             bottleRenderer = GetComponent<Renderer>();
 
             EnsurePropertyBlocks();
+            EnsureFillArraySizes();
 
-            // Don't override materials if already set (e.g., by BottleMeshGenerator)
             if (bottleRenderer != null && bottleRenderer.sharedMaterial == null && glassMaterial != null)
             {
                 bottleRenderer.sharedMaterial = glassMaterial;
             }
 
-            // Ensure serialized arrays are properly sized to maxLayers before initializing
-            if (layerColors.Length != maxLayers)
-            {
-                Color[] newColors = new Color[maxLayers];
-                Array.Copy(layerColors, newColors, Mathf.Min(layerColors.Length, maxLayers));
-                layerColors = newColors;
-            }
-            if (fillLevels.Length != maxLayers)
-            {
-                float[] newFills = new float[maxLayers];
-                Array.Copy(fillLevels, newFills, Mathf.Min(fillLevels.Length, maxLayers));
-                fillLevels = newFills;
-            }
-
-            // Initialize fill level arrays (use full maxLayers size)
-            currentFillLevels = new float[maxLayers];
-            targetFillLevels = new float[maxLayers];
+            if (currentFillLevels == null) currentFillLevels = new float[maxLayers];
+            if (targetFillLevels == null) targetFillLevels = new float[maxLayers];
 
             for (int i = 0; i < maxLayers; i++)
             {
@@ -200,16 +178,10 @@ namespace BottleShaders
                 targetFillLevels[i] = fillLevels[i];
             }
 
-            // Apply initial shader values
             UpdateGlassShader();
             UpdateLiquidShader();
         }
 
-        /// <summary>
-        /// Create property blocks on demand so Edit-mode code paths
-        /// (OnValidate, scene creator calls) work without Awake.
-        /// Safe to call multiple times.
-        /// </summary>
         private void EnsurePropertyBlocks()
         {
             if (bottleRenderer == null)
@@ -220,6 +192,25 @@ namespace BottleShaders
                 liquidBlock = new MaterialPropertyBlock();
         }
 
+        private void EnsureArraySize<T>(ref T[] array, int targetSize)
+        {
+            if (array == null || array.Length != targetSize)
+            {
+                T[] newArray = new T[targetSize];
+                if (array != null)
+                    Array.Copy(array, newArray, Mathf.Min(array.Length, targetSize));
+                array = newArray;
+            }
+        }
+
+        private void EnsureFillArraySizes()
+        {
+            EnsureArraySize(ref layerColors, maxLayers);
+            EnsureArraySize(ref fillLevels, maxLayers);
+            EnsureArraySize(ref currentFillLevels, maxLayers);
+            EnsureArraySize(ref targetFillLevels, maxLayers);
+        }
+
         #endregion
 
         #region Public API
@@ -227,11 +218,9 @@ namespace BottleShaders
         /// <summary>
         /// Set the colors for liquid layers.
         /// </summary>
-        /// <param name="colors">Array of colors for each layer</param>
         public void SetLayerColors(Color[] colors)
         {
-            if (layerColors.Length != maxLayers)
-                layerColors = new Color[maxLayers];
+            EnsureFillArraySizes();
             int copyCount = Mathf.Min(colors.Length, maxLayers);
             Array.Copy(colors, layerColors, copyCount);
             for (int i = copyCount; i < maxLayers; i++)
@@ -246,22 +235,19 @@ namespace BottleShaders
         /// </summary>
         public void SetFillLevels(float[] levels, float? animationDuration = null, Action onComplete = null)
         {
-            int layerCount = maxLayers; // Always use maxLayers size for consistency
+            EnsureFillArraySizes();
 
-            // Snapshot current state as animation start (length must match target)
-            startFillLevels = new float[layerCount];
-            Array.Copy(currentFillLevels, startFillLevels, Mathf.Min(currentFillLevels.Length, layerCount));
+            startFillLevels = new float[maxLayers];
+            Array.Copy(currentFillLevels, startFillLevels, Mathf.Min(currentFillLevels.Length, maxLayers));
 
-            // Resize currentFillLevels to match so per-index loops stay in bounds
-            float[] resizedCurrent = new float[layerCount];
-            Array.Copy(startFillLevels, resizedCurrent, layerCount);
+            float[] resizedCurrent = new float[maxLayers];
+            Array.Copy(startFillLevels, resizedCurrent, maxLayers);
             currentFillLevels = resizedCurrent;
 
-            targetFillLevels = new float[layerCount];
-            int copyCount = Mathf.Min(levels.Length, layerCount);
+            targetFillLevels = new float[maxLayers];
+            int copyCount = Mathf.Min(levels.Length, maxLayers);
             Array.Copy(levels, targetFillLevels, copyCount);
-            // Fill remaining with last value or 0
-            for (int i = copyCount; i < layerCount; i++)
+            for (int i = copyCount; i < maxLayers; i++)
                 targetFillLevels[i] = copyCount > 0 ? targetFillLevels[copyCount - 1] : 0f;
 
             this.animationDuration = animationDuration ?? this.fillTransitionDuration;
@@ -276,41 +262,28 @@ namespace BottleShaders
         public void SetFillLevelsInstant(float[] levels)
         {
             EnsurePropertyBlocks();
+            EnsureFillArraySizes();
 
-            int layerCount = maxLayers; // Always use maxLayers size for consistency
-
-            // Update runtime arrays
-            currentFillLevels = new float[layerCount];
-            targetFillLevels = new float[layerCount];
-            int copyCount = Mathf.Min(levels.Length, layerCount);
+            int copyCount = Mathf.Min(levels.Length, maxLayers);
             Array.Copy(levels, currentFillLevels, copyCount);
             Array.Copy(levels, targetFillLevels, copyCount);
-            // Fill remaining with last value or 0
-            for (int i = copyCount; i < layerCount; i++)
+            for (int i = copyCount; i < maxLayers; i++)
             {
                 float val = copyCount > 0 ? targetFillLevels[copyCount - 1] : 0f;
                 currentFillLevels[i] = val;
                 targetFillLevels[i] = val;
             }
 
-            // Also write serialized fillLevels so values survive into Play mode
-            // (Awake → Initialize reads from serialized fillLevels)
-            if (fillLevels == null || fillLevels.Length != layerCount)
-                fillLevels = new float[layerCount];
-            Array.Copy(currentFillLevels, fillLevels, layerCount);
-
+            Array.Copy(currentFillLevels, fillLevels, maxLayers);
             UpdateLiquidShader();
         }
 
         /// <summary>
         /// Pour the topmost liquid layer from this bottle into target.
-        /// Water-sort rules: only same color pours, pours entire top layer,
-        /// fills from bottom up in target.
-        /// Returns true if liquid was transferred.
         /// </summary>
         public bool TryPourTo(BottleController target)
         {
-            if (!isInteractive || target == null || target == this) 
+            if (!isInteractive || target == null || target == this)
             {
                 if (!isInteractive) BottleLogger.LogDebug("Source bottle is not interactive");
                 if (target == null) BottleLogger.LogDebug("Target bottle is null");
@@ -319,39 +292,37 @@ namespace BottleShaders
             }
 
             int srcTop = GetTopLayerIndex();
-            if (srcTop < 0) 
+            if (srcTop < 0)
             {
                 BottleLogger.LogDebug("Source bottle is empty");
-                return false; // source empty
+                return false;
             }
 
             Color pourColor = layerColors[srcTop];
             float layerHeight = GetLayerHeight(srcTop);
-            if (layerHeight < 0.001f) 
+            if (layerHeight < 0.001f)
             {
                 BottleLogger.LogDebug("Source layer height too small to pour");
                 return false;
             }
 
-            // Check target compatibility
             int tgtTop = target.GetTopLayerIndex();
             if (tgtTop >= 0 && !ColorsMatch(target.layerColors[tgtTop], pourColor))
             {
                 BottleLogger.LogDebug("Target already has different color, cannot pour");
-                return false; // color mismatch — can't pour different colors
+                return false;
             }
 
-            // Calculate space in target
             float tgtUsed = target.currentFillLevels[target.currentFillLevels.Length - 1];
             float tgtSpace = 1.0f - tgtUsed;
-            if (tgtSpace < 0.01f) 
+            if (tgtSpace < 0.01f)
             {
                 BottleLogger.LogDebug("Target bottle is full");
-                return false; // target full
+                return false;
             }
 
             float transfer = Mathf.Min(layerHeight, tgtSpace);
-            if (transfer < 0.001f) 
+            if (transfer < 0.001f)
             {
                 BottleLogger.LogDebug("Not enough space for transfer");
                 return false;
@@ -359,10 +330,8 @@ namespace BottleShaders
 
             BottleLogger.LogDebug($"Pouring from bottle {gameObject.name} to {target.gameObject.name}, amount: {transfer}");
 
-            // ── Update source ──
             if (transfer >= layerHeight - 0.001f)
             {
-                // Remove entire top layer
                 layerColors[srcTop] = Color.clear;
                 currentFillLevels[srcTop] = srcTop > 0 ? currentFillLevels[srcTop - 1] : 0f;
             }
@@ -372,34 +341,26 @@ namespace BottleShaders
             }
             CompactLayers();
 
-            // ── Update target ──
             if (tgtTop < 0 || target.layerColors[tgtTop].a < 0.01f)
             {
-                // Target empty — pour into first slot
                 target.layerColors[0] = pourColor;
                 for (int i = 0; i < target.currentFillLevels.Length; i++) { target.currentFillLevels[i] = transfer; }
             }
             else
             {
-                // Merge into existing matching layer (checked above)
                 for (int i = tgtTop; i < target.currentFillLevels.Length; i++) { target.currentFillLevels[i] += transfer; }
             }
             target.CompactLayers();
 
-            // Sync serialized fields so values survive re-entering Play mode
             SyncSerializedFields();
             target.SyncSerializedFields();
 
-            // Apply to shaders
             UpdateLiquidShader();
             target.UpdateLiquidShader();
 
             return true;
         }
 
-        /// <summary>
-        /// Get the individual height of a specific layer (not cumulative).
-        /// </summary>
         private float GetLayerHeight(int index)
         {
             if (index < 0 || index >= currentFillLevels.Length) return 0f;
@@ -407,24 +368,9 @@ namespace BottleShaders
             return currentFillLevels[index] - bottom;
         }
 
-        /// <summary>
-        /// Compact layers by removing empty/gap layers, shifting everything down.
-        /// </summary>
         private void CompactLayers()
         {
-            // Ensure arrays are sized to maxLayers to avoid out-of-bounds
-            if (layerColors.Length != maxLayers)
-            {
-                Color[] newColors = new Color[maxLayers];
-                Array.Copy(layerColors, newColors, Mathf.Min(layerColors.Length, maxLayers));
-                layerColors = newColors;
-            }
-            if (currentFillLevels.Length != maxLayers)
-            {
-                float[] newFills = new float[maxLayers];
-                Array.Copy(currentFillLevels, newFills, Mathf.Min(currentFillLevels.Length, maxLayers));
-                currentFillLevels = newFills;
-            }
+            EnsureFillArraySizes();
 
             int write = 0;
             for (int read = 0; read < maxLayers; read++)
@@ -437,7 +383,6 @@ namespace BottleShaders
                     write++;
                 }
             }
-            // Fill remaining slots as empty
             for (int i = write; i < maxLayers; i++)
             {
                 layerColors[i] = Color.clear;
@@ -445,64 +390,30 @@ namespace BottleShaders
             }
         }
 
-        /// <summary>
-        /// Copy runtime fill and color data to serialized fields so changes survive
-        /// scene save / Play mode transitions.
-        /// </summary>
         private void SyncSerializedFields()
         {
-            // Ensure serialized arrays are correctly sized
-            if (fillLevels == null || fillLevels.Length != maxLayers)
-            {
-                float[] newFillLevels = new float[maxLayers];
-                if (fillLevels != null)
-                    Array.Copy(fillLevels, newFillLevels, Mathf.Min(fillLevels.Length, maxLayers));
-                fillLevels = newFillLevels;
-            }
-            if (layerColors == null || layerColors.Length != maxLayers)
-            {
-                Color[] newLayerColors = new Color[maxLayers];
-                if (layerColors != null)
-                    Array.Copy(layerColors, newLayerColors, Mathf.Min(layerColors.Length, maxLayers));
-                layerColors = newLayerColors;
-            }
-            
-            // Copy current runtime data to serialized fields
+            EnsureFillArraySizes();
             Array.Copy(currentFillLevels, fillLevels, maxLayers);
-            // layerColors is already the runtime array being used, so no need to copy to itself
         }
 
-
-        /// <summary>
-        /// Check if a specific layer can accept more liquid.
-        /// </summary>
         public bool CanAcceptLiquid(int layerIndex, float amount)
         {
             if (layerIndex < 0 || layerIndex >= currentFillLevels.Length) return false;
             return currentFillLevels[layerIndex] + amount <= 1.0f;
         }
 
-        /// <summary>
-        /// Get the color of a specific layer.
-        /// </summary>
         public Color GetLayerColor(int layerIndex)
         {
             if (layerIndex < 0 || layerIndex >= layerColors.Length) return Color.clear;
             return layerColors[layerIndex];
         }
 
-        /// <summary>
-        /// Get the current fill level of a specific layer.
-        /// </summary>
         public float GetFillLevel(int layerIndex)
         {
             if (layerIndex < 0 || layerIndex >= currentFillLevels.Length) return 0f;
             return currentFillLevels[layerIndex];
         }
 
-        /// <summary>
-        /// Get all current fill levels.
-        /// </summary>
         public float[] GetAllFillLevels()
         {
             float[] result = new float[currentFillLevels.Length];
@@ -510,26 +421,17 @@ namespace BottleShaders
             return result;
         }
 
-        /// <summary>
-        /// Check if this bottle is completely full.
-        /// </summary>
         public bool IsFull()
         {
             if (currentFillLevels.Length == 0) return false;
             return currentFillLevels[currentFillLevels.Length - 1] >= 0.99f;
         }
 
-        /// <summary>
-        /// Check if this bottle is empty.
-        /// </summary>
         public bool IsEmpty()
         {
             return GetTopLayerIndex() < 0;
         }
 
-        /// <summary>
-        /// Get the topmost non-empty layer index.
-        /// </summary>
         public int GetTopLayerIndex()
         {
             for (int i = currentFillLevels.Length - 1; i >= 0; i--)
@@ -555,12 +457,9 @@ namespace BottleShaders
             EnsurePropertyBlocks();
             if (glassBlock == null || bottleRenderer == null) return;
 
-            // Update glass material properties if needed
-            // This could include glass tint based on liquid colors
-            if (layerColors.Length > 0 && layerColors[0] != Color.clear)
+            if (layerColors.Length > 0 && layerColors[0].a > 0.01f)
             {
-                // Subtle glass tint based on first liquid color
-                glassBlock.SetColor("_Color", new Color(
+                glassBlock.SetColor(ColorID, new Color(
                     layerColors[0].r * 0.15f + 0.85f,
                     layerColors[0].g * 0.15f + 0.85f,
                     layerColors[0].b * 0.15f + 0.85f,
@@ -576,22 +475,18 @@ namespace BottleShaders
             EnsurePropertyBlocks();
             if (liquidBlock == null || bottleRenderer == null) return;
 
-            // Set layer colors with improved visual appearance
             for (int i = 0; i < layerColors.Length && i < 4; i++)
             {
-                // Enhance color saturation and brightness for more vibrant look
                 Color adjustedColor = layerColors[i];
-                if (adjustedColor.a > 0.01f) // Only adjust if not transparent
+                if (adjustedColor.a > 0.01f)
                 {
-                    // Increase saturation and brightness
                     float avg = (adjustedColor.r + adjustedColor.g + adjustedColor.b) / 3f;
                     adjustedColor = new Color(
-                        Mathf.Clamp01(avg + (adjustedColor.r - avg) * 1.5f), // Boost saturation
-                        Mathf.Clamp01(avg + (adjustedColor.g - avg) * 1.5f), // Boost saturation
-                        Mathf.Clamp01(avg + (adjustedColor.b - avg) * 1.5f), // Boost saturation
+                        Mathf.Clamp01(avg + (adjustedColor.r - avg) * 1.5f),
+                        Mathf.Clamp01(avg + (adjustedColor.g - avg) * 1.5f),
+                        Mathf.Clamp01(avg + (adjustedColor.b - avg) * 1.5f),
                         adjustedColor.a
                     );
-                    // Then brighten slightly
                     adjustedColor = new Color(
                         Mathf.Clamp01(adjustedColor.r * 1.2f),
                         Mathf.Clamp01(adjustedColor.g * 1.2f),
@@ -599,7 +494,7 @@ namespace BottleShaders
                         adjustedColor.a
                     );
                 }
-                
+
                 switch (i)
                 {
                     case 0: liquidBlock.SetColor(Color1ID, adjustedColor); break;
@@ -609,7 +504,6 @@ namespace BottleShaders
                 }
             }
 
-            // Set fill levels (guard against OnValidate calling before Initialize)
             if (currentFillLevels != null)
             {
                 for (int i = 0; i < currentFillLevels.Length && i < 4; i++)
@@ -624,7 +518,6 @@ namespace BottleShaders
                 }
             }
 
-            // Set surface height to max fill level so liquid is visible
             float topFill = 0f;
             if (currentFillLevels != null && currentFillLevels.Length > 0)
             {
@@ -636,7 +529,6 @@ namespace BottleShaders
             liquidBlock.SetFloat(SurfaceHeightID, topFill);
             liquidBlock.SetFloat(BottleHeightID, bottleHeight);
 
-            // Apply to second material slot (assumed to be liquid)
             if (bottleRenderer.sharedMaterials.Length > 1)
             {
                 bottleRenderer.SetPropertyBlock(liquidBlock, 1);
@@ -655,7 +547,6 @@ namespace BottleShaders
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            // Ensure arrays are properly sized
             if (layerColors.Length > maxLayers)
             {
                 Color[] resized = new Color[maxLayers];
@@ -670,7 +561,6 @@ namespace BottleShaders
                 fillLevels = resized;
             }
 
-            // Ensure fill levels are in ascending order
             for (int i = 1; i < fillLevels.Length; i++)
             {
                 if (fillLevels[i] < fillLevels[i - 1])
@@ -679,8 +569,6 @@ namespace BottleShaders
                 }
             }
 
-            // Apply changes to shader in both Edit and Play modes.
-            // In Edit mode, ensure blocks exist first (Awake doesn't run).
             EnsurePropertyBlocks();
 
             if (glassBlock != null && bottleRenderer != null)
@@ -688,7 +576,6 @@ namespace BottleShaders
                 UpdateGlassShader();
                 UpdateLiquidShader();
 
-                // Force the Scene/Game view to repaint so changes appear instantly
                 UnityEditor.EditorApplication.QueuePlayerLoopUpdate();
                 if (UnityEditor.SceneView.lastActiveSceneView != null)
                     UnityEditor.SceneView.lastActiveSceneView.Repaint();

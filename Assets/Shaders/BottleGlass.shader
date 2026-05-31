@@ -59,8 +59,6 @@ Shader "Custom/BottleGlass"
             #pragma multi_compile_fragment _ _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma multi_compile_fragment _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
             #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
-            #pragma multi_compile_fragment _ _SHADOWS_SOFT
-            #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
@@ -88,8 +86,6 @@ Shader "Custom/BottleGlass"
             {
                 float4 positionOS : POSITION;
                 float3 normalOS : NORMAL;
-                float4 tangentOS : TANGENT;
-                float2 uv : TEXCOORD0;
             };
 
             struct Varyings
@@ -97,9 +93,6 @@ Shader "Custom/BottleGlass"
                 float4 positionCS : SV_POSITION;
                 float3 positionWS : TEXCOORD0;
                 float3 normalWS : TEXCOORD1;
-                float2 uv : TEXCOORD2;
-                float3 tangentWS : TEXCOORD3;
-                float3 bitangentWS : TEXCOORD4;
             };
 
             Varyings vert(Attributes input)
@@ -110,13 +103,8 @@ Shader "Custom/BottleGlass"
                 output.positionCS = vertexInput.positionCS;
                 output.positionWS = vertexInput.positionWS;
 
-                VertexNormalInputs normalInput = GetVertexNormalInputs(
-                    input.normalOS, input.tangentOS);
+                VertexNormalInputs normalInput = GetVertexNormalInputs(input.normalOS);
                 output.normalWS = normalInput.normalWS;
-                output.tangentWS = normalInput.tangentWS;
-                output.bitangentWS = normalInput.bitangentWS;
-
-                output.uv = input.uv;
 
                 return output;
             }

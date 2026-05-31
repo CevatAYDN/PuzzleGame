@@ -193,6 +193,8 @@ namespace BottleShaders
             mesh.SetUVs(0, uvs);
             mesh.SetTriangles(tris, 0);
             mesh.RecalculateBounds();
+            mesh.RecalculateNormals();
+            mesh.Optimize();
 
             if (mf.sharedMesh != null)
                 DestroyImmediate(mf.sharedMesh);

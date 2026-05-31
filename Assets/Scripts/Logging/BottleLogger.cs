@@ -12,8 +12,13 @@ namespace BottleShaders.Logging
 
     public static class BottleLogger
     {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         private static bool enableDebugLogs = true;
         private static bool enableInfoLogs = true;
+#else
+        private static bool enableDebugLogs = false;
+        private static bool enableInfoLogs = false;
+#endif
         private static bool enableWarningLogs = true;
         private static bool enableErrorLogs = true;
 
@@ -69,7 +74,9 @@ namespace BottleShaders.Logging
             switch (type)
             {
                 case LogType.Info:
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                     enableInfoLogs = enabled;
+#endif
                     break;
                 case LogType.Warning:
                     enableWarningLogs = enabled;
@@ -78,7 +85,9 @@ namespace BottleShaders.Logging
                     enableErrorLogs = enabled;
                     break;
                 case LogType.Debug:
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                     enableDebugLogs = enabled;
+#endif
                     break;
             }
         }
