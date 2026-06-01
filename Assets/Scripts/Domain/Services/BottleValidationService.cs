@@ -32,8 +32,15 @@ namespace BottleShaders.Domain.Services
             if (bottle.IsEmpty)   return true;
             if (!bottle.IsFull)   return false;
 
-            var firstColor = bottle.Layers[0].Color;
-            return bottle.Layers.All(l => ColorsMatch(l.Color, firstColor));
+            var layers = bottle.Layers;
+            var firstColor = layers[0].Color;
+            int count = layers.Count;
+            for (int i = 1; i < count; i++)
+            {
+                if (!ColorsMatch(layers[i].Color, firstColor))
+                    return false;
+            }
+            return true;
         }
 
         public bool ColorsMatch(DomainColor a, DomainColor b) =>

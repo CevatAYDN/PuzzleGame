@@ -1,8 +1,8 @@
-using BottleShaders.AppServices.Interfaces;
+using BottleShaders.Application.Interfaces;
 using BottleShaders.Domain.Models;
 using System;
 
-namespace BottleShaders.AppServices
+namespace BottleShaders.Application.Services
 {
     /// <summary>
     /// Plain C# service — no MonoBehaviour, fully testable.

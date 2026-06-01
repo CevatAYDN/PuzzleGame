@@ -55,6 +55,7 @@
     <Compile Include="Assets\Tests\Domain\Services\BottleValidationServiceTests.cs" />
     <Compile Include="Assets\Scripts\Domain\Services\BottleValidationService.cs" />
     <Compile Include="Assets\TutorialInfo\Readme.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\UpdateManager.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\DomainColor.cs" />
     <Compile Include="Assets\Tests\Domain\Models\LiquidLayerTests.cs" />
     <Compile Include="Assets\Tests\Domain\Models\BottleStateTests.cs" />
@@ -63,10 +64,13 @@
     <Compile Include="Assets\Scripts\Domain\Models\BottleState.cs" />
     <Compile Include="Assets\Scripts\Configuration\AnimationConfig.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\LiquidLayer.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Interfaces\IUpdateManager.cs" />
     <Compile Include="Assets\Scripts\Logging\BottleLogger.cs" />
+    <Compile Include="Assets\Scripts\Domain\Models\LayerSnapshot.cs" />
     <Compile Include="Assets\Scripts\Wobble.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\RendererService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IBottleSelectionService.cs" />
+    <Compile Include="Assets\Scripts\Application\Interfaces\IUpdateable.cs" />
     <Compile Include="Assets\Scripts\BottleController.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Interfaces\IRendererService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IAnimationService.cs" />

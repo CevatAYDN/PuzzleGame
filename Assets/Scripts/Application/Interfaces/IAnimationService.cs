@@ -1,7 +1,7 @@
 using UnityEngine;
 using System;
 
-namespace BottleShaders.AppServices.Interfaces
+namespace BottleShaders.Application.Interfaces
 {
     /// <summary>
     /// Drives all bottle animations. Runs coroutines via a MonoBehaviour context
@@ -14,7 +14,7 @@ namespace BottleShaders.AppServices.Interfaces
 
         /// <summary>Lifts a bottle upward by <paramref name="height"/> units.</summary>
         void AnimateBottleLift(MonoBehaviour context, Transform bottle,
-                               float height, float duration, Action onComplete = null);
+                               float height, float duration, Func<bool> keepHovering = null, Action onComplete = null);
 
         /// <summary>Returns a bottle to its original position.</summary>
         void AnimateBottleLower(MonoBehaviour context, Transform bottle,

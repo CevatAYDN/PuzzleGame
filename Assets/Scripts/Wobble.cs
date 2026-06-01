@@ -1,9 +1,11 @@
 using UnityEngine;
+using BottleShaders.Application.Interfaces;
+using BottleShaders.Infrastructure.Implementations;
 
 namespace BottleShaders
 {
     [RequireComponent(typeof(Renderer))]
-    public class Wobble : MonoBehaviour
+    public class Wobble : MonoBehaviour, IUpdateable
     {
         [Header("Wobble Settings")]
         [SerializeField] private float maxWobble = 0.05f;
@@ -20,6 +22,7 @@ namespace BottleShaders
         private float _wobbleZ;
         private float _velocityX;
         private float _velocityZ;
+        private bool _hasLiquidMaterial;
 
         private static readonly int WobbleXProperty = Shader.PropertyToID("_WobbleX");
         private static readonly int WobbleZProperty = Shader.PropertyToID("_WobbleZ");
@@ -30,13 +33,19 @@ namespace BottleShaders
             _propBlock = new MaterialPropertyBlock();
         }
 
+        private void OnEnable()
+        {
+            UpdateManager.Instance?.Register(this);
+        }
+
         private void Start()
         {
             _previousPosition = transform.position;
             _previousRotation = transform.rotation.eulerAngles;
+            _hasLiquidMaterial = _renderer != null && _renderer.sharedMaterials != null && _renderer.sharedMaterials.Length > 1;
         }
 
-        private void Update()
+        public void OnUpdate(float deltaTime)
         {
             if (!gameObject.activeInHierarchy) return;
             if (_renderer == null) return;
@@ -49,7 +58,7 @@ namespace BottleShaders
             Vector3 currentPosition = transform.position;
             Vector3 currentRotation = transform.rotation.eulerAngles;
 
-            Vector3 moveVelocity = (_previousPosition - currentPosition) / Time.deltaTime;
+            Vector3 moveVelocity = (_previousPosition - currentPosition) / deltaTime;
             Vector3 rotationDelta = currentRotation - _previousRotation;
             
             // Normalize rotation delta (handle 0-360 wrap)
@@ -70,7 +79,7 @@ namespace BottleShaders
             float wobbleAmountZ = _wobbleZ * Mathf.Sin(time + Mathf.PI * 0.3f);
 
             // Send to shader using MaterialPropertyBlock
-            if (_renderer.sharedMaterials.Length > 1)
+            if (_hasLiquidMaterial)
             {
                 _renderer.GetPropertyBlock(_propBlock, 1);
                 _propBlock.SetFloat(WobbleXProperty, wobbleAmountX);
@@ -86,13 +95,15 @@ namespace BottleShaders
         private void OnDisable()
         {
             // Reset wobble when disabled using MaterialPropertyBlock to prevent material copy instantiation
-            if (_renderer != null && _renderer.sharedMaterials.Length > 1)
+            if (_renderer != null && _hasLiquidMaterial)
             {
                 _renderer.GetPropertyBlock(_propBlock, 1);
                 _propBlock.SetFloat(WobbleXProperty, 0f);
                 _propBlock.SetFloat(WobbleZProperty, 0f);
                 _renderer.SetPropertyBlock(_propBlock, 1);
             }
+
+            UpdateManager.Instance?.Unregister(this);
         }
 
         /// <summary>

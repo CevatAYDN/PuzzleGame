@@ -1,5 +1,5 @@
 using NUnit.Framework;
-using BottleShaders.AppServices;
+using BottleShaders.Application.Services;
 using BottleShaders.Domain.Models;
 using UnityEngine;
 

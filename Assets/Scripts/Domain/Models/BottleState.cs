@@ -11,14 +11,16 @@ namespace BottleShaders.Domain.Models
         public int MaxLayers { get; }
 
         private readonly List<LiquidLayer> _layers;
+        private float _totalFill;
 
         public BottleState(int maxLayers)
         {
             MaxLayers = maxLayers;
             _layers   = new List<LiquidLayer>(maxLayers);
+            _totalFill = 0f;
         }
 
-        public float TotalFill  => _layers.Sum(l => l.Amount);
+        public float TotalFill  => _totalFill;
         public bool  IsEmpty    => _layers.Count == 0;
 
         public bool IsFull => _layers.Count >= MaxLayers;
@@ -29,6 +31,7 @@ namespace BottleShaders.Domain.Models
         {
             if (_layers.Count >= MaxLayers) return false;
             _layers.Add(layer);
+            _totalFill += layer.Amount;
             return true;
         }
 
@@ -37,10 +40,16 @@ namespace BottleShaders.Domain.Models
             if (IsEmpty) return null;
             var top = _layers[_layers.Count - 1];
             _layers.RemoveAt(_layers.Count - 1);
+            _totalFill -= top.Amount;
+            if (_totalFill < 0.0001f) _totalFill = 0f;
             return top;
         }
 
-        public void Clear() => _layers.Clear();
+        public void Clear()
+        {
+            _layers.Clear();
+            _totalFill = 0f;
+        }
 
         public override string ToString() =>
             $"BottleState(layers={_layers.Count}/{MaxLayers}, fill={TotalFill:P0})";

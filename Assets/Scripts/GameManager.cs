@@ -7,8 +7,8 @@ using UnityEngine.SceneManagement;
 using BottleShaders.Domain.Models;
 using BottleShaders.Domain.Services;
 using BottleShaders.Domain.Interfaces;
-using BottleShaders.AppServices;
-using BottleShaders.AppServices.Interfaces;
+using BottleShaders.Application.Services;
+using BottleShaders.Application.Interfaces;
 using BottleShaders.Infrastructure.Interfaces;
 using BottleShaders.Infrastructure.Implementations;
 using BottleShaders.Events;
@@ -17,7 +17,7 @@ using BottleShaders.Configuration;
 
 namespace BottleShaders
 {
-    public class GameManager : MonoBehaviour
+    public class GameManager : MonoBehaviour, IUpdateable
     {
         [Header("Configuration (assign via Resources or Inspector)")]
         [SerializeField] private GameConfig     gameConfig;
@@ -58,6 +58,8 @@ namespace BottleShaders
         private Action<BottleState> _onBottleSelectedHandler;
         private Action<BottleState> _onBottleDeselectedHandler;
 
+        private static readonly WaitForSeconds WinCheckDelay = new WaitForSeconds(0.5f);
+
         private void Awake()
         {
             BottleLogger.LogInfo("GameManager Awake — composing services.");
@@ -72,6 +74,17 @@ namespace BottleShaders
             InitHUD();
         }
 
+        private void OnEnable()
+        {
+            UpdateManager.Instance?.Register(this);
+        }
+
+        private void OnDisable()
+        {
+            if (UpdateManager.Instance != null)
+                UpdateManager.Instance.Unregister(this);
+        }
+
         private void OnDestroy()
         {
             if (_selectionService != null)
@@ -82,7 +95,7 @@ namespace BottleShaders
             EventAggregator.Clear();
         }
 
-        private void Update()
+        public void OnUpdate(float deltaTime)
         {
             if (_gameWon || _animationService.IsAnimating) return;
             if (_inputHandler == null) return;
@@ -125,7 +138,7 @@ namespace BottleShaders
 
             _validator        = new BottleValidationService(gameConfig.colorMatchTolerance);
             _rendererService  = new RendererService();
-            _animationService = new AnimationService();
+            _animationService = new AnimationService(animConfig);
             _selectionService = new BottleSelectionService();
 
             _onBottleSelectedHandler = b => EventAggregator.Publish(
@@ -268,6 +281,12 @@ namespace BottleShaders
 
         private void TrySelectBottle(BottleController bottle)
         {
+            if (bottle.IsCapped)
+            {
+                BottleLogger.LogDebug($"Cannot select completed/capped bottle '{bottle.name}'.");
+                return;
+            }
+
             if (bottle.IsEmpty())
             {
                 BottleLogger.LogDebug($"Cannot select empty bottle '{bottle.name}'.");
@@ -277,9 +296,11 @@ namespace BottleShaders
             BottleLogger.LogInfo($"Selected '{bottle.name}'.");
             _selectedOriginalPos = bottle.transform.position;
             _selectionService.Select(bottle.State);
+            bottle.SetSelectionHighlight(true);
             _animationService.AnimateBottleLift(
                 this, bottle.transform,
-                animConfig.liftHeight, animConfig.liftDuration);
+                animConfig.liftHeight, animConfig.liftDuration,
+                keepHovering: () => _selectionService.SelectedBottle == bottle.State);
         }
 
         private void TryPour(BottleController source, BottleController target)
@@ -304,6 +325,7 @@ namespace BottleShaders
                     animConfig.pourDuration,
                     onComplete: () =>
                     {
+                        source.SetSelectionHighlight(false);
                         _animationService.AnimateBottleLower(
                             this, source.transform,
                             _selectedOriginalPos, animConfig.liftDuration);
@@ -325,9 +347,12 @@ namespace BottleShaders
         {
             var selected = FindBottleByState(_selectionService.SelectedBottle);
             if (selected != null)
+            {
+                selected.SetSelectionHighlight(false);
                 _animationService.AnimateBottleLower(
                     this, selected.transform,
                     _selectedOriginalPos, animConfig.liftDuration);
+            }
         }
 
         private BottleController FindBottleByState(BottleState state)
@@ -340,7 +365,7 @@ namespace BottleShaders
 
         private IEnumerator DelayedWinCheck()
         {
-            yield return new WaitForSeconds(0.5f);
+            yield return WinCheckDelay;
             CheckWinCondition();
         }
 
@@ -355,10 +380,16 @@ namespace BottleShaders
             {
                 if (bottle == null || bottle.IsEmpty()) continue;
                 hasLiquid = true;
-                if (!_validator.IsComplete(bottle.State))
+
+                bool isComplete = _validator.IsComplete(bottle.State);
+                if (isComplete && !bottle.IsCapped)
+                {
+                    bottle.AnimateCompletion();
+                }
+
+                if (!isComplete)
                 {
                     allComplete = false;
-                    break;
                 }
             }
 
