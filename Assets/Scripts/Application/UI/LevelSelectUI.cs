@@ -65,6 +65,17 @@ namespace PuzzleGame.Application.UI
                     btn = go.AddComponent<LevelButtonView>();
                 }
 
+                // Set button size dynamically
+                var rect = go.GetComponent<RectTransform>();
+                if (rect != null)
+                {
+                    rect.sizeDelta = new Vector2(buttonWidth, buttonHeight);
+                    rect.anchoredPosition = new Vector2(
+                        (i % columns) * (buttonWidth + spacing) + buttonWidth * 0.5f,
+                        -(i / columns) * (buttonHeight + spacing) - buttonHeight * 0.5f
+                    );
+                }
+
                 int levelNum = i + 1;
                 bool unlocked = _progress != null && _progress.IsUnlocked(levelNum);
                 int stars = unlocked ? (_progress?.GetStars(levelNum) ?? 0) : 0;

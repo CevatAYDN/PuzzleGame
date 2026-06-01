@@ -157,7 +157,7 @@ Shader "PuzzleGame/MobileBottle"
             #pragma vertex vertGlassFront
             #pragma fragment fragGlassFront
             #pragma target 2.0
-            #pragma skip_varcasts FOG_LINEAR FOG_EXP FOG_EXP2
+            #pragma skip_variants FOG_LINEAR FOG_EXP FOG_EXP2
             #pragma multi_compile_instancing
 
             #include "UnityCG.cginc"

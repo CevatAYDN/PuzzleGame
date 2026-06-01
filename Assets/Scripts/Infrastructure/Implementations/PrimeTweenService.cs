@@ -47,7 +47,7 @@ namespace PuzzleGame.Infrastructure.Implementations
         public ITweenHandle TweenCustom(object target, float from, float to, float duration, Action<object, float> onUpdate)
             => Start(PrimeTween.Tween.Custom(target, from, to, duration, (obj, val) => onUpdate(obj, val), ToPrimeEase(EaseType.Linear)));
 
-        public ITweenHandle SequenceCreate() => new PrimeTweenSequenceHandle();
+        public ITweenHandle SequenceCreate() => StartSequence(PrimeTween.Tween.Sequence());
 
         public ITweenHandle Delay(float duration)
             => Start(PrimeTween.Tween.Delay(duration));
@@ -63,6 +63,7 @@ namespace PuzzleGame.Infrastructure.Implementations
         };
 
         private static ITweenHandle Start(Tween t) => new PrimeTweenHandle(t);
+        private static ITweenHandle StartSequence(Sequence s) => new PrimeTweenSequenceHandle(s);
     }
 
     internal class PrimeTweenHandle : ITweenHandle
@@ -149,6 +150,11 @@ namespace PuzzleGame.Infrastructure.Implementations
         private Sequence _sequence;
         private bool _started;
         private Action _onComplete;
+
+        public PrimeTweenSequenceHandle(Sequence sequence)
+        {
+            _sequence = sequence;
+        }
 
         public void Chain(ITweenHandle other)
         {

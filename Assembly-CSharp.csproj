@@ -58,6 +58,7 @@
     <Compile Include="Assets\Scripts\Domain\Interfaces\IGameHistoryService.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\LevelData.cs" />
     <Compile Include="Assets\Scripts\Events\GameEvents.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\ShaderOptimizer.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\IGameStateMachine.cs" />
     <Compile Include="Assets\Scripts\Application\Services\GameStateMachine.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\IServiceLocator.cs" />
@@ -128,8 +129,10 @@
   <ItemGroup>
     <None Include="Assets\Shaders\PremiumBottleGlass.shader" />
     <None Include="Assets\TutorialInfo\StyleSheets\ReadmeEditor.uss" />
+    <None Include="Assets\Shaders\Mobile\MobileLiquid.shader" />
     <None Include="Assets\TutorialInfo\StyleSheets\ReadmeEditorLight.uss" />
     <None Include="Assets\Shaders\LayeredLiquid.shader" />
+    <None Include="Assets\Shaders\Mobile\MobileBottle.shader" />
     <None Include="Assets\Shaders\BottleGlass.shader" />
     <None Include="Assets\TutorialInfo\StyleSheets\ReadmeEditorDark.uss" />
     <None Include="Assets\Shaders\PremiumLayeredLiquid.shader" />

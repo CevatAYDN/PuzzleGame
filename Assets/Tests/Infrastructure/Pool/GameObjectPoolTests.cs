@@ -23,12 +23,8 @@ namespace PuzzleGame.Tests.Infrastructure.Pool
         [TearDown]
         public void Teardown()
         {
-            while (_pool.CountInactive > 0)
-            {
-                var instance = _pool.Rent();
-                if (instance != null)
-                    Object.DestroyImmediate(instance.gameObject);
-            }
+            // Clean up ALL pooled objects (both active and inactive)
+            _pool.DestroyAll();
             if (_prefab != null)
                 Object.DestroyImmediate(_prefab.gameObject);
         }

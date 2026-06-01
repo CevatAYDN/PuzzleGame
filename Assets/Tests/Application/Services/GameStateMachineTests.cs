@@ -45,12 +45,9 @@ namespace PuzzleGame.Tests.Application.Services
         }
 
         [Test]
-        public void TransitionTo_InvalidRule_ReturnsFalse()
+        public void TransitionTo_NoExplicitRule_DefaultAllowsTransition()
         {
-            // Boot → Playing doğrudan gidemez (kural tanımlı değil)
-            // CanTransitionTo default: true. Ama default rules yok.
-            // Playing'e direkt gitmek için kural tanımlı değil → CanTransitionTo true döner
-            // Valid path: Boot → Menu → LevelLoading → Playing
+            // Boot → Playing: kural tanımlı değil ama default guard true döner
             bool result = _sut.TransitionTo(GameState.Playing);
             Assert.That(result, Is.True); // default guard: true
         }

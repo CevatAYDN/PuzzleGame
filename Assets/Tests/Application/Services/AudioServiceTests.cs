@@ -40,6 +40,9 @@ namespace PuzzleGame.Tests.Application.Services
         {
             _sut?.ReleaseAll();
             if (_config != null) Object.DestroyImmediate(_config);
+            // Reset global state to prevent test pollution
+            AudioListener.pause = false;
+            AudioListener.volume = 1f;
         }
 
         [Test]

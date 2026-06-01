@@ -11,13 +11,14 @@ namespace PuzzleGame.Events.Tests
         [SetUp]
         public void SetUp()
         {
+            EventAggregator.Clear(); // Önce temizle (önceki testten kalma varsa)
             BottleLogger.SetLevel(BottleLogger.Level.Error, false);
         }
 
         [TearDown]
         public void TearDown()
         {
-            BottleLogger.SetLevel(BottleLogger.Level.Error, true);
+            BottleLogger.SetLevel(BottleLogger.Level.Error, false); // SetUp ile aynı
             EventAggregator.Clear();
         }
 
