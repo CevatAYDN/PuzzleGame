@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -10,15 +11,17 @@ using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Infrastructure.Interfaces;
 using PuzzleGame.Infrastructure.Implementations;
 using PuzzleGame.Infrastructure;
-using System.Collections.Generic;
 
 namespace PuzzleGame.Editor
 {
     /// <summary>
-    /// Static helper — sahnede game object'ler (ışık, zemin, kamera, şişe, kazan) oluşturur.
+    /// Esnek sahne oluşturma. Hem "full preset" (çevre + şişeler) hem de
+    /// tek tek şişe ("Quick Add") API sağlar.
     /// </summary>
     public static class SceneBuilder
     {
+        // ── Build preset options ─────────────────────────────────────────────
+
         public struct BuildOptions
         {
             public bool lighting;
@@ -45,10 +48,31 @@ namespace PuzzleGame.Editor
             bottles = true, gameManager = true, newScene = true
         };
 
-        private const float GroundScale  = 8f;
-        private const float BottleHeight = 2.4f;
-        private const float BottleRadius = 0.35f;
-        private const float FogDensity   = 0.015f;
+        // ── Bottle config (Quick Add ve preset için) ────────────────────────
+
+        public enum BottleLayout { Line, Grid, Circle, Manual }
+        public enum ShaderVariant { Standard, Premium }
+
+        public struct BottleConfig
+        {
+            public Vector3 position;
+            public Color[] colors; // boş = boş şişe
+            public ShaderVariant shader;
+            public string namePrefix;
+
+            public static BottleConfig Empty(Vector3 pos, ShaderVariant shader = ShaderVariant.Standard) =>
+                new BottleConfig { position = pos, colors = System.Array.Empty<Color>(), shader = shader, namePrefix = "Bottle" };
+
+            public static BottleConfig WithColors(Vector3 pos, Color[] colors,
+                ShaderVariant shader = ShaderVariant.Standard, string prefix = "Bottle") =>
+                new BottleConfig { position = pos, colors = colors, shader = shader, namePrefix = prefix };
+        }
+
+        private const float GroundScale   = 8f;
+        private const float BottleHeight  = 2.4f;
+        private const float BottleRadius  = 0.35f;
+        private const float FogDensity    = 0.015f;
+        private const float BottleSpacing = 1.3f;
 
         private static readonly Color AmbientColor   = new Color(0.12f, 0.10f, 0.20f);
         private static readonly Color FogColor       = new Color(0.08f, 0.05f, 0.15f);
@@ -66,12 +90,23 @@ namespace PuzzleGame.Editor
         private static readonly Vector3 RimLightPos  = new Vector3(10f, 8f, -5f);
         private static readonly Vector3 CauldronPos  = new Vector3(0f, -1f, 9f);
 
+        // Default palette — Quick Add dropdown'unda da kullanılır
+        public static readonly Color[] DefaultPalette =
+        {
+            new Color(0.95f, 0.15f, 0.25f), // red
+            new Color(0.10f, 0.65f, 1.00f), // blue
+            new Color(0.15f, 0.85f, 0.35f), // green
+            new Color(1.00f, 0.85f, 0.05f), // yellow
+            new Color(0.70f, 0.25f, 0.95f), // purple
+            new Color(0.98f, 0.45f, 0.10f), // orange
+        };
+
+        // ── Full preset build ────────────────────────────────────────────────
+
         public static void Build(BuildOptions opts)
         {
             if (opts.newScene)
-            {
                 EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-            }
 
             int undoGroup = Undo.GetCurrentGroup();
             Undo.SetCurrentGroupName("PuzzleGame Scene Build");
@@ -81,24 +116,183 @@ namespace PuzzleGame.Editor
             if (opts.camera)     SetupCamera();
             if (opts.postProcessing) SetupPostProcessing();
             if (opts.cauldron)   CreateCauldron();
-            if (opts.bottles)    CreateBottlesInGridLayout();
             if (opts.gameManager) CreateGameManager();
+            if (opts.bottles)    CreateDefaultBottleSet();
 
             Undo.CollapseUndoOperations(undoGroup);
             EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
             Debug.Log("[SceneBuilder] Scene build complete. Ctrl+Z to undo.");
         }
 
-        // ── Lighting ────────────────────────────────────────────────────────
+        // ── Bottle set helpers ────────────────────────────────────────────────
+
+        public static void CreateDefaultBottleSet()
+        {
+            int count = 20; // classic 4×5 grid
+            var positions = ComputePositions(BottleLayout.Grid, count, Vector3.zero);
+            Color[][] contents = GenerateMixedContents(count);
+            for (int i = 0; i < count; i++)
+                CreateBottle(BottleConfig.WithColors(positions[i], contents[i], ShaderVariant.Premium, $"Bottle_{i:D2}"));
+        }
+
+        public static GameObject CreateBottle(BottleConfig cfg)
+        {
+            var renderer = new RendererService();
+            var validator = new BottleValidationService();
+
+            string uniqueName = GetUniqueName(cfg.namePrefix);
+            var go = new GameObject(uniqueName) { transform = { position = cfg.position } };
+
+            var col = go.AddComponent<CapsuleCollider>();
+            col.radius = 0.4f;
+            col.height = BottleHeight;
+            col.center = new Vector3(0f, BottleHeight * 0.5f, 0f);
+
+            go.AddComponent<MeshFilter>();
+            var mr = go.AddComponent<MeshRenderer>();
+
+            // Shader seçimi
+            string glassName = cfg.shader == ShaderVariant.Premium
+                ? "PremiumBottleGlass" : "Custom/BottleGlass";
+            string liquidName = cfg.shader == ShaderVariant.Premium
+                ? "PremiumLayeredLiquid" : "Custom/LayeredLiquid";
+
+            var glassShader  = FindShader(glassName) ?? Shader.Find("Universal Render Pipeline/Lit");
+            var liquidShader = FindShader(liquidName) ?? Shader.Find("Universal Render Pipeline/Unlit");
+
+            var glassMat  = new Material(glassShader)  { name = $"{uniqueName}_Glass"  };
+            var liquidMat = new Material(liquidShader) { name = $"{uniqueName}_Liquid" };
+
+            if (cfg.shader == ShaderVariant.Premium)
+                ApplyPremiumGlassProperties(glassMat);
+            else
+                ApplyStandardGlassProperties(glassMat);
+
+            if (cfg.shader == ShaderVariant.Premium)
+                ApplyPremiumLiquidProperties(liquidMat);
+            else
+                ApplyStandardLiquidProperties(liquidMat);
+
+            var meshGen = go.AddComponent<BottleMeshGenerator>();
+            meshGen.height = BottleHeight;
+            meshGen.bodyRadius = BottleRadius;
+            meshGen.neckRadius = 0.15f;
+            meshGen.neckHeight = 0.4f;
+            meshGen.capRadius = 0.17f;
+            meshGen.capHeight = 0.1f;
+            meshGen.glassMaterial = glassMat;
+            meshGen.liquidMaterial = liquidMat;
+            meshGen.BuildMesh();
+
+            mr.sharedMaterials = new[] { glassMat, liquidMat };
+
+            var ctrl = go.AddComponent<BottleController>();
+            ctrl.glassMaterial = glassMat;
+            ctrl.liquidMaterial = liquidMat;
+            ctrl.Initialize(renderer, validator, BuildLayers(cfg.colors ?? System.Array.Empty<Color>()));
+
+            Undo.RegisterCreatedObjectUndo(go, $"Create {uniqueName}");
+            return go;
+        }
+
+        public static void RemoveBottles()
+        {
+            var bottles = Object.FindObjectsByType<BottleController>(FindObjectsInactive.Include);
+            foreach (var b in bottles)
+            {
+                Undo.DestroyObjectImmediate(b.gameObject);
+            }
+        }
+
+        public static int CountBottles() =>
+            Object.FindObjectsByType<BottleController>(FindObjectsInactive.Include).Length;
+
+        // ── Position layouts ────────────────────────────────────────────────
+
+        public static Vector3[] ComputePositions(BottleLayout layout, int count, Vector3 center)
+        {
+            if (count <= 0) return System.Array.Empty<Vector3>();
+            var arr = new Vector3[count];
+
+            switch (layout)
+            {
+                case BottleLayout.Line:
+                    for (int i = 0; i < count; i++)
+                        arr[i] = center + new Vector3((i - (count - 1) * 0.5f) * BottleSpacing, 0f, 0f);
+                    break;
+
+                case BottleLayout.Grid:
+                    int cols = Mathf.CeilToInt(Mathf.Sqrt(count));
+                    int rows = Mathf.CeilToInt(count / (float)cols);
+                    for (int i = 0; i < count; i++)
+                    {
+                        int r = i / cols;
+                        int c = i % cols;
+                        arr[i] = center + new Vector3(
+                            (c - (cols - 1) * 0.5f) * BottleSpacing,
+                            0f,
+                            (r - (rows - 1) * 0.5f) * BottleSpacing);
+                    }
+                    break;
+
+                case BottleLayout.Circle:
+                    float radius = count * BottleSpacing * 0.35f;
+                    for (int i = 0; i < count; i++)
+                    {
+                        float angle = (i / (float)count) * Mathf.PI * 2f;
+                        arr[i] = center + new Vector3(
+                            Mathf.Cos(angle) * radius,
+                            0f,
+                            Mathf.Sin(angle) * radius);
+                    }
+                    break;
+
+                case BottleLayout.Manual:
+                    // Hepsi aynı pozisyon — kullanıcı sahneye ekledikten sonra taşır
+                    for (int i = 0; i < count; i++)
+                        arr[i] = center;
+                    break;
+            }
+            return arr;
+        }
+
+        // ── Bottle content generators ───────────────────────────────────────
+
+        /// <summary>
+        /// Default 20 şişe için karışık layer seti.
+        /// Sıralı palet, her 5. şişe boş.
+        /// </summary>
+        public static Color[][] GenerateMixedContents(int bottleCount)
+        {
+            var result = new Color[bottleCount][];
+            for (int i = 0; i < bottleCount; i++)
+            {
+                if ((i + 1) % 5 == 0) // her 5. boş
+                {
+                    result[i] = System.Array.Empty<Color>();
+                }
+                else
+                {
+                    var c = DefaultPalette[(i / 4) % DefaultPalette.Length];
+                    int layers = 2 + (i % 3); // 2, 3, 4 layer
+                    var arr = new Color[layers];
+                    for (int k = 0; k < layers; k++) arr[k] = c;
+                    result[i] = arr;
+                }
+            }
+            return result;
+        }
+
+        // ── Lighting ─────────────────────────────────────────────────────────
 
         private static void SetupLighting()
         {
             RenderSettings.ambientMode  = AmbientMode.Flat;
             RenderSettings.ambientLight = AmbientColor;
             RenderSettings.fog          = true;
-            RenderSettings.fogMode     = FogMode.Exponential;
-            RenderSettings.fogColor    = FogColor;
-            RenderSettings.fogDensity  = FogDensity;
+            RenderSettings.fogMode      = FogMode.Exponential;
+            RenderSettings.fogColor     = FogColor;
+            RenderSettings.fogDensity   = FogDensity;
 
             CreateDirectionalLight("MainLight", MainLightColor, 1.2f, Quaternion.Euler(50f, -30f, 0f));
             CreatePointLight("FillLight", FillLightColor, 0.3f, 30f, FillLightPos);
@@ -277,110 +471,81 @@ namespace PuzzleGame.Editor
             shape.radius = 0.5f;
         }
 
-        // ── Bottles ─────────────────────────────────────────────────────────
+        // ── GameManager ─────────────────────────────────────────────────────
 
-        private static void CreateBottlesInGridLayout()
+        private static void CreateGameManager()
         {
-            var renderer = new RendererService();
-            var validator = new BottleValidationService();
-
-            Color red    = new Color(0.95f, 0.15f, 0.25f);
-            Color blue   = new Color(0.1f,  0.65f, 1.0f);
-            Color green  = new Color(0.15f, 0.85f, 0.35f);
-            Color yellow = new Color(1.0f,  0.85f, 0.05f);
-            Color purple = new Color(0.7f,  0.25f, 0.95f);
-            Color orange = new Color(0.98f, 0.45f, 0.1f);
-
-            var bottles = new (Vector3 pos, Color[] colors)[]
-            {
-                (new Vector3(-2.4f, 4.5f, 0), new[] { yellow, purple, blue,   blue   }),
-                (new Vector3(-1.2f, 4.5f, 0), new[] { purple, blue,   orange, green  }),
-                (new Vector3( 0.0f, 4.5f, 0), new[] { red,    blue,   green,  yellow }),
-                (new Vector3( 1.2f, 4.5f, 0), new[] { red,    green,  orange, blue   }),
-                (new Vector3( 2.4f, 4.5f, 0), new[] { yellow, red,    purple, red    }),
-                (new Vector3(-2.4f, 1.5f, 0), new[] { green,  yellow, red,    blue   }),
-                (new Vector3(-1.2f, 1.5f, 0), new[] { orange, red,    green,  yellow }),
-                (new Vector3( 0.0f, 1.5f, 0), new[] { red,    yellow, purple, orange }),
-                (new Vector3( 1.2f, 1.5f, 0), new Color[0]                               ),
-                (new Vector3( 2.4f, 1.5f, 0), new Color[0]                               ),
-                (new Vector3(-2.4f,-1.5f, 0), new[] { red,    purple, yellow, green  }),
-                (new Vector3(-1.2f,-1.5f, 0), new[] { orange, yellow, blue,   purple }),
-                (new Vector3( 0.0f,-1.5f, 0), new[] { yellow, green,  red,    blue   }),
-                (new Vector3( 1.2f,-1.5f, 0), new[] { green,  orange, red,    blue   }),
-                (new Vector3( 2.4f,-1.5f, 0), new[] { red,    blue,   green,  yellow }),
-                (new Vector3(-2.4f,-4.5f, 0), new[] { red,    blue,   green,  yellow }),
-                (new Vector3(-1.2f,-4.5f, 0), new[] { yellow, orange, yellow, blue   }),
-                (new Vector3( 0.0f,-4.5f, 0), new[] { yellow, red,    green,  orange }),
-                (new Vector3( 1.2f,-4.5f, 0), new[] { purple, red,    blue,   green  }),
-                (new Vector3( 2.4f,-4.5f, 0), new[] { blue,   green,  purple, orange }),
-            };
-
-            for (int i = 0; i < bottles.Length; i++)
-                CreateSingleBottle(bottles[i].pos, $"Bottle_{i:D2}", bottles[i].colors, renderer, validator);
+            if (Object.FindAnyObjectByType<GameManager>() != null) return;
+            new GameObject("GameManager").AddComponent<GameManager>();
         }
 
-        private static void CreateSingleBottle(Vector3 position, string name, Color[] colors,
-            IRendererService renderer, IBottleValidator validator)
+        // ── Material presets ────────────────────────────────────────────────
+
+        private static void ApplyStandardGlassProperties(Material mat)
         {
-            var go = new GameObject(name) { transform = { position = position } };
-            var col = go.AddComponent<CapsuleCollider>();
-            col.radius = 0.4f;
-            col.height = BottleHeight;
-            col.center = new Vector3(0f, BottleHeight * 0.5f, 0f);
+            mat.SetColor("_Color", new Color(0.95f, 0.97f, 1.0f, 0.18f));
+            mat.SetFloat("_Smoothness", 0.95f);
+            mat.SetFloat("_FresnelPower", 5f);
+            mat.SetFloat("_FresnelIntensity", 1.5f);
+            mat.SetColor("_FresnelColor", new Color(1f, 1f, 1f, 0.5f));
+            mat.SetColor("_SpecularColor", new Color(1f, 1f, 1f, 1f));
+            mat.SetFloat("_SpecularIntensity", 2f);
+        }
 
-            go.AddComponent<MeshFilter>();
-            var mr = go.AddComponent<MeshRenderer>();
+        private static void ApplyPremiumGlassProperties(Material mat)
+        {
+            mat.SetColor("_Color", new Color(0.95f, 0.97f, 1.0f, 0.12f));
+            mat.SetFloat("_Smoothness", 0.98f);
+            mat.SetFloat("_Thickness", 0.04f);
+            mat.SetFloat("_RefractionIntensity", 0.06f);
+            mat.SetFloat("_IndexOfRefraction", 1.45f);
+            mat.SetFloat("_FresnelPower", 4.5f);
+            mat.SetFloat("_FresnelIntensity", 2.0f);
+            mat.SetColor("_FresnelColor", new Color(1f, 1f, 1f, 0.8f));
+            mat.SetColor("_ThicknessColor", new Color(0.6f, 0.8f, 1.0f, 0.5f));
+            mat.SetFloat("_ThicknessPower", 2.0f);
+            mat.SetColor("_SpecularColor", new Color(1f, 1f, 1f, 1f));
+            mat.SetFloat("_SpecularIntensity", 2.0f);
+            mat.SetFloat("_SpecularSecondary", 0.5f);
+        }
 
-            var glassShader  = FindShader("PremiumBottleGlass") ?? Shader.Find("Universal Render Pipeline/Lit");
-            var liquidShader = FindShader("PremiumLayeredLiquid") ?? Shader.Find("Universal Render Pipeline/Unlit");
+        private static void ApplyStandardLiquidProperties(Material mat)
+        {
+            mat.SetFloat("_Transparency", 0.08f);
+            mat.SetFloat("_EdgeDarken", 0.25f);
+            mat.SetFloat("_EdgeWidth", 0.18f);
+            mat.SetFloat("_SpecularIntensity", 0.7f);
+            mat.SetFloat("_SpecularSmoothness", 0.6f);
+            mat.SetFloat("_LayerBoundaryWidth", 0.025f);
+            mat.SetFloat("_LayerBoundaryDarken", 0.4f);
+        }
 
-            var glassMat  = new Material(glassShader)  { name = $"{name}_Glass"  };
-            var liquidMat = new Material(liquidShader) { name = $"{name}_Liquid" };
+        private static void ApplyPremiumLiquidProperties(Material mat)
+        {
+            mat.SetFloat("_Transparency", 0.12f);
+            mat.SetFloat("_EdgeDarken", 0.35f);
+            mat.SetFloat("_EdgeWidth", 0.22f);
+            mat.SetFloat("_SpecularIntensity", 1.5f);
+            mat.SetFloat("_SpecularSmoothness", 0.8f);
+            mat.SetFloat("_LayerBoundaryWidth", 0.015f);
+            mat.SetFloat("_LayerBoundaryDarken", 0.3f);
+            mat.SetColor("_FoamColor", new Color(1.0f, 1.0f, 1.0f, 1.0f));
+            mat.SetFloat("_FoamWidth", 0.015f);
+            mat.SetFloat("_FoamIntensity", 1.2f);
+            mat.SetColor("_RimColor", new Color(1.0f, 1.0f, 1.0f, 1.0f));
+            mat.SetFloat("_RimPower", 3.0f);
+            mat.SetFloat("_RimIntensity", 0.4f);
+            mat.SetFloat("_SparkleIntensity", 0.5f);
+            mat.SetFloat("_SparkleSize", 16f);
+        }
 
-            glassMat.SetColor("_Color", new Color(0.95f, 0.97f, 1.0f, 0.12f));
-            glassMat.SetFloat("_Smoothness", 0.98f);
-            glassMat.SetFloat("_Thickness", 0.04f);
-            glassMat.SetFloat("_RefractionIntensity", 0.06f);
-            glassMat.SetFloat("_IndexOfRefraction", 1.45f);
-            glassMat.SetFloat("_FresnelPower", 4.5f);
-            glassMat.SetFloat("_FresnelIntensity", 2.0f);
-            glassMat.SetColor("_FresnelColor", new Color(1f, 1f, 1f, 0.8f));
-            glassMat.SetColor("_ThicknessColor", new Color(0.6f, 0.8f, 1.0f, 0.5f));
-            glassMat.SetFloat("_ThicknessPower", 2.0f);
-
-            liquidMat.SetFloat("_Transparency", 0.12f);
-            liquidMat.SetFloat("_EdgeDarken", 0.35f);
-            liquidMat.SetFloat("_EdgeWidth", 0.22f);
-            liquidMat.SetFloat("_SpecularIntensity", 1.5f);
-            liquidMat.SetFloat("_SpecularSmoothness", 0.8f);
-            liquidMat.SetFloat("_LayerBoundaryWidth", 0.015f);
-            liquidMat.SetFloat("_LayerBoundaryDarken", 0.3f);
-            liquidMat.SetColor("_FoamColor", new Color(1.0f, 1.0f, 1.0f, 1.0f));
-            liquidMat.SetFloat("_FoamWidth", 0.015f);
-            liquidMat.SetFloat("_FoamIntensity", 1.2f);
-            liquidMat.SetColor("_RimColor", new Color(1.0f, 1.0f, 1.0f, 1.0f));
-            liquidMat.SetFloat("_RimPower", 3.0f);
-            liquidMat.SetFloat("_RimIntensity", 0.4f);
-            liquidMat.SetFloat("_SparkleIntensity", 0.5f);
-            liquidMat.SetFloat("_SparkleSize", 16f);
-
-            var meshGen = go.AddComponent<BottleMeshGenerator>();
-            meshGen.height = BottleHeight;
-            meshGen.bodyRadius = BottleRadius;
-            meshGen.neckRadius = 0.15f;
-            meshGen.neckHeight = 0.4f;
-            meshGen.capRadius = 0.17f;
-            meshGen.capHeight = 0.1f;
-            meshGen.glassMaterial = glassMat;
-            meshGen.liquidMaterial = liquidMat;
-            meshGen.BuildMesh();
-
-            mr.sharedMaterials = new[] { glassMat, liquidMat };
-
-            var ctrl = go.AddComponent<BottleController>();
-            ctrl.glassMaterial = glassMat;
-            ctrl.liquidMaterial = liquidMat;
-            ctrl.Initialize(renderer, validator, BuildLayers(colors));
+        private static Material CreateLitMaterial(Color color, float metallic, float smoothness)
+        {
+            var mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            mat.SetColor("_BaseColor", color);
+            mat.SetFloat("_Metallic", metallic);
+            mat.SetFloat("_Smoothness", smoothness);
+            return mat;
         }
 
         private static List<LiquidLayer> BuildLayers(Color[] colors)
@@ -398,22 +563,18 @@ namespace PuzzleGame.Editor
             return layers;
         }
 
-        // ── GameManager ─────────────────────────────────────────────────────
-
-        private static void CreateGameManager()
-        {
-            new GameObject("GameManager").AddComponent<GameManager>();
-        }
-
         // ── Helpers ─────────────────────────────────────────────────────────
 
-        private static Material CreateLitMaterial(Color color, float metallic, float smoothness)
+        private static string GetUniqueName(string baseName)
         {
-            var mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            mat.SetColor("_BaseColor", color);
-            mat.SetFloat("_Metallic", metallic);
-            mat.SetFloat("_Smoothness", smoothness);
-            return mat;
+            int counter = 0;
+            string candidate = baseName;
+            while (GameObject.Find(candidate) != null)
+            {
+                counter++;
+                candidate = $"{baseName}_{counter}";
+            }
+            return candidate;
         }
 
         private static GameObject CreatePrimitive(string name, PrimitiveType type)

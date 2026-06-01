@@ -23,6 +23,10 @@ namespace PuzzleGame.Editor
 
         // ── Scene tab ───────────────────────────────────────────────────────
         private SceneBuilder.BuildOptions _buildOpts = SceneBuilder.All;
+        private SceneBuilder.BottleLayout _bottleLayout = SceneBuilder.BottleLayout.Grid;
+        private SceneBuilder.ShaderVariant _shaderVariant = SceneBuilder.ShaderVariant.Premium;
+        private int _bottleCount = 2;
+        private bool _firstEmpty = true;
         private Vector2 _sceneScroll;
 
         // ── Validate tab ────────────────────────────────────────────────────
@@ -70,8 +74,11 @@ namespace PuzzleGame.Editor
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Refresh", EditorStyles.toolbarButton, GUILayout.Width(70)))
             {
-                RefreshDataPresence();
-                SetStatus("Refreshed.", MessageType.Info);
+                EditorApplication.delayCall += () =>
+                {
+                    RefreshDataPresence();
+                    SetStatus("Refreshed.", MessageType.Info);
+                };
             }
             EditorGUILayout.EndHorizontal();
         }
@@ -106,9 +113,15 @@ namespace PuzzleGame.Editor
                     GUI.contentColor = Color.white;
                     GUILayout.FlexibleSpace();
                     if (GUILayout.Button("Ping", GUILayout.Width(50)))
-                        PingAsset(kvp.Key);
+                    {
+                        string key = kvp.Key;
+                        EditorApplication.delayCall += () => PingAsset(key);
+                    }
                     if (GUILayout.Button("Reset", GUILayout.Width(50)))
-                        ResetSingle(kvp.Key);
+                    {
+                        string key = kvp.Key;
+                        EditorApplication.delayCall += () => ResetSingle(key);
+                    }
                 }
             }
             EditorGUILayout.EndScrollView();
@@ -117,9 +130,9 @@ namespace PuzzleGame.Editor
             using (new EditorGUILayout.HorizontalScope())
             {
                 if (GUILayout.Button("Create / Update All", GUILayout.Height(28)))
-                    CreateAllData();
+                    EditorApplication.delayCall += CreateAllData;
                 if (GUILayout.Button("Select Folder", GUILayout.Height(28), GUILayout.MaxWidth(140)))
-                    SelectDataFolder();
+                    EditorApplication.delayCall += SelectDataFolder;
             }
 
             EditorGUILayout.Space(12);
@@ -174,12 +187,12 @@ namespace PuzzleGame.Editor
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     if (GUILayout.Button("Reveal in Explorer", GUILayout.Height(22)))
-                        RevealSaveFile();
+                        EditorApplication.delayCall += RevealSaveFile;
                     if (GUILayout.Button("Verify Integrity", GUILayout.Height(22)))
-                        VerifySaveFile();
+                        EditorApplication.delayCall += VerifySaveFile;
                     GUI.backgroundColor = new Color(0.9f, 0.5f, 0.5f);
                     if (GUILayout.Button("Delete Save", GUILayout.Height(22)))
-                        DeleteSaveFile();
+                        EditorApplication.delayCall += DeleteSaveFile;
                     GUI.backgroundColor = Color.white;
                 }
             }
@@ -320,49 +333,127 @@ namespace PuzzleGame.Editor
         private void DrawSceneTab()
         {
             EditorGUILayout.LabelField("Scene Builder", EditorStyles.boldLabel);
-            EditorGUILayout.Space(4);
-
-            EditorGUILayout.HelpBox(
-                "Sahneye eklenecek öğeleri seçin. New Scene = mevcut sahneyi sil ve temiz başla.",
-                MessageType.None);
-
             _sceneScroll = EditorGUILayout.BeginScrollView(_sceneScroll);
 
-            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
-            {
-                EditorGUILayout.LabelField("Scene", EditorStyles.miniBoldLabel);
-                _buildOpts.newScene = EditorGUILayout.ToggleLeft("Replace current scene with new one", _buildOpts.newScene);
-            }
-
+            // ── Environment section ─────────────────────────────────────────
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 EditorGUILayout.LabelField("Environment", EditorStyles.miniBoldLabel);
-                _buildOpts.lighting = EditorGUILayout.ToggleLeft("Lighting (Main + Fill + Rim)", _buildOpts.lighting);
+                _buildOpts.newScene = EditorGUILayout.ToggleLeft("Replace current scene with new one", _buildOpts.newScene);
+                _buildOpts.lighting = EditorGUILayout.ToggleLeft("Lighting (Directional + Fill + Rim)", _buildOpts.lighting);
                 _buildOpts.ground = EditorGUILayout.ToggleLeft("Ground + Back wall + Dust", _buildOpts.ground);
+                _buildOpts.camera = EditorGUILayout.ToggleLeft("Main Camera", _buildOpts.camera);
                 _buildOpts.postProcessing = EditorGUILayout.ToggleLeft("Post-processing (Bloom + Vignette)", _buildOpts.postProcessing);
                 _buildOpts.cauldron = EditorGUILayout.ToggleLeft("Cauldron + Fire particles", _buildOpts.cauldron);
-            }
-
-            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
-            {
-                EditorGUILayout.LabelField("Gameplay", EditorStyles.miniBoldLabel);
-                _buildOpts.camera = EditorGUILayout.ToggleLeft("Main Camera", _buildOpts.camera);
-                _buildOpts.bottles = EditorGUILayout.ToggleLeft("Bottles (20 in grid layout)", _buildOpts.bottles);
                 _buildOpts.gameManager = EditorGUILayout.ToggleLeft("GameManager", _buildOpts.gameManager);
             }
 
-            EditorGUILayout.EndScrollView();
-
-            EditorGUILayout.Space(8);
-            using (new EditorGUILayout.HorizontalScope())
+            // ── Quick Add Bottle ────────────────────────────────────────────
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                if (GUILayout.Button("All", GUILayout.Width(60))) _buildOpts = SceneBuilder.All;
-                if (GUILayout.Button("Minimal", GUILayout.Width(60))) _buildOpts = SceneBuilder.Minimal;
-                GUILayout.FlexibleSpace();
-                GUI.backgroundColor = new Color(0.7f, 0.9f, 0.7f);
-                if (GUILayout.Button("Build Scene", GUILayout.Height(28), GUILayout.MaxWidth(180)))
-                    BuildScene();
-                GUI.backgroundColor = Color.white;
+                EditorGUILayout.LabelField("Quick Add Bottles", EditorStyles.miniBoldLabel);
+                GUILayout.Label($"Current bottle count: {SceneBuilder.CountBottles()}", EditorStyles.miniLabel);
+
+                EditorGUILayout.Space(2);
+                EditorGUILayout.LabelField("Number of bottles", EditorStyles.miniLabel);
+                _bottleCount = EditorGUILayout.IntSlider(_bottleCount, 1, 20);
+
+                EditorGUILayout.LabelField("Layout", EditorStyles.miniLabel);
+                _bottleLayout = (SceneBuilder.BottleLayout)EditorGUILayout.EnumPopup(_bottleLayout);
+
+                EditorGUILayout.LabelField("Shader", EditorStyles.miniLabel);
+                _shaderVariant = (SceneBuilder.ShaderVariant)EditorGUILayout.EnumPopup(_shaderVariant);
+
+                _firstEmpty = EditorGUILayout.ToggleLeft("First bottle empty", _firstEmpty);
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUI.backgroundColor = new Color(0.15f, 0.55f, 0.90f);
+                    if (GUILayout.Button("Add 1 Filled", GUILayout.Height(26)))
+                        EditorApplication.delayCall += () => AddBottles(1, false);
+                    if (GUILayout.Button("Add 1 Empty", GUILayout.Height(26)))
+                        EditorApplication.delayCall += () => AddBottles(1, true);
+                    GUI.backgroundColor = Color.white;
+                }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button($"Add {_bottleCount} Bottles", GUILayout.Height(24)))
+                        EditorApplication.delayCall += () => AddBottles(_bottleCount, _firstEmpty);
+                    GUI.backgroundColor = new Color(0.9f, 0.3f, 0.3f);
+                    if (GUILayout.Button("Remove All", GUILayout.Height(24), GUILayout.MinWidth(100)))
+                    {
+                        EditorApplication.delayCall += () =>
+                        {
+                            if (EditorUtility.DisplayDialog("Remove all bottles?",
+                                "This will delete all BottleController objects from the scene. Undo supported.", "Yes", "Cancel"))
+                                SceneBuilder.RemoveBottles();
+                        };
+                    }
+                    GUI.backgroundColor = Color.white;
+                }
+            }
+
+            // ── Full scene preset ───────────────────────────────────────────
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Full Scene Presets", EditorStyles.miniBoldLabel);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("All (20 bottles + env)", GUILayout.Height(24)))
+                    {
+                        EditorApplication.delayCall += () =>
+                        {
+                            _buildOpts = SceneBuilder.All;
+                            BuildScene();
+                        };
+                    }
+                    if (GUILayout.Button("Minimal (bottles + camera)", GUILayout.Height(24)))
+                    {
+                        EditorApplication.delayCall += () =>
+                        {
+                            _buildOpts = SceneBuilder.Minimal;
+                            BuildScene();
+                        };
+                    }
+                    if (GUILayout.Button("Env Only", GUILayout.Height(24)))
+                    {
+                        EditorApplication.delayCall += () =>
+                        {
+                            _buildOpts = SceneBuilder.All;
+                            _buildOpts.bottles = false;
+                            BuildScene();
+                        };
+                    }
+                }
+            }
+
+            EditorGUILayout.EndScrollView();
+        }
+
+        private void AddBottles(int count, bool firstEmpty)
+        {
+            try
+            {
+                EditorUtility.DisplayProgressBar("PuzzleGame", $"Creating {count} bottles...", 0f);
+                Vector3 center = new Vector3(0f, 0f, 0f);
+                var positions = SceneBuilder.ComputePositions(_bottleLayout, count, center);
+                for (int i = 0; i < count; i++)
+                {
+                    Color[] colors;
+                    if (firstEmpty && i == 0)
+                        colors = System.Array.Empty<Color>();
+                    else
+                        colors = new[] { SceneBuilder.DefaultPalette[i % SceneBuilder.DefaultPalette.Length] };
+
+                    SceneBuilder.CreateBottle(SceneBuilder.BottleConfig.WithColors(
+                        positions[i], colors, _shaderVariant, "Bottle"));
+                }
+                SetStatus($"Added {count} bottles ({(firstEmpty ? "1 empty, " : "")}{count - (firstEmpty ? 1 : 0)} filled).", MessageType.Info);
+            }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
             }
         }
 
@@ -370,25 +461,18 @@ namespace PuzzleGame.Editor
         {
             if (_buildOpts.newScene)
             {
-                if (!EditorUtility.DisplayDialog(
-                    "Replace current scene?",
-                    "Mevcut sahne kaybolacak. Önce kaydetmek ister misin?",
-                    "Devam", "İptal"))
-                {
+                if (!EditorUtility.DisplayDialog("Replace current scene?",
+                    "The current scene will be lost. Save first?", "Continue", "Cancel"))
                     return;
-                }
             }
 
             try
             {
                 EditorUtility.DisplayProgressBar("PuzzleGame Scene", "Building...", 0.3f);
                 SceneBuilder.Build(_buildOpts);
-                SetStatus("Scene built. Undo supported.", MessageType.Info);
+                SetStatus("Scene built. Ctrl+Z to undo.", MessageType.Info);
             }
-            finally
-            {
-                EditorUtility.ClearProgressBar();
-            }
+            finally { EditorUtility.ClearProgressBar(); }
         }
 
         // ── VALIDATE TAB ────────────────────────────────────────────────────
@@ -410,7 +494,7 @@ namespace PuzzleGame.Editor
                 MessageType.None);
 
             if (GUILayout.Button("Run Validation", GUILayout.Height(26)))
-                RunValidation();
+                EditorApplication.delayCall += RunValidation;
 
             EditorGUILayout.Space(6);
             _validateScroll = EditorGUILayout.BeginScrollView(_validateScroll);
