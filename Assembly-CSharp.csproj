@@ -54,6 +54,9 @@
     <Compile Include="Assets\Scripts\Events\EventAggregator.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\IGameHistoryService.cs" />
     <Compile Include="Assets\Scripts\Events\GameEvents.cs" />
+    <Compile Include="Assets\Scripts\Domain\Interfaces\IGameStateMachine.cs" />
+    <Compile Include="Assets\Scripts\Application\Services\GameStateMachine.cs" />
+    <Compile Include="Assets\Scripts\Domain\Interfaces\IServiceLocator.cs" />
     <Compile Include="Assets\Scripts\Application\Services\TextureGenerator.cs" />
     <Compile Include="Assets\Tests\Domain\Services\BottleValidationServiceTests.cs" />
     <Compile Include="Assets\Scripts\Domain\Services\BottleValidationService.cs" />
@@ -61,7 +64,9 @@
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\UpdateManager.cs" />
     <Compile Include="Assets\Scripts\Domain\Services\LevelGenerator.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\DomainColor.cs" />
+    <Compile Include="Assets\Scripts\Domain\Models\GameState.cs" />
     <Compile Include="Assets\Tests\Domain\Models\LiquidLayerTests.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\ServiceLocator.cs" />
     <Compile Include="Assets\Tests\Domain\Models\BottleStateTests.cs" />
     <Compile Include="Assets\Scripts\Application\Services\BottleSelectionService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Interfaces\IInputHandler.cs" />
@@ -1253,6 +1258,10 @@
       <HintPath>Library\ScriptAssemblies\Unity.Mathematics.Editor.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="VContainer.Editor">
+      <HintPath>Library\ScriptAssemblies\VContainer.Editor.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Unity.UnifiedRayTracing.Runtime">
       <HintPath>Library\ScriptAssemblies\Unity.UnifiedRayTracing.Runtime.dll</HintPath>
       <Private>False</Private>
@@ -1379,6 +1388,10 @@
     </Reference>
     <Reference Include="Unity.ShaderGraph.Editor">
       <HintPath>Library\ScriptAssemblies\Unity.ShaderGraph.Editor.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="VContainer">
+      <HintPath>Library\ScriptAssemblies\VContainer.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.RenderPipelines.Core.Editor.Shared">

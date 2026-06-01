@@ -36,11 +36,11 @@ namespace PuzzleGame
         private IBottleSelectionService _selectionService;
         private IInputHandler         _inputHandler;
         private IGameHistoryService   _gameHistoryService;
+        private IGameStateMachine     _stateMachine;
 
         private BottleController[] _bottles;
         private Camera             _mainCam;
 
-        private bool    _gameWon;
         private int     _moveCount;
         private Vector3 _selectedOriginalPos;
 
@@ -69,9 +69,13 @@ namespace PuzzleGame
         private void Start()
         {
             BottleLogger.LogInfo("GameManager Start — setting up scene.");
+            _stateMachine.TransitionTo(GameState.Menu);
             CacheBottles();
             SetupBottles();
             InitHUD();
+            // Auto-advance to LevelLoading → Playing (will be replaced by level select flow later)
+            _stateMachine.TransitionTo(GameState.LevelLoading);
+            _stateMachine.TransitionTo(GameState.Playing);
         }
 
         private void OnEnable()
@@ -97,7 +101,8 @@ namespace PuzzleGame
 
         public void OnUpdate(float deltaTime)
         {
-            if (_gameWon || _animationService.IsAnimating) return;
+            if (_stateMachine == null || !_stateMachine.IsInState(GameState.Playing)) return;
+            if (_animationService == null || _animationService.IsAnimating) return;
             if (_inputHandler == null) return;
 
             if (_inputHandler.GetPointerDown(out Vector2 screenPos))
@@ -141,6 +146,7 @@ namespace PuzzleGame
             _animationService = new AnimationService(animConfig);
             _selectionService = new BottleSelectionService();
             _gameHistoryService = new GameHistoryService();
+            _stateMachine = new GameStateMachine();
 
             _onBottleSelectedHandler = b => EventAggregator.Publish(
                 new BottleSelectedEvent(b));
@@ -382,7 +388,7 @@ namespace PuzzleGame
 
             if (hasLiquid && allComplete)
             {
-                _gameWon = true;
+                _stateMachine.TransitionTo(GameState.LevelComplete);
                 BottleLogger.LogInfo($"Level complete in {_moveCount} moves.");
                 EventAggregator.Publish(new LevelCompletedEvent(_moveCount));
                 if (winPanel != null) winPanel.SetActive(true);
@@ -412,7 +418,7 @@ namespace PuzzleGame
 
         public void Undo()
         {
-            if (_gameWon) return;
+            if (_stateMachine == null || !_stateMachine.IsInState(GameState.Playing)) return;
             if (_gameHistoryService == null || !_gameHistoryService.CanUndo) return;
 
             _gameHistoryService.Undo();

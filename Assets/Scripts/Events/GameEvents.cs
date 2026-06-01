@@ -2,6 +2,18 @@ using PuzzleGame.Domain.Models;
 
 namespace PuzzleGame.Events
 {
+    public readonly struct GameStateChangedEvent
+    {
+        public GameState Previous { get; }
+        public GameState Current { get; }
+
+        public GameStateChangedEvent(GameState previous, GameState current)
+        {
+            Previous = previous;
+            Current = current;
+        }
+    }
+
     public readonly struct PourCompletedEvent
     {
         public BottleState Source { get; }
