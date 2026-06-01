@@ -1,9 +1,10 @@
 using NUnit.Framework;
-using BottleShaders.Application.Services;
-using BottleShaders.Domain.Models;
+using PuzzleGame.Application.Services;
+using PuzzleGame.Domain.Models;
+using PuzzleGame.Infrastructure;
 using UnityEngine;
 
-namespace BottleShaders.Application.Tests
+namespace PuzzleGame.Application.Tests
 {
     public class BottleSelectionServiceTests
     {
@@ -16,9 +17,9 @@ namespace BottleShaders.Application.Tests
         {
             _service = new BottleSelectionService();
             _bottleA = new BottleState(4);
-            _bottleA.AddLayer(new LiquidLayer(Color.red, 0.25f));
+            _bottleA.AddLayer(new LiquidLayer(ColorAdapter.FromUnity(Color.red), 0.25f));
             _bottleB = new BottleState(4);
-            _bottleB.AddLayer(new LiquidLayer(Color.blue, 0.25f));
+            _bottleB.AddLayer(new LiquidLayer(ColorAdapter.FromUnity(Color.blue), 0.25f));
         }
 
         [Test]

@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using BottleShaders.Domain.Models;
+using PuzzleGame.Domain.Models;
 using UnityEngine;
 
-namespace BottleShaders.Infrastructure.Interfaces
+namespace PuzzleGame.Infrastructure.Interfaces
 {
     public interface IRendererService
     {

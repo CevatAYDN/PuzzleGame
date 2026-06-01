@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace BottleShaders.Infrastructure.Interfaces
+namespace PuzzleGame.Infrastructure.Interfaces
 {
     public interface IInputHandler
     {

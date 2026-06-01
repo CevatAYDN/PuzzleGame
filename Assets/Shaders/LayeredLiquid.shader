@@ -37,9 +37,6 @@ Shader "Custom/LayeredLiquid"
         [HideInInspector] _WobbleX ("Wobble X", Range(-1, 1)) = 0.0
         [HideInInspector] _WobbleZ ("Wobble Z", Range(-1, 1)) = 0.0
         _WobbleStrength ("Wobble Strength", Range(0.0, 0.3)) = 0.15
-
-        [Header(Time)]
-        _TimeX("Time X", Float) = 0.0
     }
 
     SubShader
@@ -100,7 +97,6 @@ Shader "Custom/LayeredLiquid"
                 float _SpecularSmoothness;
                 float _LayerBoundaryWidth;
                 float _LayerBoundaryDarken;
-                float _TimeX;
             CBUFFER_END
 
             struct Attributes
@@ -211,7 +207,7 @@ Shader "Custom/LayeredLiquid"
                 float height = dot(input.positionOS, upOS);
                 float normalizedY = saturate(height / max(planeScale, 0.0001));
 
-                float time = _TimeX > 0.0 ? _TimeX : _Time.y;
+                float time = _Time.y;
                 float surfaceRipple = CalculateRipple(input.positionWS, time);
 
                 float wobbleAdjustment = input.wobbleY;
@@ -344,6 +340,9 @@ Shader "Custom/LayeredLiquid"
                 float _Fill4;
                 float _BottleHeight;
                 float _SurfaceHeight;
+                float _WobbleX;
+                float _WobbleZ;
+                float _WobbleStrength;
             CBUFFER_END
 
             struct Attributes
@@ -357,6 +356,7 @@ Shader "Custom/LayeredLiquid"
             {
                 float4 positionCS : SV_POSITION;
                 float objectY : TEXCOORD0;
+                float wobbleY : TEXCOORD1;
             };
 
             Varyings vert(Attributes input)
@@ -365,6 +365,8 @@ Shader "Custom/LayeredLiquid"
                 VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
                 output.positionCS = vertexInput.positionCS;
                 output.objectY = input.positionOS.y;
+                // Wobble offset (matches ForwardLit pass calculation)
+                output.wobbleY = (input.positionOS.x * _WobbleX + input.positionOS.z * _WobbleZ) * _WobbleStrength;
                 return output;
             }
 
@@ -374,8 +376,9 @@ Shader "Custom/LayeredLiquid"
                 float bottleHeight = max(_BottleHeight, 0.001);
                 float normalizedY = saturate(input.objectY / bottleHeight);
 
-                // Discard pixels above the liquid surface
-                clip(_SurfaceHeight - normalizedY);
+                // Wobble-aware clip: surface moves with wobble (matches ForwardLit pass)
+                float surfaceWobbled = _SurfaceHeight + input.wobbleY;
+                clip(surfaceWobbled - normalizedY);
 
                 return 0;
             }

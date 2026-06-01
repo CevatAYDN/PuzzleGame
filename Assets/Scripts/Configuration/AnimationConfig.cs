@@ -1,8 +1,8 @@
 using UnityEngine;
 
-namespace BottleShaders.Configuration
+namespace PuzzleGame.Configuration
 {
-    [CreateAssetMenu(fileName = "AnimationConfig", menuName = "BottleGame/AnimationConfig")]
+    [CreateAssetMenu(fileName = "AnimationConfig", menuName = "PuzzleGame/AnimationConfig")]
     public class AnimationConfig : ScriptableObject
     {
         public float liftHeight = 1.0f;
@@ -25,5 +25,35 @@ namespace BottleShaders.Configuration
         [Range(0f, 1f)] public float tiltPhasePortion = 0.25f;
         [Range(0f, 1f)] public float flowPhasePortion = 0.50f;
         [Range(0f, 1f)] public float returnPhasePortion = 0.25f;
+
+        /// <summary>
+        /// Phase portions'ın toplamını 1.0'a normalize eder.
+        /// Sıfırları ihmal ederek herhangi bir kombinasyonu güvenli hale getirir.
+        /// </summary>
+        public void NormalizePhases()
+        {
+            float total = tiltPhasePortion + flowPhasePortion + returnPhasePortion;
+            if (total < 0.0001f)
+            {
+                tiltPhasePortion = 0.25f;
+                flowPhasePortion = 0.50f;
+                returnPhasePortion = 0.25f;
+                return;
+            }
+            tiltPhasePortion   /= total;
+            flowPhasePortion   /= total;
+            returnPhasePortion /= total;
+        }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            // Sıfır veya negatif portions'ı 0.01'e çek
+            tiltPhasePortion   = Mathf.Max(0.01f, tiltPhasePortion);
+            flowPhasePortion   = Mathf.Max(0.01f, flowPhasePortion);
+            returnPhasePortion = Mathf.Max(0.01f, returnPhasePortion);
+            NormalizePhases();
+        }
+#endif
     }
 }

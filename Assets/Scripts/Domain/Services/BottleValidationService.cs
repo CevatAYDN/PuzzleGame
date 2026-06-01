@@ -1,8 +1,8 @@
-using BottleShaders.Domain.Interfaces;
-using BottleShaders.Domain.Models;
-using UnityEngine;
+using System;
+using PuzzleGame.Domain.Interfaces;
+using PuzzleGame.Domain.Models;
 
-namespace BottleShaders.Domain.Services
+namespace PuzzleGame.Domain.Services
 {
     public class BottleValidationService : IBottleValidator
     {
@@ -22,7 +22,11 @@ namespace BottleShaders.Domain.Services
 
             if (target.IsEmpty) return true;
 
-            return ColorsMatch(source.TopLayer!.Value.Color, target.TopLayer!.Value.Color);
+            var sourceTop = source.TopLayer;
+            var targetTop = target.TopLayer;
+            if (sourceTop == null || targetTop == null) return false;
+
+            return ColorsMatch(sourceTop.Value.Color, targetTop.Value.Color);
         }
 
         public bool IsComplete(BottleState bottle)
@@ -43,13 +47,9 @@ namespace BottleShaders.Domain.Services
         }
 
         public bool ColorsMatch(DomainColor a, DomainColor b) =>
-            Mathf.Abs(a.R - b.R) < _colorTolerance &&
-            Mathf.Abs(a.G - b.G) < _colorTolerance &&
-            Mathf.Abs(a.B - b.B) < _colorTolerance;
-
-        public bool UnityColorsMatch(Color a, Color b) =>
-            Mathf.Abs(a.r - b.r) < _colorTolerance &&
-            Mathf.Abs(a.g - b.g) < _colorTolerance &&
-            Mathf.Abs(a.b - b.b) < _colorTolerance;
+            Math.Abs(a.R - b.R) < _colorTolerance &&
+            Math.Abs(a.G - b.G) < _colorTolerance &&
+            Math.Abs(a.B - b.B) < _colorTolerance &&
+            Math.Abs(a.A - b.A) < _colorTolerance;
     }
 }

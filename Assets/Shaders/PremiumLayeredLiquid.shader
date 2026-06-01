@@ -54,9 +54,6 @@ Shader "Custom/PremiumLayeredLiquid"
         [Header(Layer Boundary)]
         _LayerBoundaryWidth ("Layer Boundary Width", Range(0.0, 0.05)) = 0.025
         _LayerBoundaryDarken ("Layer Boundary Darken", Range(0.0, 1.0)) = 0.4
-
-        [Header(Time)]
-        _TimeX ("Time X", Float) = 0.0
     }
 
     SubShader
@@ -125,7 +122,6 @@ Shader "Custom/PremiumLayeredLiquid"
                 float _EdgeWidth;
                 float _LayerBoundaryWidth;
                 float _LayerBoundaryDarken;
-                float _TimeX;
             CBUFFER_END
 
             struct Attributes
@@ -240,7 +236,7 @@ Shader "Custom/PremiumLayeredLiquid"
                 float height = dot(input.positionOS, upOS);
                 float normalizedY = saturate(height / max(planeScale, 0.0001));
 
-                float time = _TimeX > 0.0 ? _TimeX : _Time.y;
+                float time = _Time.y;
                 float surfaceRipple = CalculateRipple(input.positionWS, time);
 
                 float wobbleAdjustment = input.wobbleY;
@@ -378,6 +374,9 @@ Shader "Custom/PremiumLayeredLiquid"
                 float _Fill4;
                 float _BottleHeight;
                 float _SurfaceHeight;
+                float _WobbleX;
+                float _WobbleZ;
+                float _WobbleStrength;
             CBUFFER_END
 
             struct Attributes
@@ -391,6 +390,7 @@ Shader "Custom/PremiumLayeredLiquid"
             {
                 float4 positionCS : SV_POSITION;
                 float objectY : TEXCOORD0;
+                float wobbleY : TEXCOORD1;
             };
 
             Varyings vert(Attributes input)
@@ -399,6 +399,7 @@ Shader "Custom/PremiumLayeredLiquid"
                 VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
                 output.positionCS = vertexInput.positionCS;
                 output.objectY = input.positionOS.y;
+                output.wobbleY = (input.positionOS.x * _WobbleX + input.positionOS.z * _WobbleZ) * _WobbleStrength;
                 return output;
             }
 
@@ -406,7 +407,8 @@ Shader "Custom/PremiumLayeredLiquid"
             {
                 float bottleHeight = max(_BottleHeight, 0.001);
                 float normalizedY = saturate(input.objectY / bottleHeight);
-                clip(_SurfaceHeight - normalizedY);
+                float surfaceWobbled = _SurfaceHeight + input.wobbleY;
+                clip(surfaceWobbled - normalizedY);
                 return 0;
             }
             ENDHLSL

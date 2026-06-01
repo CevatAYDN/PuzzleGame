@@ -4,18 +4,19 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using BottleShaders.Domain.Models;
-using BottleShaders.Domain.Services;
-using BottleShaders.Domain.Interfaces;
-using BottleShaders.Application.Services;
-using BottleShaders.Application.Interfaces;
-using BottleShaders.Infrastructure.Interfaces;
-using BottleShaders.Infrastructure.Implementations;
-using BottleShaders.Events;
-using BottleShaders.Logging;
-using BottleShaders.Configuration;
+using PuzzleGame.Domain.Models;
+using PuzzleGame.Domain.Services;
+using PuzzleGame.Domain.Interfaces;
+using PuzzleGame.Application.Services;
+using PuzzleGame.Application.Interfaces;
+using PuzzleGame.Infrastructure.Interfaces;
+using PuzzleGame.Infrastructure.Implementations;
+using PuzzleGame.Infrastructure;
+using PuzzleGame.Events;
+using PuzzleGame.Logging;
+using PuzzleGame.Configuration;
 
-namespace BottleShaders
+namespace PuzzleGame
 {
     public class GameManager : MonoBehaviour, IUpdateable
     {
@@ -47,6 +48,7 @@ namespace BottleShaders
         private IAnimationService     _animationService;
         private IBottleSelectionService _selectionService;
         private IInputHandler         _inputHandler;
+        private IGameHistoryService   _gameHistoryService;
 
         private BottleController[] _bottles;
         private Camera             _mainCam;
@@ -141,6 +143,7 @@ namespace BottleShaders
             _rendererService  = new RendererService();
             _animationService = new AnimationService(animConfig);
             _selectionService = new BottleSelectionService();
+            _gameHistoryService = new GameHistoryService();
 
             _onBottleSelectedHandler = b => EventAggregator.Publish(
                 new BottleSelectedEvent(b));
@@ -177,7 +180,12 @@ namespace BottleShaders
             if (_bottles.Length == 0) return;
 
             List<List<LiquidLayer>> assignments = autoGenerateLevel
-                ? GenerateLevel(_bottles.Length, gameConfig.maxLayersPerBottle)
+                ? LevelGenerator.Generate(
+                    _bottles.Length,
+                    gameConfig.maxLayersPerBottle,
+                    emptyBottleCount,
+                    ConvertPalette(palette),
+                    randomSeed)
                 : null;
 
             for (int i = 0; i < _bottles.Length; i++)
@@ -205,42 +213,11 @@ namespace BottleShaders
             }
         }
 
-        private List<List<LiquidLayer>> GenerateLevel(int bottleCount, int maxLayers)
+        private DomainColor[] ConvertPalette(Color[] colors)
         {
-            var result = new List<List<LiquidLayer>>(bottleCount);
-            for (int i = 0; i < bottleCount; i++)
-                result.Add(new List<LiquidLayer>());
-
-            int empties     = Mathf.Clamp(emptyBottleCount, 1, bottleCount - 1);
-            int filledCount = bottleCount - empties;
-            int numColors   = Mathf.Min(filledCount, palette.Length);
-
-            if (numColors < 1)
-            {
-                BottleLogger.LogWarning("Level generation: not enough bottles or palette colors.");
-                return result;
-            }
-
-            var pool = new List<Color>(numColors * maxLayers);
-            for (int c = 0; c < numColors; c++)
-                for (int k = 0; k < maxLayers; k++)
-                    pool.Add(palette[c]);
-
-            var rng = randomSeed == 0 ? new System.Random() : new System.Random(randomSeed);
-            for (int i = pool.Count - 1; i > 0; i--)
-            {
-                int j = rng.Next(i + 1);
-                (pool[i], pool[j]) = (pool[j], pool[i]);
-            }
-
-            float amountPerLayer = 1f / maxLayers;
-            int   idx            = 0;
-
-            for (int b = 0; b < numColors; b++)
-                for (int k = 0; k < maxLayers; k++)
-                    result[b].Add(new LiquidLayer(pool[idx++], amountPerLayer));
-
-            BottleLogger.LogInfo($"Level generated: {numColors} colors, {filledCount} filled, {empties} empty.");
+            var result = new DomainColor[colors.Length];
+            for (int i = 0; i < colors.Length; i++)
+                result[i] = ColorAdapter.FromUnity(colors[i]);
             return result;
         }
 
@@ -317,6 +294,7 @@ namespace BottleShaders
 
             if (source.TryPourTo(target))
             {
+                RecordUndoSnapshot(); // hamle başarılıysa undo state'i kaydet
                 _moveCount++;
                 BottleLogger.LogInfo($"Pour succeeded. Moves: {_moveCount}.");
                 UpdateHUD();
@@ -416,6 +394,36 @@ namespace BottleShaders
         {
             if (moveCountText != null)
                 moveCountText.text = $"Hamle: {_moveCount}";
+        }
+
+        private void RecordUndoSnapshot()
+        {
+            if (_bottles == null || _gameHistoryService == null) return;
+            var states = new BottleState[_bottles.Length];
+            for (int i = 0; i < _bottles.Length; i++)
+                states[i] = _bottles[i]?.State;
+            _gameHistoryService.RecordSnapshot(states);
+        }
+
+        public void Undo()
+        {
+            if (_gameWon) return;
+            if (_gameHistoryService == null || !_gameHistoryService.CanUndo) return;
+
+            _gameHistoryService.Undo();
+            var snapshots = _gameHistoryService.LastSnapshot;
+            if (snapshots == null || _bottles == null) return;
+
+            for (int i = 0; i < snapshots.Length && i < _bottles.Length; i++)
+            {
+                if (_bottles[i] == null) continue;
+                _bottles[i].State.ReplaceLayers(snapshots[i]);
+                _bottles[i].UpdateVisualsFromState();
+            }
+
+            _moveCount = Mathf.Max(0, _moveCount - 1);
+            UpdateHUD();
+            BottleLogger.LogInfo($"Undo. Moves: {_moveCount}");
         }
 
         public void RestartGame()

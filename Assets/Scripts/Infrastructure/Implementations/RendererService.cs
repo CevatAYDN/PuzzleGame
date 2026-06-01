@@ -1,9 +1,10 @@
 using System.Collections.Generic;
-using BottleShaders.Domain.Models;
-using BottleShaders.Infrastructure.Interfaces;
+using PuzzleGame.Domain.Models;
+using PuzzleGame.Infrastructure.Interfaces;
+using PuzzleGame.Infrastructure;
 using UnityEngine;
 
-namespace BottleShaders.Infrastructure.Implementations
+namespace PuzzleGame.Infrastructure.Implementations
 {
     public class RendererService : IRendererService
     {
@@ -35,6 +36,7 @@ namespace BottleShaders.Infrastructure.Implementations
             float cumulative = 0f;
 
             int maxLayers = Mathf.Min(BottleState.MaxSupportedLayers, ColorIDs.Length);
+            // ColorIDs.Length == 4 == BottleState.MaxSupportedLayers, gelecekte uyumsuzluk olursa Math.Min koruyor.
             for (int i = 0; i < maxLayers; i++)
             {
                 Color color = Color.clear;
@@ -43,7 +45,7 @@ namespace BottleShaders.Infrastructure.Implementations
                 if (i < layers.Count)
                 {
                     var layer = layers[i];
-                    color      = AdjustColor(layer.Color.ToUnityColor(), saturationBoost, brightnessBoost);
+                    color      = AdjustColor(ColorAdapter.ToUnity(layer.Color), saturationBoost, brightnessBoost);
                     cumulative += layer.Amount;
                     fill       = cumulative;
                 }
@@ -66,7 +68,7 @@ namespace BottleShaders.Infrastructure.Implementations
             }
             else
             {
-                var uColor = baseColor.ToUnityColor();
+                var uColor = ColorAdapter.ToUnity(baseColor);
                 glassColor = new Color(
                     uColor.r * 0.15f + 0.85f,
                     uColor.g * 0.15f + 0.85f,

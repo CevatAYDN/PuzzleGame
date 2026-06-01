@@ -1,4 +1,4 @@
-namespace BottleShaders.Application.Interfaces
+namespace PuzzleGame.Application.Interfaces
 {
     /// <summary>
     /// Contract for any class that needs to receive centralized frame-rate updates.

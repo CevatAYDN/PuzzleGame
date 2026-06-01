@@ -1,12 +1,12 @@
 using UnityEngine;
-using BottleShaders.Infrastructure.Interfaces;
-using BottleShaders.Domain.Models;
-using BottleShaders.Domain.Interfaces;
-using BottleShaders.Logging;
+using PuzzleGame.Infrastructure.Interfaces;
+using PuzzleGame.Domain.Models;
+using PuzzleGame.Domain.Interfaces;
+using PuzzleGame.Logging;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace BottleShaders
+namespace PuzzleGame
 {
     [RequireComponent(typeof(Renderer))]
     [RequireComponent(typeof(Wobble))]
@@ -43,6 +43,7 @@ namespace BottleShaders
         private Wobble            _wobble;
         private BottleMeshGenerator _meshGenerator;
         private MaterialPropertyBlock _propBlock;
+        private bool _isHighlighted;
 
         private static readonly int FresnelIntensityID = Shader.PropertyToID("_FresnelIntensity");
         private static readonly int RimIntensityID     = Shader.PropertyToID("_RimIntensity");
@@ -203,10 +204,13 @@ namespace BottleShaders
             }
 
             if (_renderer == null)
-                _renderer = GetComponent<Renderer>();
+            {
+                BottleLogger.LogWarning($"'{name}': Renderer is null, skipping visual update.");
+                return;
+            }
 
             _rendererService.UpdateLiquid(_renderer, _visualLayers, _visualTotalFill, saturationBoost, brightnessBoost);
-            
+
             bool isEmpty = _visualLayers.Count == 0 || _visualTotalFill <= 0.001f;
             DomainColor baseColor = _visualLayers.Count > 0 ? _visualLayers[0].Color : new DomainColor(0, 0, 0, 0);
             _rendererService.UpdateGlass(_renderer, isEmpty, baseColor);
@@ -215,6 +219,8 @@ namespace BottleShaders
         public void SetSelectionHighlight(bool active)
         {
             if (_renderer == null) return;
+            if (_isHighlighted == active) return; // durum değişmedi → no-op
+            _isHighlighted = active;
             if (_propBlock == null) _propBlock = new MaterialPropertyBlock();
             _renderer.GetPropertyBlock(_propBlock, 0);
             _propBlock.SetFloat(FresnelIntensityID, active ? 4.0f : 1.5f);

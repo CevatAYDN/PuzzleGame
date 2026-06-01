@@ -1,7 +1,7 @@
 using UnityEngine;
 using System;
 
-namespace BottleShaders.Application.Interfaces
+namespace PuzzleGame.Application.Interfaces
 {
     /// <summary>
     /// Drives all bottle animations. Runs coroutines via a MonoBehaviour context

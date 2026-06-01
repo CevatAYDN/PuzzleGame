@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEditor;
 #endif
 
-namespace BottleShaders
+namespace PuzzleGame
 {
     [RequireComponent(typeof(MeshFilter))]
     [RequireComponent(typeof(MeshRenderer))]

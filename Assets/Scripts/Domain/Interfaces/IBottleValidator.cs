@@ -1,12 +1,11 @@
-using BottleShaders.Domain.Models;
+using PuzzleGame.Domain.Models;
 
-namespace BottleShaders.Domain.Interfaces
+namespace PuzzleGame.Domain.Interfaces
 {
     public interface IBottleValidator
     {
         bool CanPour(BottleState source, BottleState target);
         bool IsComplete(BottleState bottle);
         bool ColorsMatch(DomainColor a, DomainColor b);
-        bool UnityColorsMatch(UnityEngine.Color a, UnityEngine.Color b);
     }
 }

@@ -1,10 +1,10 @@
 using System.Collections.Generic;
-using BottleShaders.Application.Interfaces;
-using BottleShaders.Infrastructure.Interfaces;
-using BottleShaders.Logging;
+using PuzzleGame.Application.Interfaces;
+using PuzzleGame.Infrastructure.Interfaces;
+using PuzzleGame.Logging;
 using UnityEngine;
 
-namespace BottleShaders.Infrastructure.Implementations
+namespace PuzzleGame.Infrastructure.Implementations
 {
     /// <summary>
     /// Central manager that executes updates for all registered IUpdateable objects

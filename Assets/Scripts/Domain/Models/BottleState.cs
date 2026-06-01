@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace BottleShaders.Domain.Models
+namespace PuzzleGame.Domain.Models
 {
     public class BottleState
     {
@@ -49,6 +49,24 @@ namespace BottleShaders.Domain.Models
         {
             _layers.Clear();
             _totalFill = 0f;
+        }
+
+        /// <summary>
+        /// Snapshot'tan yükle (Undo için).
+        /// MaxLayers aşılırsa false döner ve hiçbir değişiklik yapılmaz.
+        /// </summary>
+        public bool ReplaceLayers(IEnumerable<LiquidLayer> newLayers)
+        {
+            _layers.Clear();
+            float total = 0f;
+            foreach (var layer in newLayers)
+            {
+                if (_layers.Count >= MaxLayers) return false;
+                _layers.Add(layer);
+                total += layer.Amount;
+            }
+            _totalFill = total;
+            return true;
         }
 
         public override string ToString() =>

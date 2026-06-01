@@ -1,8 +1,8 @@
 using UnityEngine;
 
-namespace BottleShaders.Configuration
+namespace PuzzleGame.Configuration
 {
-    [CreateAssetMenu(fileName = "GameConfig", menuName = "BottleGame/GameConfig")]
+    [CreateAssetMenu(fileName = "GameConfig", menuName = "PuzzleGame/GameConfig")]
     public class GameConfig : ScriptableObject
     {
         public LayerMask bottleLayerMask = ~0;

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace BottleShaders.Domain.Models
+namespace PuzzleGame.Domain.Models
 {
     /// <summary>
     /// Value-type snapshot of liquid layers.

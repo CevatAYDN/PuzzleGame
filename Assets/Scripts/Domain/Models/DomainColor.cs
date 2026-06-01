@@ -1,7 +1,11 @@
 using System;
 
-namespace BottleShaders.Domain.Models
+namespace PuzzleGame.Domain.Models
 {
+    /// <summary>
+    /// Pure C# renk temsilidir — UnityEngine bağımlılığı yoktur.
+    /// UnityColor dönüşümü için <c>ColorAdapter</c> (Infrastructure katmanında) kullanılır.
+    /// </summary>
     public readonly struct DomainColor : IEquatable<DomainColor>
     {
         public float R { get; }
@@ -16,12 +20,6 @@ namespace BottleShaders.Domain.Models
             B = Math.Max(0f, b);
             A = Math.Max(0f, a);
         }
-
-        public static DomainColor FromUnityColor(UnityEngine.Color color) =>
-            new DomainColor(color.r, color.g, color.b, color.a);
-
-        public UnityEngine.Color ToUnityColor() =>
-            new UnityEngine.Color(R, G, B, A);
 
         public bool IsTransparent => A <= 0.01f;
 

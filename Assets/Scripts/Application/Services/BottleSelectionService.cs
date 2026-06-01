@@ -1,8 +1,8 @@
-using BottleShaders.Application.Interfaces;
-using BottleShaders.Domain.Models;
+using PuzzleGame.Application.Interfaces;
+using PuzzleGame.Domain.Models;
 using System;
 
-namespace BottleShaders.Application.Services
+namespace PuzzleGame.Application.Services
 {
     /// <summary>
     /// Plain C# service — no MonoBehaviour, fully testable.

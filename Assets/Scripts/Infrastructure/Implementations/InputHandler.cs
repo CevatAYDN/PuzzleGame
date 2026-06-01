@@ -1,11 +1,11 @@
-using BottleShaders.Infrastructure.Interfaces;
-using BottleShaders.Logging;
+using PuzzleGame.Infrastructure.Interfaces;
+using PuzzleGame.Logging;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
 
-namespace BottleShaders.Infrastructure.Implementations
+namespace PuzzleGame.Infrastructure.Implementations
 {
     /// <summary>
     /// Abstracts Unity's input system so the rest of the codebase

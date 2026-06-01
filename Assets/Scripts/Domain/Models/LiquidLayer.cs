@@ -1,7 +1,11 @@
 using System;
 
-namespace BottleShaders.Domain.Models
+namespace PuzzleGame.Domain.Models
 {
+    /// <summary>
+    /// Sıvı katmanı — DomainColor + miktar (normalize 0..1).
+    /// UnityEngine.Color dönüşümü için ColorAdapter (Infrastructure) kullanılır.
+    /// </summary>
     public readonly struct LiquidLayer
     {
         public DomainColor Color { get; }
@@ -15,12 +19,7 @@ namespace BottleShaders.Domain.Models
             Amount = Math.Max(0f, amount);
         }
 
-        public LiquidLayer(UnityEngine.Color color, float amount)
-            : this(DomainColor.FromUnityColor(color), amount) { }
-
         public LiquidLayer WithColor(DomainColor newColor) => new LiquidLayer(newColor, Amount);
-        public LiquidLayer WithColor(UnityEngine.Color newColor) => new LiquidLayer(DomainColor.FromUnityColor(newColor), Amount);
-
         public LiquidLayer WithAmount(float newAmount) => new LiquidLayer(Color, newAmount);
 
         public override string ToString() => $"LiquidLayer(color={Color}, amount={Amount:F3})";

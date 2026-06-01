@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace BottleShaders.Logging
+namespace PuzzleGame.Logging
 {
     /// <summary>
     /// Thin wrapper around Unity's Debug logger.

@@ -1,6 +1,6 @@
-using BottleShaders.Application.Interfaces;
+using PuzzleGame.Application.Interfaces;
 
-namespace BottleShaders.Infrastructure.Interfaces
+namespace PuzzleGame.Infrastructure.Interfaces
 {
     /// <summary>
     /// Central manager interface to register and unregister updateable classes.

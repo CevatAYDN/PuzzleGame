@@ -1,8 +1,8 @@
 using UnityEngine;
-using BottleShaders.Application.Interfaces;
-using BottleShaders.Infrastructure.Implementations;
+using PuzzleGame.Application.Interfaces;
+using PuzzleGame.Infrastructure.Implementations;
 
-namespace BottleShaders
+namespace PuzzleGame
 {
     [RequireComponent(typeof(Renderer))]
     public class Wobble : MonoBehaviour, IUpdateable

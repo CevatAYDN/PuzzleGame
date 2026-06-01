@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using BottleShaders.Logging;
+using PuzzleGame.Logging;
 
-namespace BottleShaders.Events
+namespace PuzzleGame.Events
 {
     /// <summary>
     /// Lightweight, type-safe publish/subscribe bus.

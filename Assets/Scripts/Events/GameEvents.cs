@@ -1,6 +1,6 @@
-using BottleShaders.Domain.Models;
+using PuzzleGame.Domain.Models;
 
-namespace BottleShaders.Events
+namespace PuzzleGame.Events
 {
     public readonly struct PourCompletedEvent
     {

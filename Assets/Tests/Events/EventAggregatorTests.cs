@@ -1,10 +1,10 @@
 using NUnit.Framework;
-using BottleShaders.Events;
-using BottleShaders.Domain.Models;
-using BottleShaders.Logging;
+using PuzzleGame.Events;
+using PuzzleGame.Domain.Models;
+using PuzzleGame.Logging;
 using UnityEngine;
 
-namespace BottleShaders.Events.Tests
+namespace PuzzleGame.Events.Tests
 {
     public class EventAggregatorTests
     {

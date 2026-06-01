@@ -1,7 +1,7 @@
-using BottleShaders.Domain.Models;
+using PuzzleGame.Domain.Models;
 using System;
 
-namespace BottleShaders.Application.Interfaces
+namespace PuzzleGame.Application.Interfaces
 {
     /// <summary>
     /// Tracks which bottle the player has currently selected.

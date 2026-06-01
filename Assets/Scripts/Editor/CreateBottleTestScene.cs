@@ -5,14 +5,15 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
-using BottleShaders.Domain.Models;
-using BottleShaders.Domain.Services;
-using BottleShaders.Domain.Interfaces;
-using BottleShaders.Infrastructure.Interfaces;
-using BottleShaders.Infrastructure.Implementations;
-using BottleShaders.Logging;
+using PuzzleGame.Domain.Models;
+using PuzzleGame.Domain.Services;
+using PuzzleGame.Domain.Interfaces;
+using PuzzleGame.Infrastructure.Interfaces;
+using PuzzleGame.Infrastructure.Implementations;
+using PuzzleGame.Infrastructure;
+using PuzzleGame.Logging;
 
-namespace BottleShaders.Editor
+namespace PuzzleGame.Editor
 {
     public static class CreateBottleTestScene
     {
@@ -413,7 +414,7 @@ namespace BottleShaders.Editor
                 if (colors[i].a > 0.01f)
                 {
                     float amount = i == 0 ? heights[0] : heights[i] - heights[i - 1];
-                    layers.Add(new LiquidLayer(colors[i], amount));
+                    layers.Add(new LiquidLayer(ColorAdapter.FromUnity(colors[i]), amount));
                 }
             }
 

@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
-namespace BottleShaders
+namespace PuzzleGame
 {
     /// <summary>
     /// Helper to verify URP settings for mobile glass/liquid shaders.
