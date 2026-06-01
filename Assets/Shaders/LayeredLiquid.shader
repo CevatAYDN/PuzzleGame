@@ -116,7 +116,7 @@ Shader "Custom/LayeredLiquid"
                 float3 positionWS : TEXCOORD0;
                 float3 normalWS : TEXCOORD1;
                 float2 uv : TEXCOORD2;
-                float objectY : TEXCOORD3;
+                float3 positionOS : TEXCOORD3;
                 float wobbleY : TEXCOORD4;
             };
 
@@ -133,8 +133,8 @@ Shader "Custom/LayeredLiquid"
 
                 output.uv = input.uv;
 
-                // Object-space Y (mesh local height), used for fill normalization
-                output.objectY = input.positionOS.y;
+                // Object-space position used for horizontal liquid projection
+                output.positionOS = input.positionOS.xyz;
 
                 // Object-space wobble calculation
                 output.wobbleY = (input.positionOS.x * _WobbleX + input.positionOS.z * _WobbleZ) * _WobbleStrength;
@@ -202,10 +202,14 @@ Shader "Custom/LayeredLiquid"
 
             half4 frag(Varyings input) : SV_Target
             {
-                // Normalize against object-space mesh height so fill 0..1 maps to
-                // the full bottle regardless of world position or scale.
+                // Calculate world up in object space to keep liquid horizontal as the bottle tilts
+                float3x3 worldToObject = (float3x3)GetWorldToObjectMatrix();
+                float3 upOS = normalize(mul(worldToObject, float3(0.0, 1.0, 0.0)));
+
                 float bottleHeight = max(_BottleHeight, 0.001);
-                float normalizedY = saturate(input.objectY / bottleHeight);
+                float planeScale = bottleHeight * upOS.y;
+                float height = dot(input.positionOS, upOS);
+                float normalizedY = saturate(height / max(planeScale, 0.0001));
 
                 float time = _TimeX > 0.0 ? _TimeX : _Time.y;
                 float surfaceRipple = CalculateRipple(input.positionWS, time);

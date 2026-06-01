@@ -114,14 +114,20 @@ namespace BottleShaders.Editor
             Material groundMat = CreateLitMaterial(GroundColor, 0.2f, 0.5f);
             ground.GetComponent<MeshRenderer>().sharedMaterial = groundMat;
 
-            // Arka duvar yerine koyu gökyüzü (Solid Color Camera ile)
+            // Arka duvar ekleyerek derinlik hissi oluştur ve gölgeleri yakala
+            GameObject wall = CreatePrimitive("BackWall", PrimitiveType.Plane);
+            wall.transform.localScale = new Vector3(GroundScale, 1f, GroundScale * 1.5f);
+            wall.transform.position = new Vector3(0f, 0f, 5f);
+            wall.transform.rotation = Quaternion.Euler(-90f, 0f, 0f); // Kameraya bakacak şekilde dik
+            Material wallMat = CreateLitMaterial(WallColor, 0.1f, 0.2f);
+            wall.GetComponent<MeshRenderer>().sharedMaterial = wallMat;
             
-            for (int i = 0; i < 20; i++)
+            for (int i = 0; i < 40; i++)
             {
                 Vector3 pos = new Vector3(
                     Random.Range(-8f, 8f),
                     Random.Range(-4f, 8f),
-                    Random.Range(-2f, 8f)
+                    Random.Range(-2f, 4f)
                 );
                 CreateDustParticle(pos);
             }
@@ -130,10 +136,13 @@ namespace BottleShaders.Editor
         private static void CreateDustParticle(Vector3 position)
         {
             GameObject go = CreatePrimitive("DustParticle", PrimitiveType.Sphere);
-            float alpha = Random.Range(0.02f, 0.08f);
-            float scale = Random.Range(0.02f, 0.08f);
+            float alpha = Random.Range(0.08f, 0.25f);
+            float scale = Random.Range(0.03f, 0.1f);
 
-            Material mat = CreateUnlitMaterial(new Color(DustTint.r, DustTint.g, DustTint.b, alpha));
+            Material mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            mat.SetColor("_BaseColor", new Color(DustTint.r, DustTint.g, DustTint.b, alpha));
+            mat.SetColor("_EmissionColor", DustTint * alpha * 3.0f); // Işıldayan büyülü partiküller
+            mat.EnableKeyword("_EMISSION");
             go.GetComponent<MeshRenderer>().sharedMaterial = mat;
             go.transform.localScale = Vector3.one * scale;
             go.transform.position = position;
@@ -170,15 +179,17 @@ namespace BottleShaders.Editor
 
             Bloom bloom = profile.Add<Bloom>(overrides: true);
             bloom.intensity.overrideState = true;
-            bloom.intensity.value = 0.3f;
+            bloom.intensity.value = 1.0f; // Güçlü büyülü parlama (bloom)
             bloom.threshold.overrideState = true;
-            bloom.threshold.value = 0.8f;
+            bloom.threshold.value = 0.7f;
+            bloom.scatter.overrideState = true;
+            bloom.scatter.value = 0.6f;
 
             Vignette vignette = profile.Add<Vignette>(overrides: true);
             vignette.intensity.overrideState = true;
-            vignette.intensity.value = 0.35f;
+            vignette.intensity.value = 0.45f; // Kenar gölgeleme
             vignette.smoothness.overrideState = true;
-            vignette.smoothness.value = 0.6f;
+            vignette.smoothness.value = 0.7f;
 
             volume.profile = profile;
         }
@@ -206,13 +217,16 @@ namespace BottleShaders.Editor
             rim.transform.localScale = new Vector3(3.5f, 0.08f, 3.5f);
             rim.GetComponent<MeshRenderer>().sharedMaterial = cauldronMat;
 
-            // Inner glow
+            // Inner glow: Büyülü HDR emisyonlu sıvı
             GameObject innerMatObj = CreatePrimitive("CauldronInner", PrimitiveType.Cylinder);
             innerMatObj.transform.SetParent(cauldron.transform);
             innerMatObj.transform.localPosition = new Vector3(0f, 0.9f, 0f);
             innerMatObj.transform.localScale = new Vector3(2.8f, 0.1f, 2.8f);
 
-            Material innerMat = CreateUnlitMaterial(new Color(1f, 0.4f, 0.6f, 0.6f));
+            Material innerMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            innerMat.SetColor("_BaseColor", new Color(0.1f, 0f, 0.02f, 1f));
+            innerMat.SetColor("_EmissionColor", new Color(2.5f, 0.4f, 0.8f) * 2.0f);
+            innerMat.EnableKeyword("_EMISSION");
             innerMatObj.GetComponent<MeshRenderer>().sharedMaterial = innerMat;
 
             // Glow light
@@ -278,12 +292,12 @@ namespace BottleShaders.Editor
         private static void CreateBottlesInGridLayout(
             IRendererService renderer, IBottleValidator validator)
         {
-            Color red    = new Color(0.9f, 0.3f, 0.4f); // Yumuşak Kırmızı
-            Color blue   = new Color(0.3f, 0.7f, 1.0f); // Yumuşak Mavi
-            Color green  = new Color(0.4f, 0.8f, 0.5f); // Yumuşak Yeşil
-            Color yellow = new Color(0.95f, 0.85f, 0.2f); // Pastel Sarı
-            Color purple = new Color(0.7f, 0.4f, 0.9f); // Mor
-            Color orange = new Color(0.9f, 0.6f, 0.2f); // Turuncu
+            Color red    = new Color(0.95f, 0.15f, 0.25f); // Ruby Red
+            Color blue   = new Color(0.1f, 0.65f, 1.0f); // Cyan Blue
+            Color green  = new Color(0.15f, 0.85f, 0.35f); // Emerald Green
+            Color yellow = new Color(1.0f, 0.85f, 0.05f); // Golden Yellow
+            Color purple = new Color(0.7f, 0.25f, 0.95f); // Mor
+            Color orange = new Color(0.98f, 0.45f, 0.1f); // Turuncu
 
             (Vector3 position, Color[] colors)[] bottles =
             {
@@ -339,8 +353,34 @@ namespace BottleShaders.Editor
             Material glassMat  = new Material(glassShader)  { name = $"{name}_Glass"  };
             Material liquidMat = new Material(liquidShader) { name = $"{name}_Liquid" };
 
-            glassMat.SetColor("_Color", new Color(1f, 1f, 1f, 0.08f));
-            glassMat.SetFloat("_Smoothness", 0.95f);
+            // Premium Glass properties
+            glassMat.SetColor("_Color", new Color(0.95f, 0.97f, 1.0f, 0.12f));
+            glassMat.SetFloat("_Smoothness", 0.98f);
+            glassMat.SetFloat("_Thickness", 0.04f);
+            glassMat.SetFloat("_RefractionIntensity", 0.06f);
+            glassMat.SetFloat("_IndexOfRefraction", 1.45f);
+            glassMat.SetFloat("_FresnelPower", 4.5f);
+            glassMat.SetFloat("_FresnelIntensity", 2.0f);
+            glassMat.SetColor("_FresnelColor", new Color(1f, 1f, 1f, 0.8f));
+            glassMat.SetColor("_ThicknessColor", new Color(0.6f, 0.8f, 1.0f, 0.5f));
+            glassMat.SetFloat("_ThicknessPower", 2.0f);
+
+            // Premium Liquid properties
+            liquidMat.SetFloat("_Transparency", 0.12f);
+            liquidMat.SetFloat("_EdgeDarken", 0.35f);
+            liquidMat.SetFloat("_EdgeWidth", 0.22f);
+            liquidMat.SetFloat("_SpecularIntensity", 1.5f);
+            liquidMat.SetFloat("_SpecularSmoothness", 0.8f);
+            liquidMat.SetFloat("_LayerBoundaryWidth", 0.015f);
+            liquidMat.SetFloat("_LayerBoundaryDarken", 0.3f);
+            liquidMat.SetColor("_FoamColor", new Color(1.0f, 1.0f, 1.0f, 1.0f));
+            liquidMat.SetFloat("_FoamWidth", 0.015f);
+            liquidMat.SetFloat("_FoamIntensity", 1.2f);
+            liquidMat.SetColor("_RimColor", new Color(1.0f, 1.0f, 1.0f, 1.0f));
+            liquidMat.SetFloat("_RimPower", 3.0f);
+            liquidMat.SetFloat("_RimIntensity", 0.4f);
+            liquidMat.SetFloat("_SparkleIntensity", 0.5f);
+            liquidMat.SetFloat("_SparkleSize", 16f);
 
             BottleMeshGenerator meshGen = go.AddComponent<BottleMeshGenerator>();
             meshGen.height = BottleHeight;
