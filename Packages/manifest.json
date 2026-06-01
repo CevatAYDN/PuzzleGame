@@ -4,7 +4,8 @@
       "name": "OpenUPM",
       "url": "https://package.openupm.com",
       "scopes": [
-        "jp.hadashikick.vcontainer"
+        "jp.hadashikick.vcontainer",
+        "com.kyrylokuzyk.primetween"
       ]
     }
   ],

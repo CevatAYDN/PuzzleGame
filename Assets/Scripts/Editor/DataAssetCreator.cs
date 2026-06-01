@@ -111,6 +111,15 @@ namespace PuzzleGame.Editor
                         new Color(0.95f, 0.50f, 0.15f),
                     };
                 }, overridePerAsset("LevelConfig")),
+
+                Ensure<AudioConfig>("AudioConfig", a => {
+                    a.masterVolume = 1.0f;
+                    a.musicVolume = 0.6f;
+                    a.sfxVolume = 0.8f;
+                    a.sfxPoolSize = 8;
+                    a.musicPoolSize = 2;
+                    a.spatialBlend3D = false;
+                }, overridePerAsset("AudioConfig")),
             };
 
             AssetDatabase.SaveAssets();
@@ -139,6 +148,7 @@ namespace PuzzleGame.Editor
                 ["BottleVisualConfig"] = Exists<BottleVisualConfig>("BottleVisualConfig"),
                 ["WobbleConfig"]       = Exists<WobbleConfig>("WobbleConfig"),
                 ["LevelConfig"]        = Exists<LevelConfig>("LevelConfig"),
+                ["AudioConfig"]        = Exists<AudioConfig>("AudioConfig"),
             };
         }
     }

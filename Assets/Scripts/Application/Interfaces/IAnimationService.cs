@@ -4,32 +4,53 @@ using System;
 namespace PuzzleGame.Application.Interfaces
 {
     /// <summary>
-    /// Drives all bottle animations. Runs coroutines via a MonoBehaviour context
-    /// so the service itself stays a plain C# class (no scene dependency).
+    /// Drives all bottle animations using PrimeTween.
+    /// Plain C# class — no scene dependency, no MonoBehaviour context needed.
     /// </summary>
     public interface IAnimationService
     {
-        /// <summary>True while any animation coroutine is running.</summary>
+        /// <summary>True while any tween is running.</summary>
         bool IsAnimating { get; }
 
         /// <summary>Lifts a bottle upward by <paramref name="height"/> units.</summary>
-        void AnimateBottleLift(MonoBehaviour context, Transform bottle,
-                               float height, float duration, Func<bool> keepHovering = null, Action onComplete = null);
+        void AnimateBottleLift(Transform bottle,
+                               float height, float duration,
+                               Func<bool> keepHovering = null,
+                               Action onComplete = null);
 
         /// <summary>Returns a bottle to its original position.</summary>
-        void AnimateBottleLower(MonoBehaviour context, Transform bottle,
-                                Vector3 originalPos, float duration, Action onComplete = null);
+        void AnimateBottleLower(Transform bottle,
+                                Vector3 originalPos, float duration,
+                                Action onComplete = null);
 
         /// <summary>
         /// Plays the pour sequence: tilt source toward target, wait, then restore.
         /// Calls <paramref name="onComplete"/> after the tilt-back finishes.
         /// </summary>
-        void AnimatePour(MonoBehaviour context, BottleController source, BottleController target,
+        void AnimatePour(BottleController source, BottleController target,
                          float duration, Action onComplete = null);
 
         /// <summary>
         /// Plays a rapid error shake (left/right wiggle) to signify an invalid pour.
         /// </summary>
-        void AnimateErrorShake(MonoBehaviour context, Transform bottle, Action onComplete = null);
+        void AnimateErrorShake(Transform bottle, Action onComplete = null);
+
+        /// <summary>
+        /// Plays a corked-bottle drop animation: cork descends + scales up with bounce.
+        /// </summary>
+        void AnimateCorkDrop(Transform cork, float bottleHeight, Action onComplete = null);
+
+        /// <summary>
+        /// Plays a rim-light flash on the liquid material (slot 1).
+        /// </summary>
+        void AnimateLiquidFlash(Renderer renderer, int materialSlot,
+                                float peakIntensity, float duration,
+                                Action onComplete = null);
+
+        /// <summary>
+        /// Plays a settle bounce on the visual fill of a bottle.
+        /// </summary>
+        void AnimateSettleBounce(BottleController bottle, float duration,
+                                 Action onComplete = null);
     }
 }

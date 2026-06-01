@@ -15,6 +15,7 @@ using PuzzleGame.Infrastructure;
 using PuzzleGame.Events;
 using PuzzleGame.Logging;
 using PuzzleGame.Configuration;
+using PuzzleGame.Application.Animation;
 
 namespace PuzzleGame
 {
@@ -24,6 +25,8 @@ namespace PuzzleGame
         [SerializeField] private GameConfig     gameConfig;
         [SerializeField] private AnimationConfig animConfig;
         [SerializeField] private LevelConfig    levelConfig;
+        [SerializeField] private AudioConfig   audioConfig;
+        [SerializeField] private LevelData[]   levelCatalog;
 
         [Header("HUD (optional)")]
         [SerializeField] private Canvas    hudCanvas;
@@ -37,6 +40,10 @@ namespace PuzzleGame
         private IInputHandler         _inputHandler;
         private IGameHistoryService   _gameHistoryService;
         private IGameStateMachine     _stateMachine;
+        private IAudioService         _audioService;
+        private ILevelRepository      _levelRepository;
+        private ILevelProgressService _levelProgress;
+        private LevelData             _currentLevel;
 
         private BottleController[] _bottles;
         private Camera             _mainCam;
@@ -143,10 +150,41 @@ namespace PuzzleGame
 
             _validator        = new BottleValidationService(gameConfig.colorMatchTolerance);
             _rendererService  = new RendererService();
-            _animationService = new AnimationService(animConfig);
+            var tweenService = CreateTweenService();
+            _animationService = new AnimationService(animConfig, tweenService);
             _selectionService = new BottleSelectionService();
             _gameHistoryService = new GameHistoryService();
             _stateMachine = new GameStateMachine();
+
+            // Audio (optional — no AudioConfig = null service, no crash)
+            if (audioConfig == null)
+            {
+                audioConfig = Resources.Load<AudioConfig>("Data/AudioConfig");
+            }
+            if (audioConfig != null)
+            {
+                var audioTween = CreateTweenService();
+                _audioService = new AudioService(audioConfig, audioTween);
+            }
+
+            // Wire audio to state machine changes
+            if (_audioService != null)
+            {
+                _stateMachine.OnStateChanged += (prev, curr) =>
+                {
+                    if (curr == Domain.Models.GameState.LevelComplete)
+                        _audioService.PlaySfx(AudioClipId.LevelComplete);
+                    else if (curr == Domain.Models.GameState.Playing)
+                        _audioService.PlaySfx(AudioClipId.LevelStart);
+                };
+            }
+
+            // Level repository + progress
+            _levelRepository = new ScriptableObjectLevelRepository(levelCatalog ?? System.Array.Empty<LevelData>());
+            _levelProgress = new PlayerPrefsLevelProgressService();
+
+            // Listen for level selection (from LevelSelectUI)
+            EventAggregator.Subscribe<LevelSelectedEvent>(OnLevelSelected);
 
             _onBottleSelectedHandler = b => EventAggregator.Publish(
                 new BottleSelectedEvent(b));
@@ -209,7 +247,7 @@ namespace PuzzleGame
                 if (bottle.State == null || bottle.State.MaxLayers == 0)
                 {
                     BottleLogger.LogDebug($"Initializing '{bottle.name}' with {initial.Count} layers.");
-                    bottle.Initialize(_rendererService, _validator, initial);
+                    bottle.Initialize(_rendererService, _validator, _animationService, initial);
                 }
                 else
                 {
@@ -287,7 +325,7 @@ namespace PuzzleGame
             _selectionService.Select(bottle.State);
             bottle.SetSelectionHighlight(true);
             _animationService.AnimateBottleLift(
-                this, bottle.transform,
+                bottle.transform,
                 animConfig.liftHeight, animConfig.liftDuration,
                 keepHovering: () => _selectionService.SelectedBottle == bottle.State);
         }
@@ -309,15 +347,16 @@ namespace PuzzleGame
                 _moveCount++;
                 BottleLogger.LogInfo($"Pour succeeded. Moves: {_moveCount}.");
                 UpdateHUD();
+                _audioService?.PlaySfx(AudioClipId.PourEnd);
 
                 _animationService.AnimatePour(
-                    this, source, target,
+                    source, target,
                     animConfig.pourDuration,
                     onComplete: () =>
                     {
                         source.SetSelectionHighlight(false);
                         _animationService.AnimateBottleLower(
-                            this, source.transform,
+                            source.transform,
                             _selectedOriginalPos, animConfig.liftDuration);
                     });
 
@@ -328,7 +367,8 @@ namespace PuzzleGame
             else
             {
                 BottleLogger.LogDebug($"Pour rejected: '{source.name}' → '{target.name}'.");
-                _animationService.AnimateErrorShake(this, source.transform, onComplete: () =>
+                _audioService?.PlaySfx(AudioClipId.Error);
+                _animationService.AnimateErrorShake(source.transform, onComplete: () =>
                 {
                     LowerSelectedBottle();
                     _selectionService.Deselect();
@@ -343,7 +383,7 @@ namespace PuzzleGame
             {
                 selected.SetSelectionHighlight(false);
                 _animationService.AnimateBottleLower(
-                    this, selected.transform,
+                    selected.transform,
                     _selectedOriginalPos, animConfig.liftDuration);
             }
         }
@@ -391,6 +431,11 @@ namespace PuzzleGame
                 _stateMachine.TransitionTo(GameState.LevelComplete);
                 BottleLogger.LogInfo($"Level complete in {_moveCount} moves.");
                 EventAggregator.Publish(new LevelCompletedEvent(_moveCount));
+                if (_currentLevel != null && _levelProgress != null)
+                {
+                    int stars = _currentLevel.CalculateStars(_moveCount);
+                    _levelProgress.RecordCompletion(_currentLevel.levelNumber, _moveCount, stars);
+                }
                 if (winPanel != null) winPanel.SetActive(true);
             }
         }
@@ -441,6 +486,31 @@ namespace PuzzleGame
         {
             BottleLogger.LogInfo("Restarting game.");
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        }
+
+        /// <summary>
+        /// Factory: prefers PrimeTween (zero-allocation), falls back to coroutine tweens.
+        /// </summary>
+        private static ITweenService CreateTweenService()
+        {
+#if PRIME_TWEEN_INSTALLED
+            BottleLogger.LogInfo("Using PrimeTween for animations (zero-allocation).");
+            return new PrimeTweenService();
+#else
+            BottleLogger.LogInfo("PrimeTween not available — using CoroutineTweenService.");
+            return new CoroutineTweenService();
+#endif
+        }
+
+        private void OnLevelSelected(LevelSelectedEvent e)
+        {
+            _currentLevel = _levelRepository?.GetByNumber(e.LevelNumber);
+            BottleLogger.LogInfo($"Level {e.LevelNumber} selected: {(_currentLevel != null ? "found" : "not found")}.");
+            if (_currentLevel != null)
+            {
+                _stateMachine?.TransitionTo(GameState.LevelLoading);
+                _stateMachine?.TransitionTo(GameState.Playing);
+            }
         }
     }
 }

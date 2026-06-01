@@ -3,7 +3,7 @@ using PuzzleGame.Infrastructure.Interfaces;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Logging;
-using System.Collections;
+using PuzzleGame.Application.Interfaces;
 using System.Collections.Generic;
 
 namespace PuzzleGame
@@ -32,6 +32,7 @@ namespace PuzzleGame
 
         private IRendererService  _rendererService;
         private IBottleValidator  _validator;
+        private IAnimationService _animationService;
         private Renderer          _renderer;
         private Wobble            _wobble;
         private BottleMeshGenerator _meshGenerator;
@@ -43,10 +44,12 @@ namespace PuzzleGame
 
         public void Initialize(IRendererService rendererService,
                                IBottleValidator  validator,
+                               IAnimationService animationService,
                                List<LiquidLayer> initialLayers)
         {
             _rendererService = rendererService;
             _validator       = validator;
+            _animationService = animationService;
             _renderer        = GetComponent<Renderer>();
             _wobble          = GetComponent<Wobble>();
             _meshGenerator   = GetComponent<BottleMeshGenerator>();
@@ -206,7 +209,7 @@ namespace PuzzleGame
         public void SetSelectionHighlight(bool active)
         {
             if (_renderer == null) return;
-            if (_isHighlighted == active) return; // durum değişmedi → no-op
+            if (_isHighlighted == active) return;
             _isHighlighted = active;
             if (_propBlock == null) _propBlock = new MaterialPropertyBlock();
             _renderer.GetPropertyBlock(_propBlock, 0);
@@ -222,120 +225,20 @@ namespace PuzzleGame
             if (corkObject != null)
             {
                 corkObject.SetActive(true);
-                StartCoroutine(CorkCompleteRoutine());
-            }
-            StartCoroutine(LiquidFlashRoutine());
-        }
-
-        private IEnumerator CorkCompleteRoutine()
-        {
-            float duration = 0.5f;
-            float elapsed = 0f;
-            Vector3 startPos = new Vector3(0f, Height + 0.3f, 0f);
-            Vector3 endPos = new Vector3(0f, Height - 0.05f, 0f);
-
-            corkObject.transform.localPosition = startPos;
-            corkObject.transform.localScale = Vector3.zero;
-
-            while (elapsed < duration)
-            {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / duration);
-                float bounceT = EaseOutBounce(t);
-
-                corkObject.transform.localPosition = Vector3.Lerp(startPos, endPos, bounceT);
-                corkObject.transform.localScale = Vector3.one * Mathf.Min(1f, bounceT * 1.2f);
-                yield return null;
-            }
-
-            corkObject.transform.localPosition = endPos;
-            corkObject.transform.localScale = Vector3.one;
-        }
-
-        private IEnumerator LiquidFlashRoutine()
-        {
-            float duration = 0.6f;
-            float elapsed = 0f;
-            if (_propBlock == null) _propBlock = new MaterialPropertyBlock();
-
-            while (elapsed < duration)
-            {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / duration);
-
-                float intensity = 0.5f;
-                if (t < 0.2f)
-                {
-                    intensity = Mathf.Lerp(0.5f, 4.0f, t / 0.2f);
-                }
-                else
-                {
-                    intensity = Mathf.Lerp(4.0f, 0.5f, (t - 0.2f) / 0.8f);
-                }
-
-                if (_renderer != null && _renderer.sharedMaterials.Length > 1)
-                {
-                    _renderer.GetPropertyBlock(_propBlock, 1);
-                    _propBlock.SetFloat(RimIntensityID, intensity);
-                    _renderer.SetPropertyBlock(_propBlock, 1);
-                }
-                yield return null;
+                _animationService?.AnimateCorkDrop(
+                    corkObject.transform, Height, onComplete: null);
             }
 
             if (_renderer != null && _renderer.sharedMaterials.Length > 1)
             {
-                _renderer.GetPropertyBlock(_propBlock, 1);
-                _propBlock.SetFloat(RimIntensityID, 0.5f);
-                _renderer.SetPropertyBlock(_propBlock, 1);
+                _animationService?.AnimateLiquidFlash(
+                    _renderer, 1, 4.0f, 0.6f, onComplete: null);
             }
         }
 
         public void PlaySettleBounce()
         {
-            StartCoroutine(SettleBounceRoutine());
-        }
-
-        private IEnumerator SettleBounceRoutine()
-        {
-            float duration = 0.6f;
-            float elapsed = 0f;
-            float originalFill = _visualTotalFill;
-
-            while (elapsed < duration)
-            {
-                elapsed += Time.deltaTime;
-                float progress = elapsed / duration;
-                float wave = Mathf.Cos(progress * Mathf.PI * 3f) * 0.04f * (1f - progress);
-                _visualTotalFill = originalFill + wave;
-                UpdateVisuals();
-                yield return null;
-            }
-
-            _visualTotalFill = originalFill;
-            UpdateVisuals();
-        }
-
-        private float EaseOutBounce(float x)
-        {
-            const float n1 = 7.5625f;
-            const float d1 = 2.75f;
-
-            if (x < 1f / d1)
-            {
-                return n1 * x * x;
-            }
-            else if (x < 2f / d1)
-            {
-                return n1 * (x -= 1.5f / d1) * x + 0.75f;
-            }
-            else if (x < 2.5f / d1)
-            {
-                return n1 * (x -= 2.25f / d1) * x + 0.9375f;
-            }
-            else
-            {
-                return n1 * (x -= 2.625f / d1) * x + 0.984375f;
-            }
+            _animationService?.AnimateSettleBounce(this, 0.6f, onComplete: null);
         }
 
         private GameObject CreateProceduralCork()
@@ -380,9 +283,7 @@ namespace PuzzleGame
             for (int i = 0; i < segments; i++)
             {
                 int next = (i + 1) % segments;
-                tris.Add(bottomCenter);
-                tris.Add(bottomRing + next);
-                tris.Add(bottomRing + i);
+                tris.Add(bottomCenter); tris.Add(bottomRing + next); tris.Add(bottomRing + i);
             }
 
             for (int i = 0; i < segments; i++)
@@ -392,22 +293,14 @@ namespace PuzzleGame
                 int bNext = bottomRing + next;
                 int tCurr = topRing + i;
                 int tNext = topRing + next;
-
-                tris.Add(bCurr);
-                tris.Add(tCurr);
-                tris.Add(bNext);
-
-                tris.Add(bNext);
-                tris.Add(tCurr);
-                tris.Add(tNext);
+                tris.Add(bCurr); tris.Add(tCurr); tris.Add(bNext);
+                tris.Add(bNext); tris.Add(tCurr); tris.Add(tNext);
             }
 
             for (int i = 0; i < segments; i++)
             {
                 int next = (i + 1) % segments;
-                tris.Add(topCenter);
-                tris.Add(topRing + i);
-                tris.Add(topRing + next);
+                tris.Add(topCenter); tris.Add(topRing + i); tris.Add(topRing + next);
             }
 
             mesh.SetVertices(verts);

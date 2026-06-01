@@ -189,7 +189,7 @@ namespace PuzzleGame.Editor
             var ctrl = go.AddComponent<BottleController>();
             ctrl.glassMaterial = glassMat;
             ctrl.liquidMaterial = liquidMat;
-            ctrl.Initialize(renderer, validator, BuildLayers(cfg.colors ?? System.Array.Empty<Color>()));
+            ctrl.Initialize(renderer, validator, animationService: null, BuildLayers(cfg.colors ?? System.Array.Empty<Color>()));
 
             Undo.RegisterCreatedObjectUndo(go, $"Create {uniqueName}");
             return go;
