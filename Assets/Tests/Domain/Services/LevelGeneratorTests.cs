@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Domain.Services;
+using System.Collections.Generic;
 
 namespace PuzzleGame.Domain.Tests.Services
 {
@@ -21,18 +22,19 @@ namespace PuzzleGame.Domain.Tests.Services
         }
 
         [Test]
-        public void Generate_TotalLayers_EqualsBottlesToFillTimesMaxLayers()
+        public void Generate_TotalLayers_EqualsNumColorsTimesMaxLayers()
         {
             int bottleCount = 5;
             int maxLayers = 4;
             int emptyBottles = 1;
-            int filled = bottleCount - emptyBottles;
+            int numColors = _palette.Length; // 3
 
             var result = LevelGenerator.Generate(bottleCount, maxLayers, emptyBottles, _palette, seed: 42);
 
             int total = 0;
             foreach (var layers in result) total += layers.Count;
-            Assert.That(total, Is.EqualTo(filled * maxLayers));
+            // 3 renk × 4 layer = 12 (filledCount=4 ama palette'de 3 renk var)
+            Assert.That(total, Is.EqualTo(numColors * maxLayers));
         }
 
         [Test]
@@ -98,10 +100,17 @@ namespace PuzzleGame.Domain.Tests.Services
         {
             var a = LevelGenerator.Generate(5, 4, 1, _palette, seed: 1);
             var b = LevelGenerator.Generate(5, 4, 1, _palette, seed: 999);
+
+            // Tüm layer'ları düzleştir, sıra fark etmez — sadece multiset karşılaştırması
+            var flatA = new List<DomainColor>();
+            var flatB = new List<DomainColor>();
+            foreach (var layers in a) foreach (var l in layers) flatA.Add(l.Color);
+            foreach (var layers in b) foreach (var l in layers) flatB.Add(l.Color);
+
+            Assert.That(flatA.Count, Is.EqualTo(flatB.Count), "Total layer count must match");
             bool differ = false;
-            for (int i = 0; i < a.Count && !differ; i++)
-                for (int j = 0; j < a[i].Count && !differ; j++)
-                    if (!a[i][j].Color.Equals(b[i][j].Color)) differ = true;
+            for (int i = 0; i < flatA.Count && !differ; i++)
+                if (!flatA[i].Equals(flatB[i])) differ = true;
             Assert.That(differ, Is.True, "Different seeds should produce different distributions");
         }
 

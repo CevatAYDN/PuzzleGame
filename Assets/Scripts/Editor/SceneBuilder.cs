@@ -73,6 +73,9 @@ namespace PuzzleGame.Editor
                 EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             }
 
+            int undoGroup = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName("PuzzleGame Scene Build");
+
             if (opts.lighting)   SetupLighting();
             if (opts.ground)     SetupGround();
             if (opts.camera)     SetupCamera();
@@ -81,8 +84,9 @@ namespace PuzzleGame.Editor
             if (opts.bottles)    CreateBottlesInGridLayout();
             if (opts.gameManager) CreateGameManager();
 
+            Undo.CollapseUndoOperations(undoGroup);
             EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
-            Debug.Log("[SceneBuilder] Scene build complete.");
+            Debug.Log("[SceneBuilder] Scene build complete. Ctrl+Z to undo.");
         }
 
         // ── Lighting ────────────────────────────────────────────────────────

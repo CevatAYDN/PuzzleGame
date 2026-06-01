@@ -67,6 +67,7 @@
     <Compile Include="Assets\Scripts\Infrastructure\Interfaces\IInputHandler.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\BottleState.cs" />
     <Compile Include="Assets\Scripts\Configuration\AnimationConfig.cs" />
+    <Compile Include="Assets\Scripts\Application\Services\GameSaveManager.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\LiquidLayer.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Interfaces\IUpdateManager.cs" />
     <Compile Include="Assets\Scripts\Logging\BottleLogger.cs" />

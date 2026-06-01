@@ -121,6 +121,114 @@ namespace PuzzleGame.Editor
                 if (GUILayout.Button("Select Folder", GUILayout.Height(28), GUILayout.MaxWidth(140)))
                     SelectDataFolder();
             }
+
+            EditorGUILayout.Space(12);
+            DrawPlayerSaveSection();
+        }
+
+        // ── PLAYER SAVE SECTION ───────────────────────────────────────────────
+
+        private void DrawPlayerSaveSection()
+        {
+            EditorGUILayout.LabelField("Player Save Data", EditorStyles.boldLabel);
+            EditorGUILayout.Space(4);
+
+            var exists = Application.Services.GameSaveManager.HasSaveData;
+            var size = Application.Services.GameSaveManager.FileSizeBytes;
+            var integ = exists ? Application.Services.GameSaveManager.VerifyIntegrity() : false;
+
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Status", EditorStyles.miniBoldLabel);
+                EditorGUILayout.LabelField("File", Application.Services.GameSaveManager.SaveFilePath);
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.Label("Exists:  ", GUILayout.Width(60));
+                    GUI.contentColor = exists ? Color.green : Color.gray;
+                    GUILayout.Label(exists ? "✓" : "✗", GUILayout.Width(20));
+                    GUI.contentColor = Color.white;
+                    GUILayout.FlexibleSpace();
+
+                    if (exists)
+                    {
+                        GUILayout.Label("Integrity:", GUILayout.Width(65));
+                        GUI.contentColor = integ ? Color.green : Color.red;
+                        GUILayout.Label(integ ? "OK" : "TAMPERED", GUILayout.Width(80));
+                        GUI.contentColor = Color.white;
+                        GUILayout.FlexibleSpace();
+
+                        GUILayout.Label((size / 1024.0).ToString("F1") + " KB", GUILayout.Width(60));
+                    }
+                }
+
+                if (exists && integ)
+                {
+                    var data = Application.Services.GameSaveManager.PeekVerified();
+                    EditorGUILayout.LabelField("Last Played Level", data.lastPlayedLevel.ToString());
+                    EditorGUILayout.LabelField("Completed Levels",
+                        data.levels.FindAll(l => l.isCompleted).Count + "/" + data.levels.Count);
+                }
+
+                EditorGUILayout.Space(4);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("Reveal in Explorer", GUILayout.Height(22)))
+                        RevealSaveFile();
+                    if (GUILayout.Button("Verify Integrity", GUILayout.Height(22)))
+                        VerifySaveFile();
+                    GUI.backgroundColor = new Color(0.9f, 0.5f, 0.5f);
+                    if (GUILayout.Button("Delete Save", GUILayout.Height(22)))
+                        DeleteSaveFile();
+                    GUI.backgroundColor = Color.white;
+                }
+            }
+        }
+
+        private void RevealSaveFile()
+        {
+            if (!Application.Services.GameSaveManager.HasSaveData)
+            {
+                SetStatus("No save file to reveal.", MessageType.Warning);
+                return;
+            }
+            EditorUtility.RevealInFinder(Application.Services.GameSaveManager.SaveFilePath);
+            SetStatus("Save file revealed.", MessageType.Info);
+        }
+
+        private void VerifySaveFile()
+        {
+            if (!Application.Services.GameSaveManager.HasSaveData)
+            {
+                SetStatus("No save file to verify.", MessageType.Warning);
+                return;
+            }
+
+            bool ok = Application.Services.GameSaveManager.VerifyIntegrity();
+            SetStatus(ok
+                ? "Save integrity: OK (HMAC-SHA256 matches)."
+                : "Save integrity: FAILED — file tampered or corrupted!",
+                ok ? MessageType.Info : MessageType.Error);
+        }
+
+        private void DeleteSaveFile()
+        {
+            if (!Application.Services.GameSaveManager.HasSaveData)
+            {
+                SetStatus("No save data to delete.", MessageType.Info);
+                return;
+            }
+
+            if (!EditorUtility.DisplayDialog(
+                "Delete all save data?",
+                "Bu işlem geri alınamaz. Oyuncunun tüm kayıtlı level ilerlemesi silinecek.",
+                "Delete", "Cancel"))
+            {
+                return;
+            }
+
+            Application.Services.GameSaveManager.DeleteAll();
+            SetStatus("Save data deleted.", MessageType.Info);
         }
 
         private void PingAsset(string fileName)
@@ -166,7 +274,7 @@ namespace PuzzleGame.Editor
             {
                 if (!EditorUtility.DisplayDialog(
                     "Confirm overwrite",
-                    $"{_overrideExisting}\n\n" + summary + "\n\nProceed?",
+                    "Existing assets will be overwritten with default values.\n\n" + summary + "\n\nProceed?",
                     "Create / Update", "Cancel"))
                 {
                     return;
@@ -377,6 +485,15 @@ namespace PuzzleGame.Editor
                     label = "LevelConfig palette",
                     detail = paletteValid ? $"{levelCfg.palette.Length} colors" : "Empty or too few",
                     ok = paletteValid
+                });
+            }
+            else
+            {
+                _validationResults.Add(new ValidationResult
+                {
+                    label = "LevelConfig palette",
+                    detail = "LevelConfig.asset missing — palette not validated",
+                    ok = false
                 });
             }
 
