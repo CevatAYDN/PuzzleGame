@@ -175,6 +175,7 @@ namespace BottleShaders.Application.Services
             go.transform.SetParent(parent, false);
 
             ParticleSystem ps = go.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
 
             var main = ps.main;
             main.duration = 1f;
@@ -231,6 +232,7 @@ namespace BottleShaders.Application.Services
             go.transform.localRotation = Quaternion.identity;
 
             ParticleSystem ps = go.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
 
             var main = ps.main;
             main.duration = 1f;
