@@ -1,6 +1,5 @@
 using BottleShaders.Domain.Interfaces;
 using BottleShaders.Domain.Models;
-using System.Linq;
 using UnityEngine;
 
 namespace BottleShaders.Domain.Services

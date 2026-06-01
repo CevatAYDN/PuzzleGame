@@ -34,7 +34,8 @@ namespace BottleShaders.Infrastructure.Implementations
         {
             float cumulative = 0f;
 
-            for (int i = 0; i < BottleState.MaxSupportedLayers; i++)
+            int maxLayers = Mathf.Min(BottleState.MaxSupportedLayers, ColorIDs.Length);
+            for (int i = 0; i < maxLayers; i++)
             {
                 Color color = Color.clear;
                 float fill  = cumulative;

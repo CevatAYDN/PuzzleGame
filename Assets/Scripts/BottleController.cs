@@ -42,6 +42,7 @@ namespace BottleShaders
         private Renderer          _renderer;
         private Wobble            _wobble;
         private BottleMeshGenerator _meshGenerator;
+        private MaterialPropertyBlock _propBlock;
 
         private static readonly int FresnelIntensityID = Shader.PropertyToID("_FresnelIntensity");
         private static readonly int RimIntensityID     = Shader.PropertyToID("_RimIntensity");
@@ -205,10 +206,10 @@ namespace BottleShaders
         public void SetSelectionHighlight(bool active)
         {
             if (_renderer == null) return;
-            var block = new MaterialPropertyBlock();
-            _renderer.GetPropertyBlock(block, 0);
-            block.SetFloat(FresnelIntensityID, active ? 4.0f : 1.5f);
-            _renderer.SetPropertyBlock(block, 0);
+            if (_propBlock == null) _propBlock = new MaterialPropertyBlock();
+            _renderer.GetPropertyBlock(_propBlock, 0);
+            _propBlock.SetFloat(FresnelIntensityID, active ? 4.0f : 1.5f);
+            _renderer.SetPropertyBlock(_propBlock, 0);
         }
 
         public void AnimateCompletion()
@@ -253,7 +254,7 @@ namespace BottleShaders
         {
             float duration = 0.6f;
             float elapsed = 0f;
-            var block = new MaterialPropertyBlock();
+            if (_propBlock == null) _propBlock = new MaterialPropertyBlock();
 
             while (elapsed < duration)
             {
@@ -272,18 +273,18 @@ namespace BottleShaders
 
                 if (_renderer != null && _renderer.sharedMaterials.Length > 1)
                 {
-                    _renderer.GetPropertyBlock(block, 1);
-                    block.SetFloat(RimIntensityID, intensity);
-                    _renderer.SetPropertyBlock(block, 1);
+                    _renderer.GetPropertyBlock(_propBlock, 1);
+                    _propBlock.SetFloat(RimIntensityID, intensity);
+                    _renderer.SetPropertyBlock(_propBlock, 1);
                 }
                 yield return null;
             }
 
             if (_renderer != null && _renderer.sharedMaterials.Length > 1)
             {
-                _renderer.GetPropertyBlock(block, 1);
-                block.SetFloat(RimIntensityID, 0.5f);
-                _renderer.SetPropertyBlock(block, 1);
+                _renderer.GetPropertyBlock(_propBlock, 1);
+                _propBlock.SetFloat(RimIntensityID, 0.5f);
+                _renderer.SetPropertyBlock(_propBlock, 1);
             }
         }
 
@@ -422,6 +423,38 @@ namespace BottleShaders
 
             cork.SetActive(false);
             return cork;
+        }
+
+        private void OnDestroy()
+        {
+            if (corkObject != null)
+            {
+                var filter = corkObject.GetComponent<MeshFilter>();
+                if (filter != null && filter.sharedMesh != null && filter.sharedMesh.name == "CorkMesh")
+                {
+#if UNITY_EDITOR
+                    if (!UnityEngine.Application.isPlaying)
+                        DestroyImmediate(filter.sharedMesh);
+                    else
+                        Destroy(filter.sharedMesh);
+#else
+                    Destroy(filter.sharedMesh);
+#endif
+                }
+
+                var renderer = corkObject.GetComponent<MeshRenderer>();
+                if (renderer != null && renderer.sharedMaterial != null)
+                {
+#if UNITY_EDITOR
+                    if (!UnityEngine.Application.isPlaying)
+                        DestroyImmediate(renderer.sharedMaterial);
+                    else
+                        Destroy(renderer.sharedMaterial);
+#else
+                    Destroy(renderer.sharedMaterial);
+#endif
+                }
+            }
         }
     }
 }

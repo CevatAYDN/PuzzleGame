@@ -12,6 +12,12 @@ namespace BottleShaders.Application.Services
         private readonly Configuration.AnimationConfig _config;
         private int _runningCount;
 
+        private readonly List<ParticleSystem> _splashPool = new List<ParticleSystem>();
+        private readonly List<ParticleSystem> _bubblePool = new List<ParticleSystem>();
+
+        private static Material _splashMaterial;
+        private static Material _bubbleMaterial;
+
         private static readonly Vector3 _up = Vector3.up;
 
         public bool IsAnimating => _runningCount > 0;
@@ -37,7 +43,7 @@ namespace BottleShaders.Application.Services
         public void AnimatePour(MonoBehaviour context, BottleController source, BottleController target,
                                 float duration, Action onComplete = null)
         {
-            context.StartCoroutine(PourRoutine(source, target, duration, onComplete));
+            context.StartCoroutine(PourRoutine(context, source, target, duration, onComplete));
         }
 
         public void AnimateErrorShake(MonoBehaviour context, Transform bottle, Action onComplete = null)
@@ -169,10 +175,47 @@ namespace BottleShaders.Application.Services
             return tex;
         }
 
-        private ParticleSystem CreateSplashParticles(Transform parent, Color color, Texture2D tex)
+        private static Material GetSplashMaterial(Texture2D tex)
+        {
+            if (_splashMaterial == null)
+            {
+                var shader = Shader.Find("Universal Render Pipeline/Particles/Unlit") ?? Shader.Find("Sprites/Default");
+                _splashMaterial = new Material(shader);
+                if (tex != null)
+                {
+                    _splashMaterial.mainTexture = tex;
+                    if (_splashMaterial.HasProperty("_BaseMap"))
+                        _splashMaterial.SetTexture("_BaseMap", tex);
+                }
+                _splashMaterial.color = Color.white;
+                if (_splashMaterial.HasProperty("_BaseColor"))
+                    _splashMaterial.SetColor("_BaseColor", Color.white);
+            }
+            return _splashMaterial;
+        }
+
+        private static Material GetBubbleMaterial(Texture2D tex)
+        {
+            if (_bubbleMaterial == null)
+            {
+                var shader = Shader.Find("Universal Render Pipeline/Particles/Unlit") ?? Shader.Find("Sprites/Default");
+                _bubbleMaterial = new Material(shader);
+                if (tex != null)
+                {
+                    _bubbleMaterial.mainTexture = tex;
+                    if (_bubbleMaterial.HasProperty("_BaseMap"))
+                        _bubbleMaterial.SetTexture("_BaseMap", tex);
+                }
+                _bubbleMaterial.color = Color.white;
+                if (_bubbleMaterial.HasProperty("_BaseColor"))
+                    _bubbleMaterial.SetColor("_BaseColor", Color.white);
+            }
+            return _bubbleMaterial;
+        }
+
+        private ParticleSystem CreateSplashParticles(Texture2D tex)
         {
             GameObject go = new GameObject("PourSplashParticles");
-            go.transform.SetParent(parent, false);
 
             ParticleSystem ps = go.AddComponent<ParticleSystem>();
             ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
@@ -184,7 +227,6 @@ namespace BottleShaders.Application.Services
             main.startSpeed = new ParticleSystem.MinMaxCurve(1.5f, 3.2f);
             main.startSize = new ParticleSystem.MinMaxCurve(0.05f, 0.12f);
             main.gravityModifier = new ParticleSystem.MinMaxCurve(2.0f);
-            main.startColor = color;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
             main.playOnAwake = false;
 
@@ -207,29 +249,14 @@ namespace BottleShaders.Application.Services
 
             var renderer = go.GetComponent<ParticleSystemRenderer>();
             renderer.renderMode = ParticleSystemRenderMode.Billboard;
-
-            var shader = Shader.Find("Universal Render Pipeline/Particles/Unlit") ?? Shader.Find("Sprites/Default");
-            Material mat = new Material(shader);
-            if (tex != null)
-            {
-                mat.mainTexture = tex;
-                if (mat.HasProperty("_BaseMap"))
-                    mat.SetTexture("_BaseMap", tex);
-            }
-            mat.color = Color.white;
-            if (mat.HasProperty("_BaseColor"))
-                mat.SetColor("_BaseColor", Color.white);
-            renderer.sharedMaterial = mat;
+            renderer.sharedMaterial = GetSplashMaterial(tex);
 
             return ps;
         }
 
-        private ParticleSystem CreateBubbleParticles(Transform parent, Texture2D tex, float bottleHeight)
+        private ParticleSystem CreateBubbleParticles(Texture2D tex)
         {
             GameObject go = new GameObject("PourBubbleParticles");
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = Vector3.zero;
-            go.transform.localRotation = Quaternion.identity;
 
             ParticleSystem ps = go.AddComponent<ParticleSystem>();
             ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
@@ -285,24 +312,104 @@ namespace BottleShaders.Application.Services
 
             var renderer = go.GetComponent<ParticleSystemRenderer>();
             renderer.renderMode = ParticleSystemRenderMode.Billboard;
-
-            var shader = Shader.Find("Universal Render Pipeline/Particles/Unlit") ?? Shader.Find("Sprites/Default");
-            Material mat = new Material(shader);
-            if (tex != null)
-            {
-                mat.mainTexture = tex;
-                if (mat.HasProperty("_BaseMap"))
-                    mat.SetTexture("_BaseMap", tex);
-            }
-            mat.color = Color.white;
-            if (mat.HasProperty("_BaseColor"))
-                mat.SetColor("_BaseColor", Color.white);
-            renderer.sharedMaterial = mat;
+            renderer.sharedMaterial = GetBubbleMaterial(tex);
 
             return ps;
         }
 
-        private IEnumerator PourRoutine(BottleController source, BottleController target,
+        private ParticleSystem GetSplashParticles(Transform parent, Color color, Texture2D tex, MonoBehaviour context)
+        {
+            ParticleSystem ps = null;
+            for (int i = _splashPool.Count - 1; i >= 0; i--)
+            {
+                if (_splashPool[i] == null)
+                {
+                    _splashPool.RemoveAt(i);
+                    continue;
+                }
+                if (!_splashPool[i].gameObject.activeSelf)
+                {
+                    ps = _splashPool[i];
+                    _splashPool.RemoveAt(i);
+                    break;
+                }
+            }
+
+            if (ps == null)
+            {
+                ps = CreateSplashParticles(tex);
+            }
+
+            ps.transform.SetParent(parent, false);
+            ps.transform.localPosition = Vector3.zero;
+            ps.transform.localRotation = Quaternion.identity;
+            ps.gameObject.SetActive(true);
+
+            var main = ps.main;
+            main.startColor = color;
+
+            return ps;
+        }
+
+        private ParticleSystem GetBubbleParticles(Transform parent, Texture2D tex, float bottleHeight, MonoBehaviour context)
+        {
+            ParticleSystem ps = null;
+            for (int i = _bubblePool.Count - 1; i >= 0; i--)
+            {
+                if (_bubblePool[i] == null)
+                {
+                    _bubblePool.RemoveAt(i);
+                    continue;
+                }
+                if (!_bubblePool[i].gameObject.activeSelf)
+                {
+                    ps = _bubblePool[i];
+                    _bubblePool.RemoveAt(i);
+                    break;
+                }
+            }
+
+            if (ps == null)
+            {
+                ps = CreateBubbleParticles(tex);
+            }
+
+            ps.transform.SetParent(parent, false);
+            ps.transform.localPosition = Vector3.zero;
+            ps.transform.localRotation = Quaternion.identity;
+            ps.gameObject.SetActive(true);
+
+            var shape = ps.shape;
+            shape.length = Mathf.Max(bottleHeight, 0.1f);
+
+            return ps;
+        }
+
+        private void ReturnSplashToPool(ParticleSystem ps, MonoBehaviour context, float delay)
+        {
+            if (ps == null) return;
+            context.StartCoroutine(ReturnToPoolRoutine(_splashPool, ps, delay));
+        }
+
+        private void ReturnBubbleToPool(ParticleSystem ps, MonoBehaviour context, float delay)
+        {
+            if (ps == null) return;
+            context.StartCoroutine(ReturnToPoolRoutine(_bubblePool, ps, delay));
+        }
+
+        private IEnumerator ReturnToPoolRoutine(List<ParticleSystem> pool, ParticleSystem ps, float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            if (ps != null)
+            {
+                ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                ps.gameObject.SetActive(false);
+                ps.transform.SetParent(null);
+                pool.Add(ps);
+            }
+        }
+
+        private IEnumerator PourRoutine(MonoBehaviour context, BottleController source, BottleController target,
                                         float duration, Action onComplete)
         {
             _runningCount++;
@@ -384,14 +491,15 @@ namespace BottleShaders.Application.Services
             sourceT.rotation = tiltedRot;
 
             // Phase 2: Hold & Flow
+            lr.positionCount = 18; // 12 external + 6 internal
             lr.enabled = true;
             elapsed = 0f;
 
             Texture2D solidTex = GetSolidCircleTex();
             Texture2D bubbleTex = GetBubbleTex();
 
-            ParticleSystem splashPS = CreateSplashParticles(target.transform, streamColor, solidTex);
-            ParticleSystem bubblePS = CreateBubbleParticles(target.transform, bubbleTex, target.Height);
+            ParticleSystem splashPS = GetSplashParticles(target.transform, streamColor, solidTex, context);
+            ParticleSystem bubblePS = GetBubbleParticles(target.transform, bubbleTex, target.Height, context);
 
             splashPS.Play();
             bubblePS.Play();
@@ -426,12 +534,12 @@ namespace BottleShaders.Application.Services
             if (splashPS != null)
             {
                 splashPS.Stop();
-                GameObject.Destroy(splashPS.gameObject, 1.0f);
+                ReturnSplashToPool(splashPS, context, 1.0f);
             }
             if (bubblePS != null)
             {
                 bubblePS.Stop();
-                GameObject.Destroy(bubblePS.gameObject, 1.5f);
+                ReturnBubbleToPool(bubblePS, context, 1.5f);
             }
 
             // Phase 3: Return & Settle
@@ -489,14 +597,10 @@ namespace BottleShaders.Application.Services
             // 2. Straight line from targetMouth to landingPoint (internal flow)
             int externalSegments = 12;
             int internalSegments = 6;
-            int totalPoints = externalSegments + internalSegments;
-            lr.positionCount = totalPoints;
 
-            // Set up a flat width curve for clean vector look
-            var widthCurve = new AnimationCurve();
-            widthCurve.AddKey(0f, baseWidth);
-            widthCurve.AddKey(1f, baseWidth);
-            lr.widthCurve = widthCurve;
+            // Set up flat width without any heap allocation
+            lr.startWidth = baseWidth;
+            lr.endWidth = baseWidth;
 
             // 1. External curve
             for (int i = 0; i < externalSegments; i++)

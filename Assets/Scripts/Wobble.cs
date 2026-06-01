@@ -23,6 +23,7 @@ namespace BottleShaders
         private float _velocityX;
         private float _velocityZ;
         private bool _hasLiquidMaterial;
+        private bool _isWobbleActive = true;
 
         private static readonly int WobbleXProperty = Shader.PropertyToID("_WobbleX");
         private static readonly int WobbleZProperty = Shader.PropertyToID("_WobbleZ");
@@ -50,41 +51,68 @@ namespace BottleShaders
             if (!gameObject.activeInHierarchy) return;
             if (_renderer == null) return;
 
-            // Smoothly reduce wobble over time (damping)
-            _wobbleX = Mathf.SmoothDamp(_wobbleX, 0, ref _velocityX, 1.0f / recoveryRate);
-            _wobbleZ = Mathf.SmoothDamp(_wobbleZ, 0, ref _velocityZ, 1.0f / recoveryRate);
-
-            // Calculate movement and rotation
             Vector3 currentPosition = transform.position;
             Vector3 currentRotation = transform.rotation.eulerAngles;
 
-            Vector3 moveVelocity = (_previousPosition - currentPosition) / deltaTime;
-            Vector3 rotationDelta = currentRotation - _previousRotation;
-            
-            // Normalize rotation delta (handle 0-360 wrap)
-            rotationDelta.x = Mathf.DeltaAngle(0, rotationDelta.x);
-            rotationDelta.y = Mathf.DeltaAngle(0, rotationDelta.y);
-            rotationDelta.z = Mathf.DeltaAngle(0, rotationDelta.z);
+            float moveDistSqr = (currentPosition - _previousPosition).sqrMagnitude;
+            float rotDistSqr = (currentRotation - _previousRotation).sqrMagnitude;
 
-            // Add movement and rotation to wobble
-            float wobbleXDelta = (moveVelocity.x + rotationDelta.z * rotationMultiplier) * maxWobble * movementMultiplier;
-            float wobbleZDelta = (moveVelocity.z - rotationDelta.x * rotationMultiplier) * maxWobble * movementMultiplier;
+            bool hasMovement = moveDistSqr > 0.00001f || rotDistSqr > 0.00001f;
+            bool hasWobble = Mathf.Abs(_wobbleX) > 0.0001f || Mathf.Abs(_wobbleZ) > 0.0001f || Mathf.Abs(_velocityX) > 0.0001f || Mathf.Abs(_velocityZ) > 0.0001f;
 
-            _wobbleX = Mathf.Clamp(_wobbleX + wobbleXDelta, -maxWobble, maxWobble);
-            _wobbleZ = Mathf.Clamp(_wobbleZ + wobbleZDelta, -maxWobble, maxWobble);
-
-            // Apply sine wave wobble animation
-            float time = Time.time * wobbleSpeed;
-            float wobbleAmountX = _wobbleX * Mathf.Sin(time);
-            float wobbleAmountZ = _wobbleZ * Mathf.Sin(time + Mathf.PI * 0.3f);
-
-            // Send to shader using MaterialPropertyBlock
-            if (_hasLiquidMaterial)
+            if (hasMovement || hasWobble)
             {
-                _renderer.GetPropertyBlock(_propBlock, 1);
-                _propBlock.SetFloat(WobbleXProperty, wobbleAmountX);
-                _propBlock.SetFloat(WobbleZProperty, wobbleAmountZ);
-                _renderer.SetPropertyBlock(_propBlock, 1);
+                _isWobbleActive = true;
+
+                // Calculate movement and rotation velocities
+                Vector3 moveVelocity = (deltaTime > 0f) ? (_previousPosition - currentPosition) / deltaTime : Vector3.zero;
+                Vector3 rotationDelta = currentRotation - _previousRotation;
+                
+                // Normalize rotation delta (handle 0-360 wrap)
+                rotationDelta.x = Mathf.DeltaAngle(0, rotationDelta.x);
+                rotationDelta.y = Mathf.DeltaAngle(0, rotationDelta.y);
+                rotationDelta.z = Mathf.DeltaAngle(0, rotationDelta.z);
+
+                // Smoothly reduce wobble over time (damping)
+                _wobbleX = Mathf.SmoothDamp(_wobbleX, 0, ref _velocityX, 1.0f / recoveryRate);
+                _wobbleZ = Mathf.SmoothDamp(_wobbleZ, 0, ref _velocityZ, 1.0f / recoveryRate);
+
+                // Add movement and rotation to wobble
+                float wobbleXDelta = (moveVelocity.x + rotationDelta.z * rotationMultiplier) * maxWobble * movementMultiplier;
+                float wobbleZDelta = (moveVelocity.z - rotationDelta.x * rotationMultiplier) * maxWobble * movementMultiplier;
+
+                _wobbleX = Mathf.Clamp(_wobbleX + wobbleXDelta, -maxWobble, maxWobble);
+                _wobbleZ = Mathf.Clamp(_wobbleZ + wobbleZDelta, -maxWobble, maxWobble);
+
+                // Apply sine wave wobble animation
+                float time = Time.time * wobbleSpeed;
+                float wobbleAmountX = _wobbleX * Mathf.Sin(time);
+                float wobbleAmountZ = _wobbleZ * Mathf.Sin(time + Mathf.PI * 0.3f);
+
+                // Send to shader using MaterialPropertyBlock
+                if (_hasLiquidMaterial)
+                {
+                    _renderer.GetPropertyBlock(_propBlock, 1);
+                    _propBlock.SetFloat(WobbleXProperty, wobbleAmountX);
+                    _propBlock.SetFloat(WobbleZProperty, wobbleAmountZ);
+                    _renderer.SetPropertyBlock(_propBlock, 1);
+                }
+            }
+            else if (_isWobbleActive)
+            {
+                _wobbleX = 0f;
+                _wobbleZ = 0f;
+                _velocityX = 0f;
+                _velocityZ = 0f;
+
+                if (_hasLiquidMaterial)
+                {
+                    _renderer.GetPropertyBlock(_propBlock, 1);
+                    _propBlock.SetFloat(WobbleXProperty, 0f);
+                    _propBlock.SetFloat(WobbleZProperty, 0f);
+                    _renderer.SetPropertyBlock(_propBlock, 1);
+                }
+                _isWobbleActive = false;
             }
 
             // Save for next frame
