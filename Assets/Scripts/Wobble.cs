@@ -14,6 +14,10 @@ namespace PuzzleGame
         [SerializeField] private float movementMultiplier = 1.0f;
         [SerializeField] private float rotationMultiplier = 0.15f;
 
+        [Header("Performance")]
+        [Tooltip("Wobble update aralığı (saniye). 0.033 = ~30fps, default 0.05 = 20fps.")]
+        [SerializeField] private float updateInterval = 0.05f;
+
         private Renderer _renderer;
         private MaterialPropertyBlock _propBlock;
         private Vector3 _previousPosition;
@@ -24,6 +28,7 @@ namespace PuzzleGame
         private float _velocityZ;
         private bool _hasLiquidMaterial;
         private bool _isWobbleActive = true;
+        private float _timeSinceLastUpdate;
 
         private static readonly int WobbleXProperty = Shader.PropertyToID("_WobbleX");
         private static readonly int WobbleZProperty = Shader.PropertyToID("_WobbleZ");
@@ -67,7 +72,7 @@ namespace PuzzleGame
                 // Calculate movement and rotation velocities
                 Vector3 moveVelocity = (deltaTime > 0f) ? (_previousPosition - currentPosition) / deltaTime : Vector3.zero;
                 Vector3 rotationDelta = currentRotation - _previousRotation;
-                
+
                 // Normalize rotation delta (handle 0-360 wrap)
                 rotationDelta.x = Mathf.DeltaAngle(0, rotationDelta.x);
                 rotationDelta.y = Mathf.DeltaAngle(0, rotationDelta.y);
@@ -84,18 +89,24 @@ namespace PuzzleGame
                 _wobbleX = Mathf.Clamp(_wobbleX + wobbleXDelta, -maxWobble, maxWobble);
                 _wobbleZ = Mathf.Clamp(_wobbleZ + wobbleZDelta, -maxWobble, maxWobble);
 
-                // Apply sine wave wobble animation
-                float time = Time.time * wobbleSpeed;
-                float wobbleAmountX = _wobbleX * Mathf.Sin(time);
-                float wobbleAmountZ = _wobbleZ * Mathf.Sin(time + Mathf.PI * 0.3f);
-
-                // Send to shader using MaterialPropertyBlock
-                if (_hasLiquidMaterial)
+                // Throttled shader update — 60fps gereksiz, 20fps yeterli
+                _timeSinceLastUpdate += deltaTime;
+                if (_timeSinceLastUpdate >= updateInterval)
                 {
-                    _renderer.GetPropertyBlock(_propBlock, 1);
-                    _propBlock.SetFloat(WobbleXProperty, wobbleAmountX);
-                    _propBlock.SetFloat(WobbleZProperty, wobbleAmountZ);
-                    _renderer.SetPropertyBlock(_propBlock, 1);
+                    _timeSinceLastUpdate = 0f;
+                    // Apply sine wave wobble animation
+                    float time = Time.time * wobbleSpeed;
+                    float wobbleAmountX = _wobbleX * Mathf.Sin(time);
+                    float wobbleAmountZ = _wobbleZ * Mathf.Sin(time + Mathf.PI * 0.3f);
+
+                    // Send to shader using MaterialPropertyBlock
+                    if (_hasLiquidMaterial)
+                    {
+                        _renderer.GetPropertyBlock(_propBlock, 1);
+                        _propBlock.SetFloat(WobbleXProperty, wobbleAmountX);
+                        _propBlock.SetFloat(WobbleZProperty, wobbleAmountZ);
+                        _renderer.SetPropertyBlock(_propBlock, 1);
+                    }
                 }
             }
             else if (_isWobbleActive)
@@ -104,6 +115,7 @@ namespace PuzzleGame
                 _wobbleZ = 0f;
                 _velocityX = 0f;
                 _velocityZ = 0f;
+                _timeSinceLastUpdate = 0f;
 
                 if (_hasLiquidMaterial)
                 {

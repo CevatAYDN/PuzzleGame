@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using PuzzleGame.Domain.Models;
-using PuzzleGame.Infrastructure;
 using Random = System.Random;
 
 namespace PuzzleGame.Domain.Services
@@ -9,13 +8,18 @@ namespace PuzzleGame.Domain.Services
     /// <summary>
     /// Stateless, tamamen test edilebilir level üreteci.
     /// Domain katmanında — UnityEngine bağımlılığı yoktur.
+    ///
+    /// Çözülebilir puzzle için kural:
+    ///   - Her renkten maxLayers adet katman vardır.
+    ///   - Aynı renk tüm katmanları aynı şişededir (çözüm için).
+    ///   - Katman sırası şişe içinde rastgeledir (zorluk için).
     /// </summary>
     public static class LevelGenerator
     {
         /// <summary>
         /// Rastgele ama çözülebilir bir puzzle oluşturur.
-        /// Her renkten maxLayers adet katman, rastgele sırada,
-        /// rastgele seçilmiş dolu şişelere dağıtılır.
+        /// Her renk bir şişeye, katman sırası rastgele.
+        /// Kalan şişeler boş (hedef şişeler).
         /// </summary>
         public static List<List<LiquidLayer>> Generate(
             int bottleCount,
@@ -35,22 +39,29 @@ namespace PuzzleGame.Domain.Services
             if (numColors < 1)
                 return result;
 
-            // Her renkten maxLayers katman
-            var pool = new List<DomainColor>(numColors * maxLayers);
-            for (int c = 0; c < numColors; c++)
-                for (int k = 0; k < maxLayers; k++)
-                    pool.Add(colorPalette[c]);
-
             var rng = seed == 0 ? new Random() : new Random(seed);
-            FisherYatesShuffle(pool, rng);
-
             float amountPerLayer = 1f / maxLayers;
 
-            // Pool'daki katmanları şişelere round-robin dağıt
-            for (int p = 0; p < pool.Count; p++)
+            // Her rengi rastgele bir dolu şişeye ata.
+            // Hiçbir şişeye birden fazla renk atanmaz.
+            var bottleIndices = new List<int>(filledCount);
+            for (int i = 0; i < filledCount; i++) bottleIndices.Add(i);
+            FisherYatesShuffle(bottleIndices, rng);
+
+            for (int c = 0; c < numColors; c++)
             {
-                int bottleIndex = p % filledCount;
-                result[bottleIndex].Add(new LiquidLayer(pool[p], amountPerLayer));
+                int bottleIndex = bottleIndices[c];
+
+                // Bu renk için maxLayers adet layer yarat
+                var layers = new List<DomainColor>(maxLayers);
+                for (int k = 0; k < maxLayers; k++)
+                    layers.Add(colorPalette[c]);
+
+                // Layer sırasını rastgele karıştır (zorluk)
+                FisherYatesShuffle(layers, rng);
+
+                foreach (var color in layers)
+                    result[bottleIndex].Add(new LiquidLayer(color, amountPerLayer));
             }
 
             return result;

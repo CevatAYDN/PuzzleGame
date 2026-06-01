@@ -64,22 +64,18 @@ namespace PuzzleGame.Domain.Tests.Services
         }
 
         [Test]
-        public void Generate_NoBottle_MixesColors()
+        public void Generate_EachBottle_HasSingleColor()
         {
-            // 3 colors × 4 layers = 12 layers, 3 bottles → 4 layers per bottle, mixed
+            // Her renk tek bir şişede → her dolu şişe tek renk içermeli
             var result = LevelGenerator.Generate(3, 4, 0, _palette, seed: 42);
-            bool hasMixed = false;
             foreach (var layers in result)
             {
                 if (layers.Count < 2) continue;
                 var first = layers[0].Color;
                 for (int i = 1; i < layers.Count; i++)
-                {
-                    if (!layers[i].Color.Equals(first)) { hasMixed = true; break; }
-                }
-                if (hasMixed) break;
+                    Assert.That(layers[i].Color.Equals(first), Is.True,
+                        "Bottle should contain a single color (puzzle solvability rule)");
             }
-            Assert.That(hasMixed, Is.True, "Bottles should mix colors from random distribution");
         }
 
         [Test]

@@ -19,6 +19,8 @@ namespace PuzzleGame.Events
         private static readonly Dictionary<Type, List<Delegate>> _subscribers =
             new Dictionary<Type, List<Delegate>>();
 
+        private const int MaxPoolSize = 16;
+
         private static readonly Stack<List<Delegate>> _listPool = new Stack<List<Delegate>>();
 
         private static List<Delegate> GetTempList()
@@ -31,7 +33,8 @@ namespace PuzzleGame.Events
         private static void ReleaseTempList(List<Delegate> list)
         {
             list.Clear();
-            _listPool.Push(list);
+            if (_listPool.Count < MaxPoolSize)
+                _listPool.Push(list);
         }
 
         // ── Subscribe / Unsubscribe ──────────────────────────────────────────

@@ -53,18 +53,29 @@ namespace PuzzleGame.Domain.Models
 
         /// <summary>
         /// Snapshot'tan yükle (Undo için).
-        /// MaxLayers aşılırsa false döner ve hiçbir değişiklik yapılmaz.
+        /// Atomic: yeni veri valid değilse state hiç değişmez.
         /// </summary>
         public bool ReplaceLayers(IEnumerable<LiquidLayer> newLayers)
         {
-            _layers.Clear();
+            if (newLayers == null) return false;
+
+            // Önce sayım — invalid ise hiçbir değişiklik yapma
+            int count = 0;
+            foreach (var _ in newLayers) count++;
+            if (count > MaxLayers) return false;
+
+            // Geçici listede validate et
+            var temp = new List<LiquidLayer>(count);
             float total = 0f;
             foreach (var layer in newLayers)
             {
-                if (_layers.Count >= MaxLayers) return false;
-                _layers.Add(layer);
+                temp.Add(layer);
                 total += layer.Amount;
             }
+
+            // Hepsi geçerli — atomik olarak state'i güncelle
+            _layers.Clear();
+            _layers.AddRange(temp);
             _totalFill = total;
             return true;
         }

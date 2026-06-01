@@ -17,10 +17,14 @@ namespace PuzzleGame.Application.Services
 
         public void RecordSnapshot(BottleState[] bottles)
         {
+            if (bottles == null) return;
+
             var snapshot = new List<LiquidLayer>[bottles.Length];
             for (int i = 0; i < bottles.Length; i++)
             {
-                snapshot[i] = new List<LiquidLayer>(bottles[i].Layers);
+                var state = bottles[i];
+                if (state == null) continue; // null bottle = boş layer
+                snapshot[i] = new List<LiquidLayer>(state.Layers);
             }
             _history.Push(snapshot);
         }

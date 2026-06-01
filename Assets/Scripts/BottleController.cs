@@ -111,17 +111,7 @@ namespace PuzzleGame
                 return false;
             }
 
-            bool added = false;
-            try
-            {
-                added = target.State.AddLayer(layer.Value);
-            }
-            catch (System.Exception ex)
-            {
-                BottleLogger.LogError($"Exception during AddLayer: {ex.Message}. Rolling back.");
-            }
-
-            if (!added)
+            if (!target.State.AddLayer(layer.Value))
             {
                 State.AddLayer(layer.Value);
                 BottleLogger.LogError($"'{name}' → '{target.name}': AddLayer failed after validator approval. Rolled back.");
