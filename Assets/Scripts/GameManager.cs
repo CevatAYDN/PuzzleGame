@@ -338,8 +338,11 @@ namespace BottleShaders
             else
             {
                 BottleLogger.LogDebug($"Pour rejected: '{source.name}' → '{target.name}'.");
-                LowerSelectedBottle();
-                _selectionService.Deselect();
+                _animationService.AnimateErrorShake(this, source.transform, onComplete: () =>
+                {
+                    LowerSelectedBottle();
+                    _selectionService.Deselect();
+                });
             }
         }
 

@@ -40,6 +40,11 @@ namespace BottleShaders.Application.Services
             context.StartCoroutine(PourRoutine(source, target, duration, onComplete));
         }
 
+        public void AnimateErrorShake(MonoBehaviour context, Transform bottle, Action onComplete = null)
+        {
+            context.StartCoroutine(ErrorShakeRoutine(bottle, onComplete));
+        }
+
         private IEnumerator MoveRoutine(Transform t, Vector3 from, Vector3 to,
                                         float duration, Func<bool> keepHovering, Action onComplete)
         {
@@ -52,7 +57,6 @@ namespace BottleShaders.Application.Services
                 elapsed += Time.deltaTime;
                 float tValue = Mathf.Clamp01(elapsed * invDuration);
                 
-                // If it's a lift transition (keepHovering is set), apply overshoot easing for snappy feel
                 float easedT = keepHovering != null ? EaseOutBack(tValue) : Mathf.SmoothStep(0f, 1f, tValue);
                 
                 t.position = from + (to - from) * easedT;
@@ -63,7 +67,6 @@ namespace BottleShaders.Application.Services
             _runningCount--;
             onComplete?.Invoke();
 
-            // Magical idle hover oscillation loop while selected (does not block other user input)
             if (keepHovering != null && _config != null)
             {
                 float hoverTime = 0f;
@@ -78,6 +81,30 @@ namespace BottleShaders.Application.Services
                     yield return null;
                 }
             }
+        }
+
+        private IEnumerator ErrorShakeRoutine(Transform t, Action onComplete)
+        {
+            _runningCount++;
+            float elapsed = 0f;
+            float duration = _config != null ? _config.shakeDuration : 0.25f;
+            float shakeAngle = _config != null ? _config.shakeAngle : 8f;
+            Quaternion startRot = t.rotation;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float progress = elapsed / duration;
+                
+                // Snappy decaying sine wave wobble
+                float angle = Mathf.Sin(progress * Mathf.PI * 4f) * shakeAngle * (1f - progress);
+                t.rotation = startRot * Quaternion.Euler(0f, 0f, angle);
+                yield return null;
+            }
+
+            t.rotation = startRot;
+            _runningCount--;
+            onComplete?.Invoke();
         }
 
         private IEnumerator PourRoutine(BottleController source, BottleController target,
@@ -98,7 +125,6 @@ namespace BottleShaders.Application.Services
             Vector3 startPos     = sourceT.position;
             Quaternion startRot  = sourceT.rotation;
             Quaternion tiltedRot  = Quaternion.AngleAxis(tiltAngle, tiltAxis) * startRot;
-            Quaternion currentRot = Quaternion.identity;
 
             // Compute exact pour position so source mouth aligns with target mouth
             Vector3 targetMouth      = targetT.position + Vector3.up * (target.Height + 0.15f);
@@ -114,7 +140,6 @@ namespace BottleShaders.Application.Services
             
             LiquidLayer pouredLayer = target.State.TopLayer ?? new LiquidLayer(Color.clear, 0f);
 
-            // Stream LineRenderer Setup
             var lr = source.GetComponent<LineRenderer>();
             if (lr == null)
             {
@@ -136,7 +161,7 @@ namespace BottleShaders.Application.Services
             if (lr.material != null)
             {
                 lr.material.color = streamColor;
-                lr.material.SetColor("_BaseColor", streamColor); // URP base color support
+                lr.material.SetColor("_BaseColor", streamColor);
             }
 
             lr.enabled = true;
@@ -185,6 +210,7 @@ namespace BottleShaders.Application.Services
 
             source.UpdateVisualsFromState();
             target.UpdateVisualsFromState();
+            target.PlaySettleBounce(); // Dynamic liquid settle slosh
 
             _runningCount--;
             onComplete?.Invoke();
@@ -206,18 +232,40 @@ namespace BottleShaders.Application.Services
 
             // Bell curve stream width: starts thin, peaks at mid-pour, goes thin
             float widthFactor = Mathf.Clamp01(Mathf.Sin(t * Mathf.PI) * 1.5f);
-            float width = _config != null ? _config.streamWidth * widthFactor : 0.08f * widthFactor;
-            
-            lr.startWidth = width;
-            lr.endWidth = width;
+            float baseWidth = _config != null ? _config.streamWidth * widthFactor : 0.08f * widthFactor;
 
             // Source mouth offset rotated in world space
             Vector3 sourceMouth = sourceT.TransformPoint(new Vector3(0f, source.Height, 0f));
             // Target mouth straight offset in world space
             Vector3 targetMouth = targetT.position + Vector3.up * target.Height;
 
-            lr.SetPosition(0, sourceMouth);
-            lr.SetPosition(1, targetMouth);
+            int segmentCount = 15;
+            lr.positionCount = segmentCount;
+
+            var widthCurve = new AnimationCurve();
+            float rippleSpeed = 22f;
+            float rippleFreq = 8f;
+
+            for (int i = 0; i < segmentCount; i++)
+            {
+                float segmentT = (float)i / (segmentCount - 1);
+                
+                // Parabolic gravity drop (curves downward in world space)
+                float distH = Vector3.Distance(new Vector3(sourceMouth.x, 0f, sourceMouth.z), new Vector3(targetMouth.x, 0f, targetMouth.z));
+                float gravityArc = Mathf.Sin(segmentT * Mathf.PI) * (0.08f + distH * 0.15f);
+                
+                Vector3 pos = Vector3.Lerp(sourceMouth, targetMouth, segmentT);
+                pos.y -= gravityArc;
+                lr.SetPosition(i, pos);
+
+                // Wave ripple calculation: simulates flowing water ripples moving down the stream
+                float wave = Mathf.Sin(segmentT * rippleFreq - Time.time * rippleSpeed) * 0.2f;
+                float segWidth = baseWidth * (1f + wave);
+                
+                widthCurve.AddKey(segmentT, segWidth);
+            }
+
+            lr.widthCurve = widthCurve;
         }
 
         private static float EaseOutBack(float x)

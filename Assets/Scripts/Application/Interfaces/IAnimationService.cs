@@ -26,5 +26,10 @@ namespace BottleShaders.Application.Interfaces
         /// </summary>
         void AnimatePour(MonoBehaviour context, BottleController source, BottleController target,
                          float duration, Action onComplete = null);
+
+        /// <summary>
+        /// Plays a rapid error shake (left/right wiggle) to signify an invalid pour.
+        /// </summary>
+        void AnimateErrorShake(MonoBehaviour context, Transform bottle, Action onComplete = null);
     }
 }

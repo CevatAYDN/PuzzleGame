@@ -287,6 +287,31 @@ namespace BottleShaders
             }
         }
 
+        public void PlaySettleBounce()
+        {
+            StartCoroutine(SettleBounceRoutine());
+        }
+
+        private IEnumerator SettleBounceRoutine()
+        {
+            float duration = 0.6f;
+            float elapsed = 0f;
+            float originalFill = _visualTotalFill;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float progress = elapsed / duration;
+                float wave = Mathf.Cos(progress * Mathf.PI * 3f) * 0.04f * (1f - progress);
+                _visualTotalFill = originalFill + wave;
+                UpdateVisuals();
+                yield return null;
+            }
+
+            _visualTotalFill = originalFill;
+            UpdateVisuals();
+        }
+
         private float EaseOutBounce(float x)
         {
             const float n1 = 7.5625f;

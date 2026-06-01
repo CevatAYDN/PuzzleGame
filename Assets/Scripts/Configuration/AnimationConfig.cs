@@ -16,5 +16,9 @@ namespace BottleShaders.Configuration
 
         [Header("Liquid Stream")]
         public float streamWidth = 0.08f;
+
+        [Header("Error Shake")]
+        public float shakeDuration = 0.25f;
+        public float shakeAngle = 8f;
     }
 }
