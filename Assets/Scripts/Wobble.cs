@@ -7,16 +7,8 @@ namespace PuzzleGame
     [RequireComponent(typeof(Renderer))]
     public class Wobble : MonoBehaviour, IUpdateable
     {
-        [Header("Wobble Settings")]
-        [SerializeField] private float maxWobble = 0.05f;
-        [SerializeField] private float wobbleSpeed = 6.0f;
-        [SerializeField] private float recoveryRate = 1.5f;
-        [SerializeField] private float movementMultiplier = 1.0f;
-        [SerializeField] private float rotationMultiplier = 0.15f;
-
-        [Header("Performance")]
-        [Tooltip("Wobble update aralığı (saniye). 0.033 = ~30fps, default 0.05 = 20fps.")]
-        [SerializeField] private float updateInterval = 0.05f;
+        [Header("Configuration")]
+        public Configuration.WobbleConfig config;
 
         private Renderer _renderer;
         private MaterialPropertyBlock _propBlock;
@@ -64,6 +56,14 @@ namespace PuzzleGame
 
             bool hasMovement = moveDistSqr > 0.00001f || rotDistSqr > 0.00001f;
             bool hasWobble = Mathf.Abs(_wobbleX) > 0.0001f || Mathf.Abs(_wobbleZ) > 0.0001f || Mathf.Abs(_velocityX) > 0.0001f || Mathf.Abs(_velocityZ) > 0.0001f;
+
+            // Config defaults (config null ise fallback)
+            float maxWobble = config != null ? config.maxWobble : 0.05f;
+            float wobbleSpeed = config != null ? config.wobbleSpeed : 6.0f;
+            float recoveryRate = config != null ? config.recoveryRate : 1.5f;
+            float movementMultiplier = config != null ? config.movementMultiplier : 1.0f;
+            float rotationMultiplier = config != null ? config.rotationMultiplier : 0.15f;
+            float updateInterval = config != null ? config.updateInterval : 0.05f;
 
             if (hasMovement || hasWobble)
             {
@@ -151,6 +151,7 @@ namespace PuzzleGame
         /// </summary>
         public void AddImpulse(Vector3 direction, float strength)
         {
+            float maxWobble = config != null ? config.maxWobble : 0.05f;
             _wobbleX = Mathf.Clamp(_wobbleX + direction.x * strength * maxWobble, -maxWobble, maxWobble);
             _wobbleZ = Mathf.Clamp(_wobbleZ + direction.z * strength * maxWobble, -maxWobble, maxWobble);
         }

@@ -16,15 +16,8 @@ namespace PuzzleGame
         public Material glassMaterial;
         public Material liquidMaterial;
 
-        [Header("Visual Tuning")]
-        [SerializeField] private float saturationBoost = 1.35f;
-        [SerializeField] private float brightnessBoost = 1.2f;
-
-        [Header("Bottle Capacity")]
-        [SerializeField] private int maxLayers = 4;
-
-        [Header("Pour Effect")]
-        [SerializeField] private float pourImpulseStrength = 2.0f;
+        [Header("Configuration")]
+        public Configuration.BottleVisualConfig visualConfig;
 
         public GameObject corkObject;
 
@@ -65,6 +58,7 @@ namespace PuzzleGame
                 else corkObject = CreateProceduralCork();
             }
 
+            int maxLayers = visualConfig != null ? visualConfig.maxLayers : BottleState.MaxSupportedLayers;
             State = new BottleState(maxLayers);
             _visualLayers.Clear();
             foreach (var layer in initialLayers)
@@ -119,9 +113,10 @@ namespace PuzzleGame
             }
 
             // Add wobble impulse for pour effect
+            float impulse = visualConfig != null ? visualConfig.pourImpulseStrength : 2.0f;
             Vector3 pourDirection = (target.transform.position - transform.position).normalized;
-            _wobble?.AddImpulse(-pourDirection, pourImpulseStrength);
-            target._wobble?.AddImpulse(pourDirection, pourImpulseStrength * 0.8f);
+            _wobble?.AddImpulse(-pourDirection, impulse);
+            target._wobble?.AddImpulse(pourDirection, impulse * 0.8f);
 
             BottleLogger.LogInfo($"Poured {layer.Value.Color} from '{name}' to '{target.name}'.");
             return true;
@@ -199,7 +194,9 @@ namespace PuzzleGame
                 return;
             }
 
-            _rendererService.UpdateLiquid(_renderer, _visualLayers, _visualTotalFill, saturationBoost, brightnessBoost);
+            float sat = visualConfig != null ? visualConfig.saturationBoost : 1.35f;
+            float bri = visualConfig != null ? visualConfig.brightnessBoost : 1.2f;
+            _rendererService.UpdateLiquid(_renderer, _visualLayers, _visualTotalFill, sat, bri);
 
             bool isEmpty = _visualLayers.Count == 0 || _visualTotalFill <= 0.001f;
             DomainColor baseColor = _visualLayers.Count > 0 ? _visualLayers[0].Color : new DomainColor(0, 0, 0, 0);

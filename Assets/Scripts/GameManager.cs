@@ -23,20 +23,7 @@ namespace PuzzleGame
         [Header("Configuration (assign via Resources or Inspector)")]
         [SerializeField] private GameConfig     gameConfig;
         [SerializeField] private AnimationConfig animConfig;
-
-        [Header("Level Generation")]
-        [SerializeField] private bool  autoGenerateLevel = true;
-        [SerializeField] private int   emptyBottleCount  = 2;
-        [SerializeField] private int   randomSeed        = 0;
-        [SerializeField] private Color[] palette = new Color[]
-        {
-            new Color(0.95f, 0.20f, 0.25f),
-            new Color(0.20f, 0.55f, 0.95f),
-            new Color(0.30f, 0.85f, 0.35f),
-            new Color(0.98f, 0.80f, 0.15f),
-            new Color(0.70f, 0.30f, 0.90f),
-            new Color(0.95f, 0.50f, 0.15f),
-        };
+        [SerializeField] private LevelConfig    levelConfig;
 
         [Header("HUD (optional)")]
         [SerializeField] private Canvas    hudCanvas;
@@ -62,6 +49,16 @@ namespace PuzzleGame
 
         private static readonly WaitForSeconds WinCheckDelay = new WaitForSeconds(0.5f);
         private static readonly Color CamDefaultBgColor = new Color(0.08f, 0.05f, 0.16f, 1f);
+
+        private static readonly Color[] DefaultPalette = new Color[]
+        {
+            new Color(0.95f, 0.20f, 0.25f),
+            new Color(0.20f, 0.55f, 0.95f),
+            new Color(0.30f, 0.85f, 0.35f),
+            new Color(0.98f, 0.80f, 0.15f),
+            new Color(0.70f, 0.30f, 0.90f),
+            new Color(0.95f, 0.50f, 0.15f),
+        };
 
         private void Awake()
         {
@@ -179,13 +176,21 @@ namespace PuzzleGame
         {
             if (_bottles.Length == 0) return;
 
-            List<List<LiquidLayer>> assignments = autoGenerateLevel
+            // Level generation params: levelConfig > fallback values
+            bool autoGen = levelConfig != null ? levelConfig.autoGenerateLevel : true;
+            int empties  = levelConfig != null ? levelConfig.emptyBottleCount : 2;
+            int seed     = levelConfig != null ? levelConfig.randomSeed : 0;
+            Color[] pal  = levelConfig != null && levelConfig.palette.Length > 0
+                ? levelConfig.palette
+                : DefaultPalette;
+
+            List<List<LiquidLayer>> assignments = autoGen
                 ? LevelGenerator.Generate(
                     _bottles.Length,
                     gameConfig.maxLayersPerBottle,
-                    emptyBottleCount,
-                    ConvertPalette(palette),
-                    randomSeed)
+                    empties,
+                    ConvertPalette(pal),
+                    seed)
                 : null;
 
             for (int i = 0; i < _bottles.Length; i++)

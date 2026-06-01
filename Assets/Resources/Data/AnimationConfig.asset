@@ -16,3 +16,11 @@ MonoBehaviour:
   liftDuration: 0.4
   pourDuration: 0.6
   returnDuration: 0.4
+  hoverAmplitude: 0.08
+  hoverFrequency: 3.5
+  streamWidth: 0.08
+  shakeDuration: 0.25
+  shakeAngle: 8
+  tiltPhasePortion: 0.25
+  flowPhasePortion: 0.5
+  returnPhasePortion: 0.25
