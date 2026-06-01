@@ -8,6 +8,7 @@ using System.Collections.Generic;
 namespace BottleShaders
 {
     [RequireComponent(typeof(Renderer))]
+    [RequireComponent(typeof(Wobble))]
     public class BottleController : MonoBehaviour
     {
         [Header("Materials (assigned by BottleMeshGenerator or Editor tool)")]
@@ -21,11 +22,20 @@ namespace BottleShaders
         [Header("Bottle Capacity")]
         [SerializeField] private int maxLayers = 4;
 
+        [Header("Pour Effect")]
+        [SerializeField] private float pourImpulseStrength = 2.0f;
+
         public BottleState State { get; private set; }
+        public IReadOnlyList<LiquidLayer> VisualLayers => _visualLayers;
+        public float VisualTotalFill => _visualTotalFill;
+
+        private readonly List<LiquidLayer> _visualLayers = new List<LiquidLayer>();
+        private float _visualTotalFill = 0f;
 
         private IRendererService  _rendererService;
         private IBottleValidator  _validator;
         private Renderer          _renderer;
+        private Wobble            _wobble;
 
         public void Initialize(IRendererService rendererService,
                                IBottleValidator  validator,
@@ -34,10 +44,16 @@ namespace BottleShaders
             _rendererService = rendererService;
             _validator       = validator;
             _renderer        = GetComponent<Renderer>();
+            _wobble          = GetComponent<Wobble>();
 
             State = new BottleState(maxLayers);
+            _visualLayers.Clear();
             foreach (var layer in initialLayers)
+            {
                 State.AddLayer(layer);
+                _visualLayers.Add(layer);
+            }
+            _visualTotalFill = State.TotalFill;
 
             BottleLogger.LogDebug($"Bottle '{name}' initialized with {initialLayers.Count} layers.");
             UpdateVisuals();
@@ -84,10 +100,30 @@ namespace BottleShaders
                 return false;
             }
 
+            // Add wobble impulse for pour effect
+            Vector3 pourDirection = (target.transform.position - transform.position).normalized;
+            _wobble?.AddImpulse(-pourDirection, pourImpulseStrength);
+            target._wobble?.AddImpulse(pourDirection, pourImpulseStrength * 0.8f);
+
             BottleLogger.LogInfo($"Poured {layer.Value.Color} from '{name}' to '{target.name}'.");
-            UpdateVisuals();
-            target.UpdateVisuals();
             return true;
+        }
+
+        public void SetVisualState(List<LiquidLayer> layers, float totalFill)
+        {
+            _visualLayers.Clear();
+            _visualLayers.AddRange(layers);
+            _visualTotalFill = totalFill;
+            UpdateVisuals();
+        }
+
+        public void UpdateVisualsFromState()
+        {
+            if (State == null) return;
+            _visualLayers.Clear();
+            _visualLayers.AddRange(State.Layers);
+            _visualTotalFill = State.TotalFill;
+            UpdateVisuals();
         }
 
         public void UpdateVisuals()
@@ -101,8 +137,11 @@ namespace BottleShaders
             if (_renderer == null)
                 _renderer = GetComponent<Renderer>();
 
-            _rendererService.UpdateLiquid(_renderer, State, saturationBoost, brightnessBoost);
-            _rendererService.UpdateGlass(_renderer, State);
+            _rendererService.UpdateLiquid(_renderer, _visualLayers, _visualTotalFill, saturationBoost, brightnessBoost);
+            
+            bool isEmpty = _visualLayers.Count == 0 || _visualTotalFill <= 0.001f;
+            DomainColor baseColor = _visualLayers.Count > 0 ? _visualLayers[0].Color : new DomainColor(0, 0, 0, 0);
+            _rendererService.UpdateGlass(_renderer, isEmpty, baseColor);
         }
     }
 }

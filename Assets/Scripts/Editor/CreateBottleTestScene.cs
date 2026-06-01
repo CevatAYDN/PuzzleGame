@@ -333,8 +333,8 @@ namespace BottleShaders.Editor
             go.AddComponent<MeshFilter>();
             MeshRenderer mr = go.AddComponent<MeshRenderer>();
 
-            Shader glassShader  = FindShader("BottleGlass")  ?? Shader.Find("Universal Render Pipeline/Lit");
-            Shader liquidShader = FindShader("LayeredLiquid") ?? Shader.Find("Universal Render Pipeline/Unlit");
+            Shader glassShader  = FindShader("PremiumBottleGlass")  ?? Shader.Find("Universal Render Pipeline/Lit");
+            Shader liquidShader = FindShader("PremiumLayeredLiquid") ?? Shader.Find("Universal Render Pipeline/Unlit");
 
             Material glassMat  = new Material(glassShader)  { name = $"{name}_Glass"  };
             Material liquidMat = new Material(liquidShader) { name = $"{name}_Liquid" };

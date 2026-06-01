@@ -300,7 +300,7 @@ namespace BottleShaders
                 UpdateHUD();
 
                 _animationService.AnimatePour(
-                    this, source.transform, target.transform,
+                    this, source, target,
                     animConfig.pourDuration,
                     onComplete: () =>
                     {

@@ -24,7 +24,7 @@ namespace BottleShaders.AppServices.Interfaces
         /// Plays the pour sequence: tilt source toward target, wait, then restore.
         /// Calls <paramref name="onComplete"/> after the tilt-back finishes.
         /// </summary>
-        void AnimatePour(MonoBehaviour context, Transform source, Transform target,
+        void AnimatePour(MonoBehaviour context, BottleController source, BottleController target,
                          float duration, Action onComplete = null);
     }
 }

@@ -64,6 +64,7 @@
     <Compile Include="Assets\Scripts\Configuration\AnimationConfig.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\LiquidLayer.cs" />
     <Compile Include="Assets\Scripts\Logging\BottleLogger.cs" />
+    <Compile Include="Assets\Scripts\Wobble.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\RendererService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IBottleSelectionService.cs" />
     <Compile Include="Assets\Scripts\BottleController.cs" />
@@ -79,11 +80,13 @@
     <Compile Include="Assets\Scripts\BottleMeshGenerator.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\Shaders\PremiumBottleGlass.shader" />
     <None Include="Assets\TutorialInfo\StyleSheets\ReadmeEditor.uss" />
     <None Include="Assets\TutorialInfo\StyleSheets\ReadmeEditorLight.uss" />
     <None Include="Assets\Shaders\LayeredLiquid.shader" />
     <None Include="Assets\Shaders\BottleGlass.shader" />
     <None Include="Assets\TutorialInfo\StyleSheets\ReadmeEditorDark.uss" />
+    <None Include="Assets\Shaders\PremiumLayeredLiquid.shader" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">
