@@ -7,26 +7,9 @@ using System.Collections.Generic;
 
 namespace BottleShaders
 {
-    /// <summary>
-    /// MonoBehaviour façade for a single bottle.
-    /// Owns the visual representation; delegates all game-rule decisions
-    /// to the injected <see cref="IBottleValidator"/>.
-    ///
-    /// Responsibilities:
-    ///   • Hold the domain state (<see cref="BottleState"/>)
-    ///   • Trigger visual updates via <see cref="IRendererService"/>
-    ///   • Execute a pour when the caller has already validated it
-    ///
-    /// NOT responsible for:
-    ///   • Deciding whether a pour is legal  → IBottleValidator
-    ///   • Selecting / deselecting bottles   → IBottleSelectionService
-    ///   • Animating the bottle              → IAnimationService
-    /// </summary>
     [RequireComponent(typeof(Renderer))]
     public class BottleController : MonoBehaviour
     {
-        // ── Inspector ────────────────────────────────────────────────────────
-
         [Header("Materials (assigned by BottleMeshGenerator or Editor tool)")]
         public Material glassMaterial;
         public Material liquidMaterial;
@@ -38,20 +21,12 @@ namespace BottleShaders
         [Header("Bottle Capacity")]
         [SerializeField] private int maxLayers = 4;
 
-        // ── Runtime state ────────────────────────────────────────────────────
-
         public BottleState State { get; private set; }
 
         private IRendererService  _rendererService;
         private IBottleValidator  _validator;
         private Renderer          _renderer;
 
-        // ── Initialisation ───────────────────────────────────────────────────
-
-        /// <summary>
-        /// Must be called once before the bottle is used.
-        /// Replaces Unity's Awake/Start for dependency injection.
-        /// </summary>
         public void Initialize(IRendererService rendererService,
                                IBottleValidator  validator,
                                List<LiquidLayer> initialLayers)
@@ -68,26 +43,18 @@ namespace BottleShaders
             UpdateVisuals();
         }
 
-        // ── Queries ──────────────────────────────────────────────────────────
-
         public bool IsEmpty() => State?.IsEmpty ?? true;
         public bool IsFull()  => State?.IsFull  ?? false;
 
         public bool HasSingleColorContent()
         {
-            if (State == null || State.IsEmpty) return true;
-            var first = State.Layers[0].Color;
-            foreach (var layer in State.Layers)
-                if (!_validator.ColorsMatch(layer.Color, first)) return false;
+            if (State == null || State.IsEmpty || State.Layers.Count == 0) return true;
+            var firstColor = State.Layers[0].Color;
+            for (int i = 1; i < State.Layers.Count; i++)
+                if (!_validator.ColorsMatch(State.Layers[i].Color, firstColor)) return false;
             return true;
         }
 
-        // ── Pour ─────────────────────────────────────────────────────────────
-
-        /// <summary>
-        /// Attempts to pour the top layer of this bottle into <paramref name="target"/>.
-        /// Returns false without side-effects when the move is illegal.
-        /// </summary>
         public bool TryPourTo(BottleController target)
         {
             if (target == null)
@@ -112,7 +79,6 @@ namespace BottleShaders
             bool added = target.State.AddLayer(layer.Value);
             if (!added)
             {
-                // Validator said OK but AddLayer failed — roll back to keep state consistent
                 State.AddLayer(layer.Value);
                 BottleLogger.LogError($"'{name}' → '{target.name}': AddLayer failed after validator approval. Rolled back.");
                 return false;
@@ -123,8 +89,6 @@ namespace BottleShaders
             target.UpdateVisuals();
             return true;
         }
-
-        // ── Visuals ──────────────────────────────────────────────────────────
 
         public void UpdateVisuals()
         {

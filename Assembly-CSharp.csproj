@@ -55,6 +55,7 @@
     <Compile Include="Assets\Tests\Domain\Services\BottleValidationServiceTests.cs" />
     <Compile Include="Assets\Scripts\Domain\Services\BottleValidationService.cs" />
     <Compile Include="Assets\TutorialInfo\Readme.cs" />
+    <Compile Include="Assets\Scripts\Domain\Models\DomainColor.cs" />
     <Compile Include="Assets\Tests\Domain\Models\LiquidLayerTests.cs" />
     <Compile Include="Assets\Tests\Domain\Models\BottleStateTests.cs" />
     <Compile Include="Assets\Scripts\Application\Services\BottleSelectionService.cs" />

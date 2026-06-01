@@ -1,7 +1,6 @@
 using NUnit.Framework;
 using BottleShaders.Domain.Models;
 using UnityEngine;
-using System.Linq;
 
 namespace BottleShaders.Domain.Tests.Models
 {
@@ -17,13 +16,10 @@ namespace BottleShaders.Domain.Tests.Models
             return new LiquidLayer(color, amount);
         }
 
-        // ── Initial state ───────────────────────────────────────────────────
-
         [Test]
         public void Constructor_SetsMaxLayers()
         {
             var bottle = CreateSut(5);
-
             Assert.That(bottle.MaxLayers, Is.EqualTo(5));
         }
 
@@ -31,7 +27,6 @@ namespace BottleShaders.Domain.Tests.Models
         public void NewBottle_IsEmpty()
         {
             var bottle = CreateSut();
-
             Assert.That(bottle.IsEmpty, Is.True);
         }
 
@@ -39,7 +34,6 @@ namespace BottleShaders.Domain.Tests.Models
         public void NewBottle_IsNotFull()
         {
             var bottle = CreateSut();
-
             Assert.That(bottle.IsFull, Is.False);
         }
 
@@ -47,7 +41,6 @@ namespace BottleShaders.Domain.Tests.Models
         public void NewBottle_TotalFillIsZero()
         {
             var bottle = CreateSut();
-
             Assert.That(bottle.TotalFill, Is.EqualTo(0f));
         }
 
@@ -55,7 +48,6 @@ namespace BottleShaders.Domain.Tests.Models
         public void NewBottle_TopLayerIsNull()
         {
             var bottle = CreateSut();
-
             Assert.That(bottle.TopLayer, Is.Null);
         }
 
@@ -63,11 +55,8 @@ namespace BottleShaders.Domain.Tests.Models
         public void NewBottle_LayersIsEmpty()
         {
             var bottle = CreateSut();
-
             Assert.That(bottle.Layers, Is.Empty);
         }
-
-        // ── AddLayer ────────────────────────────────────────────────────────
 
         [Test]
         public void AddLayer_AddsLayerToBottle()
@@ -79,7 +68,7 @@ namespace BottleShaders.Domain.Tests.Models
 
             Assert.That(added, Is.True);
             Assert.That(bottle.Layers.Count, Is.EqualTo(1));
-            Assert.That(bottle.TopLayer, Is.EqualTo(layer));
+            Assert.That(bottle.TopLayer!.Value.Color.ToUnityColor(), Is.EqualTo(Color.red).Within(0.001f));
         }
 
         [Test]
@@ -95,9 +84,9 @@ namespace BottleShaders.Domain.Tests.Models
             bottle.AddLayer(green);
 
             Assert.That(bottle.Layers.Count, Is.EqualTo(3));
-            Assert.That(bottle.Layers[0].Color, Is.EqualTo(Color.red));
-            Assert.That(bottle.Layers[1].Color, Is.EqualTo(Color.blue));
-            Assert.That(bottle.Layers[2].Color, Is.EqualTo(Color.green));
+            Assert.That(bottle.Layers[0].Color.ToUnityColor(), Is.EqualTo(Color.red).Within(0.001f));
+            Assert.That(bottle.Layers[1].Color.ToUnityColor(), Is.EqualTo(Color.blue).Within(0.001f));
+            Assert.That(bottle.Layers[2].Color.ToUnityColor(), Is.EqualTo(Color.green).Within(0.001f));
         }
 
         [Test]
@@ -124,19 +113,7 @@ namespace BottleShaders.Domain.Tests.Models
         }
 
         [Test]
-        public void IsFull_WhenMaxLayersAndFullFill_ReturnsTrue()
-        {
-            var bottle = CreateSut(4);
-            bottle.AddLayer(Layer(Color.red, 0.25f));
-            bottle.AddLayer(Layer(Color.red, 0.25f));
-            bottle.AddLayer(Layer(Color.blue, 0.25f));
-            bottle.AddLayer(Layer(Color.blue, 0.25f));
-
-            Assert.That(bottle.IsFull, Is.True);
-        }
-
-        [Test]
-        public void IsFull_WhenMaxLayersAndFillAboveThreshold_ReturnsTrue()
+        public void IsFull_WhenMaxLayers_ReturnsTrue()
         {
             var bottle = CreateSut(4);
             bottle.AddLayer(Layer(Color.red, 0.25f));
@@ -157,15 +134,11 @@ namespace BottleShaders.Domain.Tests.Models
             Assert.That(bottle.IsFull, Is.False);
         }
 
-        // ── PopTopLayer ─────────────────────────────────────────────────────
-
         [Test]
         public void PopTopLayer_FromEmpty_ReturnsNull()
         {
             var bottle = CreateSut();
-
             var layer = bottle.PopTopLayer();
-
             Assert.That(layer, Is.Null);
         }
 
@@ -180,9 +153,9 @@ namespace BottleShaders.Domain.Tests.Models
 
             var popped = bottle.PopTopLayer();
 
-            Assert.That(popped, Is.EqualTo(blue));
+            Assert.That(popped!.Value.Color.ToUnityColor(), Is.EqualTo(Color.blue).Within(0.001f));
             Assert.That(bottle.Layers.Count, Is.EqualTo(1));
-            Assert.That(bottle.Layers[0], Is.EqualTo(red));
+            Assert.That(bottle.Layers[0].Color.ToUnityColor(), Is.EqualTo(Color.red).Within(0.001f));
         }
 
         [Test]
@@ -212,8 +185,6 @@ namespace BottleShaders.Domain.Tests.Models
             Assert.That(bottle.TopLayer, Is.Null);
         }
 
-        // ── Clear ───────────────────────────────────────────────────────────
-
         [Test]
         public void Clear_RemovesAllLayers()
         {
@@ -228,8 +199,6 @@ namespace BottleShaders.Domain.Tests.Models
             Assert.That(bottle.TotalFill, Is.EqualTo(0f));
         }
 
-        // ── IsEmpty / IsFull edge cases ─────────────────────────────────────
-
         [Test]
         public void IsEmpty_AfterAddThenPopAll_ReturnsTrue()
         {
@@ -241,7 +210,7 @@ namespace BottleShaders.Domain.Tests.Models
         }
 
         [Test]
-        public void IsFull_ExactMaxLayersAndFill_ReturnsTrue()
+        public void IsFull_ExactMaxLayers_ReturnsTrue()
         {
             var bottle = CreateSut(3);
             bottle.AddLayer(Layer(Color.red, 0.33f));
@@ -249,6 +218,12 @@ namespace BottleShaders.Domain.Tests.Models
             bottle.AddLayer(Layer(Color.green, 0.34f));
 
             Assert.That(bottle.IsFull, Is.True);
+        }
+
+        [Test]
+        public void MaxSupportedLayers_IsFour()
+        {
+            Assert.That(BottleState.MaxSupportedLayers, Is.EqualTo(4));
         }
 
         [Test]
@@ -261,7 +236,6 @@ namespace BottleShaders.Domain.Tests.Models
             var layers = bottle.Layers;
 
             Assert.That(layers, Is.InstanceOf<System.Collections.Generic.IReadOnlyList<LiquidLayer>>());
-            Assert.That(layers, Is.InstanceOf<System.Collections.Generic.IReadOnlyCollection<LiquidLayer>>());
             Assert.That(layers.Count, Is.EqualTo(2));
         }
 

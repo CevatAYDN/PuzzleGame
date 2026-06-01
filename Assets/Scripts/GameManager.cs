@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,25 +17,8 @@ using BottleShaders.Configuration;
 
 namespace BottleShaders
 {
-    /// <summary>
-    /// Orchestrates the game loop.
-    ///
-    /// Responsibilities:
-    ///   • Compose and inject all services (poor-man's DI root)
-    ///   • Handle player input and delegate to the appropriate service
-    ///   • Check win condition after each move
-    ///   • Manage HUD state
-    ///
-    /// NOT responsible for:
-    ///   • Pour legality  → IBottleValidator
-    ///   • Animations     → IAnimationService
-    ///   • Selection      → IBottleSelectionService
-    ///   • Rendering      → IRendererService
-    /// </summary>
     public class GameManager : MonoBehaviour
     {
-        // ── Inspector ────────────────────────────────────────────────────────
-
         [Header("Configuration (assign via Resources or Inspector)")]
         [SerializeField] private GameConfig     gameConfig;
         [SerializeField] private AnimationConfig animConfig;
@@ -45,20 +29,18 @@ namespace BottleShaders
         [SerializeField] private int   randomSeed        = 0;
         [SerializeField] private Color[] palette = new Color[]
         {
-            new Color(0.95f, 0.20f, 0.25f), // red
-            new Color(0.20f, 0.55f, 0.95f), // blue
-            new Color(0.30f, 0.85f, 0.35f), // green
-            new Color(0.98f, 0.80f, 0.15f), // yellow
-            new Color(0.70f, 0.30f, 0.90f), // purple
-            new Color(0.95f, 0.50f, 0.15f), // orange
+            new Color(0.95f, 0.20f, 0.25f),
+            new Color(0.20f, 0.55f, 0.95f),
+            new Color(0.30f, 0.85f, 0.35f),
+            new Color(0.98f, 0.80f, 0.15f),
+            new Color(0.70f, 0.30f, 0.90f),
+            new Color(0.95f, 0.50f, 0.15f),
         };
 
-        [Header("HUD (optional — leave empty to skip)")]
+        [Header("HUD (optional)")]
         [SerializeField] private Canvas    hudCanvas;
         [SerializeField] private TMPro.TextMeshProUGUI moveCountText;
         [SerializeField] private GameObject winPanel;
-
-        // ── Services (injected in Awake) ─────────────────────────────────────
 
         private IBottleValidator      _validator;
         private IRendererService      _rendererService;
@@ -66,18 +48,15 @@ namespace BottleShaders
         private IBottleSelectionService _selectionService;
         private IInputHandler         _inputHandler;
 
-        // ── Scene cache ──────────────────────────────────────────────────────
-
         private BottleController[] _bottles;
         private Camera             _mainCam;
-
-        // ── Game state ───────────────────────────────────────────────────────
 
         private bool    _gameWon;
         private int     _moveCount;
         private Vector3 _selectedOriginalPos;
 
-        // ── Unity lifecycle ──────────────────────────────────────────────────
+        private Action<BottleState> _onBottleSelectedHandler;
+        private Action<BottleState> _onBottleDeselectedHandler;
 
         private void Awake()
         {
@@ -95,7 +74,11 @@ namespace BottleShaders
 
         private void OnDestroy()
         {
-            // Prevent stale event subscriptions across scene reloads
+            if (_selectionService != null)
+            {
+                _selectionService.OnBottleSelected   -= _onBottleSelectedHandler;
+                _selectionService.OnBottleDeselected -= _onBottleDeselectedHandler;
+            }
             EventAggregator.Clear();
         }
 
@@ -108,11 +91,8 @@ namespace BottleShaders
                 HandleInput(screenPos);
         }
 
-        // ── Composition root ─────────────────────────────────────────────────
-
         private void ComposeServices()
         {
-            // Load configs from Resources if not assigned in Inspector
             if (gameConfig == null)
             {
                 gameConfig = Resources.Load<GameConfig>("Data/GameConfig");
@@ -137,7 +117,6 @@ namespace BottleShaders
             if (_mainCam == null)
             {
                 BottleLogger.LogError("No camera found — input will be disabled.");
-                // _inputHandler stays null; Update() guards against this
             }
             else
             {
@@ -149,14 +128,23 @@ namespace BottleShaders
             _animationService = new AnimationService();
             _selectionService = new BottleSelectionService();
 
-            // Wire selection events to EventAggregator so other systems can listen
-            _selectionService.OnBottleSelected   += b => EventAggregator.Publish(new BottleSelectedEvent(b));
-            _selectionService.OnBottleDeselected += b => EventAggregator.Publish(new BottleDeselectedEvent(b));
+            _onBottleSelectedHandler = b => EventAggregator.Publish(
+                new BottleSelectedEvent(b));
+            _onBottleDeselectedHandler = b => EventAggregator.Publish(
+                new BottleDeselectedEvent(b));
+
+            _selectionService.OnBottleSelected   += _onBottleSelectedHandler;
+            _selectionService.OnBottleDeselected += _onBottleDeselectedHandler;
 
             BottleLogger.LogDebug("All services composed.");
         }
 
-        // ── Scene setup ──────────────────────────────────────────────────────
+        private static DomainColor GetBottleColorId(BottleState state)
+        {
+            return state.IsEmpty || state.Layers.Count == 0
+                ? new DomainColor(0, 0, 0, 0)
+                : state.Layers[0].Color;
+        }
 
         private void CacheBottles()
         {
@@ -185,8 +173,6 @@ namespace BottleShaders
                     ? assignments[i]
                     : new List<LiquidLayer>();
 
-                // Only initialize bottles that haven't been set up yet
-                // (e.g. pre-configured bottles placed manually in the scene)
                 if (bottle.State == null || bottle.State.MaxLayers == 0)
                 {
                     BottleLogger.LogDebug($"Initializing '{bottle.name}' with {initial.Count} layers.");
@@ -205,8 +191,6 @@ namespace BottleShaders
             }
         }
 
-        // ── Level generation ─────────────────────────────────────────────────
-
         private List<List<LiquidLayer>> GenerateLevel(int bottleCount, int maxLayers)
         {
             var result = new List<List<LiquidLayer>>(bottleCount);
@@ -223,13 +207,11 @@ namespace BottleShaders
                 return result;
             }
 
-            // Build a pool: each color appears exactly maxLayers times
             var pool = new List<Color>(numColors * maxLayers);
             for (int c = 0; c < numColors; c++)
                 for (int k = 0; k < maxLayers; k++)
                     pool.Add(palette[c]);
 
-            // Fisher-Yates shuffle (deterministic when seed != 0)
             var rng = randomSeed == 0 ? new System.Random() : new System.Random(randomSeed);
             for (int i = pool.Count - 1; i > 0; i--)
             {
@@ -248,13 +230,10 @@ namespace BottleShaders
             return result;
         }
 
-        // ── Input handling ───────────────────────────────────────────────────
-
         private void HandleInput(Vector2 screenPos)
         {
             if (!_inputHandler.Raycast(screenPos, gameConfig.bottleLayerMask, out RaycastHit hit))
             {
-                // Clicked empty space — deselect
                 if (_selectionService.SelectedBottle != null)
                 {
                     LowerSelectedBottle();
@@ -278,7 +257,6 @@ namespace BottleShaders
             }
             else if (clicked.State == selectedState)
             {
-                // Same bottle tapped again → deselect
                 LowerSelectedBottle();
                 _selectionService.Deselect();
             }
@@ -321,7 +299,6 @@ namespace BottleShaders
                 BottleLogger.LogInfo($"Pour succeeded. Moves: {_moveCount}.");
                 UpdateHUD();
 
-                // Play pour animation, then lower the source bottle
                 _animationService.AnimatePour(
                     this, source.transform, target.transform,
                     animConfig.pourDuration,
@@ -344,8 +321,6 @@ namespace BottleShaders
             }
         }
 
-        // ── Helpers ──────────────────────────────────────────────────────────
-
         private void LowerSelectedBottle()
         {
             var selected = FindBottleByState(_selectionService.SelectedBottle);
@@ -355,7 +330,6 @@ namespace BottleShaders
                     _selectedOriginalPos, animConfig.liftDuration);
         }
 
-        /// <summary>Uses the cached array — no FindObjectsByType at runtime.</summary>
         private BottleController FindBottleByState(BottleState state)
         {
             if (state == null || _bottles == null) return null;
@@ -363,8 +337,6 @@ namespace BottleShaders
                 if (b != null && b.State == state) return b;
             return null;
         }
-
-        // ── Win condition ────────────────────────────────────────────────────
 
         private IEnumerator DelayedWinCheck()
         {
@@ -399,8 +371,6 @@ namespace BottleShaders
             }
         }
 
-        // ── HUD ──────────────────────────────────────────────────────────────
-
         private void InitHUD()
         {
             if (winPanel != null) winPanel.SetActive(false);
@@ -412,8 +382,6 @@ namespace BottleShaders
             if (moveCountText != null)
                 moveCountText.text = $"Hamle: {_moveCount}";
         }
-
-        // ── Public API ───────────────────────────────────────────────────────
 
         public void RestartGame()
         {

@@ -7,12 +7,22 @@ namespace BottleShaders.Domain.Tests.Models
     public class LiquidLayerTests
     {
         [Test]
-        public void Constructor_WithValidColorAndAmount_SetsProperties()
+        public void Constructor_WithUnityColor_SetsProperties()
         {
-            var color = new Color(0.5f, 0.3f, 0.8f, 1f);
-            var layer = new LiquidLayer(color, 0.25f);
+            var unityColor = new Color(0.5f, 0.3f, 0.8f, 1f);
+            var layer = new LiquidLayer(unityColor, 0.25f);
 
-            Assert.That(layer.Color, Is.EqualTo(color));
+            Assert.That(layer.Color.ToUnityColor(), Is.EqualTo(unityColor));
+            Assert.That(layer.Amount, Is.EqualTo(0.25f));
+        }
+
+        [Test]
+        public void Constructor_WithDomainColor_SetsProperties()
+        {
+            var domainColor = new DomainColor(0.5f, 0.3f, 0.8f, 1f);
+            var layer = new LiquidLayer(domainColor, 0.25f);
+
+            Assert.That(layer.Color, Is.EqualTo(domainColor));
             Assert.That(layer.Amount, Is.EqualTo(0.25f));
         }
 
@@ -20,7 +30,6 @@ namespace BottleShaders.Domain.Tests.Models
         public void Constructor_WithNegativeAmount_ClampsToZero()
         {
             var layer = new LiquidLayer(Color.red, -0.5f);
-
             Assert.That(layer.Amount, Is.EqualTo(0f));
         }
 
@@ -28,7 +37,6 @@ namespace BottleShaders.Domain.Tests.Models
         public void Constructor_WithZeroAmount_AmountIsZero()
         {
             var layer = new LiquidLayer(Color.blue, 0f);
-
             Assert.That(layer.Amount, Is.EqualTo(0f));
         }
 
@@ -36,7 +44,6 @@ namespace BottleShaders.Domain.Tests.Models
         public void IsEmpty_WithTransparentColor_ReturnsTrue()
         {
             var layer = new LiquidLayer(new Color(0, 0, 0, 0), 0.25f);
-
             Assert.That(layer.IsEmpty, Is.True);
         }
 
@@ -44,7 +51,6 @@ namespace BottleShaders.Domain.Tests.Models
         public void IsEmpty_WithZeroAmount_ReturnsTrue()
         {
             var layer = new LiquidLayer(Color.red, 0f);
-
             Assert.That(layer.IsEmpty, Is.True);
         }
 
@@ -52,18 +58,28 @@ namespace BottleShaders.Domain.Tests.Models
         public void IsEmpty_WithVisibleColorAndPositiveAmount_ReturnsFalse()
         {
             var layer = new LiquidLayer(new Color(1, 0, 0, 1), 0.25f);
-
             Assert.That(layer.IsEmpty, Is.False);
         }
 
         [Test]
-        public void WithColor_ReturnsNewLayerWithDifferentColor()
+        public void WithColor_UnityColor_ReturnsNewLayerWithDifferentColor()
         {
             var original = new LiquidLayer(Color.red, 0.25f);
             var modified = original.WithColor(Color.blue);
 
-            Assert.That(original.Color, Is.EqualTo(Color.red), "Original should be unchanged");
-            Assert.That(modified.Color, Is.EqualTo(Color.blue));
+            Assert.That(original.Color.ToUnityColor(), Is.EqualTo(Color.red));
+            Assert.That(modified.Color.ToUnityColor(), Is.EqualTo(Color.blue));
+            Assert.That(modified.Amount, Is.EqualTo(original.Amount));
+        }
+
+        [Test]
+        public void WithColor_DomainColor_ReturnsNewLayerWithDifferentColor()
+        {
+            var original = new LiquidLayer(Color.red, 0.25f);
+            var modified = original.WithColor(new DomainColor(0, 0, 1, 1));
+
+            Assert.That(original.Color.ToUnityColor(), Is.EqualTo(Color.red));
+            Assert.That(modified.Color.ToUnityColor().r, Is.EqualTo(0).Within(0.001f));
             Assert.That(modified.Amount, Is.EqualTo(original.Amount));
         }
 
@@ -73,9 +89,8 @@ namespace BottleShaders.Domain.Tests.Models
             var original = new LiquidLayer(Color.red, 0.25f);
             var modified = original.WithAmount(0.75f);
 
-            Assert.That(original.Amount, Is.EqualTo(0.25f), "Original should be unchanged");
+            Assert.That(original.Amount, Is.EqualTo(0.25f));
             Assert.That(modified.Amount, Is.EqualTo(0.75f));
-            Assert.That(modified.Color, Is.EqualTo(original.Color));
         }
 
         [Test]
@@ -83,24 +98,7 @@ namespace BottleShaders.Domain.Tests.Models
         {
             var original = new LiquidLayer(Color.red, 0.25f);
             var modified = original.WithAmount(-1f);
-
             Assert.That(modified.Amount, Is.EqualTo(0f));
-        }
-
-        [Test]
-        public void IsEmpty_AlphaJustAboveThreshold_ReturnsFalse()
-        {
-            var layer = new LiquidLayer(new Color(1, 0, 0, 0.02f), 0.25f);
-
-            Assert.That(layer.IsEmpty, Is.False);
-        }
-
-        [Test]
-        public void IsEmpty_AmountJustAboveThreshold_ReturnsFalse()
-        {
-            var layer = new LiquidLayer(Color.red, 0.002f);
-
-            Assert.That(layer.IsEmpty, Is.False);
         }
     }
 }

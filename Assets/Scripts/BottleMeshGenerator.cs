@@ -1,11 +1,11 @@
 using UnityEngine;
 using System.Collections.Generic;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace BottleShaders
 {
-    /// <summary>
-    /// Generates a bottle mesh procedurally.
-    /// </summary>
     [RequireComponent(typeof(MeshFilter))]
     [RequireComponent(typeof(MeshRenderer))]
     public class BottleMeshGenerator : MonoBehaviour
@@ -24,29 +24,36 @@ namespace BottleShaders
         public Material glassMaterial;
         public Material liquidMaterial;
 
-        private MeshFilter mf;
-        private MeshRenderer mr;
+        private MeshFilter _meshFilter;
+        private MeshRenderer _meshRenderer;
+
+#if UNITY_EDITOR
+        private bool _isBuildingInProgress;
+#endif
+
+        private void Awake()
+        {
+            _meshFilter = GetComponent<MeshFilter>();
+            _meshRenderer = GetComponent<MeshRenderer>();
+        }
 
         private void Start()
         {
-            mf = GetComponent<MeshFilter>();
-            mr = GetComponent<MeshRenderer>();
+            if (_meshFilter == null) _meshFilter = GetComponent<MeshFilter>();
+            if (_meshRenderer == null) _meshRenderer = GetComponent<MeshRenderer>();
 
-            // Only build at runtime if the mesh was never generated (e.g. not via Editor tool).
-            // Avoids double-building when CreateBottleTestScene already called BuildMesh().
-            if (mf != null && (mf.sharedMesh == null || mf.sharedMesh.vertexCount == 0))
+            if (_meshFilter != null && (_meshFilter.sharedMesh == null || _meshFilter.sharedMesh.vertexCount == 0))
                 BuildMesh();
 
-            // Apply materials only if they haven't been set externally already
-            if (mr != null && (mr.sharedMaterials == null || mr.sharedMaterials.Length == 0))
+            if (_meshRenderer != null && (_meshRenderer.sharedMaterials == null || _meshRenderer.sharedMaterials.Length == 0))
                 ApplyMaterials();
         }
 
         public void BuildMesh()
         {
-            if (mf == null) mf = GetComponent<MeshFilter>();
-            if (mr == null) mr = GetComponent<MeshRenderer>();
-            if (mf == null || mr == null) return;
+            if (_meshFilter == null) _meshFilter = GetComponent<MeshFilter>();
+            if (_meshRenderer == null) _meshRenderer = GetComponent<MeshRenderer>();
+            if (_meshFilter == null || _meshRenderer == null) return;
 
             segments = Mathf.Clamp(segments, 8, 64);
 
@@ -81,24 +88,22 @@ namespace BottleShaders
                 }
             }
 
-            // Bottom center
             int bottomCenter = verts.Count;
             verts.Add(Vector3.zero);
             norms.Add(Vector3.down);
             uvs.Add(new Vector2(0.5f, 0f));
 
-            // Full rings from bottom to top
-            AddRing(0f, safeBodyRadius);                 // 0 bottom edge
-            for (int i = 1; i <= 3; i++)                 // 1..3 body transition
+            AddRing(0f, safeBodyRadius);
+            for (int i = 1; i <= 3; i++)
             {
                 float t = i / 4f;
                 float y = t * bodyH;
                 float bulge = Mathf.Sin(t * Mathf.PI) * safeBodyRadius * 0.08f;
                 AddRing(y, safeBodyRadius + bulge);
             }
-            AddRing(bodyH, safeBodyRadius);              // 4 body top
+            AddRing(bodyH, safeBodyRadius);
 
-            for (int i = 1; i <= 3; i++)                 // 5..7 neck transition
+            for (int i = 1; i <= 3; i++)
             {
                 float t = i / 4f;
                 float y = bodyH + t * safeNeckHeight;
@@ -106,18 +111,16 @@ namespace BottleShaders
                 AddRing(y, r);
             }
 
-            AddRing(bodyH + safeNeckHeight, safeNeckRadius);                  // 8 neck top
-            AddRing(bodyH + safeNeckHeight, safeCapRadius);                   // 9 cap lip bottom
-            AddRing(bodyH + safeNeckHeight + safeCapHeight, safeCapRadius);   // 10 cap top
+            AddRing(bodyH + safeNeckHeight, safeNeckRadius);
+            AddRing(bodyH + safeNeckHeight, safeCapRadius);
+            AddRing(bodyH + safeNeckHeight + safeCapHeight, safeCapRadius);
 
-            // Top center
             int topCenter = verts.Count;
             float topY = bodyH + safeNeckHeight + safeCapHeight;
             verts.Add(new Vector3(0f, topY, 0f));
             norms.Add(Vector3.up);
             uvs.Add(new Vector2(0.5f, 1f));
 
-            // Bottom cap fan
             int firstRing = ringStarts[0];
             for (int s = 0; s < segments; s++)
             {
@@ -127,7 +130,6 @@ namespace BottleShaders
                 tris.Add(firstRing + s);
             }
 
-            // Side strips only between FULL rings (fixes out-of-range triangle indices)
             for (int r = 0; r < ringStarts.Count - 1; r++)
             {
                 int aStart = ringStarts[r];
@@ -136,18 +138,11 @@ namespace BottleShaders
                 for (int s = 0; s < segments; s++)
                 {
                     int s1 = (s + 1) % segments;
-
-                    int a0 = aStart + s;
-                    int a1 = aStart + s1;
-                    int b0 = bStart + s;
-                    int b1 = bStart + s1;
-
-                    tris.Add(a0); tris.Add(b0); tris.Add(a1);
-                    tris.Add(a1); tris.Add(b0); tris.Add(b1);
+                    tris.Add(aStart + s);  tris.Add(bStart + s);  tris.Add(aStart + s1);
+                    tris.Add(aStart + s1); tris.Add(bStart + s);  tris.Add(bStart + s1);
                 }
             }
 
-            // Top cap fan
             int lastRing = ringStarts[ringStarts.Count - 1];
             for (int s = 0; s < segments; s++)
             {
@@ -157,6 +152,7 @@ namespace BottleShaders
                 tris.Add(lastRing + s1);
             }
 
+            Mesh oldMesh = _meshFilter.sharedMesh;
             var mesh = new Mesh { name = "Bottle" };
             mesh.SetVertices(verts);
             mesh.SetNormals(norms);
@@ -166,41 +162,46 @@ namespace BottleShaders
             mesh.RecalculateNormals();
             mesh.RecalculateTangents();
 
-            if (mf.sharedMesh != null)
-            {
-                if (UnityEngine.Application.isPlaying)
-                    Destroy(mf.sharedMesh);
-                else
-                    DestroyImmediate(mf.sharedMesh);
-            }
+            _meshFilter.sharedMesh = mesh;
 
-            mf.sharedMesh = mesh;
+#if UNITY_EDITOR
+            if (oldMesh != null && !UnityEngine.Application.isPlaying)
+            {
+                DestroyImmediate(oldMesh);
+            }
+#else
+            if (oldMesh != null)
+            {
+                Destroy(oldMesh);
+            }
+#endif
         }
 
         private void ApplyMaterials()
         {
-            if (mr == null) mr = GetComponent<MeshRenderer>();
-            if (mr == null) return;
+            if (_meshRenderer == null) _meshRenderer = GetComponent<MeshRenderer>();
+            if (_meshRenderer == null) return;
 
-            // Always use sharedMaterials for consistency
             if (glassMaterial != null && liquidMaterial != null)
-                mr.sharedMaterials = new[] { glassMaterial, liquidMaterial };
+                _meshRenderer.sharedMaterials = new[] { glassMaterial, liquidMaterial };
             else if (glassMaterial != null)
-                mr.sharedMaterials = new[] { glassMaterial };
+                _meshRenderer.sharedMaterials = new[] { glassMaterial };
         }
 
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (UnityEngine.Application.isPlaying) return;
+            if (UnityEngine.Application.isPlaying || _isBuildingInProgress) return;
 
-            UnityEditor.EditorApplication.delayCall += () =>
+            _isBuildingInProgress = true;
+            EditorApplication.delayCall += () =>
             {
                 if (this == null) return;
-                mf = GetComponent<MeshFilter>();
-                mr = GetComponent<MeshRenderer>();
+                _meshFilter = GetComponent<MeshFilter>();
+                _meshRenderer = GetComponent<MeshRenderer>();
                 BuildMesh();
                 ApplyMaterials();
+                _isBuildingInProgress = false;
             };
         }
 #endif

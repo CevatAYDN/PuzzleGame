@@ -19,55 +19,61 @@ namespace BottleShaders.Domain.Tests.Services
             _target = new BottleState(4);
         }
 
-        // ── ColorsMatch ─────────────────────────────────────────────────────
+        // ── UnityColorsMatch ────────────────────────────────────────────────
 
         [Test]
-        public void ColorsMatch_IdenticalColors_ReturnsTrue()
+        public void UnityColorsMatch_IdenticalColors_ReturnsTrue()
         {
-            bool match = _validator.ColorsMatch(Color.red, Color.red);
-
+            bool match = _validator.UnityColorsMatch(Color.red, Color.red);
             Assert.That(match, Is.True);
         }
 
         [Test]
-        public void ColorsMatch_SimilarColorsWithinTolerance_ReturnsTrue()
+        public void UnityColorsMatch_SimilarColorsWithinTolerance_ReturnsTrue()
         {
             var a = new Color(0.50f, 0.20f, 0.80f);
             var b = new Color(0.52f, 0.22f, 0.78f);
-
-            bool match = _validator.ColorsMatch(a, b);
-
+            bool match = _validator.UnityColorsMatch(a, b);
             Assert.That(match, Is.True);
         }
 
         [Test]
-        public void ColorsMatch_DifferentColors_ReturnsFalse()
+        public void UnityColorsMatch_DifferentColors_ReturnsFalse()
         {
-            bool match = _validator.ColorsMatch(Color.red, Color.blue);
-
+            bool match = _validator.UnityColorsMatch(Color.red, Color.blue);
             Assert.That(match, Is.False);
         }
 
         [Test]
-        public void ColorsMatch_BarelyOutsideTolerance_ReturnsFalse()
+        public void UnityColorsMatch_BarelyOutsideTolerance_ReturnsFalse()
         {
             var a = new Color(0.50f, 0.20f, 0.80f);
             var b = new Color(0.56f, 0.26f, 0.86f);
-
-            bool match = _validator.ColorsMatch(a, b);
-
+            bool match = _validator.UnityColorsMatch(a, b);
             Assert.That(match, Is.False);
         }
 
         [Test]
-        public void ColorsMatch_ExactToleranceBoundary_ReturnsFalse()
+        public void UnityColorsMatch_ExactToleranceBoundary_ReturnsFalse()
         {
             var a = new Color(0.50f, 0.20f, 0.80f);
             var b = new Color(0.55f, 0.25f, 0.85f);
-
-            bool match = _validator.ColorsMatch(a, b);
-
+            bool match = _validator.UnityColorsMatch(a, b);
             Assert.That(match, Is.False);
+        }
+
+        [Test]
+        public void Constructor_WithCustomTolerance_UsesIt()
+        {
+            var strictValidator = new BottleValidationService(0.01f);
+            var a = new Color(0.50f, 0.20f, 0.80f);
+            var b = new Color(0.54f, 0.24f, 0.84f);
+
+            bool strictMatch = strictValidator.UnityColorsMatch(a, b);
+            bool defaultMatch = _validator.UnityColorsMatch(a, b);
+
+            Assert.That(strictMatch, Is.False, "Strict tolerance should reject");
+            Assert.That(defaultMatch, Is.True, "Default tolerance should accept");
         }
 
         // ── CanPour ─────────────────────────────────────────────────────────
@@ -76,7 +82,6 @@ namespace BottleShaders.Domain.Tests.Services
         public void CanPour_FromEmptySource_ReturnsFalse()
         {
             bool canPour = _validator.CanPour(_source, _target);
-
             Assert.That(canPour, Is.False);
         }
 
@@ -85,9 +90,7 @@ namespace BottleShaders.Domain.Tests.Services
         {
             _source.AddLayer(new LiquidLayer(Color.red, 0.25f));
             FillBottle(_target, 4);
-
             bool canPour = _validator.CanPour(_source, _target);
-
             Assert.That(canPour, Is.False);
         }
 
@@ -95,9 +98,7 @@ namespace BottleShaders.Domain.Tests.Services
         public void CanPour_SameBottle_ReturnsFalse()
         {
             _source.AddLayer(new LiquidLayer(Color.red, 0.25f));
-
             bool canPour = _validator.CanPour(_source, _source);
-
             Assert.That(canPour, Is.False);
         }
 
@@ -105,9 +106,7 @@ namespace BottleShaders.Domain.Tests.Services
         public void CanPour_IntoEmptyTarget_ReturnsTrue()
         {
             _source.AddLayer(new LiquidLayer(Color.red, 0.25f));
-
             bool canPour = _validator.CanPour(_source, _target);
-
             Assert.That(canPour, Is.True);
         }
 
@@ -116,9 +115,7 @@ namespace BottleShaders.Domain.Tests.Services
         {
             _source.AddLayer(new LiquidLayer(Color.red, 0.25f));
             _target.AddLayer(new LiquidLayer(Color.red, 0.25f));
-
             bool canPour = _validator.CanPour(_source, _target);
-
             Assert.That(canPour, Is.True);
         }
 
@@ -127,9 +124,7 @@ namespace BottleShaders.Domain.Tests.Services
         {
             _source.AddLayer(new LiquidLayer(Color.red, 0.25f));
             _target.AddLayer(new LiquidLayer(Color.blue, 0.25f));
-
             bool canPour = _validator.CanPour(_source, _target);
-
             Assert.That(canPour, Is.False);
         }
 
@@ -137,7 +132,6 @@ namespace BottleShaders.Domain.Tests.Services
         public void CanPour_SourceIsNull_ReturnsFalse()
         {
             bool canPour = _validator.CanPour(null, _target);
-
             Assert.That(canPour, Is.False);
         }
 
@@ -145,9 +139,7 @@ namespace BottleShaders.Domain.Tests.Services
         public void CanPour_TargetIsNull_ReturnsFalse()
         {
             _source.AddLayer(new LiquidLayer(Color.red, 0.25f));
-
             bool canPour = _validator.CanPour(_source, null);
-
             Assert.That(canPour, Is.False);
         }
 
@@ -155,7 +147,6 @@ namespace BottleShaders.Domain.Tests.Services
         public void CanPour_BothNull_ReturnsFalse()
         {
             bool canPour = _validator.CanPour(null, null);
-
             Assert.That(canPour, Is.False);
         }
 
@@ -166,9 +157,7 @@ namespace BottleShaders.Domain.Tests.Services
             var targetColor = new Color(0.52f, 0.22f, 0.78f);
             _source.AddLayer(new LiquidLayer(sourceColor, 0.25f));
             _target.AddLayer(new LiquidLayer(targetColor, 0.25f));
-
             bool canPour = _validator.CanPour(_source, _target);
-
             Assert.That(canPour, Is.True);
         }
 
@@ -178,7 +167,6 @@ namespace BottleShaders.Domain.Tests.Services
         public void IsComplete_EmptyBottle_ReturnsTrue()
         {
             bool complete = _validator.IsComplete(_source);
-
             Assert.That(complete, Is.True);
         }
 
@@ -186,9 +174,7 @@ namespace BottleShaders.Domain.Tests.Services
         public void IsComplete_FullSingleColor_ReturnsTrue()
         {
             FillBottle(_source, 4, Color.red);
-
             bool complete = _validator.IsComplete(_source);
-
             Assert.That(complete, Is.True);
         }
 
@@ -201,9 +187,7 @@ namespace BottleShaders.Domain.Tests.Services
             _source.AddLayer(new LiquidLayer(closeColor, 0.25f));
             _source.AddLayer(new LiquidLayer(mainColor, 0.25f));
             _source.AddLayer(new LiquidLayer(closeColor, 0.25f));
-
             bool complete = _validator.IsComplete(_source);
-
             Assert.That(complete, Is.True);
         }
 
@@ -211,9 +195,7 @@ namespace BottleShaders.Domain.Tests.Services
         public void IsComplete_NotFull_ReturnsFalse()
         {
             _source.AddLayer(new LiquidLayer(Color.red, 0.25f));
-
             bool complete = _validator.IsComplete(_source);
-
             Assert.That(complete, Is.False);
         }
 
@@ -223,9 +205,7 @@ namespace BottleShaders.Domain.Tests.Services
             _source.AddLayer(new LiquidLayer(Color.red, 0.33f));
             _source.AddLayer(new LiquidLayer(Color.blue, 0.33f));
             _source.AddLayer(new LiquidLayer(Color.green, 0.34f));
-
             bool complete = _validator.IsComplete(_source);
-
             Assert.That(complete, Is.False);
         }
 
@@ -234,9 +214,7 @@ namespace BottleShaders.Domain.Tests.Services
         {
             FillBottle(_source, 2, Color.red);
             FillBottle(_source, 2, Color.blue);
-
             bool complete = _validator.IsComplete(_source);
-
             Assert.That(complete, Is.False);
         }
 
@@ -244,24 +222,7 @@ namespace BottleShaders.Domain.Tests.Services
         public void IsComplete_Null_ReturnsFalse()
         {
             bool complete = _validator.IsComplete(null);
-
             Assert.That(complete, Is.False);
-        }
-
-        // ── Custom tolerance ────────────────────────────────────────────────
-
-        [Test]
-        public void Constructor_WithCustomTolerance_UsesIt()
-        {
-            var strictValidator = new BottleValidationService(0.01f);
-            var a = new Color(0.50f, 0.20f, 0.80f);
-            var b = new Color(0.54f, 0.24f, 0.84f);
-
-            bool strictMatch = strictValidator.ColorsMatch(a, b);
-            bool defaultMatch = _validator.ColorsMatch(a, b);
-
-            Assert.That(strictMatch, Is.False, "Strict tolerance should reject");
-            Assert.That(defaultMatch, Is.True, "Default tolerance should accept");
         }
 
         // ── Helpers ─────────────────────────────────────────────────────────

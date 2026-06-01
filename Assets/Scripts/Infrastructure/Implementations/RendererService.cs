@@ -4,15 +4,8 @@ using UnityEngine;
 
 namespace BottleShaders.Infrastructure.Implementations
 {
-    /// <summary>
-    /// Pushes bottle state into the GPU via MaterialPropertyBlocks.
-    /// One shared block per instance — no material duplication, no GC pressure.
-    /// Supports up to 4 liquid layers (matches the LayeredLiquid shader).
-    /// </summary>
     public class RendererService : IRendererService
     {
-        // ── Shader property IDs (cached once, never GC'd) ────────────────────
-
         private static readonly int[] ColorIDs = new int[]
         {
             Shader.PropertyToID("_Color1"),
@@ -32,20 +25,15 @@ namespace BottleShaders.Infrastructure.Implementations
         private static readonly int SurfaceHeightID = Shader.PropertyToID("_SurfaceHeight");
         private static readonly int GlassColorID    = Shader.PropertyToID("_Color");
 
-        // ── Per-instance property blocks (reused, not re-allocated) ──────────
-
         private readonly MaterialPropertyBlock _liquidBlock = new MaterialPropertyBlock();
         private readonly MaterialPropertyBlock _glassBlock  = new MaterialPropertyBlock();
 
-        // ── IRendererService ─────────────────────────────────────────────────
-
-        /// <inheritdoc/>
         public void UpdateLiquid(Renderer renderer, BottleState state,
                                  float saturationBoost, float brightnessBoost)
         {
             float cumulative = 0f;
 
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < BottleState.MaxSupportedLayers; i++)
             {
                 Color color = Color.clear;
                 float fill  = cumulative;
@@ -53,7 +41,7 @@ namespace BottleShaders.Infrastructure.Implementations
                 if (i < state.Layers.Count)
                 {
                     var layer = state.Layers[i];
-                    color      = AdjustColor(layer.Color, saturationBoost, brightnessBoost);
+                    color      = AdjustColor(layer.Color.ToUnityColor(), saturationBoost, brightnessBoost);
                     cumulative += layer.Amount;
                     fill       = cumulative;
                 }
@@ -63,10 +51,9 @@ namespace BottleShaders.Infrastructure.Implementations
             }
 
             _liquidBlock.SetFloat(SurfaceHeightID, state.TotalFill);
-            renderer.SetPropertyBlock(_liquidBlock, 1); // sub-mesh 1 = liquid
+            renderer.SetPropertyBlock(_liquidBlock, 1);
         }
 
-        /// <inheritdoc/>
         public void UpdateGlass(Renderer renderer, BottleState state)
         {
             Color glassColor;
@@ -77,19 +64,17 @@ namespace BottleShaders.Infrastructure.Implementations
             }
             else
             {
-                var base_ = state.Layers[0].Color;
+                var baseColor = state.Layers[0].Color.ToUnityColor();
                 glassColor = new Color(
-                    base_.r * 0.15f + 0.85f,
-                    base_.g * 0.15f + 0.85f,
-                    base_.b * 0.15f + 0.85f,
+                    baseColor.r * 0.15f + 0.85f,
+                    baseColor.g * 0.15f + 0.85f,
+                    baseColor.b * 0.15f + 0.85f,
                     0.25f);
             }
 
             _glassBlock.SetColor(GlassColorID, glassColor);
-            renderer.SetPropertyBlock(_glassBlock, 0); // sub-mesh 0 = glass
+            renderer.SetPropertyBlock(_glassBlock, 0);
         }
-
-        // ── Helpers ──────────────────────────────────────────────────────────
 
         private static Color AdjustColor(Color c, float sat, float bright)
         {
