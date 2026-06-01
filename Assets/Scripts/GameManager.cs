@@ -59,6 +59,7 @@ namespace BottleShaders
         private Action<BottleState> _onBottleDeselectedHandler;
 
         private static readonly WaitForSeconds WinCheckDelay = new WaitForSeconds(0.5f);
+        private static readonly Color CamDefaultBgColor = new Color(0.08f, 0.05f, 0.16f, 1f);
 
         private void Awake()
         {
@@ -199,7 +200,7 @@ namespace BottleShaders
 
             if (_mainCam != null)
             {
-                _mainCam.backgroundColor = new Color(0.08f, 0.05f, 0.16f, 1f);
+                _mainCam.backgroundColor = CamDefaultBgColor;
                 _mainCam.clearFlags      = CameraClearFlags.SolidColor;
             }
         }

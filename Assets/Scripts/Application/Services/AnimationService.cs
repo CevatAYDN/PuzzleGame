@@ -54,6 +54,7 @@ namespace BottleShaders.Application.Services
         private IEnumerator MoveRoutine(Transform t, Vector3 from, Vector3 to,
                                         float duration, Func<bool> keepHovering, Action onComplete)
         {
+            if (duration <= 0f) duration = 0.001f;
             _runningCount++;
             float elapsed = 0f;
             float invDuration = 1f / duration;
@@ -94,6 +95,7 @@ namespace BottleShaders.Application.Services
             _runningCount++;
             float elapsed = 0f;
             float duration = _config != null ? _config.shakeDuration : 0.25f;
+            if (duration <= 0f) duration = 0.001f;
             float shakeAngle = _config != null ? _config.shakeAngle : 8f;
             Quaternion startRot = t.rotation;
 
@@ -412,6 +414,7 @@ namespace BottleShaders.Application.Services
         private IEnumerator PourRoutine(MonoBehaviour context, BottleController source, BottleController target,
                                         float duration, Action onComplete)
         {
+            if (duration <= 0f) duration = 0.001f;
             _runningCount++;
 
             Transform sourceT = source.transform;

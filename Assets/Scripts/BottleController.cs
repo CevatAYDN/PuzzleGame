@@ -110,7 +110,16 @@ namespace BottleShaders
                 return false;
             }
 
-            bool added = target.State.AddLayer(layer.Value);
+            bool added = false;
+            try
+            {
+                added = target.State.AddLayer(layer.Value);
+            }
+            catch (System.Exception ex)
+            {
+                BottleLogger.LogError($"Exception during AddLayer: {ex.Message}. Rolling back.");
+            }
+
             if (!added)
             {
                 State.AddLayer(layer.Value);

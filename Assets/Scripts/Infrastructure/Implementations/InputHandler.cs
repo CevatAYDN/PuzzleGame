@@ -58,6 +58,10 @@ namespace BottleShaders.Infrastructure.Implementations
             hit = default;
             if (_camera == null) return false;
 
+            // Screen boundary validation
+            if (screenPos.x < 0f || screenPos.x > Screen.width || screenPos.y < 0f || screenPos.y > Screen.height)
+                return false;
+
             Ray ray = _camera.ScreenPointToRay(screenPos);
             return Physics.Raycast(ray, out hit, 100f, mask);
         }
