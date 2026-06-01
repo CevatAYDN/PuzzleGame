@@ -20,5 +20,10 @@ namespace BottleShaders.Configuration
         [Header("Error Shake")]
         public float shakeDuration = 0.25f;
         public float shakeAngle = 8f;
+
+        [Header("Pour Phases (portions of pourDuration, must sum to 1.0)")]
+        [Range(0f, 1f)] public float tiltPhasePortion = 0.25f;
+        [Range(0f, 1f)] public float flowPhasePortion = 0.50f;
+        [Range(0f, 1f)] public float returnPhasePortion = 0.25f;
     }
 }

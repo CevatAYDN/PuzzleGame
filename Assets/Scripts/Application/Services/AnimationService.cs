@@ -131,8 +131,13 @@ namespace BottleShaders.Application.Services
             Vector3 localSourceMouth = new Vector3(0f, source.Height, 0f);
             Vector3 pourPos          = targetMouth - tiltedRot * localSourceMouth;
 
-            float halfDuration = duration * 0.5f;
-            float invHalf      = 1f / halfDuration;
+            float tiltPortion   = _config != null ? _config.tiltPhasePortion : 0.25f;
+            float flowPortion   = _config != null ? _config.flowPhasePortion : 0.50f;
+            float returnPortion = _config != null ? _config.returnPhasePortion : 0.25f;
+
+            float tiltDuration   = duration * tiltPortion;
+            float flowDuration   = duration * flowPortion;
+            float returnDuration = duration * returnPortion;
             float elapsed;
 
             var sourceStart = new LayerSnapshot(source.VisualLayers);
@@ -164,49 +169,56 @@ namespace BottleShaders.Application.Services
                 lr.material.SetColor("_BaseColor", streamColor);
             }
 
-            lr.enabled = true;
-            float elapsedTotal = 0f;
+            lr.enabled = false; // Hidden during travel
 
+            // Phase 1: Tilt & Travel
             elapsed = 0f;
-            while (elapsed < halfDuration)
+            while (elapsed < tiltDuration)
             {
                 elapsed += Time.deltaTime;
-                elapsedTotal += Time.deltaTime;
-                float tValue = Mathf.SmoothStep(0f, 1f, elapsed * invHalf);
+                float tValue = Mathf.Clamp01(elapsed / tiltDuration);
+                float easedT = Mathf.SmoothStep(0f, 1f, tValue);
                 
-                sourceT.position = Vector3.Lerp(startPos, pourPos, tValue);
-                sourceT.rotation = Quaternion.Slerp(startRot, tiltedRot, tValue);
+                sourceT.position = Vector3.Lerp(startPos, pourPos, easedT);
+                sourceT.rotation = Quaternion.Slerp(startRot, tiltedRot, easedT);
 
-                UpdateVisualPourProgress(source, target, sourceStart, targetStart, pouredLayer, elapsedTotal / duration);
-                UpdateStream(lr, source, target, sourceT, targetT, elapsedTotal / duration);
-
+                UpdateVisualPourProgress(source, target, sourceStart, targetStart, pouredLayer, 0f);
                 yield return null;
             }
             sourceT.position = pourPos;
             sourceT.rotation = tiltedRot;
 
+            // Phase 2: Hold & Flow
+            lr.enabled = true;
             elapsed = 0f;
-            while (elapsed < halfDuration)
+            while (elapsed < flowDuration)
             {
                 elapsed += Time.deltaTime;
-                elapsedTotal += Time.deltaTime;
-                float tValue = Mathf.SmoothStep(0f, 1f, elapsed * invHalf);
+                float tValue = Mathf.Clamp01(elapsed / flowDuration);
+
+                UpdateVisualPourProgress(source, target, sourceStart, targetStart, pouredLayer, tValue);
+                UpdateStream(lr, source, target, sourceT, targetT, tValue);
+
+                yield return null;
+            }
+            if (lr != null) lr.enabled = false;
+
+            // Phase 3: Return & Settle
+            elapsed = 0f;
+            while (elapsed < returnDuration)
+            {
+                elapsed += Time.deltaTime;
+                float tValue = Mathf.Clamp01(elapsed / returnDuration);
+                float easedT = Mathf.SmoothStep(0f, 1f, tValue);
                 
-                sourceT.position = Vector3.Lerp(pourPos, startPos, tValue);
-                sourceT.rotation = Quaternion.Slerp(tiltedRot, startRot, tValue);
+                sourceT.position = Vector3.Lerp(pourPos, startPos, easedT);
+                sourceT.rotation = Quaternion.Slerp(tiltedRot, startRot, easedT);
 
-                UpdateVisualPourProgress(source, target, sourceStart, targetStart, pouredLayer, elapsedTotal / duration);
-                UpdateStream(lr, source, target, sourceT, targetT, elapsedTotal / duration);
-
+                UpdateVisualPourProgress(source, target, sourceStart, targetStart, pouredLayer, 1f);
                 yield return null;
             }
             sourceT.position = startPos;
             sourceT.rotation = startRot;
-
-            if (lr != null)
-            {
-                lr.enabled = false;
-            }
 
             source.UpdateVisualsFromState();
             target.UpdateVisualsFromState();
