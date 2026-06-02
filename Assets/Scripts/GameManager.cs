@@ -16,6 +16,7 @@ using PuzzleGame.Events;
 using PuzzleGame.Logging;
 using PuzzleGame.Configuration;
 using PuzzleGame.Application.Animation;
+using PuzzleGame.Application.UI;
 
 namespace PuzzleGame
 {
@@ -32,6 +33,9 @@ namespace PuzzleGame
         [SerializeField] private Canvas    hudCanvas;
         [SerializeField] private TMPro.TextMeshProUGUI moveCountText;
         [SerializeField] private GameObject winPanel;
+
+        [Header("UI Reference")]
+        [SerializeField] private LevelSelectUI levelSelectUI;
 
         private IBottleValidator      _validator;
         private IRendererService      _rendererService;
@@ -183,6 +187,16 @@ namespace PuzzleGame
             _levelRepository = new ScriptableObjectLevelRepository(levelCatalog ?? System.Array.Empty<LevelData>());
             _levelProgress = new PlayerPrefsLevelProgressService();
 
+            // Dynamic LevelSelectUI discovery and initialization
+            if (levelSelectUI == null)
+            {
+                levelSelectUI = FindAnyObjectByType<LevelSelectUI>();
+            }
+            if (levelSelectUI != null)
+            {
+                levelSelectUI.Initialize(_levelRepository, _levelProgress);
+            }
+
             // Listen for level selection (from LevelSelectUI)
             EventAggregator.Subscribe<LevelSelectedEvent>(OnLevelSelected);
 
@@ -220,22 +234,65 @@ namespace PuzzleGame
         {
             if (_bottles.Length == 0) return;
 
-            // Level generation params: levelConfig > fallback values
-            bool autoGen = levelConfig != null ? levelConfig.autoGenerateLevel : true;
-            int empties  = levelConfig != null ? levelConfig.emptyBottleCount : 2;
-            int seed     = levelConfig != null ? levelConfig.randomSeed : 0;
-            Color[] pal  = levelConfig != null && levelConfig.palette.Length > 0
-                ? levelConfig.palette
-                : DefaultPalette;
+            // Determine generation parameters based on _currentLevel first, fallback to levelConfig / defaults
+            bool autoGen = true;
+            int empties = 2;
+            int seed = 0;
+            Color[] pal = DefaultPalette;
+            List<List<LiquidLayer>> assignments = null;
 
-            List<List<LiquidLayer>> assignments = autoGen
-                ? LevelGenerator.Generate(
-                    _bottles.Length,
-                    gameConfig.maxLayersPerBottle,
-                    empties,
-                    ConvertPalette(pal),
-                    seed)
-                : null;
+            if (_currentLevel != null)
+            {
+                autoGen = _currentLevel.autoGenerate;
+                empties = _currentLevel.emptyBottleCount;
+                seed = _currentLevel.randomSeed;
+                pal = levelConfig != null && levelConfig.palette.Length > 0 ? levelConfig.palette : DefaultPalette;
+
+                if (_currentLevel.autoGenerate)
+                {
+                    assignments = LevelGenerator.Generate(
+                        _bottles.Length,
+                        _currentLevel.maxLayersPerBottle,
+                        empties,
+                        ConvertPalette(pal),
+                        seed);
+                }
+                else
+                {
+                    // Pre-built level: convert List<LevelBottleData> to List<List<LiquidLayer>>
+                    assignments = new List<List<LiquidLayer>>();
+                    for (int i = 0; i < _currentLevel.bottles.Count; i++)
+                    {
+                        var bottleData = _currentLevel.bottles[i];
+                        var layers = new List<LiquidLayer>();
+                        if (!bottleData.isEmpty)
+                        {
+                            foreach (var layerData in bottleData.layers)
+                            {
+                                layers.Add(new LiquidLayer(ColorAdapter.FromUnity(layerData.color), layerData.amount));
+                            }
+                        }
+                        assignments.Add(layers);
+                    }
+                }
+            }
+            else
+            {
+                // Fallback to levelConfig
+                autoGen = levelConfig != null ? levelConfig.autoGenerateLevel : true;
+                empties = levelConfig != null ? levelConfig.emptyBottleCount : 2;
+                seed = levelConfig != null ? levelConfig.randomSeed : 0;
+                pal = levelConfig != null && levelConfig.palette.Length > 0 ? levelConfig.palette : DefaultPalette;
+
+                assignments = autoGen
+                    ? LevelGenerator.Generate(
+                        _bottles.Length,
+                        gameConfig.maxLayersPerBottle,
+                        empties,
+                        ConvertPalette(pal),
+                        seed)
+                    : null;
+            }
 
             for (int i = 0; i < _bottles.Length; i++)
             {
@@ -244,15 +301,8 @@ namespace PuzzleGame
                     ? assignments[i]
                     : new List<LiquidLayer>();
 
-                if (bottle.State == null || bottle.State.MaxLayers == 0)
-                {
-                    BottleLogger.LogDebug($"Initializing '{bottle.name}' with {initial.Count} layers.");
-                    bottle.Initialize(_rendererService, _validator, _animationService, initial);
-                }
-                else
-                {
-                    bottle.UpdateVisuals();
-                }
+                // ALWAYS initialize to reset bottle properties completely
+                bottle.Initialize(_rendererService, _validator, _animationService, initial);
             }
 
             if (_mainCam != null)
@@ -341,28 +391,31 @@ namespace PuzzleGame
 
             BottleLogger.LogInfo($"Attempting pour: '{source.name}' → '{target.name}'.");
 
-            if (source.TryPourTo(target))
+            if (_validator.CanPour(source.State, target.State))
             {
-                RecordUndoSnapshot(); // hamle başarılıysa undo state'i kaydet
-                _moveCount++;
-                BottleLogger.LogInfo($"Pour succeeded. Moves: {_moveCount}.");
-                UpdateHUD();
-                _audioService?.PlaySfx(AudioClipId.PourEnd);
+                RecordUndoSnapshot(); // hamle başarılı olacağı için ÖNCE undo state'i kaydet
+                if (source.TryPourTo(target))
+                {
+                    _moveCount++;
+                    BottleLogger.LogInfo($"Pour succeeded. Moves: {_moveCount}.");
+                    UpdateHUD();
+                    _audioService?.PlaySfx(AudioClipId.PourEnd);
 
-                _animationService.AnimatePour(
-                    source, target,
-                    animConfig.pourDuration,
-                    onComplete: () =>
-                    {
-                        source.SetSelectionHighlight(false);
-                        _animationService.AnimateBottleLower(
-                            source.transform,
-                            _selectedOriginalPos, animConfig.liftDuration);
-                    });
+                    _animationService.AnimatePour(
+                        source, target,
+                        animConfig.pourDuration,
+                        onComplete: () =>
+                        {
+                            source.SetSelectionHighlight(false);
+                            _animationService.AnimateBottleLower(
+                                source.transform,
+                                _selectedOriginalPos, animConfig.liftDuration);
+                        });
 
-                _selectionService.Deselect();
-                EventAggregator.Publish(new PourCompletedEvent(source.State, target.State));
-                StartCoroutine(DelayedWinCheck());
+                    _selectionService.Deselect();
+                    EventAggregator.Publish(new PourCompletedEvent(source.State, target.State));
+                    StartCoroutine(DelayedWinCheck());
+                }
             }
             else
             {
@@ -509,6 +562,14 @@ namespace PuzzleGame
             if (_currentLevel != null)
             {
                 _stateMachine?.TransitionTo(GameState.LevelLoading);
+                
+                if (_selectionService != null) _selectionService.Deselect();
+                _moveCount = 0;
+                UpdateHUD();
+                _gameHistoryService = new GameHistoryService(); // geçmişi sıfırla
+                
+                SetupBottles();
+                
                 _stateMachine?.TransitionTo(GameState.Playing);
             }
         }

@@ -48,20 +48,30 @@ namespace PuzzleGame.Domain.Services
             for (int i = 0; i < filledCount; i++) bottleIndices.Add(i);
             FisherYatesShuffle(bottleIndices, rng);
 
+            // Gather all layers for all active colors
+            var allLayers = new List<DomainColor>(numColors * maxLayers);
             for (int c = 0; c < numColors; c++)
             {
-                int bottleIndex = bottleIndices[c];
-
-                // Bu renk için maxLayers adet layer yarat
-                var layers = new List<DomainColor>(maxLayers);
                 for (int k = 0; k < maxLayers; k++)
-                    layers.Add(colorPalette[c]);
+                    allLayers.Add(colorPalette[c]);
+            }
 
-                // Layer sırasını rastgele karıştır (zorluk)
-                FisherYatesShuffle(layers, rng);
+            // Shuffle all layers to mix colors
+            FisherYatesShuffle(allLayers, rng);
 
-                foreach (var color in layers)
-                    result[bottleIndex].Add(new LiquidLayer(color, amountPerLayer));
+            // Distribute mixed layers to the filled bottles
+            int layerIndex = 0;
+            for (int i = 0; i < filledCount; i++)
+            {
+                int bottleIndex = bottleIndices[i];
+                for (int k = 0; k < maxLayers; k++)
+                {
+                    if (layerIndex < allLayers.Count)
+                    {
+                        result[bottleIndex].Add(new LiquidLayer(allLayers[layerIndex], amountPerLayer));
+                        layerIndex++;
+                    }
+                }
             }
 
             return result;

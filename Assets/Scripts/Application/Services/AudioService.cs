@@ -100,6 +100,16 @@ namespace PuzzleGame.Application.Services
             ConfigureSource(source, clip, loop: false, worldPos);
             _activeSfxIds[source] = id;
             source.Play();
+
+            // Auto-return to pool after playback duration
+            _tween.Delay(clip.length)
+                .OnComplete(() =>
+                {
+                    if (!_disposed && source != null)
+                    {
+                        _sfxPool.Return(source);
+                    }
+                });
         }
 
         public void PlayMusic(AudioClipId id, bool loop = true)

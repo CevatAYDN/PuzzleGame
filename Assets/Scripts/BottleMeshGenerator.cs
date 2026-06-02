@@ -188,6 +188,24 @@ namespace PuzzleGame
                 _meshRenderer.sharedMaterials = new[] { glassMaterial };
         }
 
+        private void OnDestroy()
+        {
+            if (_meshFilter != null && _meshFilter.sharedMesh != null)
+            {
+                if (_meshFilter.sharedMesh.name == "Bottle")
+                {
+#if UNITY_EDITOR
+                    if (!UnityEngine.Application.isPlaying)
+                        DestroyImmediate(_meshFilter.sharedMesh);
+                    else
+                        Destroy(_meshFilter.sharedMesh);
+#else
+                    Destroy(_meshFilter.sharedMesh);
+#endif
+                }
+            }
+        }
+
 #if UNITY_EDITOR
         private void OnValidate()
         {

@@ -61,6 +61,14 @@ namespace PuzzleGame
                 else corkObject = CreateProceduralCork();
             }
 
+            if (corkObject != null)
+            {
+                corkObject.SetActive(false);
+            }
+            IsCapped = false;
+            _isHighlighted = false;
+            SetSelectionHighlight(false);
+
             int maxLayers = visualConfig != null ? visualConfig.maxLayers : BottleState.MaxSupportedLayers;
             State = new BottleState(maxLayers);
             _visualLayers.Clear();
