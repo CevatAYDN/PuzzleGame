@@ -2,11 +2,13 @@ using NUnit.Framework;
 using UnityEngine;
 using PuzzleGame.Domain.Services;
 using PuzzleGame.Domain.Models;
+using PuzzleGame.Domain.Interfaces;
 
 namespace PuzzleGame.Tests.Domain.Services
 {
     public class LevelGeneratorV2Tests
     {
+        private readonly ILevelGenerator _generator = new DifficultyBasedLevelGenerator();
         private DomainColor[] _palette;
 
         [SetUp]
@@ -25,12 +27,12 @@ namespace PuzzleGame.Tests.Domain.Services
         [Test]
         public void Generate_WithValidInputs_ReturnsCorrectBottleCount()
         {
-            var result = LevelGeneratorV2.Generate(
+            var result = _generator.Generate(
                 bottleCount: 5,
                 maxLayers: 3,
                 emptyBottleCount: 1,
                 colorPalette: _palette,
-                difficulty: 0.5f,
+                difficulty: Difficulty.Medium,
                 seed: 42);
 
             Assert.AreEqual(5, result.Count);
@@ -39,8 +41,8 @@ namespace PuzzleGame.Tests.Domain.Services
         [Test]
         public void Generate_WithSeed_ProducesDeterministicResults()
         {
-            var first = LevelGeneratorV2.Generate(5, 3, 1, _palette, 0.5f, seed: 12345);
-            var second = LevelGeneratorV2.Generate(5, 3, 1, _palette, 0.5f, seed: 12345);
+            var first = _generator.Generate(5, 3, 1, _palette, Difficulty.Medium, seed: 12345);
+            var second = _generator.Generate(5, 3, 1, _palette, Difficulty.Medium, seed: 12345);
 
             for (int i = 0; i < first.Count; i++)
             {
@@ -55,8 +57,8 @@ namespace PuzzleGame.Tests.Domain.Services
         [Test]
         public void Generate_WithDifferentSeeds_ProducesDifferentResults()
         {
-            var first = LevelGeneratorV2.Generate(5, 3, 1, _palette, 0.5f, seed: 1);
-            var second = LevelGeneratorV2.Generate(5, 3, 1, _palette, 0.5f, seed: 2);
+            var first = _generator.Generate(5, 3, 1, _palette, Difficulty.Medium, seed: 1);
+            var second = _generator.Generate(5, 3, 1, _palette, Difficulty.Medium, seed: 2);
 
             bool atLeastOneDiff = false;
             for (int i = 0; i < first.Count && !atLeastOneDiff; i++)
@@ -79,22 +81,20 @@ namespace PuzzleGame.Tests.Domain.Services
         {
             int bottleCount = 5;
             int emptyBottles = 2;
-            var result = LevelGeneratorV2.Generate(
-                bottleCount, 3, emptyBottles, _palette, 0.5f, seed: 1);
+            var result = _generator.Generate(
+                bottleCount, 3, emptyBottles, _palette, Difficulty.Medium, seed: 1);
 
             int actualEmpty = 0;
             foreach (var bottle in result)
                 if (bottle.Count == 0) actualEmpty++;
 
-            // En az emptyBottles kadar boş şişe olmalı
             Assert.GreaterOrEqual(actualEmpty, emptyBottles);
         }
 
         [Test]
         public void Generate_WithZeroMaxLayers_ReturnsEmptyBottles()
         {
-            // Bu edge-case'leri kontrol etmek önemli
-            var result = LevelGeneratorV2.Generate(3, 0, 1, _palette, 0.5f, seed: 1);
+            var result = _generator.Generate(3, 0, 1, _palette, Difficulty.Medium, seed: 1);
             Assert.AreEqual(3, result.Count);
         }
 
@@ -104,7 +104,7 @@ namespace PuzzleGame.Tests.Domain.Services
             int maxLayers = 3;
             float expectedAmount = 1f / maxLayers;
 
-            var result = LevelGeneratorV2.Generate(5, maxLayers, 1, _palette, 0.5f, seed: 42);
+            var result = _generator.Generate(5, maxLayers, 1, _palette, Difficulty.Medium, seed: 42);
 
             foreach (var bottle in result)
             {
@@ -118,15 +118,14 @@ namespace PuzzleGame.Tests.Domain.Services
         [Test]
         public void Generate_WithHighDifficulty_ShufflesAggressively()
         {
-            // Yüksek zorlukta bottleneck'i doğrula — sadece doğru sayıda bottle dönmeli
-            var result = LevelGeneratorV2.Generate(5, 3, 1, _palette, 0.95f, seed: 999);
+            var result = _generator.Generate(5, 3, 1, _palette, Difficulty.Expert, seed: 999);
             Assert.AreEqual(5, result.Count);
         }
 
         [Test]
         public void Generate_WithLowDifficulty_ShufflesLess()
         {
-            var result = LevelGeneratorV2.Generate(5, 3, 1, _palette, 0.1f, seed: 999);
+            var result = _generator.Generate(5, 3, 1, _palette, Difficulty.Trivial, seed: 999);
             Assert.AreEqual(5, result.Count);
         }
     }

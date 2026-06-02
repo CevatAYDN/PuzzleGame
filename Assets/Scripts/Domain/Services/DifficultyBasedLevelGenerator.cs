@@ -1,27 +1,23 @@
 using System;
 using System.Collections.Generic;
 using PuzzleGame.Domain.Models;
+using PuzzleGame.Domain.Interfaces;
 using Random = System.Random;
 
 namespace PuzzleGame.Domain.Services
 {
     /// <summary>
-    /// Zorluk eğrili, seed-based ve AI destekli puzzle üretici.
-    /// Clean Architecture: Domain katmanı — UnityEngine bağımlılığı yok.
+    /// Advanced level generator with difficulty curves and smart color mixing.
+    /// Implements ILevelGenerator.
     /// </summary>
-    public static class LevelGeneratorV2
+    public class DifficultyBasedLevelGenerator : ILevelGenerator
     {
-        /// <summary>
-        /// Zorluk seviyesine göre puzzle üretir.
-        /// difficulty: 0.0 (kolay) → 1.0 (zor)
-        /// seed: Aynı zorluk ve seed ile aynı puzzle üretilir.
-        /// </summary>
-        public static List<List<LiquidLayer>> Generate(
+        public List<List<LiquidLayer>> Generate(
             int bottleCount,
             int maxLayers,
             int emptyBottleCount,
             DomainColor[] colorPalette,
-            float difficulty,
+            Difficulty difficulty,
             int seed = 0)
         {
             var result = new List<List<LiquidLayer>>(bottleCount);
@@ -38,9 +34,17 @@ namespace PuzzleGame.Domain.Services
             var rng = seed == 0 ? new Random() : new Random(seed);
             float amountPerLayer = 1f / maxLayers;
 
-            // Zorluk faktörüne göre renk karışım oranını ayarla
-            // Kolay: Renkler daha az karışık, Zor: Renkler tamamen karışık
-            float mixFactor = Math.Clamp(difficulty, 0f, 1f);
+            // Map Difficulty enum to a float difficulty index (0.0 to 1.0)
+            float mixFactor = difficulty switch
+            {
+                Difficulty.Trivial => 0.1f,
+                Difficulty.Easy => 0.3f,
+                Difficulty.Medium => 0.5f,
+                Difficulty.Hard => 0.75f,
+                Difficulty.Expert => 1.0f,
+                _ => 0.3f
+            };
+
             int shufflePasses = Math.Max(1, (int)(mixFactor * 5));
 
             // Gather all layers for all active colors
@@ -51,7 +55,7 @@ namespace PuzzleGame.Domain.Services
                     allLayers.Add(colorPalette[c]);
             }
 
-            // Zorluğa göre karıştırma
+            // Shuffle based on difficulty
             for (int s = 0; s < shufflePasses; s++)
             {
                 FisherYatesShuffle(allLayers, rng);
@@ -71,27 +75,20 @@ namespace PuzzleGame.Domain.Services
                 }
             }
 
-            // Zorluk ayarı: Zor seviyelerde, bazı şişelerin üst katmanlarını değiştir
-            // Bu, çözümü daha zor hale getirir
+            // For higher difficulties, swap some upper layers to make puzzle sorting trickier
             if (mixFactor > 0.7f)
             {
-                ApplyAdvancedDifficulty(result, maxLayers, numColors, rng, mixFactor);
+                ApplyAdvancedDifficulty(result, mixFactor, rng);
             }
 
             return result;
         }
 
-        /// <summary>
-        /// Yüksek zorluk seviyeleri için gelişmiş karışım algoritması.
-        /// </summary>
         private static void ApplyAdvancedDifficulty(
             List<List<LiquidLayer>> assignments,
-            int maxLayers,
-            int numColors,
-            Random rng,
-            float difficulty)
+            float difficulty,
+            Random rng)
         {
-            // Zorluk faktörüne göre kaç şişenin üst katmanlarının değiştirileceğini belirle
             int affectedBottles = (int)(assignments.Count * difficulty);
             
             for (int i = 0; i < affectedBottles && i < assignments.Count; i++)
@@ -99,11 +96,9 @@ namespace PuzzleGame.Domain.Services
                 var bottle = assignments[i];
                 if (bottle.Count >= 2)
                 {
-                    // Üst iki katmanı karıştır
                     var top = bottle[bottle.Count - 1];
                     var second = bottle[bottle.Count - 2];
                     
-                    // %50 ihtimalle yer değiştir
                     if (rng.NextDouble() > 0.5)
                     {
                         bottle[bottle.Count - 1] = second;

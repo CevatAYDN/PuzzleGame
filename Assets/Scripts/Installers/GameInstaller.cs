@@ -86,6 +86,8 @@ namespace PuzzleGame.Installers
             builder.Register<IGameHistoryManager, GameHistoryManager>(Lifetime.Singleton);
             builder.Register<ILevelProgressService, PlayerPrefsLevelProgressService>(Lifetime.Singleton);
             builder.Register<ILevelRepository, ScriptableObjectLevelRepository>(Lifetime.Singleton);
+            builder.Register<ILevelGenerator, DifficultyBasedLevelGenerator>(Lifetime.Singleton);
+            builder.Register<ILocalizationService, LocalizationService>(Lifetime.Singleton);
 
             // Application services — depend on config/tween
             builder.Register<IBottleSelectionService, BottleSelectionService>(Lifetime.Singleton);

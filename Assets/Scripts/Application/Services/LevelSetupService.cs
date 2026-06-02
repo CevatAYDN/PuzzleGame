@@ -21,6 +21,7 @@ namespace PuzzleGame.Application.Services
     {
         private readonly GameConfig _gameConfig;
         private readonly LevelConfig _levelConfig;
+        private readonly ILevelGenerator _levelGenerator;
         
         private static readonly Color[] DefaultPalette = new Color[]
         {
@@ -32,10 +33,11 @@ namespace PuzzleGame.Application.Services
             new Color(0.95f, 0.50f, 0.15f, 1f),
         };
 
-        public LevelSetupService(GameConfig gameConfig, LevelConfig levelConfig)
+        public LevelSetupService(GameConfig gameConfig, LevelConfig levelConfig, ILevelGenerator levelGenerator)
         {
             _gameConfig = gameConfig;
             _levelConfig = levelConfig;
+            _levelGenerator = levelGenerator;
         }
 
         public List<List<LiquidLayer>> GenerateLevelAssignments(IBottleView[] bottles, LevelData currentLevel)
@@ -48,6 +50,7 @@ namespace PuzzleGame.Application.Services
             int empties = 2;
             int seed = 0;
             Color[] pal = DefaultPalette;
+            Difficulty diff = Difficulty.Easy;
             List<List<LiquidLayer>> assignments = null;
 
             if (currentLevel != null)
@@ -55,15 +58,17 @@ namespace PuzzleGame.Application.Services
                 autoGen = currentLevel.autoGenerate;
                 empties = currentLevel.emptyBottleCount;
                 seed = currentLevel.randomSeed;
+                diff = currentLevel.difficulty;
                 pal = _levelConfig != null && _levelConfig.palette.Length > 0 ? _levelConfig.palette : DefaultPalette;
 
                 if (currentLevel.autoGenerate)
                 {
-                    assignments = LevelGenerator.Generate(
+                    assignments = _levelGenerator.Generate(
                         bottles.Length,
                         currentLevel.maxLayersPerBottle,
                         empties,
                         ConvertPalette(pal),
+                        diff,
                         seed);
                 }
                 else
@@ -100,11 +105,12 @@ namespace PuzzleGame.Application.Services
                 pal = _levelConfig != null && _levelConfig.palette.Length > 0 ? _levelConfig.palette : DefaultPalette;
 
                 assignments = autoGen
-                    ? LevelGenerator.Generate(
+                    ? _levelGenerator.Generate(
                         bottles.Length,
                         _gameConfig.maxLayersPerBottle,
                         empties,
                         ConvertPalette(pal),
+                        Difficulty.Easy,
                         seed)
                     : null;
             }

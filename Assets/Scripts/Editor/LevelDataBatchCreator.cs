@@ -13,7 +13,6 @@ namespace PuzzleGame.Editor
     {
         public const string LevelPath = "Assets/Resources/Levels";
 
-        [MenuItem("PuzzleGame/Levels/Create 100 Levels", false, 110)]
         public static void Create100Levels()
         {
             if (!System.IO.Directory.Exists(LevelPath))
@@ -97,85 +96,5 @@ namespace PuzzleGame.Editor
             Debug.Log($"Created/verified {levels.Count} level assets in {LevelPath}.");
         }
 
-        [MenuItem("PuzzleGame/Levels/Create From Seed Range", false, 111)]
-        public static void CreateSingleLevel()
-        {
-            var window = EditorWindow.GetWindow<LevelBatchWindow>();
-            window.Show();
-        }
-    }
-
-    public class LevelBatchWindow : EditorWindow
-    {
-        private float _start = 1;
-        private float _end = 10;
-        private int _seedBase = 1337;
-        private Difficulty _difficulty = Difficulty.Easy;
-        private int _bottleCount = 5;
-        private int _colorCount = 3;
-        private int _emptyCount = 2;
-        private int _maxLayers = 4;
-        private int _par = 10;
-        private int _good = 15;
-
-        private void OnGUI()
-        {
-            GUILayout.Label("Batch Level Creator", EditorStyles.boldLabel);
-            GUILayout.Space(10);
-
-            EditorGUILayout.MinMaxSlider("Level Range", ref _start, ref _end, 1, 999);
-            EditorGUILayout.LabelField($"Start: {(int)_start}  End: {(int)_end}");
-
-            _seedBase = EditorGUILayout.IntField("Seed Base", _seedBase);
-            _difficulty = (Difficulty)EditorGUILayout.EnumPopup("Difficulty", _difficulty);
-            _bottleCount = EditorGUILayout.IntField("Bottle Count", _bottleCount);
-            _colorCount = EditorGUILayout.IntField("Color Count", _colorCount);
-            _emptyCount = EditorGUILayout.IntField("Empty Bottles", _emptyCount);
-            _maxLayers = EditorGUILayout.IntField("Max Layers", _maxLayers);
-            _par = EditorGUILayout.IntField("Par (3★)", _par);
-            _good = EditorGUILayout.IntField("Good (2★)", _good);
-
-            if (GUILayout.Button("Create Levels", GUILayout.Height(40)))
-            {
-                CreateCustomRange();
-            }
-        }
-
-        private void CreateCustomRange()
-        {
-            if (!System.IO.Directory.Exists(LevelDataBatchCreator.LevelPath))
-                System.IO.Directory.CreateDirectory(LevelDataBatchCreator.LevelPath);
-
-            int count = 0;
-            for (int i = (int)_start; i <= (int)_end; i++)
-            {
-                string fileName = $"Level_{i:D2}";
-                string fullPath = $"{LevelDataBatchCreator.LevelPath}/{fileName}.asset";
-
-                if (AssetDatabase.LoadAssetAtPath<LevelData>(fullPath) != null)
-                {
-                    Debug.LogWarning($"Level {i} already exists, skipping.");
-                    continue;
-                }
-
-                var level = ScriptableObject.CreateInstance<LevelData>();
-                level.levelNumber = i;
-                level.randomSeed = i * _seedBase;
-                level.difficulty = _difficulty;
-                level.bottleCount = _bottleCount;
-                level.colorCount = _colorCount;
-                level.emptyBottleCount = _emptyCount;
-                level.maxLayersPerBottle = _maxLayers;
-                level.parMoves = _par;
-                level.goodMoves = _good;
-
-                AssetDatabase.CreateAsset(level, fullPath);
-                count++;
-            }
-
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-            Debug.Log($"Created {count} level assets.");
-        }
     }
 }

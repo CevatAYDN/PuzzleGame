@@ -75,8 +75,8 @@
     <Compile Include="Assets\Scripts\Domain\Interfaces\ITweenService.cs" />
     <Compile Include="Assets\TutorialInfo\Readme.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\UpdateManager.cs" />
-    <Compile Include="Assets\Scripts\Domain\Services\LevelGenerator.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\AudioClipId.cs" />
+    <Compile Include="Assets\Scripts\Domain\Services\SimpleLevelGenerator.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Pool\GameObjectPool.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\DomainColor.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\GameState.cs" />
@@ -107,10 +107,10 @@
     <Compile Include="Assets\Scripts\Infrastructure\Interfaces\IUpdateManager.cs" />
     <Compile Include="Assets\Scripts\Logging\BottleLogger.cs" />
     <Compile Include="Assets\Scripts\Configuration\LevelConfig.cs" />
-    <Compile Include="Assets\Scripts\Domain\Services\LevelGeneratorV2.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\LayerSnapshot.cs" />
     <Compile Include="Assets\Scripts\Wobble.cs" />
     <Compile Include="Assets\Scripts\Application\UI\LevelSelectUI.cs" />
+    <Compile Include="Assets\Scripts\Domain\Services\DifficultyBasedLevelGenerator.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\RendererService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IBottleSelectionService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IGameHistoryManager.cs" />
@@ -137,6 +137,7 @@
     <Compile Include="Assets\Tests\Application\Services\PlayerPrefsLevelProgressServiceTests.cs" />
     <Compile Include="Assets\Scripts\GameManager.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\ILevelProgressService.cs" />
+    <Compile Include="Assets\Scripts\Domain\Interfaces\ILevelGenerator.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\IAdService.cs" />
     <Compile Include="Assets\Tests\Events\EventAggregatorTests.cs" />
     <Compile Include="Assets\Scripts\Domain\Services\LocalizationService.cs" />

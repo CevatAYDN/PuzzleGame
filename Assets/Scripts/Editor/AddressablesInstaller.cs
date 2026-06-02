@@ -18,7 +18,7 @@ namespace PuzzleGame.Editor
         private const string LevelDataLabel = "LevelData";
         private const string LevelAddressFormat = "Level_{0:D2}";
 
-        [MenuItem("Window/PuzzleGame/Setup Addressables")]
+        [MenuItem("Tools/PuzzleGame/Setup Addressables")]
         public static void Setup()
         {
             var settings = AddressableAssetSettingsDefaultObject.GetSettings(true);

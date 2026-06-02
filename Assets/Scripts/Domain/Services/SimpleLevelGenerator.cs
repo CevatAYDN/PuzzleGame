@@ -1,31 +1,23 @@
 using System;
 using System.Collections.Generic;
 using PuzzleGame.Domain.Models;
+using PuzzleGame.Domain.Interfaces;
 using Random = System.Random;
 
 namespace PuzzleGame.Domain.Services
 {
     /// <summary>
-    /// Stateless, tamamen test edilebilir level üreteci.
-    /// Domain katmanında — UnityEngine bağımlılığı yoktur.
-    ///
-    /// Çözülebilir puzzle için kural:
-    ///   - Her renkten maxLayers adet katman vardır.
-    ///   - Aynı renk tüm katmanları aynı şişededir (çözüm için).
-    ///   - Katman sırası şişe içinde rastgeledir (zorluk için).
+    /// Simple level generator using basic color mixing logic.
+    /// Implements ILevelGenerator.
     /// </summary>
-    public static class LevelGenerator
+    public class SimpleLevelGenerator : ILevelGenerator
     {
-        /// <summary>
-        /// Rastgele ama çözülebilir bir puzzle oluşturur.
-        /// Her renk bir şişeye, katman sırası rastgele.
-        /// Kalan şişeler boş (hedef şişeler).
-        /// </summary>
-        public static List<List<LiquidLayer>> Generate(
+        public List<List<LiquidLayer>> Generate(
             int bottleCount,
             int maxLayers,
             int emptyBottleCount,
             DomainColor[] colorPalette,
+            Difficulty difficulty,
             int seed = 0)
         {
             var result = new List<List<LiquidLayer>>(bottleCount);
@@ -42,8 +34,7 @@ namespace PuzzleGame.Domain.Services
             var rng = seed == 0 ? new Random() : new Random(seed);
             float amountPerLayer = 1f / maxLayers;
 
-            // Her rengi rastgele bir dolu şişeye ata.
-            // Hiçbir şişeye birden fazla renk atanmaz.
+            // Assign each color to a filled bottle randomly
             var bottleIndices = new List<int>(filledCount);
             for (int i = 0; i < filledCount; i++) bottleIndices.Add(i);
             FisherYatesShuffle(bottleIndices, rng);

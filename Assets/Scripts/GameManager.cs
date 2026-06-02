@@ -56,6 +56,7 @@ namespace PuzzleGame
         private ILevelSetupService _levelSetupService;
         private ILevelValidationService _levelValidationService;
         private IGameHistoryManager _historyManager;
+        private ILocalizationService _localizationService;
 
         private Camera _camera;
         private LevelData _currentLevel;
@@ -81,13 +82,15 @@ namespace PuzzleGame
             IInputHandlerService inputHandlerService,
             ILevelSetupService levelSetupService,
             ILevelValidationService levelValidationService,
-            IGameHistoryManager historyManager)
+            IGameHistoryManager historyManager,
+            ILocalizationService localizationService)
         {
             BottleLogger.LogInfo("GameManager.Construct called by VContainer DI.");
             this.gameConfig = gameConfig;
             this.animConfig = animConfig;
             this.levelConfig = levelConfig;
             this.audioConfig = audioConfig;
+            _localizationService = localizationService;
             _validator = validator;
             _rendererService = rendererService;
             _animationService = animationService;
@@ -300,7 +303,10 @@ namespace PuzzleGame
         private void UpdateHUD()
         {
             if (moveCountText != null && _historyManager != null)
-                moveCountText.text = $"Hamle: {_historyManager.CurrentMoveCount}";
+            {
+                string movesLabel = _localizationService != null ? _localizationService.GetString("moves_text") : "Hamle";
+                moveCountText.text = $"{movesLabel}: {_historyManager.CurrentMoveCount}";
+            }
         }
 
         private void OnMoveCountChanged(int moveCount)
