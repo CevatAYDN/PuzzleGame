@@ -56,8 +56,7 @@ namespace PuzzleGame.Events
         }
     }
 
-    public readonly struct UndoPrePourEvent
-    {
-        // Empty class for event aggregation
-    }
+    // S15 FIX: UndoPrePourEvent kaldırıldı.
+    // Döküm öncesi undo snapshot kaydı artık InputHandlerService callback üzerinden
+    // doğrudan GameHistoryManagementService'e yapılıyor (decoupled, type-safe).
 }

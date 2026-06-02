@@ -77,8 +77,19 @@ namespace PuzzleGame.Domain.Models
             _layers.Clear();
             _layers.AddRange(temp);
             _totalFill = total;
+
+            // Observer pattern: değişiklik bildirimi
+            // BottleController gibi observer'lar bu event'i dinleyerek
+            // UpdateVisualsFromState() çağırır. "Tell, don't ask" prensibi.
+            OnLayersChanged?.Invoke(this);
             return true;
         }
+
+        /// <summary>
+        /// Layers değiştiğinde tetiklenen olay.
+        /// UI/view observer'ları buraya abone olur (decoupling).
+        /// </summary>
+        public event System.Action<BottleState> OnLayersChanged;
 
         public override string ToString() =>
             $"BottleState(layers={_layers.Count}/{MaxLayers}, fill={TotalFill:P0})";

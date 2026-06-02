@@ -14,7 +14,8 @@ using PuzzleGame.Infrastructure.Interfaces;
 namespace PuzzleGame.Application.Services
 {
     /// <summary>
-    /// Handles level setup and initialization logic
+    /// Handles level setup and initialization logic.
+    /// BottleController (MonoBehaviour) yerine IBottleView abstraction kullanır.
     /// </summary>
     public class LevelSetupService
     {
@@ -39,7 +40,7 @@ namespace PuzzleGame.Application.Services
             _currentLevel = currentLevel;
         }
 
-        public List<List<LiquidLayer>> GenerateLevelAssignments(BottleController[] bottles)
+        public List<List<LiquidLayer>> GenerateLevelAssignments(IBottleView[] bottles)
         {
             if (bottles == null || bottles.Length == 0) 
                 return new List<List<LiquidLayer>>();
@@ -113,9 +114,9 @@ namespace PuzzleGame.Application.Services
             return assignments;
         }
 
-        public void SetupBottles(BottleController[] bottles, 
-                                IRendererService rendererService, 
-                                IBottleValidator validator, 
+        public void SetupBottles(IBottleView[] bottles,
+                                IRendererService rendererService,
+                                IBottleValidator validator,
                                 IAnimationService animationService)
         {
             if (bottles.Length == 0) return;
@@ -129,8 +130,17 @@ namespace PuzzleGame.Application.Services
                     ? assignments[i]
                     : new List<LiquidLayer>();
 
-                // ALWAYS initialize to reset bottle properties completely
-                bottle.Initialize(rendererService, validator, animationService, initial);
+                // BottleController'a cast ederek initialize çağır
+                if (bottle is BottleController concrete)
+                {
+                    concrete.Initialize(rendererService, validator, animationService, initial);
+                }
+                else
+                {
+                    // IBottleView üzerinden değilse, sadece state kurulumu yapılır
+                    BottleLogger.LogWarning(
+                        $"Bottle at index {i} is not BottleController, skipping concrete initialization.");
+                }
             }
         }
 

@@ -51,6 +51,7 @@
   <ItemGroup>
     <Compile Include="Assets\Scripts\Infrastructure\Providers\IAssetProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\ColorAdapter.cs" />
+    <Compile Include="Assets\Scripts\Application\Interfaces\IBottleView.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\ILevelRepository.cs" />
     <Compile Include="Assets\Tests\Application\BottleSelectionServiceTests.cs" />
     <Compile Include="Assets\Scripts\Events\EventAggregator.cs" />
@@ -75,6 +76,7 @@
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\UpdateManager.cs" />
     <Compile Include="Assets\Scripts\Domain\Services\LevelGenerator.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\AudioClipId.cs" />
+    <Compile Include="Assets\Tests\Application\Services\GameHistoryManagementServiceTests.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Pool\GameObjectPool.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\DomainColor.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\GameState.cs" />
@@ -83,6 +85,7 @@
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\ServiceLocator.cs" />
     <Compile Include="Assets\Tests\Domain\Models\BottleStateTests.cs" />
     <Compile Include="Assets\Scripts\Application\Services\AudioService.cs" />
+    <Compile Include="Assets\Scripts\Configuration\DifficultyCurve.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Pool\IGameObjectPool.cs" />
     <Compile Include="Assets\Scripts\Application\Services\GameHistoryManagementService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\BottleSelectionService.cs" />
@@ -95,12 +98,16 @@
     <Compile Include="Assets\Scripts\Application\Services\PlayerPrefsLevelProgressService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\LevelValidationService.cs" />
     <Compile Include="Assets\Scripts\Configuration\AnimationConfig.cs" />
+    <Compile Include="Assets\Scripts\Domain\Models\LocalizationEntry.cs" />
     <Compile Include="Assets\Tests\Application\GameManagerTests.cs" />
     <Compile Include="Assets\Scripts\Application\Services\GameSaveManager.cs" />
+    <Compile Include="Assets\Scripts\Configuration\EconomyConfig.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\LiquidLayer.cs" />
+    <Compile Include="Assets\Scripts\Domain\Interfaces\ILocalizationService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Interfaces\IUpdateManager.cs" />
     <Compile Include="Assets\Scripts\Logging\BottleLogger.cs" />
     <Compile Include="Assets\Scripts\Configuration\LevelConfig.cs" />
+    <Compile Include="Assets\Scripts\Domain\Services\LevelGeneratorV2.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\LayerSnapshot.cs" />
     <Compile Include="Assets\Scripts\Wobble.cs" />
     <Compile Include="Assets\Scripts\Application\UI\LevelSelectUI.cs" />
@@ -110,6 +117,8 @@
     <Compile Include="Assets\Scripts\Application\Interfaces\IUpdateable.cs" />
     <Compile Include="Assets\Scripts\BottleController.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Interfaces\IRendererService.cs" />
+    <Compile Include="Assets\Tests\Domain\Services\LevelGeneratorV2Tests.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\MockAdService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IAnimationService.cs" />
     <Compile Include="Assets\Scripts\Configuration\WobbleConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Services\AnimationService.cs" />
@@ -125,12 +134,16 @@
     <Compile Include="Assets\Tests\Application\Services\PlayerPrefsLevelProgressServiceTests.cs" />
     <Compile Include="Assets\Scripts\GameManager.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\ILevelProgressService.cs" />
+    <Compile Include="Assets\Scripts\Domain\Interfaces\IAdService.cs" />
     <Compile Include="Assets\Tests\Events\EventAggregatorTests.cs" />
+    <Compile Include="Assets\Scripts\Domain\Services\LocalizationService.cs" />
     <Compile Include="Assets\Tests\Application\Services\AudioServiceTests.cs" />
     <Compile Include="Assets\Scripts\Application\Services\LevelSetupService.cs" />
+    <Compile Include="Assets\Scripts\Installers\GameInstaller.cs" />
     <Compile Include="Assets\Scripts\URPConfigHelper.cs" />
     <Compile Include="Assets\Scripts\BottleMeshGenerator.cs" />
     <Compile Include="Assets\Scripts\Application\Services\GameHistoryService.cs" />
+    <Compile Include="Assets\Tests\Domain\BottleStateReplaceLayersTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Shaders\PremiumBottleGlass.shader" />
@@ -712,6 +725,10 @@
       <HintPath>Library\PackageCache\com.unity.collections@5b6ebd78ccc0\Unity.Collections.Tests\System.Runtime.CompilerServices.Unsafe\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="ReportGeneratorMerged">
+      <HintPath>Library\PackageCache\com.unity.testtools.codecoverage@19a841221620\lib\ReportGenerator\ReportGeneratorMerged.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Unity.Android.Types">
       <HintPath>C:\Program Files\Unity\Hub\Editor\6000.4.8f1\Editor\Data\PlaybackEngines\AndroidPlayer\Unity.Android.Types.dll</HintPath>
       <Private>False</Private>
@@ -1252,12 +1269,20 @@
       <HintPath>Library\ScriptAssemblies\Unity.Timeline.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Unity.TestTools.CodeCoverage.Editor.OpenCover.Model">
+      <HintPath>Library\ScriptAssemblies\Unity.TestTools.CodeCoverage.Editor.OpenCover.Model.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Unity.AI.Navigation.Editor">
       <HintPath>Library\ScriptAssemblies\Unity.AI.Navigation.Editor.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.PathTracing.Runtime">
       <HintPath>Library\ScriptAssemblies\Unity.PathTracing.Runtime.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.TestTools.CodeCoverage.Editor">
+      <HintPath>Library\ScriptAssemblies\Unity.TestTools.CodeCoverage.Editor.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.RenderPipelines.Core.Runtime.Shared">
@@ -1432,8 +1457,16 @@
       <HintPath>Library\ScriptAssemblies\Unity.RenderPipelines.Core.Editor.Shared.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Unity.TestTools.CodeCoverage.Editor.OpenCover.Mono.Reflection">
+      <HintPath>Library\ScriptAssemblies\Unity.TestTools.CodeCoverage.Editor.OpenCover.Mono.Reflection.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Unity.InputSystem">
       <HintPath>Library\ScriptAssemblies\Unity.InputSystem.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.Settings.Editor">
+      <HintPath>Library\ScriptAssemblies\Unity.Settings.Editor.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEditor.UI">

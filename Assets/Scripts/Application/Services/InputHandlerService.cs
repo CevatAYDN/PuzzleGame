@@ -11,7 +11,9 @@ using PuzzleGame.Configuration;
 namespace PuzzleGame.Application.Services
 {
     /// <summary>
-    /// Handles all input-related logic for the game
+    /// Handles all input-related logic for the game.
+    /// Artık BottleController (MonoBehaviour) yerine IBottleView abstraction kullanır —
+    /// Domain katmanı izole kalır, unit testler yazılabilir.
     /// </summary>
     public class InputHandlerService
     {
@@ -24,10 +26,10 @@ namespace PuzzleGame.Application.Services
         private readonly GameConfig _gameConfig;
         private readonly AnimationConfig _animConfig;
 
-        private BottleController[] _bottles;
+        private IBottleView[] _bottles;
         private Vector3 _selectedOriginalPos;
-        private Action _onPourSucceeded;
-        private Action _onRecordUndoSnapshot;
+        private readonly Action _onPourSucceeded;
+        private readonly Action _onRecordUndoSnapshot;
 
         public InputHandlerService(
             IInputHandler inputHandler,
@@ -41,8 +43,7 @@ namespace PuzzleGame.Application.Services
             Action onPourSucceeded = null,
             Action onRecordUndoSnapshot = null)
         {
-            _inputHandler = inputHandler;
-            _camera = camera;
+            _inputHandler = inputHandler ?? throw new ArgumentNullException(nameof(inputHandler));
             _stateMachine = stateMachine;
             _animationService = animationService;
             _selectionService = selectionService;
@@ -53,7 +54,7 @@ namespace PuzzleGame.Application.Services
             _onRecordUndoSnapshot = onRecordUndoSnapshot;
         }
 
-        public void SetBottles(BottleController[] bottles)
+        public void SetBottles(IBottleView[] bottles)
         {
             _bottles = bottles;
         }
@@ -80,10 +81,10 @@ namespace PuzzleGame.Application.Services
                 return;
             }
 
-            var clicked = hit.collider.GetComponent<BottleController>();
+            var clicked = hit.collider.GetComponent<IBottleView>();
             if (clicked == null)
             {
-                BottleLogger.LogDebug("Hit collider has no BottleController.");
+                BottleLogger.LogDebug("Hit collider has no IBottleView component.");
                 return;
             }
 
@@ -104,58 +105,59 @@ namespace PuzzleGame.Application.Services
             }
         }
 
-        private void TrySelectBottle(BottleController bottle)
+        private void TrySelectBottle(IBottleView bottle)
         {
             if (bottle.IsCapped)
             {
-                BottleLogger.LogDebug($"Cannot select completed/capped bottle '{bottle.name}'.");
+                BottleLogger.LogDebug($"Cannot select completed/capped bottle.");
                 return;
             }
 
-            if (bottle.IsEmpty())
+            if (bottle.IsEmpty)
             {
-                BottleLogger.LogDebug($"Cannot select empty bottle '{bottle.name}'.");
+                BottleLogger.LogDebug($"Cannot select empty bottle.");
                 return;
             }
 
-            BottleLogger.LogInfo($"Selected '{bottle.name}'.");
-            _selectedOriginalPos = bottle.transform.position;
+            BottleLogger.LogInfo($"Selected bottle.");
+            _selectedOriginalPos = (bottle as MonoBehaviour)?.transform.position ?? Vector3.zero;
             _selectionService.Select(bottle.State);
             bottle.SetSelectionHighlight(true);
             _animationService.AnimateBottleLift(
-                bottle.transform,
+                (bottle as MonoBehaviour)?.transform,
                 _animConfig.liftHeight, _animConfig.liftDuration,
                 keepHovering: () => _selectionService.SelectedBottle == bottle.State);
         }
 
-        private void TryPour(BottleController source, BottleController target)
+        private void TryPour(IBottleView source, IBottleView target)
         {
             if (source == null)
             {
-                BottleLogger.LogWarning("TryPour: source bottle not found in scene.");
+                BottleLogger.LogWarning("TryPour: source bottle not found.");
                 _selectionService.Deselect();
                 return;
             }
 
-            BottleLogger.LogInfo($"Attempting pour: '{source.name}' → '{target.name}'.");
+            BottleLogger.LogInfo($"Attempting pour.");
 
             if (_validator.CanPour(source.State, target.State))
             {
-                // Hamle başarılı olacağı için ÖNCE undo state'i kaydet
+                // Başarılı döküm öncesi undo state kaydı
                 _onRecordUndoSnapshot?.Invoke();
-                
+
                 if (source.TryPourTo(target))
                 {
                     BottleLogger.LogInfo($"Pour succeeded.");
                     _onPourSucceeded?.Invoke();
                     _animationService.AnimatePour(
-                        source, target,
+                        source as BottleController,
+                        target as BottleController,
                         _animConfig.pourDuration,
                         onComplete: () =>
                         {
                             source.SetSelectionHighlight(false);
                             _animationService.AnimateBottleLower(
-                                source.transform,
+                                (source as MonoBehaviour)?.transform,
                                 _selectedOriginalPos, _animConfig.liftDuration);
                         });
 
@@ -165,8 +167,8 @@ namespace PuzzleGame.Application.Services
             }
             else
             {
-                BottleLogger.LogDebug($"Pour rejected: '{source.name}' → '{target.name}'.");
-                _animationService?.AnimateErrorShake(source.transform, onComplete: () =>
+                BottleLogger.LogDebug($"Pour rejected.");
+                _animationService?.AnimateErrorShake((source as MonoBehaviour)?.transform, onComplete: () =>
                 {
                     LowerSelectedBottle();
                     _selectionService.Deselect();
@@ -181,12 +183,12 @@ namespace PuzzleGame.Application.Services
             {
                 selected.SetSelectionHighlight(false);
                 _animationService.AnimateBottleLower(
-                    selected.transform,
+                    (selected as MonoBehaviour)?.transform,
                     _selectedOriginalPos, _animConfig.liftDuration);
             }
         }
 
-        private BottleController FindBottleByState(BottleState state)
+        private IBottleView FindBottleByState(BottleState state)
         {
             if (state == null || _bottles == null) return null;
             foreach (var b in _bottles)

@@ -3,35 +3,49 @@ using UnityEngine;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Infrastructure.Interfaces;
-using PuzzleGame.Events;
 using PuzzleGame.Logging;
+using PuzzleGame.Application.Interfaces;
 
 namespace PuzzleGame.Application.Services
 {
     /// <summary>
-    /// Handles game history and undo functionality
+    /// Handles game history and undo functionality.
+    /// Single source of truth for MoveCount.
+    /// GameManager updates via callback.
     /// </summary>
     public class GameHistoryManagementService
     {
         private readonly IGameHistoryService _historyService;
-        private readonly BottleController[] _bottles;
+        private readonly IBottleView[] _bottles;
         private int _moveCount;
-        private Action<int> _updateHUDCallback;
+        private Action<int> _onMoveCountChanged;
 
-        public GameHistoryManagementService(IGameHistoryService historyService, BottleController[] bottles)
+        public int CurrentMoveCount => _moveCount;
+        public IGameHistoryService HistoryService => _historyService;
+
+        public GameHistoryManagementService(IGameHistoryService historyService, IBottleView[] bottles)
         {
             _historyService = historyService;
             _bottles = bottles;
+            _moveCount = 0;
         }
 
-        public void SetUpdateHUDCallback(Action<int> callback)
+        public void SetMoveCountChangedCallback(Action<int> callback)
         {
-            _updateHUDCallback = callback;
+            _onMoveCountChanged = callback;
         }
 
-        public void SetMoveCount(int moveCount)
+        public void ResetMoveCount()
         {
-            _moveCount = moveCount;
+            _moveCount = 0;
+            _onMoveCountChanged?.Invoke(_moveCount);
+        }
+
+        public void IncrementMoveCount()
+        {
+            _moveCount++;
+            _onMoveCountChanged?.Invoke(_moveCount);
+            BottleLogger.LogInfo($"Move incremented: {_moveCount}");
         }
 
         public void RecordUndoSnapshot()
@@ -43,9 +57,11 @@ namespace PuzzleGame.Application.Services
             _historyService.RecordSnapshot(states);
         }
 
+        public bool CanUndo => _historyService != null && _historyService.CanUndo;
+
         public void Undo()
         {
-            if (_historyService == null || !_historyService.CanUndo) return;
+            if (!CanUndo) return;
 
             _historyService.Undo();
             var snapshots = _historyService.LastSnapshot;
@@ -58,14 +74,21 @@ namespace PuzzleGame.Application.Services
                 _bottles[i].UpdateVisualsFromState();
             }
 
+            // Decrement move count after successful undo
             _moveCount = Mathf.Max(0, _moveCount - 1);
-            _updateHUDCallback?.Invoke(_moveCount);
-            BottleLogger.LogInfo($"Undo. Moves: {_moveCount}");
+            _onMoveCountChanged?.Invoke(_moveCount);
+            BottleLogger.LogInfo($"Undo performed. Current moves: {_moveCount}");
         }
-
-        public int GetCurrentMoveCount()
+        
+        /// <summary>
+        /// Reset history and move count (for new level).
+        /// </summary>
+        public void ResetAll()
         {
-            return _moveCount;
+            _historyService?.Clear();
+            _moveCount = 0;
+            _onMoveCountChanged?.Invoke(_moveCount);
+            BottleLogger.LogInfo("History and move count reset.");
         }
     }
 }

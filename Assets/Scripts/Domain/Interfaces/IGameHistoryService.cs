@@ -10,5 +10,6 @@ namespace PuzzleGame.Domain.Interfaces
         List<LiquidLayer>[] LastSnapshot { get; }
         void RecordSnapshot(BottleState[] bottles);
         void Undo();
+        void Clear();
     }
 }

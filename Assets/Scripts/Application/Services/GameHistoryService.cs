@@ -5,9 +5,8 @@ using PuzzleGame.Domain.Models;
 namespace PuzzleGame.Application.Services
 {
     /// <summary>
-    /// Her hamle öncesinde tüm şişelerin state'ini (Layers listesi)
-    /// kaydeder ve Undo ile bir önceki state'e dönmeyi sağlar.
-    /// Immutable snapshot: orijinal liste değiştirilmez.
+    /// Records all moves (state snapshots) and allows Undo operation.
+    /// Stores BottleState layers as immutable snapshots.
     /// </summary>
     public class GameHistoryService : IGameHistoryService
     {
@@ -23,7 +22,7 @@ namespace PuzzleGame.Application.Services
             for (int i = 0; i < bottles.Length; i++)
             {
                 var state = bottles[i];
-                if (state == null) continue; // null bottle = boş layer
+                if (state == null) continue; // null bottle = empty layer
                 snapshot[i] = new List<LiquidLayer>(state.Layers);
             }
             _history.Push(snapshot);
@@ -33,17 +32,22 @@ namespace PuzzleGame.Application.Services
         {
             if (_history.Count == 0) return;
             var snapshot = _history.Pop();
-            // BottleState'e yazmak için external setter gerek —
-            // arayüz tasarımı gereği BottleState.Layers read-only.
-            // Bu nedenle snapshot'ları tüketen taraf (GameManager)
-            // her şişeye Clear() + AddLayer() ile yükler.
             LastSnapshot = snapshot;
         }
 
         /// <summary>
-        /// Undo() çağrıldığında doldurulur.
-        /// Tüketen taraf (GameManager) buradaki listeleri BottleState'lere yükler.
+        /// Filled when Undo() is called.
+        /// Consumer (GameManager) loads these lists into BottleStates.
         /// </summary>
         public List<LiquidLayer>[] LastSnapshot { get; private set; }
+        
+        /// <summary>
+        /// Clears all history, resetting to initial state.
+        /// </summary>
+        public void Clear()
+        {
+            _history.Clear();
+            LastSnapshot = null;
+        }
     }
 }
