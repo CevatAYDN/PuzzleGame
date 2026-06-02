@@ -56,11 +56,11 @@ namespace PuzzleGame.Application.Services
             var sfxPrefab = CreateAudioSourcePrefab("SfxAudioSource_Prefab", config.sfxGroup);
             var musicPrefab = CreateAudioSourcePrefab("MusicAudioSource_Prefab", config.musicGroup);
 
-            _sfxPool = new GameObjectPool<AudioSource>(sfxPrefab, config.sfxPoolSize,
+            _sfxPool = PoolManager.Instance.RegisterPool<AudioSource>("SfxPool", sfxPrefab, config.sfxPoolSize,
                 onRent: ResetAudioSource,
                 onReturn: ResetAudioSource);
 
-            _musicPool = new GameObjectPool<AudioSource>(musicPrefab, config.musicPoolSize,
+            _musicPool = PoolManager.Instance.RegisterPool<AudioSource>("MusicPool", musicPrefab, config.musicPoolSize,
                 onRent: ResetAudioSource,
                 onReturn: ResetAudioSource);
 

@@ -12,6 +12,7 @@ using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Infrastructure.Interfaces;
 using PuzzleGame.Infrastructure.Implementations;
 using PuzzleGame.Infrastructure;
+using PuzzleGame.Infrastructure.Pool;
 using PuzzleGame.Events;
 using PuzzleGame.Logging;
 using PuzzleGame.Configuration;
@@ -108,6 +109,7 @@ namespace PuzzleGame
                 _selectionService.OnBottleDeselected -= _onBottleDeselectedHandler;
             }
             EventAggregator.Clear();
+            PoolManager.Instance.Cleanup();
         }
 
         public void OnUpdate(float deltaTime)

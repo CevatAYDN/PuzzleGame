@@ -38,8 +38,8 @@ namespace PuzzleGame.Application.Services
             var splashPrefab = CreateSplashParticlePrefab();
             var bubblePrefab = CreateBubbleParticlePrefab();
 
-            _splashPool = new GameObjectPool<ParticleSystem>(splashPrefab, MaxPoolSize);
-            _bubblePool = new GameObjectPool<ParticleSystem>(bubblePrefab, MaxPoolSize);
+            _splashPool = PoolManager.Instance.RegisterPool<ParticleSystem>("SplashPool", splashPrefab, MaxPoolSize);
+            _bubblePool = PoolManager.Instance.RegisterPool<ParticleSystem>("BubblePool", bubblePrefab, MaxPoolSize);
         }
 
         // ──────────────────────────────────────────────
