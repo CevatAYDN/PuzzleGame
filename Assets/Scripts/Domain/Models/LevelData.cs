@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using PuzzleGame.Domain.Models.FeatureSystem;
 
 namespace PuzzleGame.Domain.Models
 {
@@ -60,6 +61,31 @@ namespace PuzzleGame.Domain.Models
 
         [Header("Display")]
         public Sprite previewImage;
+
+        // ═══════════════════════════════════════════════════════════════════
+        // MODULAR FEATURES (Data-Driven)
+        // ═══════════════════════════════════════════════════════════════════
+        
+        [Header("Features (Experimental)")]
+        [Tooltip("Enable MultiLayerPour: pour all matching consecutive layers")]
+        public bool enableMultiLayerPour = true;
+        
+        [Tooltip("Enable Chemical Reaction System")]
+        public bool enableReactionSystem = false;
+        
+        [Tooltip("Enable Key and Lock mechanics")]
+        public bool enableKeyAndLock = false;
+        
+        [Tooltip("Enable Breakable Bottles")]
+        public bool enableBreakableBottles = false;
+        
+        // Feature-specific configurations
+        [HideInInspector] public MultiLayerPourData multiLayerPourConfig;
+        [HideInInspector] public ReactionSystemData reactionConfig;
+        [HideInInspector] public KeyAndLockData keyAndLockConfig;
+        [HideInInspector] public BreakableBottleData breakableBottleConfig;
+        [HideInInspector] public LimitedMovesData limitedMovesConfig;
+        [HideInInspector] public BonusObjectivesData bonusObjectivesConfig;
 
         /// <summary>3 if moveCount <= par, 2 if moveCount <= good, else 1.</summary>
         public int CalculateStars(int moveCount)

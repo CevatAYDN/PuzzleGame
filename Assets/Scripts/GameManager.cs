@@ -230,6 +230,7 @@ namespace PuzzleGame
 
             _historyManager?.Initialize(_bottles);
             _inputHandlerService?.SetBottles(_bottles);
+            _inputHandlerService?.SetLevelData(_currentLevel);
 
             _levelSetupService?.SetupBottles(_bottles, _currentLevel, _rendererService, _validator, _animationService);
 

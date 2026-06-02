@@ -54,6 +54,7 @@
     <Compile Include="Assets\Scripts\Infrastructure\ColorAdapter.cs" />
     <Compile Include="Assets\Scripts\Application\Services\GameHistoryManager.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IBottleView.cs" />
+    <Compile Include="Assets\Scripts\Events\FeatureEvents.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\ILevelRepository.cs" />
     <Compile Include="Assets\Tests\Application\BottleSelectionServiceTests.cs" />
     <Compile Include="Assets\Scripts\Events\EventAggregator.cs" />
@@ -130,10 +131,12 @@
     <Compile Include="Assets\Scripts\Domain\Interfaces\IBottleValidator.cs" />
     <Compile Include="Assets\Scripts\Application\Services\StreamRenderer.cs" />
     <Compile Include="Assets\Scripts\Application\Services\ParticleMaterialFactory.cs" />
+    <Compile Include="Assets\Scripts\Domain\Models\LevelFeature.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\MobileInputHandler.cs" />
     <Compile Include="Assets\Tests\Domain\Services\LevelGeneratorTests.cs" />
     <Compile Include="Assets\Scripts\Configuration\GameConfig.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\InputHandler.cs" />
+    <Compile Include="Assets\Scripts\Application\Services\PourService.cs" />
     <Compile Include="Assets\Tests\Application\Services\PlayerPrefsLevelProgressServiceTests.cs" />
     <Compile Include="Assets\Scripts\GameManager.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\ILevelProgressService.cs" />

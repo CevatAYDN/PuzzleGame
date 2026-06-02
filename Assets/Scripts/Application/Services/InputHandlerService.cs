@@ -28,6 +28,8 @@ namespace PuzzleGame.Application.Services
         private readonly AnimationConfig _animConfig;
         private readonly IAudioService _audioService;
         private readonly IGameHistoryManager _historyManager;
+        private readonly IPourService _pourService;
+        private LevelData _currentLevelData;
 
         private IBottleView[] _bottles;
         private Vector3 _selectedOriginalPos;
@@ -42,7 +44,8 @@ namespace PuzzleGame.Application.Services
             GameConfig gameConfig,
             AnimationConfig animConfig,
             IAudioService audioService,
-            IGameHistoryManager historyManager)
+            IGameHistoryManager historyManager,
+            IPourService pourService)
         {
             _inputHandler = inputHandler ?? throw new ArgumentNullException(nameof(inputHandler));
             _camera = camera;
@@ -54,6 +57,12 @@ namespace PuzzleGame.Application.Services
             _animConfig = animConfig;
             _audioService = audioService;
             _historyManager = historyManager;
+            _pourService = pourService;
+        }
+
+        public void SetLevelData(LevelData levelData)
+        {
+            _currentLevelData = levelData;
         }
 
         public void SetBottles(IBottleView[] bottles)
@@ -142,14 +151,37 @@ namespace PuzzleGame.Application.Services
 
             BottleLogger.LogInfo($"Attempting pour.");
 
-            if (_validator.CanPour(source.State, target.State))
+            // Use PourService for both single and multi-layer pours
+            if (_pourService != null && _pourService.TryPour(source, target, _currentLevelData))
             {
-                // Başarılı döküm öncesi undo state kaydı
+                // Get pour layer count for animation
+                int pourCount = _pourService.GetPourLayerCount(source, target, _currentLevelData);
+                
+                BottleLogger.LogInfo($"Pour succeeded ({pourCount} layers).");
+                
+                _animationService.AnimatePour(
+                    source,
+                    target,
+                    _animConfig.pourDuration,
+                    onComplete: () =>
+                    {
+                        source.SetSelectionHighlight(false);
+                        _animationService.AnimateBottleLower(
+                            source.Transform,
+                            _selectedOriginalPos, _animConfig.liftDuration);
+                    });
+
+                _selectionService.Deselect();
+                // Note: PourCompletedEvent is now published by PourService
+            }
+            else if (_validator.CanPour(source.State, target.State))
+            {
+                // Fallback to legacy single-layer pour if PourService fails
                 _historyManager?.RecordUndoSnapshot();
 
                 if (source.TryPourTo(target))
                 {
-                    BottleLogger.LogInfo($"Pour succeeded.");
+                    BottleLogger.LogInfo($"Pour succeeded (legacy path).");
                     _historyManager?.IncrementMoveCount();
                     _animationService.AnimatePour(
                         source,
@@ -165,6 +197,16 @@ namespace PuzzleGame.Application.Services
 
                     _selectionService.Deselect();
                     EventAggregator.Publish(new PourCompletedEvent(source.State, target.State));
+                }
+                else
+                {
+                    BottleLogger.LogDebug($"Pour rejected (legacy path).");
+                    _audioService?.PlaySfx(AudioClipId.Error);
+                    _animationService?.AnimateErrorShake(source.Transform, onComplete: () =>
+                    {
+                        LowerSelectedBottle();
+                        _selectionService.Deselect();
+                    });
                 }
             }
             else

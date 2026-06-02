@@ -21,11 +21,21 @@ namespace PuzzleGame.Domain.Models
         }
 
         public float TotalFill  => _totalFill;
+        public int LayerCount => _layers.Count;
         public bool  IsEmpty    => _layers.Count == 0;
 
         public bool IsFull => _layers.Count >= MaxLayers;
 
         public LiquidLayer? TopLayer => IsEmpty ? (LiquidLayer?)null : _layers[_layers.Count - 1];
+        
+        // Aliases for compatibility
+        public LiquidLayer? PeekTopLayer() => TopLayer;
+        
+        public LiquidLayer? GetLayerAt(int index)
+        {
+            if (index < 0 || index >= _layers.Count) return null;
+            return _layers[index];
+        }
 
         public bool AddLayer(LiquidLayer layer)
         {
