@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
+using PuzzleGame.Configuration;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Domain.Services;
 using PuzzleGame.Domain.Interfaces;
@@ -57,15 +58,20 @@ namespace PuzzleGame.Editor
         {
             public Vector3 position;
             public Color[] colors; // boş = boş şişe
+            public List<LiquidLayer> initialLayers;
             public ShaderVariant shader;
             public string namePrefix;
 
             public static BottleConfig Empty(Vector3 pos, ShaderVariant shader = ShaderVariant.Standard) =>
-                new BottleConfig { position = pos, colors = System.Array.Empty<Color>(), shader = shader, namePrefix = "Bottle" };
+                new BottleConfig { position = pos, colors = System.Array.Empty<Color>(), initialLayers = null, shader = shader, namePrefix = "Bottle" };
 
             public static BottleConfig WithColors(Vector3 pos, Color[] colors,
                 ShaderVariant shader = ShaderVariant.Standard, string prefix = "Bottle") =>
-                new BottleConfig { position = pos, colors = colors, shader = shader, namePrefix = prefix };
+                new BottleConfig { position = pos, colors = colors, initialLayers = null, shader = shader, namePrefix = prefix };
+
+            public static BottleConfig WithLayers(Vector3 pos, List<LiquidLayer> layers,
+                ShaderVariant shader = ShaderVariant.Standard, string prefix = "Bottle") =>
+                new BottleConfig { position = pos, colors = null, initialLayers = layers, shader = shader, namePrefix = prefix };
         }
 
         private const float GroundScale   = 8f;
@@ -189,7 +195,12 @@ namespace PuzzleGame.Editor
             var ctrl = go.AddComponent<BottleController>();
             ctrl.glassMaterial = glassMat;
             ctrl.liquidMaterial = liquidMat;
-            ctrl.Initialize(renderer, validator, animationService: null, BuildLayers(cfg.colors ?? System.Array.Empty<Color>()));
+
+            var initial = (cfg.initialLayers != null)
+                ? cfg.initialLayers
+                : BuildLayers(cfg.colors ?? System.Array.Empty<Color>());
+
+            ctrl.Initialize(renderer, validator, animationService: null, initial);
 
             Undo.RegisterCreatedObjectUndo(go, $"Create {uniqueName}");
             return go;
@@ -471,12 +482,61 @@ namespace PuzzleGame.Editor
             shape.radius = 0.5f;
         }
 
-        // ── GameManager ─────────────────────────────────────────────────────
+        // ── GameManager & DI ─────────────────────────────────────────────────
 
         private static void CreateGameManager()
         {
             if (Object.FindAnyObjectByType<GameManager>() != null) return;
             new GameObject("GameManager").AddComponent<GameManager>();
+        }
+
+        public static void SetupCurrentScene()
+        {
+            // Create environment + GameManager + DI in current scene
+            var opts = new BuildOptions
+            {
+                lighting = true,
+                ground = true,
+                camera = true,
+                postProcessing = true,
+                cauldron = false,
+                bottles = false,
+                gameManager = true,
+                newScene = false
+            };
+
+            int undoGroup = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName("Setup Current Scene");
+
+            if (opts.lighting) SetupLighting();
+            if (opts.ground) SetupGround();
+            if (opts.camera) SetupCamera();
+            if (opts.postProcessing) SetupPostProcessing();
+            if (opts.gameManager)
+            {
+                CreateGameManager();
+                CreateGameInstaller();
+            }
+
+            Undo.CollapseUndoOperations(undoGroup);
+            EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+            Debug.Log("[SceneBuilder] Current scene set up with GameManager + DI. Ctrl+Z to undo.");
+        }
+
+        private static void CreateGameInstaller()
+        {
+            if (Object.FindAnyObjectByType<Installers.GameInstaller>() != null) return;
+            
+            var go = new GameObject("GameInstaller");
+            var installer = go.AddComponent<Installers.GameInstaller>();
+            
+            // Auto-assign configs from Resources
+            installer.gameConfig = Resources.Load<GameConfig>("Data/GameConfig");
+            installer.animationConfig = Resources.Load<AnimationConfig>("Data/AnimationConfig");
+            installer.levelConfig = Resources.Load<LevelConfig>("Data/LevelConfig");
+            installer.audioConfig = Resources.Load<AudioConfig>("Data/AudioConfig");
+            
+            Debug.Log("[SceneBuilder] GameInstaller created and configs assigned.");
         }
 
         // ── Material presets ────────────────────────────────────────────────

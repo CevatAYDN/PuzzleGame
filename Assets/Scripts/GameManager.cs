@@ -118,7 +118,7 @@ namespace PuzzleGame
                 BottleLogger.LogError(
                     "VContainer DI failed — GameInstaller (LifetimeScope) not found in scene.\n" +
                     "Fix: Add GameInstaller component to any GameObject, or use:\n" +
-                    "  Tools > PuzzleGame > Open Editor > Scene > 'Setup Current Scene (Bottles + GameManager + DI)'");
+                    "  Tools > PuzzleGame > Open Editor > Scene tab > 'Setup Current Scene (Bottles + GameManager + DI)'");
                 enabled = false;
                 return;
             }

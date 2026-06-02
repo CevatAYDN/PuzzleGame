@@ -89,7 +89,8 @@ namespace PuzzleGame.Installers
             builder.Register<ILevelProgressService, SecureFileLevelProgressService>(Lifetime.Singleton);
             builder.Register<ILevelRepository, ScriptableObjectLevelRepository>(Lifetime.Singleton);
             builder.Register<ILevelGenerator, DifficultyBasedLevelGenerator>(Lifetime.Singleton);
-            builder.Register<ILocalizationService, LocalizationService>(Lifetime.Singleton);
+            builder.Register<ILocalizationService, LocalizationService>(Lifetime.Singleton)
+                   .WithParameter(Domain.Models.SupportedLanguage.Turkish);
 
             // Application services — depend on config/tween
             builder.Register<IBottleSelectionService, BottleSelectionService>(Lifetime.Singleton);

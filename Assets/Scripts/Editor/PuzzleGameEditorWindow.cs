@@ -3,6 +3,8 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using PuzzleGame.Domain.Models;
+using PuzzleGame.Domain.Services;
+using PuzzleGame.Infrastructure;
 using PuzzleGame.Application.Services;
 
 namespace PuzzleGame.Editor
@@ -44,6 +46,9 @@ namespace PuzzleGame.Editor
             public Difficulty difficulty;
             public string path;
             public bool exists;
+            public bool hasSolved;
+            public bool isSolvable;
+            public int optimalMoves;
         }
 
         // ── Scene tab ───────────────────────────────────────────────────────
@@ -53,6 +58,7 @@ namespace PuzzleGame.Editor
         private int _bottleCount = 2;
         private bool _firstEmpty = true;
         private Vector2 _sceneScroll;
+        private LevelData _stageLevelAsset;
 
         // ── Validate tab ────────────────────────────────────────────────────
         private List<ValidationResult> _validationResults = new List<ValidationResult>();
@@ -360,7 +366,7 @@ namespace PuzzleGame.Editor
         {
             _existingLevels.Clear();
             var guids = AssetDatabase.FindAssets("t:LevelData", new[] { LevelDataBatchCreator.LevelPath });
-            for (int i = 0; i < 100; i++)
+            for (int i = 1; i <= 100; i++)
             {
                 string path = $"{LevelDataBatchCreator.LevelPath}/Level_{i:D2}.asset";
                 var level = AssetDatabase.LoadAssetAtPath<LevelData>(path);
@@ -369,7 +375,10 @@ namespace PuzzleGame.Editor
                     number = i,
                     exists = level != null,
                     difficulty = level != null ? level.difficulty : Difficulty.Trivial,
-                    path = path
+                    path = path,
+                    hasSolved = false,
+                    isSolvable = false,
+                    optimalMoves = 0
                 });
             }
         }
@@ -421,10 +430,12 @@ namespace PuzzleGame.Editor
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    if (GUILayout.Button("Ping All", EditorStyles.miniButton, GUILayout.Width(80)))
-                        EditorApplication.delayCall += PingAllLevels;
-                    if (GUILayout.Button("Delete Missing Range", EditorStyles.miniButton, GUILayout.Width(120)))
-                        EditorApplication.delayCall += DeleteMissingLevels;
+                    if (GUILayout.Button("Verify All 100", EditorStyles.miniButton, GUILayout.Width(100)))
+                        EditorApplication.delayCall += SolveAndVerifyAll;
+                    if (GUILayout.Button("Auto-Reseed", EditorStyles.miniButton, GUILayout.Width(90)))
+                        EditorApplication.delayCall += AutoReseedUnsolvableLevels;
+                    if (GUILayout.Button("Optimize Pars", EditorStyles.miniButton, GUILayout.Width(95)))
+                        EditorApplication.delayCall += AutoOptimizeAllPars;
                     GUILayout.FlexibleSpace();
                     if (GUILayout.Button("Refresh List", EditorStyles.miniButton, GUILayout.Width(90)))
                         EditorApplication.delayCall += RefreshLevelList;
@@ -432,58 +443,105 @@ namespace PuzzleGame.Editor
 
                 EditorGUILayout.Space(4);
 
-                // Show first 20 levels in list
-                int showCount = Mathf.Min(20, _existingLevels.Count);
-                for (int i = 0; i < showCount; i++)
+                _levelsScroll = EditorGUILayout.BeginScrollView(_levelsScroll, GUILayout.Height(350));
+                for (int i = 0; i < _existingLevels.Count; i++)
                 {
                     var lvl = _existingLevels[i];
                     using (new EditorGUILayout.HorizontalScope())
                     {
                         GUI.contentColor = lvl.exists ? Color.green : Color.gray;
-                        GUILayout.Label(lvl.exists ? "✓" : "✗", GUILayout.Width(20));
+                        GUILayout.Label(lvl.exists ? "✓" : "✗", GUILayout.Width(15));
                         GUI.contentColor = Color.white;
-                        GUILayout.Label($"Level {lvl.number:D2}", GUILayout.Width(70));
+
+                        GUILayout.Label($"Level {lvl.number:D2}", GUILayout.Width(65));
+
                         if (lvl.exists)
                         {
-                            GUILayout.Label(lvl.difficulty.ToString(), GUILayout.Width(70));
+                            GUILayout.Label(lvl.difficulty.ToString(), GUILayout.Width(60));
+
+                            // Solver status
+                            if (lvl.hasSolved)
+                            {
+                                if (lvl.isSolvable)
+                                {
+                                    GUI.contentColor = Color.green;
+                                    GUILayout.Label($"Solvable ({lvl.optimalMoves} moves)", GUILayout.Width(120));
+                                }
+                                else
+                                {
+                                    GUI.contentColor = Color.red;
+                                    GUILayout.Label("UNSOLVABLE", GUILayout.Width(120));
+                                }
+                                GUI.contentColor = Color.white;
+                            }
+                            else
+                            {
+                                GUI.contentColor = Color.gray;
+                                GUILayout.Label("Not Verified", GUILayout.Width(120));
+                                GUI.contentColor = Color.white;
+                            }
                         }
                         else
                         {
-                            GUILayout.Label("—", GUILayout.Width(70));
+                            GUILayout.Label("—", GUILayout.Width(60));
+                            GUILayout.Label("Missing Asset", GUILayout.Width(120));
                         }
+
                         GUILayout.FlexibleSpace();
-                        if (lvl.exists && GUILayout.Button("Ping", GUILayout.Width(50)))
+
+                        if (lvl.exists)
                         {
-                            int num = lvl.number;
-                            EditorApplication.delayCall += () =>
+                            if (GUILayout.Button("Ping", EditorStyles.miniButton, GUILayout.Width(40)))
                             {
                                 var obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(lvl.path);
                                 if (obj != null) EditorGUIUtility.PingObject(obj);
-                            };
-                        }
-                        if (lvl.exists && GUILayout.Button("Delete", GUILayout.Width(60)))
-                        {
-                            string p = lvl.path;
-                            int n = lvl.number;
-                            EditorApplication.delayCall += () =>
+                            }
+
+                            if (GUILayout.Button("Solve", EditorStyles.miniButton, GUILayout.Width(45)))
                             {
-                                if (AssetDatabase.DeleteAsset(p))
+                                int idx = i;
+                                EditorApplication.delayCall += () => SolveSingleLevel(idx);
+                            }
+
+                            using (new EditorGUI.DisabledGroupScope(!lvl.hasSolved || !lvl.isSolvable))
+                            {
+                                if (GUILayout.Button("Opt", EditorStyles.miniButton, GUILayout.Width(35)))
                                 {
-                                    AssetDatabase.Refresh();
-                                    SetStatus($"Level {n:D2} deleted.", MessageType.Info);
-                                    RefreshLevelList();
+                                    int idx = i;
+                                    EditorApplication.delayCall += () => OptimizeParSingleLevel(idx);
                                 }
-                            };
+                            }
+
+                            if (GUILayout.Button("Load", EditorStyles.miniButton, GUILayout.Width(40)))
+                            {
+                                int idx = i;
+                                EditorApplication.delayCall += () => LoadLevelIntoActiveScene(idx);
+                            }
+
+                            if (GUILayout.Button("Play", EditorStyles.miniButton, GUILayout.Width(40)))
+                            {
+                                int idx = i;
+                                EditorApplication.delayCall += () => PlayLevelInActiveScene(idx);
+                            }
+
+                            if (GUILayout.Button("X", EditorStyles.miniButton, GUILayout.Width(20)))
+                            {
+                                string p = lvl.path;
+                                int n = lvl.number;
+                                EditorApplication.delayCall += () =>
+                                {
+                                    if (AssetDatabase.DeleteAsset(p))
+                                    {
+                                        AssetDatabase.Refresh();
+                                        SetStatus($"Level {n:D2} deleted.", MessageType.Info);
+                                        RefreshLevelList();
+                                    }
+                                };
+                            }
                         }
                     }
                 }
-
-                if (_existingLevels.Count(l => l.exists) > 20)
-                {
-                    EditorGUILayout.HelpBox(
-                        $"... and {_existingLevels.Count(l => l.exists) - 20} more levels. Use ping/delete above.",
-                        MessageType.None);
-                }
+                EditorGUILayout.EndScrollView();
             }
 
             EditorGUILayout.EndScrollView();
@@ -647,6 +705,56 @@ namespace PuzzleGame.Editor
                             _buildOpts.bottles = false;
                             BuildScene();
                         };
+                    }
+                }
+            }
+
+            // ── Setup Current Scene (DI) ─────────────────────────────────────
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Setup Current Scene (DI)", EditorStyles.miniBoldLabel);
+                EditorGUILayout.HelpBox(
+                    "Mevcut sahneye GameManager + GameInstaller (VContainer DI) ekler.\n" +
+                    "Sahne sekmesinde Play dediğinizde VContainer hatası alıyorsanız bu butonu kullanın.",
+                    MessageType.Info);
+
+                GUI.backgroundColor = new Color(0.2f, 0.6f, 0.9f);
+                if (GUILayout.Button("Setup Current Scene (GameManager + DI)", GUILayout.Height(28)))
+                {
+                    EditorApplication.delayCall += () =>
+                    {
+                        SceneBuilder.SetupCurrentScene();
+                        SetStatus("Current scene set up with GameManager + DI.", MessageType.Info);
+                    };
+                }
+                GUI.backgroundColor = Color.white;
+            }
+
+            // ── Level Staging & Serialization ───────────────────────────────
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Level Staging & Serialization", EditorStyles.miniBoldLabel);
+                EditorGUILayout.Space(2);
+
+                _stageLevelAsset = (LevelData)EditorGUILayout.ObjectField("Target Level", _stageLevelAsset, typeof(LevelData), false);
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    using (new EditorGUI.DisabledGroupScope(_stageLevelAsset == null))
+                    {
+                        if (GUILayout.Button("Load Level into Scene", GUILayout.Height(26)))
+                        {
+                            var lvl = _stageLevelAsset;
+                            EditorApplication.delayCall += () => LoadLevelIntoScene(lvl);
+                        }
+
+                        GUI.backgroundColor = new Color(0.15f, 0.65f, 0.25f);
+                        if (GUILayout.Button("Export Scene to Level", GUILayout.Height(26)))
+                        {
+                            var lvl = _stageLevelAsset;
+                            EditorApplication.delayCall += () => ExportSceneToLevel(lvl);
+                        }
+                        GUI.backgroundColor = Color.white;
                     }
                 }
             }
@@ -825,6 +933,415 @@ namespace PuzzleGame.Editor
                 ? $"All {(_validationResults.Count)} checks passed."
                 : $"{failures} issue(s) found.",
                 failures == 0 ? MessageType.Info : MessageType.Warning);
+        }
+
+        // ── Solver & Scene Helpers ──────────────────────────────────────────
+
+        private static List<List<LiquidLayer>> GetLevelAssignments(LevelData level, Configuration.LevelConfig levelConfig)
+        {
+            if (level == null) return new List<List<LiquidLayer>>();
+            if (level.autoGenerate)
+            {
+                var generator = new DifficultyBasedLevelGenerator();
+                Color[] palette = levelConfig != null && levelConfig.palette.Length > 0 ? levelConfig.palette : SceneBuilder.DefaultPalette;
+                var domainPalette = new DomainColor[palette.Length];
+                for (int i = 0; i < palette.Length; i++)
+                    domainPalette[i] = ColorAdapter.FromUnity(palette[i]);
+                
+                return generator.Generate(
+                    level.bottleCount,
+                    level.maxLayersPerBottle,
+                    level.emptyBottleCount,
+                    domainPalette,
+                    level.difficulty,
+                    level.randomSeed);
+            }
+            else
+            {
+                var assignments = new List<List<LiquidLayer>>();
+                if (level.bottles != null)
+                {
+                    foreach (var bottle in level.bottles)
+                    {
+                        var layers = new List<LiquidLayer>();
+                        if (!bottle.isEmpty && bottle.layers != null)
+                        {
+                            foreach (var layer in bottle.layers)
+                            {
+                                layers.Add(new LiquidLayer(ColorAdapter.FromUnity(layer.color), layer.amount));
+                            }
+                        }
+                        assignments.Add(layers);
+                    }
+                }
+                return assignments;
+            }
+        }
+
+        private static DomainColor[] ConvertPalette(Color[] colors)
+        {
+            var result = new DomainColor[colors.Length];
+            for (int i = 0; i < colors.Length; i++)
+                result[i] = ColorAdapter.FromUnity(colors[i]);
+            return result;
+        }
+
+        private void SolveSingleLevel(int index)
+        {
+            if (index < 0 || index >= _existingLevels.Count) return;
+            var lvl = _existingLevels[index];
+            if (!lvl.exists) return;
+
+            var levelData = AssetDatabase.LoadAssetAtPath<LevelData>(lvl.path);
+            if (levelData == null) return;
+
+            var levelConfig = AssetDatabase.LoadAssetAtPath<Configuration.LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
+            var assignments = GetLevelAssignments(levelData, levelConfig);
+            int maxLayers = levelData.autoGenerate ? levelData.maxLayersPerBottle : 4;
+
+            var result = LiquidSortSolver.Solve(assignments, maxLayers);
+            lvl.hasSolved = true;
+            lvl.isSolvable = result.IsSolvable;
+            lvl.optimalMoves = result.IsSolvable ? result.SolutionPath.Count : 0;
+            _existingLevels[index] = lvl;
+
+            if (result.IsSolvable)
+            {
+                SetStatus($"Level {lvl.number:D2}: Solvable in {result.SolutionPath.Count} moves.", MessageType.Info);
+            }
+            else
+            {
+                SetStatus($"Level {lvl.number:D2}: UNSOLVABLE!", MessageType.Error);
+            }
+        }
+
+        private void OptimizeParSingleLevel(int index)
+        {
+            if (index < 0 || index >= _existingLevels.Count) return;
+            var lvl = _existingLevels[index];
+            if (!lvl.exists || !lvl.hasSolved || !lvl.isSolvable) return;
+
+            var levelData = AssetDatabase.LoadAssetAtPath<LevelData>(lvl.path);
+            if (levelData == null) return;
+
+            levelData.parMoves = lvl.optimalMoves;
+            levelData.goodMoves = Mathf.RoundToInt(lvl.optimalMoves * 1.4f);
+            if (levelData.goodMoves < levelData.parMoves + 2) levelData.goodMoves = levelData.parMoves + 2;
+
+            EditorUtility.SetDirty(levelData);
+            AssetDatabase.SaveAssets();
+
+            SetStatus($"Level {lvl.number:D2} par moves optimized to {levelData.parMoves} (good moves: {levelData.goodMoves}).", MessageType.Info);
+        }
+
+        private void SolveAndVerifyAll()
+        {
+            var levelConfig = AssetDatabase.LoadAssetAtPath<Configuration.LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
+            int total = _existingLevels.Count;
+            int unsolvableCount = 0;
+            int solvableCount = 0;
+
+            try
+            {
+                for (int i = 0; i < total; i++)
+                {
+                    var lvl = _existingLevels[i];
+                    if (!lvl.exists) continue;
+
+                    EditorUtility.DisplayProgressBar("Solving Levels", $"Solving Level {lvl.number:D2}...", (float)i / total);
+
+                    var levelData = AssetDatabase.LoadAssetAtPath<LevelData>(lvl.path);
+                    if (levelData == null) continue;
+
+                    var assignments = GetLevelAssignments(levelData, levelConfig);
+                    int maxLayers = levelData.autoGenerate ? levelData.maxLayersPerBottle : 4;
+
+                    var result = LiquidSortSolver.Solve(assignments, maxLayers);
+                    
+                    lvl.hasSolved = true;
+                    lvl.isSolvable = result.IsSolvable;
+                    lvl.optimalMoves = result.IsSolvable ? result.SolutionPath.Count : 0;
+                    _existingLevels[i] = lvl;
+
+                    if (result.IsSolvable) solvableCount++;
+                    else unsolvableCount++;
+                }
+
+                SetStatus($"Verification completed. Solvable: {solvableCount}, Unsolvable: {unsolvableCount}", 
+                    unsolvableCount == 0 ? MessageType.Info : MessageType.Warning);
+            }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+            }
+        }
+
+        private void AutoReseedUnsolvableLevels()
+        {
+            var levelConfig = AssetDatabase.LoadAssetAtPath<Configuration.LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
+            int reseededCount = 0;
+
+            try
+            {
+                for (int i = 0; i < _existingLevels.Count; i++)
+                {
+                    var lvl = _existingLevels[i];
+                    if (!lvl.exists) continue;
+
+                    var levelData = AssetDatabase.LoadAssetAtPath<LevelData>(lvl.path);
+                    if (levelData == null) continue;
+
+                    // Solve first to check
+                    var assignments = GetLevelAssignments(levelData, levelConfig);
+                    int maxLayers = levelData.autoGenerate ? levelData.maxLayersPerBottle : 4;
+                    var result = LiquidSortSolver.Solve(assignments, maxLayers);
+
+                    if (result.IsSolvable) continue;
+
+                    // Unsolvable! Let's find a working seed
+                    EditorUtility.DisplayProgressBar("Reseeding", $"Finding seed for Level {lvl.number:D2}...", (float)i / _existingLevels.Count);
+
+                    int seed = levelData.randomSeed;
+                    bool found = false;
+                    for (int attempt = 1; attempt <= 100; attempt++)
+                    {
+                        seed += 1337; // Change seed
+                        // Generate with new seed
+                        var tempAssignments = new DifficultyBasedLevelGenerator().Generate(
+                            levelData.bottleCount,
+                            levelData.maxLayersPerBottle,
+                            levelData.emptyBottleCount,
+                            ConvertPalette(levelConfig != null && levelConfig.palette.Length > 0 ? levelConfig.palette : SceneBuilder.DefaultPalette),
+                            levelData.difficulty,
+                            seed);
+
+                        var tempResult = LiquidSortSolver.Solve(tempAssignments, maxLayers);
+                        if (tempResult.IsSolvable)
+                        {
+                            // Save seed
+                            levelData.randomSeed = seed;
+                            
+                            // Auto-optimize par
+                            levelData.parMoves = tempResult.SolutionPath.Count;
+                            levelData.goodMoves = Mathf.RoundToInt(tempResult.SolutionPath.Count * 1.4f);
+                            if (levelData.goodMoves < levelData.parMoves + 2) levelData.goodMoves = levelData.parMoves + 2;
+
+                            EditorUtility.SetDirty(levelData);
+
+                            lvl.hasSolved = true;
+                            lvl.isSolvable = true;
+                            lvl.optimalMoves = tempResult.SolutionPath.Count;
+                            _existingLevels[i] = lvl;
+                            reseededCount++;
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        Debug.LogWarning($"[Auto-Reseed] Could not find solvable seed for Level {lvl.number:D2} in 100 attempts.");
+                    }
+                }
+
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+                SetStatus($"Reseed complete. Successfully reseeded & solved {reseededCount} levels.", MessageType.Info);
+            }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+            }
+        }
+
+        private void AutoOptimizeAllPars()
+        {
+            var levelConfig = AssetDatabase.LoadAssetAtPath<Configuration.LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
+            int optimizedCount = 0;
+
+            try
+            {
+                for (int i = 0; i < _existingLevels.Count; i++)
+                {
+                    var lvl = _existingLevels[i];
+                    if (!lvl.exists) continue;
+
+                    var levelData = AssetDatabase.LoadAssetAtPath<LevelData>(lvl.path);
+                    if (levelData == null) continue;
+
+                    var assignments = GetLevelAssignments(levelData, levelConfig);
+                    int maxLayers = levelData.autoGenerate ? levelData.maxLayersPerBottle : 4;
+                    var result = LiquidSortSolver.Solve(assignments, maxLayers);
+
+                    if (result.IsSolvable)
+                    {
+                        levelData.parMoves = result.SolutionPath.Count;
+                        levelData.goodMoves = Mathf.RoundToInt(result.SolutionPath.Count * 1.4f);
+                        if (levelData.goodMoves < levelData.parMoves + 2) levelData.goodMoves = levelData.parMoves + 2;
+
+                        EditorUtility.SetDirty(levelData);
+                        optimizedCount++;
+
+                        lvl.hasSolved = true;
+                        lvl.isSolvable = true;
+                        lvl.optimalMoves = result.SolutionPath.Count;
+                        _existingLevels[i] = lvl;
+                    }
+                }
+
+                AssetDatabase.SaveAssets();
+                SetStatus($"Optimized par/good moves for {optimizedCount} solvable levels.", MessageType.Info);
+            }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+            }
+        }
+
+        private void LoadLevelIntoActiveScene(int index)
+        {
+            if (index < 0 || index >= _existingLevels.Count) return;
+            var lvl = _existingLevels[index];
+            if (!lvl.exists) return;
+
+            var levelData = AssetDatabase.LoadAssetAtPath<LevelData>(lvl.path);
+            LoadLevelIntoScene(levelData);
+        }
+
+        private void PlayLevelInActiveScene(int index)
+        {
+            if (index < 0 || index >= _existingLevels.Count) return;
+            var lvl = _existingLevels[index];
+            if (!lvl.exists) return;
+
+            var levelData = AssetDatabase.LoadAssetAtPath<LevelData>(lvl.path);
+            LoadLevelIntoScene(levelData);
+            EditorApplication.isPlaying = true;
+        }
+
+        private void LoadLevelIntoScene(LevelData level)
+        {
+            if (level == null)
+            {
+                SetStatus("No level selected to load.", MessageType.Warning);
+                return;
+            }
+
+            int undoGroup = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName($"Load Level {level.levelNumber}");
+
+            // 1. Clear existing bottles
+            SceneBuilder.RemoveBottles();
+
+            // 2. Load level Config
+            var levelConfig = AssetDatabase.LoadAssetAtPath<Configuration.LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
+            var assignments = GetLevelAssignments(level, levelConfig);
+
+            // 3. Compute positions and instantiate bottles
+            int count = assignments.Count;
+            var layout = SceneBuilder.BottleLayout.Grid;
+            Vector3 center = Vector3.zero;
+            var positions = SceneBuilder.ComputePositions(layout, count, center);
+
+            for (int i = 0; i < count; i++)
+            {
+                var layers = assignments[i];
+                var colors = new Color[layers.Count];
+                for (int j = 0; j < layers.Count; j++)
+                    colors[j] = ColorAdapter.ToUnity(layers[j].Color);
+
+                // Build with layers
+                var bottleCfg = SceneBuilder.BottleConfig.WithLayers(
+                    positions[i],
+                    layers,
+                    SceneBuilder.ShaderVariant.Premium,
+                    $"Bottle_{i:D2}");
+                
+                SceneBuilder.CreateBottle(bottleCfg);
+            }
+
+            Undo.CollapseUndoOperations(undoGroup);
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene());
+            SetStatus($"Loaded Level {level.levelNumber} into active scene ({count} bottles).", MessageType.Info);
+        }
+
+        private void ExportSceneToLevel(LevelData level)
+        {
+            if (level == null)
+            {
+                SetStatus("No level selected to export to.", MessageType.Warning);
+                return;
+            }
+
+            var bottles = FindObjectsByType<BottleController>(FindObjectsInactive.Include);
+            if (bottles.Length == 0)
+            {
+                SetStatus("No bottles found in the scene to export.", MessageType.Warning);
+                return;
+            }
+
+            var sortedBottles = bottles
+                .OrderByDescending(b => b.transform.position.z)
+                .ThenBy(b => b.transform.position.x)
+                .ToArray();
+
+            level.autoGenerate = false;
+            level.bottleCount = sortedBottles.Length;
+            level.bottles.Clear();
+
+            int emptyCount = 0;
+
+            foreach (var bottle in sortedBottles)
+            {
+                var bottleData = new LevelBottleData();
+                bottleData.isEmpty = bottle.IsEmpty;
+                if (bottleData.isEmpty)
+                {
+                    emptyCount++;
+                }
+
+                bottleData.layers = new List<LevelLayerData>();
+                if (!bottle.IsEmpty && bottle.State != null)
+                {
+                    foreach (var layer in bottle.State.Layers)
+                    {
+                        var layerData = new LevelLayerData();
+                        layerData.color = ColorAdapter.ToUnity(layer.Color);
+                        layerData.amount = layer.Amount;
+                        bottleData.layers.Add(layerData);
+                    }
+                }
+                level.bottles.Add(bottleData);
+            }
+
+            level.emptyBottleCount = emptyCount;
+
+            var levelConfig = AssetDatabase.LoadAssetAtPath<Configuration.LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
+            var assignments = GetLevelAssignments(level, levelConfig);
+            int maxLayers = level.bottles.Count > 0 && level.bottles[0].layers != null && level.bottles[0].layers.Count > 0 
+                ? level.bottles.Select(b => b.layers?.Count ?? 0).Max() 
+                : 4;
+            if (maxLayers < 4) maxLayers = 4;
+
+            var result = LiquidSortSolver.Solve(assignments, maxLayers);
+            if (result.IsSolvable)
+            {
+                level.parMoves = result.SolutionPath.Count;
+                level.goodMoves = Mathf.RoundToInt(result.SolutionPath.Count * 1.4f);
+                if (level.goodMoves < level.parMoves + 2) level.goodMoves = level.parMoves + 2;
+                SetStatus($"Exported scene to Level {level.levelNumber} successfully. Solvable in {result.SolutionPath.Count} moves (Par auto-assigned).", MessageType.Info);
+            }
+            else
+            {
+                level.parMoves = 10;
+                level.goodMoves = 15;
+                SetStatus($"Exported scene to Level {level.levelNumber} successfully, but layout is UNSOLVABLE! Reset par to defaults.", MessageType.Warning);
+            }
+
+            EditorUtility.SetDirty(level);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            RefreshLevelList();
         }
 
         // ── Status bar ──────────────────────────────────────────────────────

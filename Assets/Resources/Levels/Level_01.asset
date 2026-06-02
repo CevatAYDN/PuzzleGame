@@ -21,6 +21,6 @@ MonoBehaviour:
   randomSeed: 1337
   autoGenerate: 1
   bottles: []
-  parMoves: 10
-  goodMoves: 15
+  parMoves: 5
+  goodMoves: 7
   previewImage: {fileID: 0}
