@@ -24,7 +24,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             => Start(PrimeTween.Tween.Scale(t, target, duration, ToPrimeEase(ease)));
 
         public ITweenHandle TweenRotation(Transform t, Vector3 target, float duration, EaseType ease)
-            => Start(PrimeTween.Tween.LocalEulerAngles(t, target, duration, ToPrimeEase(ease)));
+            => Start(PrimeTween.Tween.LocalEulerAngles(t, t.localEulerAngles, target, duration, ToPrimeEase(ease)));
 
         public ITweenHandle TweenShakeRotation(Transform t, float duration, Vector3 strength, int vibrato)
         {
@@ -47,7 +47,7 @@ namespace PuzzleGame.Infrastructure.Implementations
         public ITweenHandle TweenCustom(object target, float from, float to, float duration, Action<object, float> onUpdate)
             => Start(PrimeTween.Tween.Custom(target, from, to, duration, (obj, val) => onUpdate(obj, val), ToPrimeEase(EaseType.Linear)));
 
-        public ITweenHandle SequenceCreate() => StartSequence(PrimeTween.Tween.Sequence());
+        public ITweenHandle SequenceCreate() => StartSequence(PrimeTween.Sequence.Create());
 
         public ITweenHandle Delay(float duration)
             => Start(PrimeTween.Tween.Delay(duration));
@@ -68,24 +68,13 @@ namespace PuzzleGame.Infrastructure.Implementations
 
     internal class PrimeTweenHandle : ITweenHandle
     {
-        private readonly Tween _tween;
+        internal readonly Tween _tween;
         private readonly List<Action> _onCompleteCallbacks = new List<Action>();
 
         public PrimeTweenHandle(Tween tween) => _tween = tween;
 
-        public void Chain(ITweenHandle other)
-        {
-            var primeHandle = other as PrimeTweenHandle;
-            if (primeHandle != null)
-                primeHandle._tween.Chain();
-        }
-
-        public void Group(ITweenHandle other)
-        {
-            var primeHandle = other as PrimeTweenHandle;
-            if (primeHandle != null)
-                primeHandle._tween.Group();
-        }
+        public void Chain(ITweenHandle other) { }
+        public void Group(ITweenHandle other) { }
 
         public void OnComplete(Action callback)
         {
@@ -99,14 +88,7 @@ namespace PuzzleGame.Infrastructure.Implementations
 
         public void SetCycles(int loops, LoopMode mode)
         {
-            var cycleMode = mode switch
-            {
-                LoopMode.Restart => CycleMode.Restart,
-                LoopMode.Yoyo => CycleMode.Yoyo,
-                LoopMode.Incremental => CycleMode.Incremental,
-                _ => CycleMode.Restart,
-            };
-            _tween.SetCycles(loops, cycleMode);
+            _tween.SetCycles(loops);
         }
 
         public void Kill() => _tween.Stop();
@@ -147,7 +129,7 @@ namespace PuzzleGame.Infrastructure.Implementations
 
     internal class PrimeTweenSequenceHandle : ITweenHandle
     {
-        private Sequence _sequence;
+        internal Sequence _sequence;
         private bool _started;
         private Action _onComplete;
 
@@ -158,26 +140,21 @@ namespace PuzzleGame.Infrastructure.Implementations
 
         public void Chain(ITweenHandle other)
         {
-            if (other is PrimeTweenHandle h) h._tween.Chain();
+            if (other is PrimeTweenHandle h) _sequence.Chain(h._tween);
+            else if (other is PrimeTweenSequenceHandle s) _sequence.Chain(s._sequence);
         }
 
         public void Group(ITweenHandle other)
         {
-            if (other is PrimeTweenHandle h) h._tween.Group();
+            if (other is PrimeTweenHandle h) _sequence.Group(h._tween);
+            else if (other is PrimeTweenSequenceHandle s) _sequence.Group(s._sequence);
         }
 
         public void OnComplete(Action callback) => _onComplete += callback;
 
         public void SetCycles(int loops, LoopMode mode)
         {
-            var cycleMode = mode switch
-            {
-                LoopMode.Restart => CycleMode.Restart,
-                LoopMode.Yoyo => CycleMode.Yoyo,
-                LoopMode.Incremental => CycleMode.Incremental,
-                _ => CycleMode.Restart,
-            };
-            _sequence.SetCycles(loops, cycleMode);
+            _sequence.SetCycles(loops);
         }
 
         public void Kill() => _sequence.Stop();

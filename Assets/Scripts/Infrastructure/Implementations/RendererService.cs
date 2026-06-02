@@ -33,18 +33,34 @@ namespace PuzzleGame.Infrastructure.Implementations
         public void UpdateLiquid(Renderer renderer, IReadOnlyList<LiquidLayer> layers, float totalFill,
                                  float saturationBoost, float brightnessBoost)
         {
-            float cumulative = 0f;
+            // Visually merge consecutive layers of the same color to prevent boundary line glitches
+            var merged = new List<LiquidLayer>();
+            foreach (var layer in layers)
+            {
+                if (layer.Amount <= 0.0001f) continue;
 
+                if (merged.Count > 0 && merged[merged.Count - 1].Color == layer.Color)
+                {
+                    var prev = merged[merged.Count - 1];
+                    merged[merged.Count - 1] = new LiquidLayer(prev.Color, prev.Amount + layer.Amount);
+                }
+                else
+                {
+                    merged.Add(layer);
+                }
+            }
+
+            float cumulative = 0f;
             int maxLayers = Mathf.Min(BottleState.MaxSupportedLayers, ColorIDs.Length);
-            // ColorIDs.Length == 4 == BottleState.MaxSupportedLayers, gelecekte uyumsuzluk olursa Math.Min koruyor.
+
             for (int i = 0; i < maxLayers; i++)
             {
                 Color color = Color.clear;
                 float fill  = cumulative;
 
-                if (i < layers.Count)
+                if (i < merged.Count)
                 {
-                    var layer = layers[i];
+                    var layer = merged[i];
                     color      = AdjustColor(ColorAdapter.ToUnity(layer.Color), saturationBoost, brightnessBoost);
                     cumulative += layer.Amount;
                     fill       = cumulative;

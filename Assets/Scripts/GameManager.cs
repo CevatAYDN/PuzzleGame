@@ -28,13 +28,6 @@ namespace PuzzleGame
     /// </summary>
     public class GameManager : MonoBehaviour, IUpdateable
     {
-        [Header("Configuration (assign via Resources or Inspector)")]
-        [SerializeField] private GameConfig     gameConfig;
-        [SerializeField] private AnimationConfig animConfig;
-        [SerializeField] private LevelConfig    levelConfig;
-        [SerializeField] private AudioConfig    audioConfig;
-        [SerializeField] private LevelData[]    levelCatalog;
-
         [Header("HUD (optional)")]
         [SerializeField] private Canvas    hudCanvas;
         [SerializeField] private TMPro.TextMeshProUGUI moveCountText;
@@ -44,6 +37,12 @@ namespace PuzzleGame
         [SerializeField] private LevelSelectUI levelSelectUI;
 
         // VContainer injected services
+        [Inject] private GameConfig gameConfig;
+        [Inject] private AnimationConfig animConfig;
+        [Inject] private LevelConfig levelConfig;
+        [Inject] private AudioConfig audioConfig;
+
+        // VContainer injected interfaces
         private IInputHandler _inputHandler;
         private IBottleValidator _validator;
         private IRendererService _rendererService;
@@ -63,7 +62,6 @@ namespace PuzzleGame
 
         private LevelData _currentLevel;
         private IBottleView[] _bottles;
-        private Camera _mainCam;
 
         private static readonly WaitForSeconds WinCheckDelay = new WaitForSeconds(0.5f);
         private static readonly Color CamDefaultBgColor = new Color(0.08f, 0.05f, 0.16f, 1f);
@@ -82,6 +80,7 @@ namespace PuzzleGame
             IAudioService audioService,
             ITweenService tweenService)
         {
+            BottleLogger.LogInfo("GameManager.Construct called by VContainer DI.");
             _inputHandler = inputHandler;
             _validator = validator;
             _rendererService = rendererService;
@@ -97,24 +96,11 @@ namespace PuzzleGame
 
         private void Awake()
         {
-            BottleLogger.LogInfo("GameManager Awake — VContainer DI active.");
-
-            if (_stateMachine == null)
-            {
-                BottleLogger.LogError("VContainer DI failed — critical services missing.");
-                return;
-            }
-
-            _camera = Camera.main;
-            InitAudio();
-            InitModularServices();
+            BottleLogger.LogInfo("GameManager Awake.");
         }
 
         private void InitModularServices()
         {
-            if (gameConfig == null) gameConfig = Resources.Load<GameConfig>("GameConfig");
-            if (animConfig == null) animConfig = Resources.Load<AnimationConfig>("AnimationConfig");
-
             _inputHandlerService = new InputHandlerService(
                 _inputHandler,
                 _camera,
@@ -124,19 +110,40 @@ namespace PuzzleGame
                 _validator,
                 gameConfig,
                 animConfig,
+                _audioService,
                 onPourSucceeded: () => { _historyManagementService?.IncrementMoveCount(); StartCoroutine(DelayedWinCheck()); },
                 onRecordUndoSnapshot: () => { _historyManagementService?.RecordUndoSnapshot(); });
         }
 
         private void Start()
         {
+            if (_stateMachine == null)
+            {
+                BottleLogger.LogError(
+                    "VContainer DI failed — GameInstaller (LifetimeScope) not found in scene.\n" +
+                    "Fix: Add GameInstaller component to any GameObject, or use:\n" +
+                    "  Tools > PuzzleGame > Open Editor > Scene > 'Setup Current Scene (Bottles + GameManager + DI)'");
+                enabled = false;
+                return;
+            }
+
+            BottleLogger.LogInfo("GameManager Start — initializing game systems.");
+
+            _camera = Camera.main;
+            InitAudio();
+            InitModularServices();
+
             EventAggregator.Subscribe<LevelSelectedEvent>(OnLevelSelected);
 
-            _stateMachine?.TransitionTo(GameState.Menu);
+            _stateMachine.TransitionTo(GameState.Menu);
 
             if (_levelRepository != null && levelSelectUI != null)
             {
                 levelSelectUI.Initialize(_levelRepository, _levelProgress);
+            }
+            else
+            {
+                _stateMachine.TransitionTo(GameState.Playing);
             }
 
             CacheBottles();
@@ -177,8 +184,12 @@ namespace PuzzleGame
             if (_bottles.Length == 0)
                 BottleLogger.LogWarning("No BottleController found — level will be empty.");
 
-            _historyManagementService = new GameHistoryManagementService(_gameHistoryService, _bottles);
-            _historyManagementService.SetMoveCountChangedCallback(OnMoveCountChanged);
+            // History management service — bir kez oluştur
+            if (_historyManagementService == null)
+            {
+                _historyManagementService = new GameHistoryManagementService(_gameHistoryService, _bottles);
+                _historyManagementService.SetMoveCountChangedCallback(OnMoveCountChanged);
+            }
 
             _inputHandlerService?.SetBottles(_bottles);
         }
@@ -194,10 +205,10 @@ namespace PuzzleGame
             _levelSetupService = new LevelSetupService(gameConfig, levelConfig, _currentLevel);
             _levelSetupService.SetupBottles(_bottles, _rendererService, _validator, _animationService);
 
-            if (_mainCam != null)
+            if (_camera != null)
             {
-                _mainCam.backgroundColor = CamDefaultBgColor;
-                _mainCam.clearFlags = CameraClearFlags.SolidColor;
+                _camera.backgroundColor = CamDefaultBgColor;
+                _camera.clearFlags = CameraClearFlags.SolidColor;
             }
         }
 
@@ -234,6 +245,17 @@ namespace PuzzleGame
             if (allComplete && hasLiquid)
             {
                 _stateMachine.TransitionTo(GameState.LevelComplete);
+                
+                int stars = _currentLevel != null ? _currentLevel.CalculateStars(_historyManagementService?.CurrentMoveCount ?? 0) : 3;
+                if (_currentLevel != null)
+                {
+                    _levelProgress?.RecordCompletion(_currentLevel.levelNumber, _historyManagementService?.CurrentMoveCount ?? 0, stars);
+                }
+
+                _audioService?.PlaySfx(AudioClipId.LevelComplete);
+
+                if (winPanel != null) winPanel.SetActive(true);
+
                 EventAggregator.Publish(new LevelCompletedEvent(_historyManagementService?.CurrentMoveCount ?? 0));
             }
         }
@@ -251,6 +273,8 @@ namespace PuzzleGame
 
             if (_currentLevel != null)
             {
+                if (winPanel != null) winPanel.SetActive(false);
+
                 var levelValidator = new LevelValidationService();
                 if (!levelValidator.ValidateLevel(_currentLevel, _bottles?.Length ?? 0))
                 {
@@ -271,6 +295,7 @@ namespace PuzzleGame
                 SetupBottles();
 
                 _stateMachine?.TransitionTo(GameState.Playing);
+                _audioService?.PlaySfx(AudioClipId.LevelStart);
             }
         }
 
@@ -288,6 +313,7 @@ namespace PuzzleGame
         private void InitHUD()
         {
             UpdateHUD();
+            if (winPanel != null) winPanel.SetActive(false);
         }
     }
 }

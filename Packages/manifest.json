@@ -23,6 +23,7 @@
     "com.unity.ugui": "2.0.0",
     "com.unity.ui.test-framework": "6.4.0",
     "com.unity.visualscripting": "1.9.11",
+    "com.kyrylokuzyk.primetween": "file:../Assets/Plugins/PrimeTween/internal/com.kyrylokuzyk.primetween-1.4.0.tgz",
     "jp.hadashikick.vcontainer": "1.18.0",
     "com.unity.modules.accessibility": "1.0.0",
     "com.unity.modules.adaptiveperformance": "1.0.0",

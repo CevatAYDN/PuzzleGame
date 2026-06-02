@@ -25,6 +25,7 @@ namespace PuzzleGame.Application.Services
         private readonly IBottleValidator _validator;
         private readonly GameConfig _gameConfig;
         private readonly AnimationConfig _animConfig;
+        private readonly IAudioService _audioService;
 
         private IBottleView[] _bottles;
         private Vector3 _selectedOriginalPos;
@@ -40,6 +41,7 @@ namespace PuzzleGame.Application.Services
             IBottleValidator validator,
             GameConfig gameConfig,
             AnimationConfig animConfig,
+            IAudioService audioService,
             Action onPourSucceeded = null,
             Action onRecordUndoSnapshot = null)
         {
@@ -50,6 +52,7 @@ namespace PuzzleGame.Application.Services
             _validator = validator;
             _gameConfig = gameConfig;
             _animConfig = animConfig;
+            _audioService = audioService;
             _onPourSucceeded = onPourSucceeded;
             _onRecordUndoSnapshot = onRecordUndoSnapshot;
         }
@@ -168,6 +171,7 @@ namespace PuzzleGame.Application.Services
             else
             {
                 BottleLogger.LogDebug($"Pour rejected.");
+                _audioService?.PlaySfx(AudioClipId.Error);
                 _animationService?.AnimateErrorShake((source as MonoBehaviour)?.transform, onComplete: () =>
                 {
                     LowerSelectedBottle();

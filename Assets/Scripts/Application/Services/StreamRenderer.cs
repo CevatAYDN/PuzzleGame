@@ -45,6 +45,8 @@ namespace PuzzleGame.Application.Services
         {
             if (lr == null) return;
 
+            lr.positionCount = TotalSegments;
+
             // Bell curve stream width
             float scaleFactor = Mathf.SmoothStep(0f, 1f, t < 0.1f ? t / 0.1f : (t > 0.9f ? (1f - t) / 0.1f : 1f));
             float baseWidth = config != null ? config.streamWidth * scaleFactor : 0.08f * scaleFactor;
