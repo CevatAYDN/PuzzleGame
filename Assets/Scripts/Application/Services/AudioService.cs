@@ -170,9 +170,10 @@ namespace PuzzleGame.Application.Services
                 _currentMusic = null;
             }
 
-            // Force return of all active sfx (skip the auto-return)
-            foreach (var kvp in _activeSfxIds)
-                if (kvp.Key != null) _sfxPool.Return(kvp.Key);
+            // Snapshot keys first to avoid CollectionModified during enumeration
+            var activeSources = new List<AudioSource>(_activeSfxIds.Keys);
+            foreach (var source in activeSources)
+                if (source != null) _sfxPool.Return(source);
             _activeSfxIds.Clear();
         }
 
