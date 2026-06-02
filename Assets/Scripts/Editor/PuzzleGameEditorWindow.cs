@@ -1,5 +1,6 @@
 using UnityEditor;
 using UnityEngine;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using PuzzleGame.Domain.Models;
@@ -18,7 +19,7 @@ namespace PuzzleGame.Editor
     /// </summary>
     public class PuzzleGameEditorWindow : EditorWindow
     {
-        private enum Tab { Data, Levels, Scene, Validate }
+        private enum Tab { Data, Levels, Scene, Validate, Palette }
         private Tab _activeTab = Tab.Data;
 
         // ── Data tab ────────────────────────────────────────────────────────
@@ -64,6 +65,12 @@ namespace PuzzleGame.Editor
         private List<ValidationResult> _validationResults = new List<ValidationResult>();
         private Vector2 _validateScroll;
 
+        // ── Palette tab ────────────────────────────────────────────────────
+        private LevelData _selectedLevelForEdit;
+        private Vector2 _paletteScroll;
+        private Color[] _editingPalette;
+        private const int MaxPaletteColors = 16;
+
         // ── Status bar ──────────────────────────────────────────────────────
         private string _statusMessage = "Ready.";
         private MessageType _statusType = MessageType.Info;
@@ -91,6 +98,7 @@ namespace PuzzleGame.Editor
                 case Tab.Levels:   DrawLevelsTab();   break;
                 case Tab.Scene:    DrawSceneTab();    break;
                 case Tab.Validate: DrawValidateTab(); break;
+                case Tab.Palette:  DrawPaletteTab();  break;
             }
             DrawStatusBar();
         }
@@ -104,6 +112,7 @@ namespace PuzzleGame.Editor
             if (GUILayout.Toggle(_activeTab == Tab.Levels, "Levels", EditorStyles.toolbarButton)) _activeTab = Tab.Levels;
             if (GUILayout.Toggle(_activeTab == Tab.Scene, "Scene", EditorStyles.toolbarButton)) _activeTab = Tab.Scene;
             if (GUILayout.Toggle(_activeTab == Tab.Validate, "Validate", EditorStyles.toolbarButton)) _activeTab = Tab.Validate;
+            if (GUILayout.Toggle(_activeTab == Tab.Palette, "Palette", EditorStyles.toolbarButton)) _activeTab = Tab.Palette;
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Refresh", EditorStyles.toolbarButton, GUILayout.Width(70)))
             {
@@ -352,7 +361,7 @@ namespace PuzzleGame.Editor
                 System.IO.Directory.CreateDirectory(DataAssetCreator.DataPath);
                 AssetDatabase.Refresh();
             }
-            var obj = AssetDatabase.LoadAssetAtPath(DataAssetCreator.DataPath, typeof(Object));
+            var obj = AssetDatabase.LoadAssetAtPath(DataAssetCreator.DataPath, typeof(UnityEngine.Object));
             if (obj != null) EditorGUIUtility.PingObject(obj);
         }
 
@@ -522,6 +531,12 @@ namespace PuzzleGame.Editor
                             {
                                 int idx = i;
                                 EditorApplication.delayCall += () => PlayLevelInActiveScene(idx);
+                            }
+
+                            if (GUILayout.Button("Copy", EditorStyles.miniButton, GUILayout.Width(40)))
+                            {
+                                int idx = i;
+                                EditorApplication.delayCall += () => CopyLevel(idx);
                             }
 
                             if (GUILayout.Button("X", EditorStyles.miniButton, GUILayout.Width(20)))
@@ -1015,6 +1030,83 @@ namespace PuzzleGame.Editor
             }
         }
 
+        private void CopyLevel(int index)
+        {
+            if (index < 0 || index >= _existingLevels.Count) return;
+            var lvl = _existingLevels[index];
+            if (!lvl.exists) return;
+
+            var sourceLevel = AssetDatabase.LoadAssetAtPath<LevelData>(lvl.path);
+            if (sourceLevel == null) return;
+
+            // Find next available level number
+            int copyNumber = 101;
+            for (int i = 101; i <= 200; i++)
+            {
+                string path = $"{LevelDataBatchCreator.LevelPath}/Level_{i:D2}.asset";
+                if (AssetDatabase.LoadAssetAtPath<LevelData>(path) == null)
+                {
+                    copyNumber = i;
+                    break;
+                }
+            }
+
+            if (copyNumber > 200)
+            {
+                SetStatus("No available slot for copy (101-200). Delete some levels first.", MessageType.Warning);
+                return;
+            }
+
+            string newPath = $"{LevelDataBatchCreator.LevelPath}/Level_{copyNumber:D2}.asset";
+            
+            // Create copy
+            var newLevel = ScriptableObject.CreateInstance<LevelData>();
+            newLevel.levelNumber = copyNumber;
+            newLevel.difficulty = sourceLevel.difficulty;
+            newLevel.bottleCount = sourceLevel.bottleCount;
+            newLevel.emptyBottleCount = sourceLevel.emptyBottleCount;
+            newLevel.colorCount = sourceLevel.colorCount;
+            newLevel.maxLayersPerBottle = sourceLevel.maxLayersPerBottle;
+            newLevel.randomSeed = copyNumber * 1337;
+            newLevel.autoGenerate = sourceLevel.autoGenerate;
+            
+            // Copy pre-built bottles if not auto-generating
+            if (!sourceLevel.autoGenerate && sourceLevel.bottles != null)
+            {
+                newLevel.bottles = new List<LevelBottleData>();
+                foreach (var bottle in sourceLevel.bottles)
+                {
+                    var copy = new LevelBottleData
+                    {
+                        isEmpty = bottle.isEmpty,
+                        layers = new List<LevelLayerData>()
+                    };
+                    foreach (var layer in bottle.layers)
+                    {
+                        copy.layers.Add(new LevelLayerData
+                        {
+                            color = layer.color,
+                            amount = layer.amount
+                        });
+                    }
+                    newLevel.bottles.Add(copy);
+                }
+            }
+            
+            // Set par values (slightly higher than source as it's a new level)
+            newLevel.parMoves = sourceLevel.parMoves + 2;
+            newLevel.goodMoves = sourceLevel.goodMoves + 3;
+            
+            // Copy preview image reference
+            newLevel.previewImage = sourceLevel.previewImage;
+
+            AssetDatabase.CreateAsset(newLevel, newPath);
+            AssetDatabase.SaveAssets();
+            
+            SetStatus($"Level {lvl.number:D2} copied to Level {copyNumber:D2}.", MessageType.Info);
+            RefreshLevelList();
+        }
+
         private void OptimizeParSingleLevel(int index)
         {
             if (index < 0 || index >= _existingLevels.Count) return;
@@ -1342,6 +1434,215 @@ namespace PuzzleGame.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             RefreshLevelList();
+        }
+
+        // ── PALETTE TAB ───────────────────────────────────────────────────
+
+        private void DrawPaletteTab()
+        {
+            EditorGUILayout.LabelField("Color Palette Management", EditorStyles.boldLabel);
+            EditorGUILayout.Space(4);
+
+            _paletteScroll = EditorGUILayout.BeginScrollView(_paletteScroll);
+
+            // ── Load LevelConfig ───────────────────────────────────────────
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Level Configuration", EditorStyles.miniBoldLabel);
+                
+                var levelConfig = AssetDatabase.LoadAssetAtPath<Configuration.LevelConfig>(
+                    $"{DataAssetCreator.DataPath}/LevelConfig.asset");
+                
+                if (levelConfig == null)
+                {
+                    EditorGUILayout.HelpBox("LevelConfig.asset not found. Create it from Data tab first.", MessageType.Warning);
+                }
+                else
+                {
+                    EditorGUILayout.LabelField($"Current Palette: {levelConfig.palette?.Length ?? 0} colors");
+                    
+                    // Display and edit palette
+                    if (levelConfig.palette == null || levelConfig.palette.Length == 0)
+                    {
+                        EditorGUILayout.HelpBox("Palette is empty. Add colors below.", MessageType.Info);
+                        levelConfig.palette = new Color[4]; // Default 4 colors
+                    }
+
+                    EditorGUILayout.Space(4);
+                    int colorCount = EditorGUILayout.IntSlider("Color Count", levelConfig.palette.Length, 2, MaxPaletteColors);
+                    
+                    if (colorCount != levelConfig.palette.Length)
+                    {
+                        Array.Resize(ref levelConfig.palette, colorCount);
+                    }
+
+                    EditorGUILayout.Space(4);
+                    EditorGUILayout.LabelField("Edit Colors:", EditorStyles.miniBoldLabel);
+                    
+                    for (int i = 0; i < levelConfig.palette.Length; i++)
+                    {
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            EditorGUILayout.LabelField($"Color {i + 1}", GUILayout.Width(60));
+                            levelConfig.palette[i] = EditorGUILayout.ColorField(levelConfig.palette[i], GUILayout.Width(200));
+                            GUILayout.FlexibleSpace();
+                        }
+                    }
+
+                    EditorGUILayout.Space(8);
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        if (GUILayout.Button("Save Palette", GUILayout.Height(28)))
+                        {
+                            EditorUtility.SetDirty(levelConfig);
+                            AssetDatabase.SaveAssets();
+                            SetStatus($"Palette saved: {levelConfig.palette.Length} colors.", MessageType.Info);
+                        }
+                        
+                        GUI.backgroundColor = new Color(0.2f, 0.5f, 0.9f);
+                        if (GUILayout.Button("Reset to Default", GUILayout.Height(28)))
+                        {
+                            levelConfig.palette = new Color[]
+                            {
+                                new Color(0.9f, 0.2f, 0.2f),  // Red
+                                new Color(0.2f, 0.6f, 0.9f),  // Blue
+                                new Color(0.2f, 0.8f, 0.2f),  // Green
+                                new Color(0.95f, 0.9f, 0.2f), // Yellow
+                                new Color(0.9f, 0.5f, 0.2f),  // Orange
+                                new Color(0.7f, 0.2f, 0.9f),  // Purple
+                            };
+                            EditorUtility.SetDirty(levelConfig);
+                            AssetDatabase.SaveAssets();
+                            SetStatus("Palette reset to defaults.", MessageType.Info);
+                        }
+                        GUI.backgroundColor = Color.white;
+                    }
+                }
+            }
+
+            EditorGUILayout.Space(8);
+
+            // ── Single Level Edit ───────────────────────────────────────────
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Level Property Editor", EditorStyles.miniBoldLabel);
+                EditorGUILayout.HelpBox(
+                    "Select a level to edit its properties (difficulty, bottle count, par moves, etc.)",
+                    MessageType.None);
+
+                _selectedLevelForEdit = (LevelData)EditorGUILayout.ObjectField(
+                    "Select Level", _selectedLevelForEdit, typeof(LevelData), false);
+
+                if (_selectedLevelForEdit != null)
+                {
+                    EditorGUILayout.Space(4);
+                    DrawLevelEditor(_selectedLevelForEdit);
+                }
+            }
+
+            EditorGUILayout.EndScrollView();
+        }
+
+        private void DrawLevelEditor(LevelData level)
+        {
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField($"Editing: Level {level.levelNumber:D2}", EditorStyles.miniBoldLabel);
+                EditorGUILayout.Space(4);
+
+                // Basic properties
+                level.difficulty = (Difficulty)EditorGUILayout.EnumPopup("Difficulty", level.difficulty);
+                level.bottleCount = EditorGUILayout.IntField("Bottle Count", level.bottleCount);
+                level.emptyBottleCount = EditorGUILayout.IntField("Empty Bottles", level.emptyBottleCount);
+                level.colorCount = EditorGUILayout.IntField("Color Count", level.colorCount);
+                level.maxLayersPerBottle = EditorGUILayout.IntField("Max Layers", level.maxLayersPerBottle);
+                level.randomSeed = EditorGUILayout.IntField("Random Seed", level.randomSeed);
+
+                EditorGUILayout.Space(6);
+
+                // Star thresholds
+                level.parMoves = EditorGUILayout.IntField("Par (3★)", level.parMoves);
+                level.goodMoves = EditorGUILayout.IntField("Good (2★)", level.goodMoves);
+
+                EditorGUILayout.Space(6);
+
+                // Auto-generate toggle
+                level.autoGenerate = EditorGUILayout.ToggleLeft("Auto-Generate", level.autoGenerate);
+
+                EditorGUILayout.Space(8);
+
+                // Action buttons
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("Save Changes", GUILayout.Height(26)))
+                    {
+                        EditorUtility.SetDirty(level);
+                        AssetDatabase.SaveAssets();
+                        SetStatus($"Level {level.levelNumber:D2} saved.", MessageType.Info);
+                        RefreshLevelList();
+                    }
+
+                    GUI.backgroundColor = new Color(0.9f, 0.5f, 0.5f);
+                    if (GUILayout.Button("Delete Level", GUILayout.Height(26)))
+                    {
+                        string path = AssetDatabase.GetAssetPath(level);
+                        if (EditorUtility.DisplayDialog("Delete Level?",
+                            $"This will permanently delete {System.IO.Path.GetFileName(path)}",
+                            "Delete", "Cancel"))
+                        {
+                            if (AssetDatabase.DeleteAsset(path))
+                            {
+                                AssetDatabase.Refresh();
+                                _selectedLevelForEdit = null;
+                                SetStatus("Level deleted.", MessageType.Info);
+                                RefreshLevelList();
+                            }
+                        }
+                    }
+                    GUI.backgroundColor = Color.white;
+                }
+            }
+
+            // ── Batch Delete ─────────────────────────────────────────────────
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Batch Operations", EditorStyles.miniBoldLabel);
+                EditorGUILayout.HelpBox(
+                    "Delete multiple levels at once. Use with caution!",
+                    MessageType.Warning);
+
+                EditorGUILayout.Space(4);
+                float batchStart = 1, batchEnd = 10;
+                EditorGUILayout.MinMaxSlider("Delete Range", ref batchStart, ref batchEnd, 1, 100);
+                EditorGUILayout.LabelField($"Range: {(int)batchStart} — {(int)batchEnd}");
+
+                EditorGUILayout.Space(6);
+                GUI.backgroundColor = new Color(0.9f, 0.3f, 0.3f);
+                if (GUILayout.Button($"Delete Levels {(int)batchStart}-{(int)batchEnd}", GUILayout.Height(28)))
+                {
+                    int start = (int)batchStart;
+                    int end = (int)batchEnd;
+                    
+                    if (EditorUtility.DisplayDialog("Batch Delete?",
+                        $"This will delete levels {start} through {end}. This cannot be undone!",
+                        "Delete All", "Cancel"))
+                    {
+                        int deleted = 0;
+                        for (int i = start; i <= end; i++)
+                        {
+                            string path = $"{LevelDataBatchCreator.LevelPath}/Level_{i:D2}.asset";
+                            if (AssetDatabase.LoadAssetAtPath<LevelData>(path) != null)
+                            {
+                                if (AssetDatabase.DeleteAsset(path)) deleted++;
+                            }
+                        }
+                        AssetDatabase.Refresh();
+                        SetStatus($"Deleted {deleted} levels.", MessageType.Info);
+                        RefreshLevelList();
+                    }
+                }
+                GUI.backgroundColor = Color.white;
+            }
         }
 
         // ── Status bar ──────────────────────────────────────────────────────
