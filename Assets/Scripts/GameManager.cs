@@ -53,8 +53,12 @@ namespace PuzzleGame
         private BottleController[] _bottles;
         private Camera             _mainCam;
 
-        private int     _moveCount;
-        private Vector3 _selectedOriginalPos;
+        private int _moveCount;
+        
+        // Services for separation of concerns
+        private InputHandlerService _inputHandlerService;
+        private LevelSetupService _levelSetupService;
+        private GameHistoryManagementService _historyManagementService;
 
         private Action<BottleState> _onBottleSelectedHandler;
         private Action<BottleState> _onBottleDeselectedHandler;
@@ -110,16 +114,16 @@ namespace PuzzleGame
             }
             EventAggregator.Clear();
             PoolManager.Instance.Cleanup();
+            
+            // Cleanup additional services
+            _inputHandlerService = null;
+            _levelSetupService = null;
+            _historyManagementService = null;
         }
 
         public void OnUpdate(float deltaTime)
         {
-            if (_stateMachine == null || !_stateMachine.IsInState(GameState.Playing)) return;
-            if (_animationService == null || _animationService.IsAnimating) return;
-            if (_inputHandler == null) return;
-
-            if (_inputHandler.GetPointerDown(out Vector2 screenPos))
-                HandleInput(screenPos);
+            _inputHandlerService.ProcessInput();
         }
 
         private void ComposeServices()
@@ -199,6 +203,25 @@ namespace PuzzleGame
                 levelSelectUI.Initialize(_levelRepository, _levelProgress);
             }
 
+            // Initialize new modular services
+            _inputHandlerService = new InputHandlerService(
+                _inputHandler,
+                _mainCam,
+                _stateMachine,
+                _animationService,
+                _selectionService,
+                _validator,
+                gameConfig,
+                animConfig,
+                () => _moveCount++,
+                RecordUndoSnapshot);
+                
+            _levelSetupService = new LevelSetupService(gameConfig, levelConfig, _currentLevel);
+            
+            _historyManagementService = new GameHistoryManagementService(_gameHistoryService, _bottles);
+            _historyManagementService.SetUpdateHUDCallback(UpdateHUD);
+            _historyManagementService.SetMoveCount(_moveCount);
+
             // Listen for level selection (from LevelSelectUI)
             EventAggregator.Subscribe<LevelSelectedEvent>(OnLevelSelected);
 
@@ -230,82 +253,23 @@ namespace PuzzleGame
 
             if (_bottles.Length == 0)
                 BottleLogger.LogWarning("No BottleController found — level will be empty.");
+                
+            // Set bottles in input handler service if it exists
+            if (_inputHandlerService != null)
+            {
+                _inputHandlerService.SetBottles(_bottles);
+            }
         }
 
         private void SetupBottles()
         {
-            if (_bottles.Length == 0) return;
-
-            // Determine generation parameters based on _currentLevel first, fallback to levelConfig / defaults
-            bool autoGen = true;
-            int empties = 2;
-            int seed = 0;
-            Color[] pal = DefaultPalette;
-            List<List<LiquidLayer>> assignments = null;
-
-            if (_currentLevel != null)
+            if (_bottles == null || _bottles.Length == 0) 
             {
-                autoGen = _currentLevel.autoGenerate;
-                empties = _currentLevel.emptyBottleCount;
-                seed = _currentLevel.randomSeed;
-                pal = levelConfig != null && levelConfig.palette.Length > 0 ? levelConfig.palette : DefaultPalette;
-
-                if (_currentLevel.autoGenerate)
-                {
-                    assignments = LevelGenerator.Generate(
-                        _bottles.Length,
-                        _currentLevel.maxLayersPerBottle,
-                        empties,
-                        ConvertPalette(pal),
-                        seed);
-                }
-                else
-                {
-                    // Pre-built level: convert List<LevelBottleData> to List<List<LiquidLayer>>
-                    assignments = new List<List<LiquidLayer>>();
-                    for (int i = 0; i < _currentLevel.bottles.Count; i++)
-                    {
-                        var bottleData = _currentLevel.bottles[i];
-                        var layers = new List<LiquidLayer>();
-                        if (!bottleData.isEmpty)
-                        {
-                            foreach (var layerData in bottleData.layers)
-                            {
-                                layers.Add(new LiquidLayer(ColorAdapter.FromUnity(layerData.color), layerData.amount));
-                            }
-                        }
-                        assignments.Add(layers);
-                    }
-                }
-            }
-            else
-            {
-                // Fallback to levelConfig
-                autoGen = levelConfig != null ? levelConfig.autoGenerateLevel : true;
-                empties = levelConfig != null ? levelConfig.emptyBottleCount : 2;
-                seed = levelConfig != null ? levelConfig.randomSeed : 0;
-                pal = levelConfig != null && levelConfig.palette.Length > 0 ? levelConfig.palette : DefaultPalette;
-
-                assignments = autoGen
-                    ? LevelGenerator.Generate(
-                        _bottles.Length,
-                        gameConfig.maxLayersPerBottle,
-                        empties,
-                        ConvertPalette(pal),
-                        seed)
-                    : null;
+                BottleLogger.LogError("No bottles found in scene, cannot setup level.");
+                return;
             }
 
-            for (int i = 0; i < _bottles.Length; i++)
-            {
-                var bottle  = _bottles[i];
-                var initial = (assignments != null && i < assignments.Count)
-                    ? assignments[i]
-                    : new List<LiquidLayer>();
-
-                // ALWAYS initialize to reset bottle properties completely
-                bottle.Initialize(_rendererService, _validator, _animationService, initial);
-            }
+            _levelSetupService.SetupBottles(_bottles, _rendererService, _validator, _animationService);
 
             if (_mainCam != null)
             {
@@ -314,141 +278,12 @@ namespace PuzzleGame
             }
         }
 
-        private DomainColor[] ConvertPalette(Color[] colors)
+        private void RecordUndoSnapshot()
         {
-            var result = new DomainColor[colors.Length];
-            for (int i = 0; i < colors.Length; i++)
-                result[i] = ColorAdapter.FromUnity(colors[i]);
-            return result;
-        }
-
-        private void HandleInput(Vector2 screenPos)
-        {
-            if (!_inputHandler.Raycast(screenPos, gameConfig.bottleLayerMask, out RaycastHit hit))
+            if (_historyManagementService != null)
             {
-                if (_selectionService.SelectedBottle != null)
-                {
-                    LowerSelectedBottle();
-                    _selectionService.Deselect();
-                }
-                return;
+                _historyManagementService.RecordUndoSnapshot();
             }
-
-            var clicked = hit.collider.GetComponent<BottleController>();
-            if (clicked == null)
-            {
-                BottleLogger.LogDebug("Hit collider has no BottleController.");
-                return;
-            }
-
-            var selectedState = _selectionService.SelectedBottle;
-
-            if (selectedState == null)
-            {
-                TrySelectBottle(clicked);
-            }
-            else if (clicked.State == selectedState)
-            {
-                LowerSelectedBottle();
-                _selectionService.Deselect();
-            }
-            else
-            {
-                TryPour(FindBottleByState(selectedState), clicked);
-            }
-        }
-
-        private void TrySelectBottle(BottleController bottle)
-        {
-            if (bottle.IsCapped)
-            {
-                BottleLogger.LogDebug($"Cannot select completed/capped bottle '{bottle.name}'.");
-                return;
-            }
-
-            if (bottle.IsEmpty())
-            {
-                BottleLogger.LogDebug($"Cannot select empty bottle '{bottle.name}'.");
-                return;
-            }
-
-            BottleLogger.LogInfo($"Selected '{bottle.name}'.");
-            _selectedOriginalPos = bottle.transform.position;
-            _selectionService.Select(bottle.State);
-            bottle.SetSelectionHighlight(true);
-            _animationService.AnimateBottleLift(
-                bottle.transform,
-                animConfig.liftHeight, animConfig.liftDuration,
-                keepHovering: () => _selectionService.SelectedBottle == bottle.State);
-        }
-
-        private void TryPour(BottleController source, BottleController target)
-        {
-            if (source == null)
-            {
-                BottleLogger.LogWarning("TryPour: source bottle not found in scene.");
-                _selectionService.Deselect();
-                return;
-            }
-
-            BottleLogger.LogInfo($"Attempting pour: '{source.name}' → '{target.name}'.");
-
-            if (_validator.CanPour(source.State, target.State))
-            {
-                RecordUndoSnapshot(); // hamle başarılı olacağı için ÖNCE undo state'i kaydet
-                if (source.TryPourTo(target))
-                {
-                    _moveCount++;
-                    BottleLogger.LogInfo($"Pour succeeded. Moves: {_moveCount}.");
-                    UpdateHUD();
-                    _audioService?.PlaySfx(AudioClipId.PourEnd);
-
-                    _animationService.AnimatePour(
-                        source, target,
-                        animConfig.pourDuration,
-                        onComplete: () =>
-                        {
-                            source.SetSelectionHighlight(false);
-                            _animationService.AnimateBottleLower(
-                                source.transform,
-                                _selectedOriginalPos, animConfig.liftDuration);
-                        });
-
-                    _selectionService.Deselect();
-                    EventAggregator.Publish(new PourCompletedEvent(source.State, target.State));
-                    StartCoroutine(DelayedWinCheck());
-                }
-            }
-            else
-            {
-                BottleLogger.LogDebug($"Pour rejected: '{source.name}' → '{target.name}'.");
-                _audioService?.PlaySfx(AudioClipId.Error);
-                _animationService.AnimateErrorShake(source.transform, onComplete: () =>
-                {
-                    LowerSelectedBottle();
-                    _selectionService.Deselect();
-                });
-            }
-        }
-
-        private void LowerSelectedBottle()
-        {
-            var selected = FindBottleByState(_selectionService.SelectedBottle);
-            if (selected != null)
-            {
-                selected.SetSelectionHighlight(false);
-                _animationService.AnimateBottleLower(
-                    selected.transform,
-                    _selectedOriginalPos, animConfig.liftDuration);
-            }
-        }
-
-        private BottleController FindBottleByState(BottleState state)
-        {
-            if (state == null || _bottles == null) return null;
-            foreach (var b in _bottles)
-                if (b != null && b.State == state) return b;
-            return null;
         }
 
         private IEnumerator DelayedWinCheck()
@@ -506,35 +341,23 @@ namespace PuzzleGame
             if (moveCountText != null)
                 moveCountText.text = $"Hamle: {_moveCount}";
         }
-
-        private void RecordUndoSnapshot()
+        
+        private void UpdateHUD(int moveCount)
         {
-            if (_bottles == null || _gameHistoryService == null) return;
-            var states = new BottleState[_bottles.Length];
-            for (int i = 0; i < _bottles.Length; i++)
-                states[i] = _bottles[i]?.State;
-            _gameHistoryService.RecordSnapshot(states);
+            _moveCount = moveCount;
+            UpdateHUD();
         }
+
+
 
         public void Undo()
         {
             if (_stateMachine == null || !_stateMachine.IsInState(GameState.Playing)) return;
-            if (_gameHistoryService == null || !_gameHistoryService.CanUndo) return;
-
-            _gameHistoryService.Undo();
-            var snapshots = _gameHistoryService.LastSnapshot;
-            if (snapshots == null || _bottles == null) return;
-
-            for (int i = 0; i < snapshots.Length && i < _bottles.Length; i++)
+            if (_historyManagementService != null)
             {
-                if (_bottles[i] == null) continue;
-                _bottles[i].State.ReplaceLayers(snapshots[i]);
-                _bottles[i].UpdateVisualsFromState();
+                _historyManagementService.Undo();
+                _moveCount = _historyManagementService.GetCurrentMoveCount();
             }
-
-            _moveCount = Mathf.Max(0, _moveCount - 1);
-            UpdateHUD();
-            BottleLogger.LogInfo($"Undo. Moves: {_moveCount}");
         }
 
         public void RestartGame()
@@ -561,18 +384,40 @@ namespace PuzzleGame
         {
             _currentLevel = _levelRepository?.GetByNumber(e.LevelNumber);
             BottleLogger.LogInfo($"Level {e.LevelNumber} selected: {(_currentLevel != null ? "found" : "not found")}.");
+            
             if (_currentLevel != null)
             {
+                // Validate the level before loading
+                var levelValidator = new LevelValidationService();
+                if (!levelValidator.ValidateLevel(_currentLevel, _bottles?.Length ?? 0))
+                {
+                    BottleLogger.LogError($"Level {e.LevelNumber} failed validation, aborting load.");
+                    // Optionally transition to an error state or stay in menu
+                    _stateMachine?.TransitionTo(GameState.Menu);
+                    return;
+                }
+
+                // Update level setup service with the new level
+                _levelSetupService = new LevelSetupService(gameConfig, levelConfig, _currentLevel);
+                
                 _stateMachine?.TransitionTo(GameState.LevelLoading);
                 
                 if (_selectionService != null) _selectionService.Deselect();
                 _moveCount = 0;
                 UpdateHUD();
                 _gameHistoryService = new GameHistoryService(); // geçmişi sıfırla
+                _historyManagementService = new GameHistoryManagementService(_gameHistoryService, _bottles);
+                _historyManagementService.SetUpdateHUDCallback(UpdateHUD);
+                _historyManagementService.SetMoveCount(_moveCount);
                 
                 SetupBottles();
                 
                 _stateMachine?.TransitionTo(GameState.Playing);
+            }
+            else
+            {
+                BottleLogger.LogError($"Level {e.LevelNumber} not found in repository, cannot load.");
+                _stateMachine?.TransitionTo(GameState.Menu);
             }
         }
     }

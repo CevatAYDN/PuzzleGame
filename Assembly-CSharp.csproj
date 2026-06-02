@@ -79,18 +79,23 @@
     <Compile Include="Assets\Scripts\Domain\Models\DomainColor.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\GameState.cs" />
     <Compile Include="Assets\Tests\Domain\Models\LiquidLayerTests.cs" />
+    <Compile Include="Assets\Scripts\Application\Services\InputHandlerService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\ServiceLocator.cs" />
     <Compile Include="Assets\Tests\Domain\Models\BottleStateTests.cs" />
     <Compile Include="Assets\Scripts\Application\Services\AudioService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Pool\IGameObjectPool.cs" />
+    <Compile Include="Assets\Scripts\Application\Services\GameHistoryManagementService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\BottleSelectionService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Interfaces\IInputHandler.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Providers\AddressablesAssetProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Pool\PoolManager.cs" />
+    <Compile Include="Assets\Tests\Application\Services\AnimationServiceTestsExtended.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\BottleState.cs" />
     <Compile Include="Assets\Tests\Infrastructure\Pool\GameObjectPoolTests.cs" />
     <Compile Include="Assets\Scripts\Application\Services\PlayerPrefsLevelProgressService.cs" />
+    <Compile Include="Assets\Scripts\Application\Services\LevelValidationService.cs" />
     <Compile Include="Assets\Scripts\Configuration\AnimationConfig.cs" />
+    <Compile Include="Assets\Tests\Application\GameManagerTests.cs" />
     <Compile Include="Assets\Scripts\Application\Services\GameSaveManager.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\LiquidLayer.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Interfaces\IUpdateManager.cs" />
@@ -122,6 +127,7 @@
     <Compile Include="Assets\Scripts\Domain\Interfaces\ILevelProgressService.cs" />
     <Compile Include="Assets\Tests\Events\EventAggregatorTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\AudioServiceTests.cs" />
+    <Compile Include="Assets\Scripts\Application\Services\LevelSetupService.cs" />
     <Compile Include="Assets\Scripts\URPConfigHelper.cs" />
     <Compile Include="Assets\Scripts\BottleMeshGenerator.cs" />
     <Compile Include="Assets\Scripts\Application\Services\GameHistoryService.cs" />
@@ -1302,12 +1308,12 @@
       <HintPath>Library\ScriptAssemblies\Unity.AI.Navigation.Editor.ConversionSystem.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Unity.InternalAPIEditorBridge.ShaderGraph.Editor">
-      <HintPath>Library\ScriptAssemblies\Unity.InternalAPIEditorBridge.ShaderGraph.Editor.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary">
       <HintPath>Library\ScriptAssemblies\Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.InternalAPIEditorBridge.ShaderGraph.Editor">
+      <HintPath>Library\ScriptAssemblies\Unity.InternalAPIEditorBridge.ShaderGraph.Editor.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.RenderPipelines.Core.Runtime">

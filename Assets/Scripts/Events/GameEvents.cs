@@ -55,4 +55,9 @@ namespace PuzzleGame.Events
             MoveCount = moveCount;
         }
     }
+
+    public readonly struct UndoPrePourEvent
+    {
+        // Empty class for event aggregation
+    }
 }
