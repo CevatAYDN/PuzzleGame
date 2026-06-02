@@ -1,4 +1,5 @@
 using System;
+using PuzzleGame.Domain;
 using UnityEngine;
 
 namespace PuzzleGame.Domain.Models
@@ -6,6 +7,8 @@ namespace PuzzleGame.Domain.Models
     /// <summary>
     /// Sıvı katmanı — DomainColor (render) + LiquidColor (logic) + miktar.
     /// Reaction sistemi için kesin renk tipi gerektiğinden LiquidColor enum saklanır.
+    /// 
+    /// Layer.IsEmpty: considered empty if color is transparent, amount is below epsilon, or color type is None.
     /// </summary>
     public readonly struct LiquidLayer
     {
@@ -13,7 +16,10 @@ namespace PuzzleGame.Domain.Models
         public LiquidColor ColorType { get; }       // Reaction/logic için
         public float Amount { get; }
 
-        public bool IsEmpty => Color.IsTransparent || Amount <= 0.001f || ColorType == LiquidColor.None;
+        public bool IsEmpty =>
+            Color.IsTransparent ||
+            Amount <= BottleConstants.LayerAmountEpsilon ||
+            ColorType == LiquidColor.None;
 
         public LiquidLayer(DomainColor color, float amount) : this(color, amount, LiquidColor.None)
         {

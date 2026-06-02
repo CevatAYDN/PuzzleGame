@@ -1,7 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using PuzzleGame.Domain;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Domain.Models.FeatureSystem;
 using PuzzleGame.Domain.Interfaces;
@@ -17,91 +17,71 @@ namespace PuzzleGame.Application.Services
     /// </summary>
     public interface IPourService
     {
-        /// <summary>
-        /// Attempt pour from source to target bottle.
-        /// Returns true if any pour happened.
-        /// </summary>
         bool TryPour(IBottleView source, IBottleView target, LevelData levelData);
-        
-        /// <summary>
-        /// Get the number of layers that would be poured (for preview/UI).
-        /// </summary>
         int GetPourLayerCount(IBottleView source, IBottleView target, LevelData levelData);
     }
-    
+
     public class PourService : IPourService
     {
         private readonly IBottleValidator _validator;
         private readonly IGameHistoryManager _historyManager;
         private readonly IReactionService _reactionService;
         private LevelData _currentLevelData;
-        
+
         public PourService(IBottleValidator validator, IGameHistoryManager historyManager, IReactionService reactionService)
         {
             _validator = validator;
             _historyManager = historyManager;
             _reactionService = reactionService;
         }
-        
+
         public void SetLevelData(LevelData levelData)
         {
             _currentLevelData = levelData;
         }
-        
+
         public bool TryPour(IBottleView source, IBottleView target, LevelData levelData)
         {
-            if (source == null || target == null)
-            {
-                BottleLogger.LogWarning("PourService.TryPour: null source or target");
-                return false;
-            }
-            
-            // Check if multi-layer pour is enabled for this level
-            bool enableMultiLayer = levelData?.enableMultiLayerPour ?? false;
-            
-            if (enableMultiLayer)
-            {
-                return TryMultiLayerPour(source, target, levelData);
-            }
-            else
-            {
-                return TrySingleLayerPour(source, target);
-            }
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (target == null) throw new ArgumentNullException(nameof(target));
+            if (levelData == null) throw new ArgumentNullException(nameof(levelData),
+                "levelData is required. Default to no-multi-layer if unsure.");
+
+            bool enableMultiLayer = levelData.enableMultiLayerPour;
+
+            return enableMultiLayer
+                ? TryMultiLayerPour(source, target, levelData)
+                : TrySingleLayerPour(source, target);
         }
-        
+
         public int GetPourLayerCount(IBottleView source, IBottleView target, LevelData levelData)
         {
             if (source == null || target == null) return 0;
-            
+
             bool enableMultiLayer = levelData?.enableMultiLayerPour ?? false;
             var sourceState = source.State;
             var targetState = target.State;
-            
-            if (sourceState.LayerCount == 0 || targetState.LayerCount >= sourceState.MaxLayers)
-                return 0;
-            
-            var topLayer = sourceState.PeekTopLayer();
-            if (topLayer == null) return 0;
-            var topColor = topLayer.Value.Color;
-            
+
+            if (sourceState.IsEmpty) return 0;
+            if (targetState.IsFull) return 0;
+
+            var topLayerOpt = sourceState.TopLayer;
+            if (topLayerOpt == null) return 0;
+            var topColor = topLayerOpt.Value.Color;
+
             if (!enableMultiLayer)
             {
-                // Single layer: check if single pour is possible
-                if (_validator.CanPour(sourceState, targetState))
-                    return 1;
-                return 0;
+                return _validator.CanPour(sourceState, targetState) ? 1 : 0;
             }
-            
-            // Multi-layer: count consecutive same-colored layers
+
             int maxCapacity = targetState.MaxLayers - targetState.LayerCount;
             int consecutiveCount = 0;
-            
+
             for (int i = 0; i < sourceState.LayerCount && i < maxCapacity; i++)
             {
-                var layer = sourceState.GetLayerAt(sourceState.LayerCount - 1 - i);
-                if (layer == null) break;
-                
-                if (IsColorMatch(layer.Value.Color, topColor))
+                var layerOpt = sourceState.GetLayerAt(sourceState.LayerCount - 1 - i);
+
+                if (IsColorMatch(layerOpt.Color, topColor))
                 {
                     consecutiveCount++;
                 }
@@ -110,143 +90,155 @@ namespace PuzzleGame.Application.Services
                     break;
                 }
             }
-            
-            // Check min consecutive requirement
+
             var config = levelData?.multiLayerPourConfig;
-            int minRequired = config?.minConsecutiveForPour ?? 2;
-            
+            int minRequired = config?.minConsecutiveForPour ?? BottleConstants.MinEmptyBottles;
+
             if (config?.pourConsecutiveOnly ?? true)
             {
                 return consecutiveCount >= minRequired ? consecutiveCount : 0;
             }
-            
+
             return consecutiveCount;
         }
-        
-        // ═══════════════════════════════════════════════════════════════════
-        // PRIVATE METHODS
-        // ═══════════════════════════════════════════════════════════════════
-        
+
         private bool TrySingleLayerPour(IBottleView source, IBottleView target)
         {
             if (!_validator.CanPour(source.State, target.State))
                 return false;
-            
-            var layer = source.State.PopTopLayer();
-            if (layer == null) return false;
-            
-            if (!target.State.AddLayer(layer.Value))
+
+            LiquidLayer layer = source.State.PopTopLayer();
+
+            try
             {
-                source.State.AddLayer(layer.Value);
-                return false;
+                target.State.AddLayer(layer);
             }
-            
-            // Record move for undo system
-            _historyManager?.RecordUndoSnapshot();
-            _historyManager?.IncrementMoveCount();
-            
-            // Publish event for UI/animations
+            catch (InvalidOperationException ex)
+            {
+                // Validator said can pour but AddLayer failed — invariant violation.
+                // Roll back the popped layer.
+                source.State.AddLayer(layer);
+                throw new InvalidOperationException(
+                    "PourService invariant violated: CanPour passed but AddLayer rejected the layer.",
+                    ex);
+            }
+
+            _historyManager.RecordUndoSnapshot();
+            _historyManager.IncrementMoveCount();
+
             EventAggregator.Publish(new PourCompletedEvent(source.State, target.State));
-            
+
             BottleLogger.LogInfo($"[PourService] Single layer pour: {source.GameObject.name} → {target.GameObject.name}");
             return true;
         }
-        
+
         private bool TryMultiLayerPour(IBottleView source, IBottleView target, LevelData levelData)
         {
             int pourCount = GetPourLayerCount(source, target, levelData);
-            
+
             if (pourCount == 0)
             {
                 BottleLogger.LogDebug("[PourService] Multi-layer pour: no valid pour found");
                 return false;
             }
-            
-            var topLayer = source.State.PeekTopLayer();
-            var topColor = topLayer?.Color ?? new DomainColor(0, 0, 0, 0);
-            
-            // Publish started event for animations
+
+            var topLayerOpt = source.State.TopLayer;
+            var topColor = topLayerOpt?.Color ?? default;
+
             EventAggregator.Publish(new MultiLayerPourStartedEvent(
                 GetBottleIndex(source),
                 GetBottleIndex(target),
                 pourCount,
                 Color.white));
-            
-            // Perform the pours
+
             int poured = 0;
+            var rolledBackLayers = new System.Collections.Generic.List<LiquidLayer>(pourCount);
+
             for (int i = 0; i < pourCount; i++)
             {
-                var layerOpt = source.State.PopTopLayer();
-                if (layerOpt == null) break;
-                
-                var layer = layerOpt.Value;
-                if (!target.State.AddLayer(layer))
+                LiquidLayer layer;
+                try
                 {
-                    // Rollback
-                    source.State.AddLayer(layer);
+                    layer = source.State.PopTopLayer();
+                }
+                catch (InvalidOperationException)
+                {
+                    // Source ran dry unexpectedly — rollback already-poured layers.
                     break;
                 }
-                poured++;
+
+                try
+                {
+                    target.State.AddLayer(layer);
+                    poured++;
+                }
+                catch (InvalidOperationException ex)
+                {
+                    rolledBackLayers.Add(layer);
+                    // Rollback any layers already poured to target this iteration.
+                    for (int r = rolledBackLayers.Count - 1; r >= 0; r--)
+                    {
+                        source.State.AddLayer(rolledBackLayers[r]);
+                    }
+                    throw new InvalidOperationException(
+                        "PourService multi-layer invariant violated.", ex);
+                }
             }
-            
+
             if (poured > 0)
             {
-                _historyManager?.RecordUndoSnapshot();
-                _historyManager?.IncrementMoveCount();
-                
-                // Publish completed event
+                _historyManager.RecordUndoSnapshot();
+                _historyManager.IncrementMoveCount();
+
                 EventAggregator.Publish(new MultiLayerPourCompletedEvent(
                     GetBottleIndex(source),
                     GetBottleIndex(target),
                     poured));
-                
-                // Check for reactions after pour
+
                 CheckForReactions(source, target);
-                
+
                 BottleLogger.LogInfo($"[PourService] Multi-layer pour: {poured} layers from {source.GameObject.name} → {target.GameObject.name}");
                 return true;
             }
-            
+
             return false;
         }
-        
+
         private int GetBottleIndex(IBottleView bottle)
         {
-            // Extract index from bottle name (e.g., "Bottle_01" -> 1)
             var name = bottle.GameObject.name;
             var parts = name.Split('_');
             if (parts.Length > 1 && int.TryParse(parts[parts.Length - 1], out int index))
                 return index;
             return 0;
         }
-        
-        private bool IsColorMatch(DomainColor a, DomainColor b, float tolerance = 0.05f)
+
+        private bool IsColorMatch(DomainColor a, DomainColor b, float tolerance = BottleConstants.ColorMatchEpsilon)
         {
-            return Mathf.Abs(a.R - b.R) < tolerance &&
-                   Mathf.Abs(a.G - b.G) < tolerance &&
-                   Mathf.Abs(a.B - b.B) < tolerance &&
-                   Mathf.Abs(a.A - b.A) < tolerance;
+            return UnityEngine.Mathf.Abs(a.R - b.R) < tolerance &&
+                   UnityEngine.Mathf.Abs(a.G - b.G) < tolerance &&
+                   UnityEngine.Mathf.Abs(a.B - b.B) < tolerance &&
+                   UnityEngine.Mathf.Abs(a.A - b.A) < tolerance;
         }
-        
+
         private void CheckForReactions(IBottleView source, IBottleView target)
         {
             if (_currentLevelData == null || !_currentLevelData.enableReactionSystem)
                 return;
-            
+
             if (_currentLevelData.reactionConfig == null || !_currentLevelData.reactionConfig.enableReactions)
                 return;
-            
+
             if (_reactionService == null) return;
-            
-            // Get all bottles in scene for reaction check
+
             var bottles = UnityEngine.Object.FindObjectsByType<UnityEngine.MonoBehaviour>()
                 .OfType<IBottleView>()
                 .ToArray();
-            
+
             if (bottles.Length == 0) return;
-            
+
             var results = _reactionService.CheckReactions(bottles, _currentLevelData.reactionConfig);
-            
+
             if (results.Count > 0)
             {
                 BottleLogger.LogInfo($"[PourService] {results.Count} reaction(s) detected!");

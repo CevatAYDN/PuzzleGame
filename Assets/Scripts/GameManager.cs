@@ -1,9 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using PuzzleGame.Domain;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Domain.Services;
 using PuzzleGame.Domain.Interfaces;
@@ -28,24 +28,21 @@ namespace PuzzleGame
     /// </summary>
     public class GameManager : MonoBehaviour, IUpdateable
     {
-    [Header("HUD (optional)")]
-    [SerializeField] private Canvas    hudCanvas;
-    [SerializeField] private TMPro.TextMeshProUGUI moveCountText;
-    [SerializeField] private GameObject winPanel;
-    // UI panel to display a warning when DI fails. Optional, can be left null.
-    [Header("DI Failure UI")]
-    [SerializeField] private GameObject diErrorPanel;
+        [Header("HUD (optional)")]
+        [SerializeField] private Canvas    hudCanvas;
+        [SerializeField] private TMPro.TextMeshProUGUI moveCountText;
+        [SerializeField] private GameObject winPanel;
+        [Header("DI Failure UI")]
+        [SerializeField] private GameObject diErrorPanel;
 
         [Header("UI Reference")]
         [SerializeField] private LevelSelectUI levelSelectUI;
 
-        // VContainer injected configurations
         private GameConfig gameConfig;
         private AnimationConfig animConfig;
         private LevelConfig levelConfig;
         private AudioConfig audioConfig;
 
-        // VContainer injected services & interfaces
         private IBottleValidator _validator;
         private IRendererService _rendererService;
         private IAnimationService _animationService;
@@ -54,7 +51,7 @@ namespace PuzzleGame
         private IAudioService _audioService;
         private ILevelRepository _levelRepository;
         private ILevelProgressService _levelProgress;
-        
+
         private IInputHandlerService _inputHandlerService;
         private ILevelSetupService _levelSetupService;
         private ILevelValidationService _levelValidationService;
@@ -66,10 +63,14 @@ namespace PuzzleGame
         private IBottleView[] _bottles;
         private BottleController[] _allBottlesPool;
 
-        private static readonly WaitForSeconds WinCheckDelay = new WaitForSeconds(0.5f);
-        private static readonly Color CamDefaultBgColor = new Color(0.08f, 0.05f, 0.16f, 1f);
-        
-        // DI initialization flag
+        private static readonly WaitForSeconds WinCheckDelay =
+            new WaitForSeconds(BottleConstants.WinCheckDelaySeconds);
+        private static readonly Color CamDefaultBgColor = new Color(
+            BottleConstants.CameraBackgroundR,
+            BottleConstants.CameraBackgroundG,
+            BottleConstants.CameraBackgroundB,
+            BottleConstants.CameraBackgroundA);
+
         private bool _isInitialized;
 
         [Inject]
@@ -92,6 +93,13 @@ namespace PuzzleGame
             IGameHistoryManager historyManager,
             ILocalizationService localizationService)
         {
+            if (validator == null)        throw new ArgumentNullException(nameof(validator));
+            if (stateMachine == null)     throw new ArgumentNullException(nameof(stateMachine));
+            if (levelRepository == null)  throw new ArgumentNullException(nameof(levelRepository));
+            if (audioService == null)     throw new ArgumentNullException(nameof(audioService));
+            if (historyManager == null)   throw new ArgumentNullException(nameof(historyManager));
+            if (inputHandlerService == null) throw new ArgumentNullException(nameof(inputHandlerService));
+
             BottleLogger.LogInfo("GameManager.Construct called by VContainer DI.");
             this.gameConfig = gameConfig;
             this.animConfig = animConfig;
@@ -110,33 +118,18 @@ namespace PuzzleGame
             _levelSetupService = levelSetupService;
             _levelValidationService = levelValidationService;
             _historyManager = historyManager;
-            
-            // DI injection başarılı - oyunu başlatabiliriz
-            _isInitialized = true;
-        }
 
-        private void Awake()
-        {
-            BottleLogger.LogInfo("GameManager Awake.");
-            
-            // DI kontrolünü Awake'te değil, Construct başarılı olduktan sonra yap
-            // VContainer, Construct başarılı olunca _isInitialized'ı true yapacak
+            _isInitialized = true;
         }
 
         private void Start()
         {
-            // VContainer DI başarısızsa Construct methodu çağrılmaz
-            // Constructor injection başarılı olmadan oyun başlamasın
             if (!_isInitialized)
             {
                 const string errorMsg = "VContainer DI failed — GameInstaller (LifetimeScope) not found or not configured.\n" +
                                          "Fix: Tools > PuzzleGame > Open Editor > Scene tab > 'Setup Current Scene (GameManager + DI)'";
                 BottleLogger.LogError(errorMsg);
-                // Show UI warning if a panel is assigned
-                if (diErrorPanel != null)
-                {
-                    diErrorPanel.SetActive(true);
-                }
+                if (diErrorPanel != null) diErrorPanel.SetActive(true);
                 enabled = false;
                 return;
             }
@@ -150,14 +143,11 @@ namespace PuzzleGame
             EventAggregator.Subscribe<LevelSelectedEvent>(OnLevelSelected);
             EventAggregator.Subscribe<PourCompletedEvent>(OnPourCompleted);
 
-            if (_historyManager != null)
-            {
-                _historyManager.OnMoveCountChanged += OnMoveCountChanged;
-            }
+            _historyManager.OnMoveCountChanged += OnMoveCountChanged;
 
             _stateMachine.TransitionTo(GameState.Menu);
 
-            if (_levelRepository != null && levelSelectUI != null)
+            if (levelSelectUI != null)
             {
                 levelSelectUI.Initialize(_levelRepository, _levelProgress);
             }
@@ -173,13 +163,15 @@ namespace PuzzleGame
 
         private void InitAudio()
         {
-            if (audioConfig == null) return;
-            // Audio init logic
+            if (audioConfig == null)
+            {
+                BottleLogger.LogWarning("AudioConfig is null — audio init skipped.");
+                return;
+            }
         }
 
         private void OnDestroy()
         {
-            // Clean up particle pools and active tweens on scene unload
             if (_animationService is System.IDisposable disposable)
             {
                 disposable.Dispose();
@@ -229,7 +221,7 @@ namespace PuzzleGame
 
         private void Update()
         {
-            _inputHandlerService?.ProcessInput();
+            _inputHandlerService.ProcessInput();
         }
 
         public void CustomUpdate() => Update();
@@ -276,7 +268,7 @@ namespace PuzzleGame
             {
                 targetCount = _currentLevel.bottleCount;
             }
-            targetCount = Mathf.Clamp(targetCount, 2, _allBottlesPool.Length);
+            targetCount = Mathf.Clamp(targetCount, BottleConstants.MinBottlesPerLevel, _allBottlesPool.Length);
 
             for (int i = 0; i < _allBottlesPool.Length; i++)
             {
@@ -307,11 +299,11 @@ namespace PuzzleGame
                 }
             }
 
-            _historyManager?.Initialize(_bottles);
-            _inputHandlerService?.SetBottles(_bottles);
-            _inputHandlerService?.SetLevelData(_currentLevel);
+            _historyManager.Initialize(_bottles);
+            _inputHandlerService.SetBottles(_bottles);
+            _inputHandlerService.SetLevelData(_currentLevel);
 
-            _levelSetupService?.SetupBottles(_bottles, _currentLevel, _rendererService, _validator, _animationService);
+            _levelSetupService.SetupBottles(_bottles, _currentLevel, _rendererService, _validator, _animationService);
 
             if (_camera != null)
             {
@@ -358,54 +350,58 @@ namespace PuzzleGame
             if (allComplete && hasLiquid)
             {
                 _stateMachine.TransitionTo(GameState.LevelComplete);
-                
-                int stars = _currentLevel != null ? _currentLevel.CalculateStars(_historyManager?.CurrentMoveCount ?? 0) : 3;
+
+                int moveCount = _historyManager.CurrentMoveCount;
+                int stars = _currentLevel != null ? _currentLevel.CalculateStars(moveCount) : 3;
                 if (_currentLevel != null)
                 {
-                    _levelProgress?.RecordCompletion(_currentLevel.levelNumber, _historyManager?.CurrentMoveCount ?? 0, stars);
+                    _levelProgress?.RecordCompletion(_currentLevel.levelNumber, moveCount, stars);
                 }
 
-                _audioService?.PlaySfx(AudioClipId.LevelComplete);
+                _audioService.PlaySfx(AudioClipId.LevelComplete);
 
                 if (winPanel != null) winPanel.SetActive(true);
 
-                EventAggregator.Publish(new LevelCompletedEvent(_historyManager?.CurrentMoveCount ?? 0));
+                EventAggregator.Publish(new LevelCompletedEvent(moveCount));
             }
         }
 
         public void Undo()
         {
-            if (_stateMachine == null || !_stateMachine.IsInState(GameState.Playing)) return;
-            _historyManager?.Undo();
+            if (!_stateMachine.IsInState(GameState.Playing)) return;
+            _historyManager.Undo();
         }
 
         public void OnLevelSelected(LevelSelectedEvent e)
         {
-            _currentLevel = _levelRepository?.GetByNumber(e.LevelNumber);
+            _currentLevel = _levelRepository.GetByNumber(e.LevelNumber);
             BottleLogger.LogInfo($"Level {e.LevelNumber} selected.");
 
-            if (_currentLevel != null)
+            if (_currentLevel == null)
             {
-                if (winPanel != null) winPanel.SetActive(false);
-
-                if (_levelValidationService != null && !_levelValidationService.ValidateLevel(_currentLevel, _bottles?.Length ?? 0))
-                {
-                    BottleLogger.LogError($"Level {e.LevelNumber} failed validation.");
-                    _stateMachine?.TransitionTo(GameState.Menu);
-                    return;
-                }
-
-                _stateMachine?.TransitionTo(GameState.LevelLoading);
-
-                _selectionService?.Deselect();
-                
-                _historyManager?.ResetAll();
-
-                SetupBottles();
-
-                _stateMachine?.TransitionTo(GameState.Playing);
-                _audioService?.PlaySfx(AudioClipId.LevelStart);
+                BottleLogger.LogError($"Level {e.LevelNumber} not found in repository.");
+                return;
             }
+
+            if (winPanel != null) winPanel.SetActive(false);
+
+            if (!_levelValidationService.ValidateLevel(_currentLevel, _bottles?.Length ?? 0))
+            {
+                BottleLogger.LogError($"Level {e.LevelNumber} failed validation.");
+                _stateMachine.TransitionTo(GameState.Menu);
+                return;
+            }
+
+            _stateMachine.TransitionTo(GameState.LevelLoading);
+
+            _selectionService.Deselect();
+
+            _historyManager.ResetAll();
+
+            SetupBottles();
+
+            _stateMachine.TransitionTo(GameState.Playing);
+            _audioService.PlaySfx(AudioClipId.LevelStart);
         }
 
         private void UpdateHUD()

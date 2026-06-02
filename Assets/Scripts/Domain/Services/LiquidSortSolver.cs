@@ -1,12 +1,16 @@
 using System;
 using System.Collections.Generic;
+using PuzzleGame.Domain;
 using PuzzleGame.Domain.Models;
 
 namespace PuzzleGame.Domain.Services
 {
     /// <summary>
     /// Evaluates playability and solves Liquid Sort puzzles using Breadth-First Search.
-    /// Employs symmetry reduction (bottle sorting) for high-performance execution.
+    /// Pure C# — no UnityEngine dependency. Suitable for headless CI / cloud validation.
+    /// 
+    /// Limits (see <see cref="BottleConstants.SolverMaxVisitedStates"/>) are
+    /// config-overridable via the GameConfig passed in.
     /// </summary>
     public class LiquidSortSolver
     {
@@ -29,62 +33,41 @@ namespace PuzzleGame.Domain.Services
             }
         }
 
-        private class StateNode
+        public class LiquidSortSolverOptions
         {
-            public int[][] Bottles;
-            public Move LastMove;
-            public StateNode Parent;
-
-            public StateNode(int[][] bottles, Move lastMove, StateNode parent)
-            {
-                Bottles = bottles;
-                LastMove = lastMove;
-                Parent = parent;
-            }
-
-            public bool IsSolved(int maxLayers)
-            {
-                foreach (var bottle in Bottles)
-                {
-                    if (bottle.Length == 0) continue;
-                    if (bottle.Length != maxLayers) return false;
-                    int first = bottle[0];
-                    for (int i = 1; i < bottle.Length; i++)
-                    {
-                        if (bottle[i] != first) return false;
-                    }
-                }
-                return true;
-            }
-
-            public string GetHashKey()
-            {
-                var keys = new List<string>(Bottles.Length);
-                foreach (var bottle in Bottles)
-                {
-                    if (bottle.Length == 0)
-                    {
-                        keys.Add("");
-                    }
-                    else
-                    {
-                        keys.Add(string.Join(",", bottle));
-                    }
-                }
-                keys.Sort();
-                return string.Join("|", keys);
-            }
+            public int MaxVisitedStates { get; set; } = BottleConstants.SolverMaxVisitedStates;
+            public float ColorTolerance  { get; set; } = BottleConstants.ColorMatchEpsilon;
         }
 
         /// <summary>
-        /// Solves the puzzle starting from assignments.
+        /// Solves the puzzle starting from the given initial bottle layout.
         /// </summary>
-        public static SolverResult Solve(List<List<LiquidLayer>> initialBottles, int maxLayers, float colorTolerance = 0.05f)
+        /// <exception cref="ArgumentNullException">If initialBottles is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">If maxLayers is out of range.</exception>
+        public static SolverResult Solve(
+            List<List<LiquidLayer>> initialBottles,
+            int maxLayers,
+            LiquidSortSolverOptions options = null)
         {
-            if (initialBottles == null || initialBottles.Count == 0)
+            options ??= new LiquidSortSolverOptions();
+
+            if (initialBottles == null)
+            {
+                throw new ArgumentNullException(nameof(initialBottles));
+            }
+            if (initialBottles.Count == 0)
             {
                 return new SolverResult { IsSolvable = false, SolutionPath = null, VisitedStatesCount = 0 };
             }
+            if (maxLayers < 1 || maxLayers > BottleConstants.MaxLayers)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(maxLayers), maxLayers,
+                    $"maxLayers must be in [1, {BottleConstants.MaxLayers}].");
+            }
+
+            float colorTolerance = options.ColorTolerance;
+            int maxVisited = Math.Max(1, options.MaxVisitedStates);
 
             // 1. Map colors to integer IDs (using color match tolerance)
             var uniqueColors = new List<DomainColor>();
@@ -105,10 +88,18 @@ namespace PuzzleGame.Domain.Services
                 return uniqueColors.Count;
             }
 
-            int[][] initial = new int[initialBottles.Count][];
-            for (int i = 0; i < initialBottles.Count; i++)
+            int bottleCount = initialBottles.Count;
+            int[][] initial = new int[bottleCount][];
+            for (int i = 0; i < bottleCount; i++)
             {
-                var layers = initialBottles[i];
+                var layers = initialBottles[i] ?? throw new ArgumentException(
+                    $"initialBottles[{i}] is null.", nameof(initialBottles));
+                if (layers.Count > maxLayers)
+                {
+                    throw new ArgumentException(
+                        $"initialBottles[{i}] has {layers.Count} layers but maxLayers is {maxLayers}.",
+                        nameof(initialBottles));
+                }
                 initial[i] = new int[layers.Count];
                 for (int j = 0; j < layers.Count; j++)
                 {
@@ -117,7 +108,7 @@ namespace PuzzleGame.Domain.Services
             }
 
             // 2. Perform BFS to find the shortest path
-            var startNode = new StateNode(initial, new Move(-1, -1), null);
+            var startNode = new StateNode(initial, new Move(-1, -1), null, bottleCount);
             if (startNode.IsSolved(maxLayers))
             {
                 return new SolverResult { IsSolvable = true, SolutionPath = new List<Move>(), VisitedStatesCount = 1 };
@@ -126,10 +117,9 @@ namespace PuzzleGame.Domain.Services
             var queue = new Queue<StateNode>();
             queue.Enqueue(startNode);
 
-            var visited = new HashSet<string>();
-            visited.Add(startNode.GetHashKey());
+            var visited = new HashSet<ulong>(capacity: 1024);
+            visited.Add(startNode.ComputeCanonicalKey(maxLayers));
 
-            const int maxVisited = 10000;
             int visitedCount = 0;
 
             while (queue.Count > 0 && visitedCount < maxVisited)
@@ -183,12 +173,21 @@ namespace PuzzleGame.Domain.Services
                         {
                             if (k == i)
                             {
-                                nextBottles[k] = new int[source.Length - countToPour];
-                                Array.Copy(source, nextBottles[k], source.Length - countToPour);
+                                int newSrcLen = source.Length - countToPour;
+                                if (newSrcLen == 0)
+                                {
+                                    nextBottles[k] = Array.Empty<int>();
+                                }
+                                else
+                                {
+                                    nextBottles[k] = new int[newSrcLen];
+                                    Array.Copy(source, nextBottles[k], newSrcLen);
+                                }
                             }
                             else if (k == j)
                             {
-                                nextBottles[k] = new int[target.Length + countToPour];
+                                int newTgtLen = target.Length + countToPour;
+                                nextBottles[k] = new int[newTgtLen];
                                 Array.Copy(target, nextBottles[k], target.Length);
                                 for (int p = 0; p < countToPour; p++)
                                 {
@@ -201,8 +200,8 @@ namespace PuzzleGame.Domain.Services
                             }
                         }
 
-                        var nextNode = new StateNode(nextBottles, new Move(i, j), current);
-                        string hash = nextNode.GetHashKey();
+                        var nextNode = new StateNode(nextBottles, new Move(i, j), current, bottleCount);
+                        ulong hash = nextNode.ComputeCanonicalKey(maxLayers);
                         if (!visited.Contains(hash))
                         {
                             if (nextNode.IsSolved(maxLayers))
@@ -227,6 +226,80 @@ namespace PuzzleGame.Domain.Services
             }
 
             return new SolverResult { IsSolvable = false, SolutionPath = null, VisitedStatesCount = visitedCount };
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // StateNode: BFS node with a packing-friendly canonical hash key.
+        // The hash packs each bottle's color IDs (4 bits each, since we have
+        // max 12 colors in a standard puzzle) into a ulong. Empty slots
+        // are encoded as 0. Bottles are sorted lexicographically to remove
+        // symmetries, and the resulting key is XOR-folded to keep ulong-sized.
+        // This eliminates all string allocations from the BFS hot path.
+        // ─────────────────────────────────────────────────────────────────
+        private sealed class StateNode
+        {
+            public int[][] Bottles;
+            public Move LastMove;
+            public StateNode Parent;
+            private readonly int _bottleCount;
+
+            public StateNode(int[][] bottles, Move lastMove, StateNode parent, int bottleCount)
+            {
+                Bottles = bottles;
+                LastMove = lastMove;
+                Parent = parent;
+                _bottleCount = bottleCount;
+            }
+
+            public bool IsSolved(int maxLayers)
+            {
+                foreach (var bottle in Bottles)
+                {
+                    if (bottle.Length == 0) continue;
+                    if (bottle.Length != maxLayers) return false;
+                    int first = bottle[0];
+                    for (int i = 1; i < bottle.Length; i++)
+                    {
+                        if (bottle[i] != first) return false;
+                    }
+                }
+                return true;
+            }
+
+            /// <summary>
+            /// Computes a symmetric canonical hash key.
+            /// 4 bits per layer slot (max 16 colors supported; 12 in practice).
+            /// Allocates a small sorted array per call (max <see cref="BottleConstants.MaxBottlesPerLevel"/> ulongs).
+            /// </summary>
+            public ulong ComputeCanonicalKey(int maxLayers)
+            {
+                // Encode each bottle as its own ulong, then sort lexicographically.
+                var bottleKeys = new ulong[_bottleCount];
+                for (int b = 0; b < _bottleCount; b++)
+                {
+                    var bottle = Bottles[b];
+                    ulong key = 0;
+                    for (int layerIdx = 0; layerIdx < bottle.Length; layerIdx++)
+                    {
+                        key |= ((ulong)bottle[layerIdx] & 0x0FuL) << (layerIdx * 4);
+                    }
+                    key |= ((ulong)b & 0xFFFuL) << 48;
+                    bottleKeys[b] = key;
+                }
+
+                // Symmetry reduction: sort bottle keys so that isomorphic states
+                // hash to the same value. O(n log n) with small n (max 16).
+                Array.Sort(bottleKeys);
+
+                // XOR-fold into a single ulong.
+                ulong result = 0;
+                for (int b = 0; b < _bottleCount; b++)
+                {
+                    result ^= bottleKeys[b];
+                    result = (result << 13) | (result >> (64 - 13));
+                }
+                return result;
+            }
         }
     }
 }

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+using PuzzleGame.Domain;
 using UnityEngine;
 
 namespace PuzzleGame.Domain.Models
@@ -21,16 +21,19 @@ namespace PuzzleGame.Domain.Models
         Brown = 9,
         White = 10,
         Black = 11,
-        
+
         // Special colors for reactions
         Custom1 = 101,
         Custom2 = 102,
         Custom3 = 103,
         Custom4 = 104
     }
-    
+
     /// <summary>
     /// Extension methods for LiquidColor enum.
+    /// NOTE: Color conversions live in <c>ColorAdapter</c> (Infrastructure) to keep
+    /// this file Domain-pure. The methods below are convenience overloads that
+    /// require UnityEngine and are only used by the rendering layer.
     /// </summary>
     public static class LiquidColorExtensions
     {
@@ -41,15 +44,15 @@ namespace PuzzleGame.Domain.Models
         {
             if (color == LiquidColor.None)
                 return new Color(0, 0, 0, 0);
-            
+
             int index = (int)color - 1;
             if (levelConfig?.palette != null && index >= 0 && index < levelConfig.palette.Length)
                 return levelConfig.palette[index];
-            
+
             // Fallback to default colors
             return color.ToDefaultColor();
         }
-        
+
         /// <summary>
         /// Get default Unity Color without LevelConfig.
         /// </summary>
@@ -57,43 +60,43 @@ namespace PuzzleGame.Domain.Models
         {
             return color switch
             {
-                LiquidColor.Red => new Color(0.9f, 0.2f, 0.2f, 1f),
-                LiquidColor.Blue => new Color(0.2f, 0.6f, 0.9f, 1f),
-                LiquidColor.Green => new Color(0.2f, 0.8f, 0.2f, 1f),
-                LiquidColor.Yellow => new Color(0.95f, 0.9f, 0.2f, 1f),
-                LiquidColor.Orange => new Color(0.9f, 0.5f, 0.2f, 1f),
-                LiquidColor.Purple => new Color(0.7f, 0.2f, 0.9f, 1f),
-                LiquidColor.Cyan => new Color(0.2f, 0.9f, 0.9f, 1f),
-                LiquidColor.Pink => new Color(0.9f, 0.4f, 0.7f, 1f),
-                LiquidColor.Brown => new Color(0.6f, 0.4f, 0.2f, 1f),
-                LiquidColor.White => new Color(0.95f, 0.95f, 0.95f, 1f),
-                LiquidColor.Black => new Color(0.2f, 0.2f, 0.2f, 1f),
+                LiquidColor.Red    => new Color(0.9f,  0.2f,  0.2f,  1f),
+                LiquidColor.Blue   => new Color(0.2f,  0.6f,  0.9f,  1f),
+                LiquidColor.Green  => new Color(0.2f,  0.8f,  0.2f,  1f),
+                LiquidColor.Yellow => new Color(0.95f, 0.9f,  0.2f,  1f),
+                LiquidColor.Orange => new Color(0.9f,  0.5f,  0.2f,  1f),
+                LiquidColor.Purple => new Color(0.7f,  0.2f,  0.9f,  1f),
+                LiquidColor.Cyan   => new Color(0.2f,  0.9f,  0.9f,  1f),
+                LiquidColor.Pink   => new Color(0.9f,  0.4f,  0.7f,  1f),
+                LiquidColor.Brown  => new Color(0.6f,  0.4f,  0.2f,  1f),
+                LiquidColor.White  => new Color(0.95f, 0.95f, 0.95f, 1f),
+                LiquidColor.Black  => new Color(0.2f,  0.2f,  0.2f,  1f),
                 _ => Color.magenta // Error/unknown
             };
         }
-        
+
         /// <summary>
         /// Convert Unity Color to closest LiquidColor enum.
         /// </summary>
-        public static LiquidColor FromUnityColor(Color color, float tolerance = 0.1f)
+        public static LiquidColor FromUnityColor(Color color, float tolerance = BottleConstants.LiquidColorMatchEpsilon)
         {
             // Check all standard colors
-            for (int i = 1; i <= 11; i++)
+            for (int i = 1; i <= (int)LiquidColor.Black; i++)
             {
                 var lc = (LiquidColor)i;
                 var defaultColor = lc.ToDefaultColor();
-                
+
                 if (ColorMatch(color, defaultColor, tolerance))
                     return lc;
             }
-            
+
             return LiquidColor.None;
         }
-        
+
         /// <summary>
         /// Compare two colors with tolerance.
         /// </summary>
-        public static bool ColorMatch(Color a, Color b, float tolerance = 0.1f)
+        public static bool ColorMatch(Color a, Color b, float tolerance = BottleConstants.LiquidColorMatchEpsilon)
         {
             return Mathf.Abs(a.r - b.r) < tolerance &&
                    Mathf.Abs(a.g - b.g) < tolerance &&
@@ -110,7 +113,7 @@ namespace PuzzleGame.Domain.Models
         /// <summary>
         /// Convert Unity Color to LiquidColor enum.
         /// </summary>
-        public static LiquidColor ToLiquidColor(this Color color, float tolerance = 0.1f)
+        public static LiquidColor ToLiquidColor(this Color color, float tolerance = BottleConstants.LiquidColorMatchEpsilon)
         {
             return LiquidColorExtensions.FromUnityColor(color, tolerance);
         }

@@ -1,4 +1,5 @@
 using UnityEngine;
+using PuzzleGame.Domain;
 
 namespace PuzzleGame.Configuration
 {
@@ -6,19 +7,30 @@ namespace PuzzleGame.Configuration
     public class BottleVisualConfig : ScriptableObject
     {
         [Header("Color")]
-        public float saturationBoost = 1.35f;
-        public float brightnessBoost = 1.2f;
+        public float saturationBoost = BottleConstants.DefaultSaturationBoost;
+        public float brightnessBoost = BottleConstants.DefaultBrightnessBoost;
 
         [Header("Capacity")]
-        [Range(1, 8)] public int maxLayers = 4;
+        [Range(1, BottleConstants.MaxLayers)]
+        [Tooltip("Maximum liquid layers per bottle. Must be in [1, BottleConstants.MaxLayers].")]
+        public int maxLayers = BottleConstants.DefaultLayerCapacity;
 
         [Header("Pour Effect")]
-        public float pourImpulseStrength = 2.0f;
+        [Min(0f)]
+        public float pourImpulseStrength = BottleConstants.DefaultPourImpulseStrength;
 
         [Header("Material Indices")]
         [Tooltip("Submesh index for the glass material on the MeshRenderer")]
-        public int glassMaterialIndex = 0;
+        [Min(0)] public int glassMaterialIndex = BottleConstants.DefaultGlassMaterialIndex;
         [Tooltip("Submesh index for the liquid material on the MeshRenderer")]
-        public int liquidMaterialIndex = 1;
+        [Min(0)] public int liquidMaterialIndex = BottleConstants.DefaultLiquidMaterialIndex;
+
+        private void OnValidate()
+        {
+            if (maxLayers < 1) maxLayers = 1;
+            if (maxLayers > BottleConstants.MaxLayers) maxLayers = BottleConstants.MaxLayers;
+            if (glassMaterialIndex < 0) glassMaterialIndex = 0;
+            if (liquidMaterialIndex < 0) liquidMaterialIndex = 0;
+        }
     }
 }

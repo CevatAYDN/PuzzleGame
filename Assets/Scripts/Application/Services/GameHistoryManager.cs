@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using PuzzleGame.Domain;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Logging;
@@ -20,13 +21,18 @@ namespace PuzzleGame.Application.Services
 
         public void Initialize(IBottleView[] bottles)
         {
+            if (bottles == null) throw new ArgumentNullException(nameof(bottles));
             _bottles = bottles;
             ResetAll();
         }
 
         public void RecordUndoSnapshot()
         {
-            if (_bottles == null) return;
+            if (_bottles == null)
+            {
+                BottleLogger.LogWarning("RecordUndoSnapshot called before Initialize.");
+                return;
+            }
 
             var snapshot = new List<LiquidLayer>[_bottles.Length];
             for (int i = 0; i < _bottles.Length; i++)
@@ -48,7 +54,13 @@ namespace PuzzleGame.Application.Services
 
         public void Undo()
         {
-            if (!CanUndo || _bottles == null) return;
+            if (!CanUndo)
+            {
+                BottleLogger.LogDebug("Undo requested but history is empty.");
+                return;
+            }
+            if (_bottles == null) throw new InvalidOperationException(
+                "GameHistoryManager.Undo called before Initialize.");
 
             var snapshot = _history.Pop();
             if (snapshot == null) return;
@@ -56,8 +68,16 @@ namespace PuzzleGame.Application.Services
             for (int i = 0; i < snapshot.Length && i < _bottles.Length; i++)
             {
                 if (_bottles[i] == null || _bottles[i].State == null) continue;
-                _bottles[i].State.ReplaceLayers(snapshot[i]);
-                _bottles[i].UpdateVisualsFromState();
+                try
+                {
+                    _bottles[i].State.ReplaceLayers(snapshot[i] ?? new List<LiquidLayer>());
+                    _bottles[i].UpdateVisualsFromState();
+                }
+                catch (ArgumentException ex)
+                {
+                    throw new InvalidOperationException(
+                        $"Undo failed for bottle {i}: snapshot is invalid (layer count > MaxLayers).", ex);
+                }
             }
 
             _moveCount = Mathf.Max(0, _moveCount - 1);

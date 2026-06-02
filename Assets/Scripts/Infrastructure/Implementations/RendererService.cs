@@ -1,28 +1,32 @@
+using System;
 using System.Collections.Generic;
+using PuzzleGame.Domain;
 using PuzzleGame.Domain.Models;
-using PuzzleGame.Infrastructure.Interfaces;
 using PuzzleGame.Infrastructure;
+using PuzzleGame.Infrastructure.Interfaces;
 using UnityEngine;
 
 namespace PuzzleGame.Infrastructure.Implementations
 {
+    /// <summary>
+    /// Writes liquid / glass material parameters via MaterialPropertyBlock.
+    /// Shader property slot count is governed by <see cref="BottleConstants.MaxLayers"/> —
+    /// shaders must declare matching _Color1.._ColorN / _Fill1.._FillN properties.
+    /// </summary>
     public class RendererService : IRendererService
     {
-        private static readonly int[] ColorIDs = new int[]
-        {
-            Shader.PropertyToID("_Color1"),
-            Shader.PropertyToID("_Color2"),
-            Shader.PropertyToID("_Color3"),
-            Shader.PropertyToID("_Color4"),
-        };
+        private static readonly int[] ColorIDs = BuildShaderPropertyIDs("_Color", BottleConstants.MaxLayers);
+        private static readonly int[] FillIDs  = BuildShaderPropertyIDs("_Fill",  BottleConstants.MaxLayers);
 
-        private static readonly int[] FillIDs = new int[]
+        private static int[] BuildShaderPropertyIDs(string prefix, int count)
         {
-            Shader.PropertyToID("_Fill1"),
-            Shader.PropertyToID("_Fill2"),
-            Shader.PropertyToID("_Fill3"),
-            Shader.PropertyToID("_Fill4"),
-        };
+            var ids = new int[count];
+            for (int i = 0; i < count; i++)
+            {
+                ids[i] = Shader.PropertyToID($"{prefix}{i + 1}");
+            }
+            return ids;
+        }
 
         private static readonly int SurfaceHeightID = Shader.PropertyToID("_SurfaceHeight");
         private static readonly int GlassColorID    = Shader.PropertyToID("_Color");
@@ -33,11 +37,14 @@ namespace PuzzleGame.Infrastructure.Implementations
         public void UpdateLiquid(Renderer renderer, IReadOnlyList<LiquidLayer> layers, float totalFill,
                                  float saturationBoost, float brightnessBoost, int materialIndex = 1)
         {
+            if (renderer == null) throw new ArgumentNullException(nameof(renderer));
+            if (layers == null)   throw new ArgumentNullException(nameof(layers));
+
             // Visually merge consecutive layers of the same color to prevent boundary line glitches
             var merged = new List<LiquidLayer>();
             foreach (var layer in layers)
             {
-                if (layer.Amount <= 0.0001f) continue;
+                if (layer.Amount <= BottleConstants.LayerAmountEpsilon) continue;
 
                 if (merged.Count > 0 && merged[merged.Count - 1].Color == layer.Color)
                 {
@@ -51,7 +58,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             }
 
             float cumulative = 0f;
-            int maxLayers = Mathf.Min(BottleState.MaxSupportedLayers, ColorIDs.Length);
+            int maxLayers = Mathf.Min(BottleConstants.MaxLayers, ColorIDs.Length);
 
             for (int i = 0; i < maxLayers; i++)
             {
@@ -76,20 +83,26 @@ namespace PuzzleGame.Infrastructure.Implementations
 
         public void UpdateGlass(Renderer renderer, bool isEmpty, DomainColor baseColor, int materialIndex = 0)
         {
+            if (renderer == null) throw new ArgumentNullException(nameof(renderer));
+
             Color glassColor;
 
             if (isEmpty)
             {
-                glassColor = new Color(1f, 1f, 1f, 0.18f);
+                glassColor = new Color(
+                    BottleConstants.GlassEmptyR,
+                    BottleConstants.GlassEmptyG,
+                    BottleConstants.GlassEmptyB,
+                    BottleConstants.GlassEmptyA);
             }
             else
             {
                 var uColor = ColorAdapter.ToUnity(baseColor);
                 glassColor = new Color(
-                    uColor.r * 0.15f + 0.85f,
-                    uColor.g * 0.15f + 0.85f,
-                    uColor.b * 0.15f + 0.85f,
-                    0.25f);
+                    uColor.r * BottleConstants.GlassTintMultiplier + BottleConstants.GlassTintBase,
+                    uColor.g * BottleConstants.GlassTintMultiplier + BottleConstants.GlassTintBase,
+                    uColor.b * BottleConstants.GlassTintMultiplier + BottleConstants.GlassTintBase,
+                    BottleConstants.GlassTintAlpha);
             }
 
             _glassBlock.SetColor(GlassColorID, glassColor);

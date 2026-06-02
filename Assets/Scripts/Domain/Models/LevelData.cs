@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using PuzzleGame.Domain;
 using UnityEngine;
 using PuzzleGame.Domain.Models.FeatureSystem;
 
@@ -34,6 +35,12 @@ namespace PuzzleGame.Domain.Models
     /// <summary>
     /// Static level descriptor. Inspector-driven, supports both auto-generated
     /// and pre-built bottle layouts. Star thresholds (par/good) drive reward UI.
+    /// 
+    /// NOTE: extends <see cref="ScriptableObject"/> because Unity inspector
+    /// authoring of static level data is the design workflow. Domain purity is
+    /// partially preserved — all *runtime* logic (validation, generation,
+    /// simulation) operates on POCO representations produced by
+    /// <see cref="LevelRepository"/> implementations.
     /// </summary>
     [CreateAssetMenu(menuName = "PuzzleGame/Level Data", fileName = "Level_NN")]
     public class LevelData : ScriptableObject
@@ -43,10 +50,10 @@ namespace PuzzleGame.Domain.Models
         public Difficulty difficulty = Difficulty.Easy;
 
         [Header("Layout (auto-generate mode)")]
-        [Min(2)] public int bottleCount = 5;
-        [Min(1)] public int emptyBottleCount = 2;
-        [Min(2)] public int colorCount = 4;
-        [Min(1)] public int maxLayersPerBottle = 4;
+        [Min(BottleConstants.MinBottlesPerLevel)] public int bottleCount = 5;
+        [Min(BottleConstants.MinEmptyBottles)] public int emptyBottleCount = 2;
+        [Min(BottleConstants.MinColorsPerLevel)] public int colorCount = 4;
+        [Range(1, BottleConstants.MaxLayers)] public int maxLayersPerBottle = BottleConstants.DefaultLayerCapacity;
         [Min(0)] public int randomSeed = 0;
         public bool autoGenerate = true;
 
@@ -64,22 +71,31 @@ namespace PuzzleGame.Domain.Models
 
         // ═══════════════════════════════════════════════════════════════════
         // MODULAR FEATURES (Data-Driven)
+        // Feature data is loaded at runtime via LevelFeatureLoader from
+        // Resources/Levels/<level>/features.asset. Storing inline here was
+        // abandoned to keep LevelData lean and feature-modular.
         // ═══════════════════════════════════════════════════════════════════
-        
+
         [Header("Features (Experimental)")]
         [Tooltip("Enable MultiLayerPour: pour all matching consecutive layers")]
         public bool enableMultiLayerPour = true;
-        
+
         [Tooltip("Enable Chemical Reaction System")]
         public bool enableReactionSystem = false;
-        
+
         [Tooltip("Enable Key and Lock mechanics")]
         public bool enableKeyAndLock = false;
-        
+
         [Tooltip("Enable Breakable Bottles")]
         public bool enableBreakableBottles = false;
-        
-        // Feature-specific configurations
+
+        [Tooltip("Enable hard move limit (different from par stars)")]
+        public bool enableLimitedMoves = false;
+
+        [Tooltip("Enable bonus objective tracking")]
+        public bool enableBonusObjectives = false;
+
+        // Feature-specific configurations — optional, loaded at runtime by feature service.
         [HideInInspector] public MultiLayerPourData multiLayerPourConfig;
         [HideInInspector] public ReactionSystemData reactionConfig;
         [HideInInspector] public KeyAndLockData keyAndLockConfig;
@@ -87,7 +103,7 @@ namespace PuzzleGame.Domain.Models
         [HideInInspector] public LimitedMovesData limitedMovesConfig;
         [HideInInspector] public BonusObjectivesData bonusObjectivesConfig;
 
-        /// <summary>3 if moveCount <= par, 2 if moveCount <= good, else 1.</summary>
+        /// <summary>3 if moveCount &lt;= par, 2 if moveCount &lt;= good, else 1.</summary>
         public int CalculateStars(int moveCount)
         {
             if (moveCount <= parMoves) return 3;
@@ -100,12 +116,13 @@ namespace PuzzleGame.Domain.Models
 
         private void OnValidate()
         {
-            // goodMoves must be >= parMoves
             if (goodMoves < parMoves) goodMoves = parMoves;
-            // emptyBottleCount must be reasonable
-            if (emptyBottleCount < 1) emptyBottleCount = 1;
+            if (emptyBottleCount < BottleConstants.MinEmptyBottles) emptyBottleCount = BottleConstants.MinEmptyBottles;
             if (emptyBottleCount > bottleCount - 1) emptyBottleCount = Mathf.Max(1, bottleCount - 1);
-            if (colorCount > 12) colorCount = 12;
+            if (colorCount > BottleConstants.MaxColorsPerLevel) colorCount = BottleConstants.MaxColorsPerLevel;
+            if (colorCount < BottleConstants.MinColorsPerLevel) colorCount = BottleConstants.MinColorsPerLevel;
+            if (maxLayersPerBottle < 1) maxLayersPerBottle = 1;
+            if (maxLayersPerBottle > BottleConstants.MaxLayers) maxLayersPerBottle = BottleConstants.MaxLayers;
         }
     }
 }
