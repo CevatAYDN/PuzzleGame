@@ -214,11 +214,13 @@ namespace PuzzleGame
 
             float sat = visualConfig != null ? visualConfig.saturationBoost : 1.35f;
             float bri = visualConfig != null ? visualConfig.brightnessBoost : 1.2f;
-            _rendererService.UpdateLiquid(_renderer, _visualLayers, _visualTotalFill, sat, bri);
+            int liquidIndex = visualConfig != null ? visualConfig.liquidMaterialIndex : 1;
+            _rendererService.UpdateLiquid(_renderer, _visualLayers, _visualTotalFill, sat, bri, liquidIndex);
 
             bool isEmpty = _visualLayers.Count == 0 || _visualTotalFill <= 0.001f;
             DomainColor baseColor = _visualLayers.Count > 0 ? _visualLayers[0].Color : new DomainColor(0, 0, 0, 0);
-            _rendererService.UpdateGlass(_renderer, isEmpty, baseColor);
+            int glassIndex = visualConfig != null ? visualConfig.glassMaterialIndex : 0;
+            _rendererService.UpdateGlass(_renderer, isEmpty, baseColor, glassIndex);
         }
 
         public void SetSelectionHighlight(bool active)
@@ -227,9 +229,10 @@ namespace PuzzleGame
             if (_isHighlighted == active) return;
             _isHighlighted = active;
             if (_propBlock == null) _propBlock = new MaterialPropertyBlock();
-            _renderer.GetPropertyBlock(_propBlock, 0);
+            int glassIndex = visualConfig != null ? visualConfig.glassMaterialIndex : 0;
+            _renderer.GetPropertyBlock(_propBlock, glassIndex);
             _propBlock.SetFloat(FresnelIntensityID, active ? 4.0f : 1.5f);
-            _renderer.SetPropertyBlock(_propBlock, 0);
+            _renderer.SetPropertyBlock(_propBlock, glassIndex);
         }
 
         public void AnimateCompletion()
@@ -244,10 +247,11 @@ namespace PuzzleGame
                     corkObject.transform, Height, onComplete: null);
             }
 
-            if (_renderer != null && _renderer.sharedMaterials.Length > 1)
+            int liquidIndex = visualConfig != null ? visualConfig.liquidMaterialIndex : 1;
+            if (_renderer != null && _renderer.sharedMaterials.Length > liquidIndex)
             {
                 _animationService?.AnimateLiquidFlash(
-                    _renderer, 1, 4.0f, 0.6f, onComplete: null);
+                    _renderer, liquidIndex, 4.0f, 0.6f, onComplete: null);
             }
         }
 

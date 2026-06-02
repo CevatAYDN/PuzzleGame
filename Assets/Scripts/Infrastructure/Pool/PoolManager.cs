@@ -10,13 +10,19 @@ namespace PuzzleGame.Infrastructure.Pool
     /// - Rent/Return: type-safe access via named pools
     /// - Cleanup: destroy all pooled objects (scene unload)
     /// </summary>
-    public sealed class PoolManager
+    public sealed class PoolManager : System.IDisposable
     {
         private readonly Dictionary<string, INamedPool> _pools = new Dictionary<string, INamedPool>();
 
+        [System.Obsolete("Use dependency injection via VContainer instead of static instance.")]
         public static PoolManager Instance { get; } = new PoolManager();
 
-        private PoolManager() { }
+        public PoolManager() { }
+
+        public void Dispose()
+        {
+            Cleanup();
+        }
 
         /// <summary>
         /// Register a pool for a component type under a name.

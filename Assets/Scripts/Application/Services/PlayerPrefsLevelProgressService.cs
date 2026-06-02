@@ -62,10 +62,14 @@ namespace PuzzleGame.Application.Services
 
         public void ResetAll()
         {
-            // Wipe all level_* keys
-            PlayerPrefs.DeleteAll();
+            // Clean up specifically level stars and moves up to 100 levels
+            for (int i = 1; i <= 100; i++)
+            {
+                PlayerPrefs.DeleteKey(FormatKey(StarsKeyPrefix, i));
+                PlayerPrefs.DeleteKey(FormatKey(MovesKeyPrefix, i));
+            }
             PlayerPrefs.Save();
-            BottleLogger.LogInfo("All level progress reset.");
+            BottleLogger.LogInfo("All level progress reset (isolated keys deleted).");
         }
 
         private static string FormatKey(string prefix, int levelNumber)

@@ -100,6 +100,7 @@ namespace PuzzleGame.Application.Services
             public int levelIndex;
             public int moveCount;
             public bool isCompleted;
+            public int stars;
             public long savedAtUnix;
             public BottleSaveData[] bottles;
         }
@@ -128,7 +129,7 @@ namespace PuzzleGame.Application.Services
         /// Level state'ini kaydeder. Atomic write kullanır (yarım kalmış dosya oluşmaz).
         /// </summary>
         public static bool Save(int levelIndex, int moveCount,
-            IBottleView[] bottles, bool isCompleted)
+            IBottleView[] bottles, bool isCompleted, int stars)
         {
             if (bottles == null) return false;
 
@@ -141,6 +142,7 @@ namespace PuzzleGame.Application.Services
                 levelIndex = levelIndex,
                 moveCount = moveCount,
                 isCompleted = isCompleted,
+                stars = stars,
                 savedAtUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                 bottles = new BottleSaveData[bottles.Length],
             };

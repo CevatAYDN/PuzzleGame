@@ -6,32 +6,22 @@ using UnityEngine;
 
 namespace PuzzleGame.Tests.Application.Services
 {
-    public class PlayerPrefsLevelProgressServiceTests
+    public class SecureFileLevelProgressServiceTests
     {
-        private PlayerPrefsLevelProgressService _sut;
+        private SecureFileLevelProgressService _sut;
 
         [SetUp]
         public void Setup()
         {
-            _sut = new PlayerPrefsLevelProgressService();
-            ClearTestKeys();
+            _sut = new SecureFileLevelProgressService();
+            _sut.ResetAll();
         }
 
         [TearDown]
         public void Teardown()
         {
-            ClearTestKeys();
+            _sut?.ResetAll();
             EventAggregator.Clear();
-        }
-
-        private void ClearTestKeys()
-        {
-            for (int i = 1; i <= 10; i++)
-            {
-                PlayerPrefs.DeleteKey($"level_{i}_stars");
-                PlayerPrefs.DeleteKey($"level_{i}_moves");
-            }
-            PlayerPrefs.Save();
         }
 
         [Test]
@@ -136,9 +126,9 @@ namespace PuzzleGame.Tests.Application.Services
         [Test]
         public void RecordCompletion_InvalidInput_Ignored()
         {
-            _sut.RecordCompletion(0, 10, 3); // level 0 invalid
-            _sut.RecordCompletion(1, 0, 3);  // 0 moves invalid
-            _sut.RecordCompletion(1, 10, 0); // 0 stars invalid
+            _sut.RecordCompletion(0, 10, 3);
+            _sut.RecordCompletion(1, 0, 3);
+            _sut.RecordCompletion(1, 10, 0);
 
             Assert.That(_sut.GetStars(1), Is.EqualTo(0));
         }

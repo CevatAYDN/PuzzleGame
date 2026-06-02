@@ -3,6 +3,7 @@ using PuzzleGame.Application.Animation;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Services;
 using PuzzleGame.Configuration;
+using PuzzleGame.Infrastructure.Pool;
 using UnityEngine;
 
 namespace PuzzleGame.Tests.Application.Services
@@ -11,6 +12,7 @@ namespace PuzzleGame.Tests.Application.Services
     {
         private AudioConfig _config;
         private AudioService _sut;
+        private PoolManager _poolManager;
 
         [SetUp]
         public void Setup()
@@ -31,14 +33,16 @@ namespace PuzzleGame.Tests.Application.Services
             _config.uiClickClip = AudioClip.Create("StubUi", 44100, 1, 44100, false);
             _config.corkPopClip = AudioClip.Create("StubCork", 44100, 1, 44100, false);
 
+            _poolManager = new PoolManager();
             var tween = new CoroutineTweenService();
-            _sut = new AudioService(_config, tween);
+            _sut = new AudioService(_config, tween, _poolManager);
         }
 
         [TearDown]
         public void Teardown()
         {
             _sut?.ReleaseAll();
+            _poolManager?.Dispose();
             if (_config != null) Object.DestroyImmediate(_config);
             // Reset global state to prevent test pollution
             AudioListener.pause = false;
@@ -49,13 +53,20 @@ namespace PuzzleGame.Tests.Application.Services
         public void Constructor_WithNullConfig_Throws()
         {
             var tween = new CoroutineTweenService();
-            Assert.That(() => new AudioService(null, tween), Throws.ArgumentNullException);
+            Assert.That(() => new AudioService(null, tween, _poolManager), Throws.ArgumentNullException);
         }
 
         [Test]
         public void Constructor_WithNullTween_Throws()
         {
-            Assert.That(() => new AudioService(_config, null), Throws.ArgumentNullException);
+            Assert.That(() => new AudioService(_config, null, _poolManager), Throws.ArgumentNullException);
+        }
+
+        [Test]
+        public void Constructor_WithNullPoolManager_Throws()
+        {
+            var tween = new CoroutineTweenService();
+            Assert.That(() => new AudioService(_config, tween, null), Throws.ArgumentNullException);
         }
 
         [Test]

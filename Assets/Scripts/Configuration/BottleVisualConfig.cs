@@ -14,5 +14,11 @@ namespace PuzzleGame.Configuration
 
         [Header("Pour Effect")]
         public float pourImpulseStrength = 2.0f;
+
+        [Header("Material Indices")]
+        [Tooltip("Submesh index for the glass material on the MeshRenderer")]
+        public int glassMaterialIndex = 0;
+        [Tooltip("Submesh index for the liquid material on the MeshRenderer")]
+        public int liquidMaterialIndex = 1;
     }
 }

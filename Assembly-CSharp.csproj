@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
   <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->
   <PropertyGroup>
     <BaseIntermediateOutputPath>Temp\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
@@ -58,12 +58,12 @@
     <Compile Include="Assets\Tests\Application\BottleSelectionServiceTests.cs" />
     <Compile Include="Assets\Scripts\Events\EventAggregator.cs" />
     <Compile Include="Assets\Scripts\Events\LevelEvents.cs" />
+    <Compile Include="Assets\Tests\Application\Services\SecureFileLevelProgressServiceTests.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\LevelData.cs" />
     <Compile Include="Assets\Scripts\Events\GameEvents.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\ShaderOptimizer.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\IGameStateMachine.cs" />
     <Compile Include="Assets\Scripts\Application\Services\GameStateMachine.cs" />
-    <Compile Include="Assets\Scripts\Domain\Interfaces\IServiceLocator.cs" />
     <Compile Include="Assets\Scripts\Application\Services\TextureGenerator.cs" />
     <Compile Include="Assets\Scripts\Application\Services\ScriptableObjectLevelRepository.cs" />
     <Compile Include="Assets\Scripts\Application\Animation\CoroutineTweenService.cs" />
@@ -82,7 +82,6 @@
     <Compile Include="Assets\Scripts\Domain\Models\GameState.cs" />
     <Compile Include="Assets\Tests\Domain\Models\LiquidLayerTests.cs" />
     <Compile Include="Assets\Scripts\Application\Services\InputHandlerService.cs" />
-    <Compile Include="Assets\Scripts\Infrastructure\Implementations\ServiceLocator.cs" />
     <Compile Include="Assets\Tests\Domain\Models\BottleStateTests.cs" />
     <Compile Include="Assets\Scripts\Application\Services\AudioService.cs" />
     <Compile Include="Assets\Scripts\Configuration\DifficultyCurve.cs" />
@@ -101,6 +100,7 @@
     <Compile Include="Assets\Scripts\Domain\Models\LocalizationEntry.cs" />
     <Compile Include="Assets\Tests\Application\GameManagerTests.cs" />
     <Compile Include="Assets\Scripts\Application\Services\GameSaveManager.cs" />
+    <Compile Include="Assets\Scripts\Application\Services\SecureFileLevelProgressService.cs" />
     <Compile Include="Assets\Scripts\Configuration\EconomyConfig.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\LiquidLayer.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\ILocalizationService.cs" />
@@ -120,7 +120,6 @@
     <Compile Include="Assets\Scripts\Application\Interfaces\IInputHandlerService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Interfaces\IRendererService.cs" />
     <Compile Include="Assets\Tests\Domain\Services\LevelGeneratorV2Tests.cs" />
-    <Compile Include="Assets\Scripts\Infrastructure\Implementations\MockAdService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IAnimationService.cs" />
     <Compile Include="Assets\Scripts\Configuration\WobbleConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\ILevelSetupService.cs" />
@@ -138,7 +137,6 @@
     <Compile Include="Assets\Scripts\GameManager.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\ILevelProgressService.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\ILevelGenerator.cs" />
-    <Compile Include="Assets\Scripts\Domain\Interfaces\IAdService.cs" />
     <Compile Include="Assets\Tests\Events\EventAggregatorTests.cs" />
     <Compile Include="Assets\Scripts\Domain\Services\LocalizationService.cs" />
     <Compile Include="Assets\Tests\Application\Services\AudioServiceTests.cs" />

@@ -19,6 +19,7 @@ namespace PuzzleGame.Application.Services
     {
         private readonly AudioConfig _config;
         private readonly ITweenService _tween;
+        private readonly PoolManager _poolManager;
         private readonly IGameObjectPool<AudioSource> _sfxPool;
         private readonly IGameObjectPool<AudioSource> _musicPool;
 
@@ -48,19 +49,20 @@ namespace PuzzleGame.Application.Services
             set { _config.sfxVolume = Mathf.Clamp01(value); }
         }
 
-        public AudioService(AudioConfig config, ITweenService tween)
+        public AudioService(AudioConfig config, ITweenService tween, PoolManager poolManager)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _tween = tween ?? throw new ArgumentNullException(nameof(tween));
+            _poolManager = poolManager ?? throw new ArgumentNullException(nameof(poolManager));
 
             var sfxPrefab = CreateAudioSourcePrefab("SfxAudioSource_Prefab", config.sfxGroup);
             var musicPrefab = CreateAudioSourcePrefab("MusicAudioSource_Prefab", config.musicGroup);
 
-            _sfxPool = PoolManager.Instance.RegisterPool<AudioSource>("SfxPool", sfxPrefab, config.sfxPoolSize,
+            _sfxPool = _poolManager.RegisterPool<AudioSource>("SfxPool", sfxPrefab, config.sfxPoolSize,
                 onRent: ResetAudioSource,
                 onReturn: ResetAudioSource);
 
-            _musicPool = PoolManager.Instance.RegisterPool<AudioSource>("MusicPool", musicPrefab, config.musicPoolSize,
+            _musicPool = _poolManager.RegisterPool<AudioSource>("MusicPool", musicPrefab, config.musicPoolSize,
                 onRent: ResetAudioSource,
                 onReturn: ResetAudioSource);
 

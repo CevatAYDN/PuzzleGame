@@ -21,6 +21,7 @@ namespace PuzzleGame
         private bool _hasLiquidMaterial;
         private bool _isWobbleActive = true;
         private float _timeSinceLastUpdate;
+        private int _liquidMatIndex = 1;
 
         private static readonly int WobbleXProperty = Shader.PropertyToID("_WobbleX");
         private static readonly int WobbleZProperty = Shader.PropertyToID("_WobbleZ");
@@ -38,9 +39,10 @@ namespace PuzzleGame
 
         private void Start()
         {
+            _liquidMatIndex = config != null ? config.liquidMaterialIndex : 1;
             _previousPosition = transform.position;
             _previousRotation = transform.rotation.eulerAngles;
-            _hasLiquidMaterial = _renderer != null && _renderer.sharedMaterials != null && _renderer.sharedMaterials.Length > 1;
+            _hasLiquidMaterial = _renderer != null && _renderer.sharedMaterials != null && _renderer.sharedMaterials.Length > _liquidMatIndex;
         }
 
         public void OnUpdate(float deltaTime)
@@ -102,10 +104,10 @@ namespace PuzzleGame
                     // Send to shader using MaterialPropertyBlock
                     if (_hasLiquidMaterial)
                     {
-                        _renderer.GetPropertyBlock(_propBlock, 1);
+                        _renderer.GetPropertyBlock(_propBlock, _liquidMatIndex);
                         _propBlock.SetFloat(WobbleXProperty, wobbleAmountX);
                         _propBlock.SetFloat(WobbleZProperty, wobbleAmountZ);
-                        _renderer.SetPropertyBlock(_propBlock, 1);
+                        _renderer.SetPropertyBlock(_propBlock, _liquidMatIndex);
                     }
                 }
             }
@@ -119,10 +121,10 @@ namespace PuzzleGame
 
                 if (_hasLiquidMaterial)
                 {
-                    _renderer.GetPropertyBlock(_propBlock, 1);
+                    _renderer.GetPropertyBlock(_propBlock, _liquidMatIndex);
                     _propBlock.SetFloat(WobbleXProperty, 0f);
                     _propBlock.SetFloat(WobbleZProperty, 0f);
-                    _renderer.SetPropertyBlock(_propBlock, 1);
+                    _renderer.SetPropertyBlock(_propBlock, _liquidMatIndex);
                 }
                 _isWobbleActive = false;
             }
@@ -137,10 +139,10 @@ namespace PuzzleGame
             // Reset wobble when disabled using MaterialPropertyBlock to prevent material copy instantiation
             if (_renderer != null && _hasLiquidMaterial)
             {
-                _renderer.GetPropertyBlock(_propBlock, 1);
+                _renderer.GetPropertyBlock(_propBlock, _liquidMatIndex);
                 _propBlock.SetFloat(WobbleXProperty, 0f);
                 _propBlock.SetFloat(WobbleZProperty, 0f);
-                _renderer.SetPropertyBlock(_propBlock, 1);
+                _renderer.SetPropertyBlock(_propBlock, _liquidMatIndex);
             }
 
             UpdateManager.Instance?.Unregister(this);

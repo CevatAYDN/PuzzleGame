@@ -35,6 +35,25 @@ namespace PuzzleGame.Application.UI
 
         private LevelButtonView[] _buttons;
 
+        private void Start()
+        {
+            EventAggregator.Subscribe<GameStateChangedEvent>(OnGameStateChanged);
+        }
+
+        private void OnDestroy()
+        {
+            EventAggregator.Unsubscribe<GameStateChangedEvent>(OnGameStateChanged);
+        }
+
+        private void OnGameStateChanged(GameStateChangedEvent e)
+        {
+            if (e.Current == GameState.Menu)
+            {
+                gameObject.SetActive(true);
+                RefreshAll();
+            }
+        }
+
         public void Initialize(ILevelRepository repository, ILevelProgressService progress)
         {
             _repository = repository;

@@ -61,6 +61,7 @@ namespace PuzzleGame
         private Camera _camera;
         private LevelData _currentLevel;
         private IBottleView[] _bottles;
+        private BottleController[] _allBottlesPool;
 
         private static readonly WaitForSeconds WinCheckDelay = new WaitForSeconds(0.5f);
         private static readonly Color CamDefaultBgColor = new Color(0.08f, 0.05f, 0.16f, 1f);
@@ -166,8 +167,6 @@ namespace PuzzleGame
             {
                 _historyManager.OnMoveCountChanged -= OnMoveCountChanged;
             }
-
-            EventAggregator.Clear();
         }
 
         private void Update()
@@ -181,27 +180,46 @@ namespace PuzzleGame
 
         private void CacheBottles()
         {
-            _bottles = FindObjectsByType<BottleController>(FindObjectsInactive.Exclude)
-                       .OrderBy(b => b.name)
-                       .Cast<IBottleView>()
-                       .ToArray();
+            _allBottlesPool = FindObjectsByType<BottleController>(FindObjectsInactive.Include)
+                             .OrderBy(b => b.name)
+                             .ToArray();
 
-            BottleLogger.LogInfo($"Found {_bottles.Length} bottles in scene.");
+            BottleLogger.LogInfo($"Found {_allBottlesPool.Length} bottles in master pool.");
 
-            if (_bottles.Length == 0)
-                BottleLogger.LogWarning("No BottleController found — level will be empty.");
-
-            _historyManager?.Initialize(_bottles);
-            _inputHandlerService?.SetBottles(_bottles);
+            if (_allBottlesPool.Length == 0)
+                BottleLogger.LogWarning("No BottleController found in scene.");
         }
 
         private void SetupBottles()
         {
-            if (_bottles == null || _bottles.Length == 0)
+            if (_allBottlesPool == null || _allBottlesPool.Length == 0)
             {
-                BottleLogger.LogError("No bottles found in scene, cannot setup level.");
+                BottleLogger.LogError("No bottles cached in master pool, cannot setup level.");
                 return;
             }
+
+            int targetCount = _allBottlesPool.Length;
+            if (_currentLevel != null)
+            {
+                targetCount = _currentLevel.bottleCount;
+            }
+            targetCount = Mathf.Clamp(targetCount, 2, _allBottlesPool.Length);
+
+            for (int i = 0; i < _allBottlesPool.Length; i++)
+            {
+                if (_allBottlesPool[i] != null)
+                {
+                    _allBottlesPool[i].gameObject.SetActive(i < targetCount);
+                }
+            }
+
+            _bottles = _allBottlesPool
+                       .Where(b => b != null && b.gameObject.activeSelf)
+                       .Cast<IBottleView>()
+                       .ToArray();
+
+            _historyManager?.Initialize(_bottles);
+            _inputHandlerService?.SetBottles(_bottles);
 
             _levelSetupService?.SetupBottles(_bottles, _currentLevel, _rendererService, _validator, _animationService);
 

@@ -25,8 +25,8 @@ namespace PuzzleGame.Editor
 
         public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
         {
-            // Only process PuzzleGame shaders
-            if (!shader.name.StartsWith("PuzzleGame/"))
+            // Only process PuzzleGame and Custom/ shaders
+            if (!shader.name.StartsWith("PuzzleGame/") && !shader.name.StartsWith("Custom/"))
                 return;
 
             int strippedCount = 0;

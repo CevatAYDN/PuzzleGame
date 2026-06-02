@@ -31,7 +31,7 @@ namespace PuzzleGame.Infrastructure.Implementations
         private readonly MaterialPropertyBlock _glassBlock  = new MaterialPropertyBlock();
 
         public void UpdateLiquid(Renderer renderer, IReadOnlyList<LiquidLayer> layers, float totalFill,
-                                 float saturationBoost, float brightnessBoost)
+                                 float saturationBoost, float brightnessBoost, int materialIndex = 1)
         {
             // Visually merge consecutive layers of the same color to prevent boundary line glitches
             var merged = new List<LiquidLayer>();
@@ -71,10 +71,10 @@ namespace PuzzleGame.Infrastructure.Implementations
             }
 
             _liquidBlock.SetFloat(SurfaceHeightID, totalFill);
-            renderer.SetPropertyBlock(_liquidBlock, 1);
+            renderer.SetPropertyBlock(_liquidBlock, materialIndex);
         }
 
-        public void UpdateGlass(Renderer renderer, bool isEmpty, DomainColor baseColor)
+        public void UpdateGlass(Renderer renderer, bool isEmpty, DomainColor baseColor, int materialIndex = 0)
         {
             Color glassColor;
 
@@ -93,7 +93,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             }
 
             _glassBlock.SetColor(GlassColorID, glassColor);
-            renderer.SetPropertyBlock(_glassBlock, 0);
+            renderer.SetPropertyBlock(_glassBlock, materialIndex);
         }
 
         private static Color AdjustColor(Color c, float sat, float bright)

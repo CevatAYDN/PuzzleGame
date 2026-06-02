@@ -29,19 +29,22 @@ namespace PuzzleGame.Application.Services
 
         private static readonly int RimIntensityID = Shader.PropertyToID("_RimIntensity");
 
+        private readonly PoolManager _poolManager;
+
         public bool IsAnimating => _activeTweenCount > 0;
 
-        public AnimationService(AnimationConfig config, ITweenService tween, IAudioService audioService)
+        public AnimationService(AnimationConfig config, ITweenService tween, IAudioService audioService, PoolManager poolManager)
         {
             _config = config;
             _tween = tween ?? throw new ArgumentNullException(nameof(tween));
             _audioService = audioService;
+            _poolManager = poolManager;
 
             var splashPrefab = CreateSplashParticlePrefab();
             var bubblePrefab = CreateBubbleParticlePrefab();
 
-            _splashPool = PoolManager.Instance.RegisterPool<ParticleSystem>("SplashPool", splashPrefab, MaxPoolSize);
-            _bubblePool = PoolManager.Instance.RegisterPool<ParticleSystem>("BubblePool", bubblePrefab, MaxPoolSize);
+            _splashPool = _poolManager.RegisterPool<ParticleSystem>("SplashPool", splashPrefab, MaxPoolSize);
+            _bubblePool = _poolManager.RegisterPool<ParticleSystem>("BubblePool", bubblePrefab, MaxPoolSize);
         }
 
         // ──────────────────────────────────────────────

@@ -9,6 +9,7 @@ using PuzzleGame.Application.Services;
 using PuzzleGame.Application.Animation;
 using PuzzleGame.Infrastructure.Interfaces;
 using PuzzleGame.Infrastructure.Implementations;
+using PuzzleGame.Infrastructure.Pool;
 using PuzzleGame.Configuration;
 using PuzzleGame.Logging;
 
@@ -62,6 +63,7 @@ namespace PuzzleGame.Installers
 
             // Infrastructure — no dependencies
             builder.Register<IRendererService, RendererService>(Lifetime.Singleton);
+            builder.Register<PoolManager>(Lifetime.Singleton);
             builder.RegisterInstance<IUpdateManager>(UpdateManager.Instance);
 
             // Tween service
@@ -84,7 +86,7 @@ namespace PuzzleGame.Installers
                    .WithParameter(colorTolerance);
             builder.Register<IGameStateMachine, GameStateMachine>(Lifetime.Singleton);
             builder.Register<IGameHistoryManager, GameHistoryManager>(Lifetime.Singleton);
-            builder.Register<ILevelProgressService, PlayerPrefsLevelProgressService>(Lifetime.Singleton);
+            builder.Register<ILevelProgressService, SecureFileLevelProgressService>(Lifetime.Singleton);
             builder.Register<ILevelRepository, ScriptableObjectLevelRepository>(Lifetime.Singleton);
             builder.Register<ILevelGenerator, DifficultyBasedLevelGenerator>(Lifetime.Singleton);
             builder.Register<ILocalizationService, LocalizationService>(Lifetime.Singleton);
