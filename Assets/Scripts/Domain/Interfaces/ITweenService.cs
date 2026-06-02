@@ -23,7 +23,7 @@ namespace PuzzleGame.Domain.Interfaces
     {
         void Chain(ITweenHandle other);
         void Group(ITweenHandle other);
-        void OnComplete(Action callback);
+        ITweenHandle OnComplete(Action callback);
         void SetCycles(int loops, LoopMode mode);
         void Kill();
         void Start();

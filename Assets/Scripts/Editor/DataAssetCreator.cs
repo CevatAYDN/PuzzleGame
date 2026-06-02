@@ -37,7 +37,10 @@ namespace PuzzleGame.Editor
             {
                 if (overrideExisting)
                 {
-                    setup(existing);
+                    if (setup != null)
+                    {
+                        setup(existing);
+                    }
                     EditorUtility.SetDirty(existing);
                     return new AssetResult { name = fileName, overwritten = true, created = false };
                 }
@@ -45,8 +48,19 @@ namespace PuzzleGame.Editor
             }
 
             var asset = ScriptableObject.CreateInstance<T>();
-            setup(asset);
+            if (asset == null)
+            {
+                Debug.LogError($"[DataAssetCreator] Failed to create ScriptableObject instance of type {typeof(T).Name}");
+                return new AssetResult { name = fileName, created = false, overwritten = false };
+            }
+
+            if (setup != null)
+            {
+                setup(asset);
+            }
             AssetDatabase.CreateAsset(asset, fullPath);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
             return new AssetResult { name = fileName, created = true, overwritten = false };
         }
 

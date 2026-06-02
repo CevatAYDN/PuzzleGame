@@ -99,6 +99,7 @@ namespace PuzzleGame.Installers
             builder.Register<ILevelSetupService, LevelSetupService>(Lifetime.Singleton);
             builder.Register<ILevelValidationService, LevelValidationService>(Lifetime.Singleton);
             builder.Register<IPourService, PourService>(Lifetime.Singleton);
+            builder.Register<IReactionService, ReactionService>(Lifetime.Singleton);
             builder.Register<IInputHandlerService, InputHandlerService>(Lifetime.Singleton);
 
             // GameManager — inject via VContainer

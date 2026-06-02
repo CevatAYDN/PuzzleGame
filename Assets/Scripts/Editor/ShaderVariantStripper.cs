@@ -19,8 +19,14 @@ namespace PuzzleGame.Editor
     /// This reduces build size and shader compilation time significantly on mobile.
     /// Registered automatically via InitializeOnLoad.
     /// </summary>
+    [InitializeOnLoad]
     public class ShaderVariantStripper : IPreprocessShaders
     {
+        static ShaderVariantStripper()
+        {
+            Debug.Log("[ShaderVariantStripper] Initialized build-time shader variant stripping.");
+        }
+
         public int callbackOrder => 0;
 
         public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)

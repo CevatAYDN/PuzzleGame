@@ -42,77 +42,51 @@ namespace PuzzleGame.Application.Services
 
         public List<List<LiquidLayer>> GenerateLevelAssignments(IBottleView[] bottles, LevelData currentLevel)
         {
-            if (bottles == null || bottles.Length == 0) 
+            if (bottles == null || bottles.Length == 0)
                 return new List<List<LiquidLayer>>();
 
-            // Determine generation parameters based on currentLevel first, fallback to levelConfig / defaults
-            bool autoGen = true;
-            int empties = 2;
-            int seed = 0;
-            Color[] pal = DefaultPalette;
-            Difficulty diff = Difficulty.Easy;
-            List<List<LiquidLayer>> assignments = null;
+            if (currentLevel == null)
+                throw new ArgumentNullException(nameof(currentLevel),
+                    "LevelSetupService.GenerateLevelAssignments: currentLevel cannot be null. This indicates a bug in the call chain.");
 
-            if (currentLevel != null)
+            bool autoGen = currentLevel.autoGenerate;
+            int empties = currentLevel.emptyBottleCount;
+            int seed = currentLevel.randomSeed;
+            Difficulty diff = currentLevel.difficulty;
+            Color[] pal = _levelConfig != null && _levelConfig.palette.Length > 0
+                ? _levelConfig.palette
+                : DefaultPalette;
+
+            if (currentLevel.autoGenerate)
             {
-                autoGen = currentLevel.autoGenerate;
-                empties = currentLevel.emptyBottleCount;
-                seed = currentLevel.randomSeed;
-                diff = currentLevel.difficulty;
-                pal = _levelConfig != null && _levelConfig.palette.Length > 0 ? _levelConfig.palette : DefaultPalette;
+                return _levelGenerator.Generate(
+                    bottles.Length,
+                    currentLevel.maxLayersPerBottle,
+                    empties,
+                    ConvertPalette(pal),
+                    diff,
+                    seed);
+            }
 
-                if (currentLevel.autoGenerate)
+            // Pre-built level: convert List<LevelBottleData> to List<List<LiquidLayer>>
+            var assignments = new List<List<LiquidLayer>>();
+            if (currentLevel.bottles != null)
+            {
+                for (int i = 0; i < currentLevel.bottles.Count; i++)
                 {
-                    assignments = _levelGenerator.Generate(
-                        bottles.Length,
-                        currentLevel.maxLayersPerBottle,
-                        empties,
-                        ConvertPalette(pal),
-                        diff,
-                        seed);
-                }
-                else
-                {
-                    // Pre-built level: convert List<LevelBottleData> to List<List<LiquidLayer>>
-                    assignments = new List<List<LiquidLayer>>();
-                    if (currentLevel.bottles != null)
+                    var bottleData = currentLevel.bottles[i];
+                    if (bottleData == null) continue;
+
+                    var layers = new List<LiquidLayer>();
+                    if (!bottleData.isEmpty)
                     {
-                        for (int i = 0; i < currentLevel.bottles.Count; i++)
+                        foreach (var layerData in bottleData.layers)
                         {
-                            var bottleData = currentLevel.bottles[i];
-                            if (bottleData != null)
-                            {
-                                var layers = new List<LiquidLayer>();
-                                if (!bottleData.isEmpty)
-                                {
-                                    foreach (var layerData in bottleData.layers)
-                                    {
-                                        layers.Add(new LiquidLayer(ColorAdapter.FromUnity(layerData.color), layerData.amount));
-                                    }
-                                }
-                                assignments.Add(layers);
-                            }
+                            layers.Add(new LiquidLayer(ColorAdapter.FromUnity(layerData.color), layerData.amount));
                         }
                     }
+                    assignments.Add(layers);
                 }
-            }
-            else
-            {
-                // Fallback to levelConfig
-                autoGen = _levelConfig != null ? _levelConfig.autoGenerateLevel : true;
-                empties = _levelConfig != null ? _levelConfig.emptyBottleCount : 2;
-                seed = _levelConfig != null ? _levelConfig.randomSeed : 0;
-                pal = _levelConfig != null && _levelConfig.palette.Length > 0 ? _levelConfig.palette : DefaultPalette;
-
-                assignments = autoGen
-                    ? _levelGenerator.Generate(
-                        bottles.Length,
-                        _gameConfig.maxLayersPerBottle,
-                        empties,
-                        ConvertPalette(pal),
-                        Difficulty.Easy,
-                        seed)
-                    : null;
             }
 
             return assignments;

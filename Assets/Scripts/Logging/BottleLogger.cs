@@ -21,7 +21,14 @@ namespace PuzzleGame.Logging
         private static bool _warningEnabled = true;
         private static bool _errorEnabled   = true;
 
+        public static bool IsInfoEnabled => _infoEnabled;
+        public static bool IsWarningEnabled => _warningEnabled;
+        public static bool IsErrorEnabled => _errorEnabled;
+        public static bool IsDebugEnabled => _debugEnabled;
+
         // ── Public API ───────────────────────────────────────────────────────
+
+        // ── String overloads (for plain string messages, no interpolation) ─────
 
         public static void LogInfo(string message, Object context = null)
         {
@@ -45,6 +52,34 @@ namespace PuzzleGame.Logging
         {
             if (_debugEnabled)
                 Debug.Log($"[BottleGame | DEBUG] {message}", context);
+        }
+
+        // ── FormattableString overloads (C# compiler prefers these for $"" strings) ──
+        // String interpolation is deferred until after the enabled check, preventing GC alloc
+        // when the log level is disabled in release builds.
+
+        public static void LogInfo(System.FormattableString message, Object context = null)
+        {
+            if (_infoEnabled)
+                Debug.Log($"[BottleGame | INFO] {message.ToString(System.Globalization.CultureInfo.InvariantCulture)}", context);
+        }
+
+        public static void LogWarning(System.FormattableString message, Object context = null)
+        {
+            if (_warningEnabled)
+                Debug.LogWarning($"[BottleGame | WARN] {message.ToString(System.Globalization.CultureInfo.InvariantCulture)}", context);
+        }
+
+        public static void LogError(System.FormattableString message, Object context = null)
+        {
+            if (_errorEnabled)
+                Debug.LogError($"[BottleGame | ERROR] {message.ToString(System.Globalization.CultureInfo.InvariantCulture)}", context);
+        }
+
+        public static void LogDebug(System.FormattableString message, Object context = null)
+        {
+            if (_debugEnabled)
+                Debug.Log($"[BottleGame | DEBUG] {message.ToString(System.Globalization.CultureInfo.InvariantCulture)}", context);
         }
 
         /// <summary>Runtime toggle — useful for in-game debug menus.</summary>

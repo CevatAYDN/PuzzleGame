@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using PuzzleGame.Domain.Models;
+using PuzzleGame.Domain.Models.FeatureSystem;
 using PuzzleGame.Domain.Services;
 using PuzzleGame.Infrastructure;
 using PuzzleGame.Application.Services;
@@ -1393,7 +1394,7 @@ namespace PuzzleGame.Editor
                 }
 
                 bottleData.layers = new List<LevelLayerData>();
-                if (!bottle.IsEmpty && bottle.State != null)
+                if (!bottle.IsEmpty && bottle.State != null && bottle.State.Layers != null)
                 {
                     foreach (var layer in bottle.State.Layers)
                     {
@@ -1465,28 +1466,39 @@ namespace PuzzleGame.Editor
                     if (levelConfig.palette == null || levelConfig.palette.Length == 0)
                     {
                         EditorGUILayout.HelpBox("Palette is empty. Add colors below.", MessageType.Info);
+                        Undo.RecordObject(levelConfig, "Initialize Palette");
                         levelConfig.palette = new Color[4]; // Default 4 colors
+                        EditorUtility.SetDirty(levelConfig);
                     }
 
                     EditorGUILayout.Space(4);
+                    EditorGUI.BeginChangeCheck();
                     int colorCount = EditorGUILayout.IntSlider("Color Count", levelConfig.palette.Length, 2, MaxPaletteColors);
                     
-                    if (colorCount != levelConfig.palette.Length)
+                    Color[] tempPalette = (Color[])levelConfig.palette.Clone();
+                    if (colorCount != tempPalette.Length)
                     {
-                        Array.Resize(ref levelConfig.palette, colorCount);
+                        Array.Resize(ref tempPalette, colorCount);
                     }
 
                     EditorGUILayout.Space(4);
                     EditorGUILayout.LabelField("Edit Colors:", EditorStyles.miniBoldLabel);
                     
-                    for (int i = 0; i < levelConfig.palette.Length; i++)
+                    for (int i = 0; i < tempPalette.Length; i++)
                     {
                         using (new EditorGUILayout.HorizontalScope())
                         {
                             EditorGUILayout.LabelField($"Color {i + 1}", GUILayout.Width(60));
-                            levelConfig.palette[i] = EditorGUILayout.ColorField(levelConfig.palette[i], GUILayout.Width(200));
+                            tempPalette[i] = EditorGUILayout.ColorField(tempPalette[i], GUILayout.Width(200));
                             GUILayout.FlexibleSpace();
                         }
+                    }
+
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        Undo.RecordObject(levelConfig, "Modify Palette");
+                        levelConfig.palette = tempPalette;
+                        EditorUtility.SetDirty(levelConfig);
                     }
 
                     EditorGUILayout.Space(8);
@@ -1502,6 +1514,7 @@ namespace PuzzleGame.Editor
                         GUI.backgroundColor = new Color(0.2f, 0.5f, 0.9f);
                         if (GUILayout.Button("Reset to Default", GUILayout.Height(28)))
                         {
+                            Undo.RecordObject(levelConfig, "Reset Palette to Default");
                             levelConfig.palette = new Color[]
                             {
                                 new Color(0.9f, 0.2f, 0.2f),  // Red
@@ -1545,6 +1558,7 @@ namespace PuzzleGame.Editor
 
         private void DrawLevelEditor(LevelData level)
         {
+            EditorGUI.BeginChangeCheck();
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 EditorGUILayout.LabelField($"Editing: Level {level.levelNumber:D2}", EditorStyles.miniBoldLabel);
@@ -1569,38 +1583,161 @@ namespace PuzzleGame.Editor
                 // Auto-generate toggle
                 level.autoGenerate = EditorGUILayout.ToggleLeft("Auto-Generate", level.autoGenerate);
 
-                EditorGUILayout.Space(8);
+                EditorGUILayout.Space(10);
 
-                // Action buttons
-                using (new EditorGUILayout.HorizontalScope())
+                // ═══════════════════════════════════════════════════════════
+                // MODULAR FEATURES SETTINGS
+                // ═══════════════════════════════════════════════════════════
+                EditorGUILayout.LabelField("══════════ Features ═══════════", EditorStyles.miniBoldLabel);
+                EditorGUILayout.Space(4);
+
+                // Multi-Layer Pour
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                 {
-                    if (GUILayout.Button("Save Changes", GUILayout.Height(26)))
-                    {
-                        EditorUtility.SetDirty(level);
-                        AssetDatabase.SaveAssets();
-                        SetStatus($"Level {level.levelNumber:D2} saved.", MessageType.Info);
-                        RefreshLevelList();
-                    }
+                    level.enableMultiLayerPour = EditorGUILayout.ToggleLeft(
+                        "Multi-Layer Pour (birlikte dökme)", level.enableMultiLayerPour);
 
-                    GUI.backgroundColor = new Color(0.9f, 0.5f, 0.5f);
-                    if (GUILayout.Button("Delete Level", GUILayout.Height(26)))
+                    if (level.enableMultiLayerPour)
                     {
-                        string path = AssetDatabase.GetAssetPath(level);
-                        if (EditorUtility.DisplayDialog("Delete Level?",
-                            $"This will permanently delete {System.IO.Path.GetFileName(path)}",
-                            "Delete", "Cancel"))
+                        EditorGUI.indentLevel++;
+                        if (level.multiLayerPourConfig == null)
+                            level.multiLayerPourConfig = new MultiLayerPourData();
+
+                        level.multiLayerPourConfig.pourAllMatching = EditorGUILayout.Toggle(
+                            "Tüm eşleşen katmanları dök", level.multiLayerPourConfig.pourAllMatching);
+                        level.multiLayerPourConfig.pourConsecutiveOnly = EditorGUILayout.Toggle(
+                            "Sadece ardışık eşleşmeleri", level.multiLayerPourConfig.pourConsecutiveOnly);
+                        level.multiLayerPourConfig.minConsecutiveForPour = EditorGUILayout.IntSlider(
+                            "Min. ardışık katman", level.multiLayerPourConfig.minConsecutiveForPour, 2, 4);
+                        EditorGUI.indentLevel--;
+                    }
+                }
+
+                EditorGUILayout.Space(4);
+
+                // Reaction System
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                {
+                    level.enableReactionSystem = EditorGUILayout.ToggleLeft(
+                        "Reaction System (kimyasal reaksiyon)", level.enableReactionSystem);
+
+                    if (level.enableReactionSystem)
+                    {
+                        EditorGUI.indentLevel++;
+                        if (level.reactionConfig == null)
+                            level.reactionConfig = new ReactionSystemData();
+
+                        level.reactionConfig.enableReactions = EditorGUILayout.Toggle(
+                            "Reaksiyonları aktif et", level.reactionConfig.enableReactions);
+
+                        EditorGUILayout.Space(4);
+                        EditorGUILayout.LabelField("Reaction Kuralları:", EditorStyles.miniBoldLabel);
+
+                        // Display and edit reaction rules
+                        if (level.reactionConfig.reactionRules == null)
+                            level.reactionConfig.reactionRules = new System.Collections.Generic.List<ReactionRule>();
+
+                        int ruleCount = EditorGUILayout.IntSlider("Kural sayısı", 
+                            level.reactionConfig.reactionRules.Count, 0, 10);
+
+                        while (level.reactionConfig.reactionRules.Count < ruleCount)
+                            level.reactionConfig.reactionRules.Add(new ReactionRule());
+
+                        while (level.reactionConfig.reactionRules.Count > ruleCount)
+                            level.reactionConfig.reactionRules.RemoveAt(level.reactionConfig.reactionRules.Count - 1);
+
+                        for (int i = 0; i < level.reactionConfig.reactionRules.Count; i++)
                         {
-                            if (AssetDatabase.DeleteAsset(path))
+                            var rule = level.reactionConfig.reactionRules[i];
+                            EditorGUILayout.Space(2);
+                            EditorGUILayout.LabelField($"Kural {i + 1}:", EditorStyles.miniLabel);
+
+                            using (new EditorGUILayout.HorizontalScope())
                             {
-                                AssetDatabase.Refresh();
-                                _selectedLevelForEdit = null;
-                                SetStatus("Level deleted.", MessageType.Info);
-                                RefreshLevelList();
+                                EditorGUILayout.LabelField("Renk A", GUILayout.Width(50));
+                                rule.colorA = (LiquidColor)EditorGUILayout.EnumPopup(rule.colorA, GUILayout.Width(80));
+                                EditorGUILayout.LabelField("+", GUILayout.Width(20));
+                                EditorGUILayout.LabelField("Renk B", GUILayout.Width(50));
+                                rule.colorB = (LiquidColor)EditorGUILayout.EnumPopup(rule.colorB, GUILayout.Width(80));
                             }
+
+                            using (new EditorGUILayout.HorizontalScope())
+                            {
+                                EditorGUILayout.LabelField("Tür", GUILayout.Width(50));
+                                rule.reactionType = (ReactionRule.ReactionType)EditorGUILayout.EnumPopup(
+                                    rule.reactionType, GUILayout.Width(120));
+
+                                if (rule.reactionType == ReactionRule.ReactionType.Transform)
+                                {
+                                    EditorGUILayout.LabelField("→", GUILayout.Width(20));
+                                    EditorGUILayout.LabelField("Sonuç", GUILayout.Width(40));
+                                    rule.resultColor = (LiquidColor)EditorGUILayout.EnumPopup(rule.resultColor, GUILayout.Width(80));
+                                }
+                            }
+
+                            EditorGUILayout.Space(2);
+                        }
+
+                        EditorGUI.indentLevel--;
+                    }
+                }
+
+                EditorGUILayout.Space(4);
+
+                // Key and Lock
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                {
+                    level.enableKeyAndLock = EditorGUILayout.ToggleLeft(
+                        "Key & Lock (anahtar ve kilit)", level.enableKeyAndLock);
+                }
+
+                EditorGUILayout.Space(4);
+
+                // Breakable Bottles
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                {
+                    level.enableBreakableBottles = EditorGUILayout.ToggleLeft(
+                        "Breakable Bottles (kırılabilir şişe)", level.enableBreakableBottles);
+                }
+            }
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(level, "Modify Level Properties");
+                EditorUtility.SetDirty(level);
+            }
+
+            EditorGUILayout.Space(8);
+
+            // Action buttons
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Save Changes", GUILayout.Height(26)))
+                {
+                    EditorUtility.SetDirty(level);
+                    AssetDatabase.SaveAssets();
+                    SetStatus($"Level {level.levelNumber:D2} saved.", MessageType.Info);
+                    RefreshLevelList();
+                }
+
+                GUI.backgroundColor = new Color(0.9f, 0.5f, 0.5f);
+                if (GUILayout.Button("Delete Level", GUILayout.Height(26)))
+                {
+                    string path = AssetDatabase.GetAssetPath(level);
+                    if (EditorUtility.DisplayDialog("Delete Level?",
+                        $"This will permanently delete {System.IO.Path.GetFileName(path)}",
+                        "Delete", "Cancel"))
+                    {
+                        if (AssetDatabase.DeleteAsset(path))
+                        {
+                            AssetDatabase.Refresh();
+                            _selectedLevelForEdit = null;
+                            SetStatus("Level deleted.", MessageType.Info);
+                            RefreshLevelList();
                         }
                     }
-                    GUI.backgroundColor = Color.white;
                 }
+                GUI.backgroundColor = Color.white;
             }
 
             // ── Batch Delete ─────────────────────────────────────────────────

@@ -63,13 +63,13 @@ namespace PuzzleGame.Domain.Models.FeatureSystem
     public class ReactionRule
     {
         [Tooltip("First color that triggers reaction")]
-        public Color colorA = Color.white;
+        public LiquidColor colorA = LiquidColor.Red;
         
         [Tooltip("Second color that triggers reaction")]
-        public Color colorB = Color.white;
+        public LiquidColor colorB = LiquidColor.Blue;
         
-        [Tooltip("Result color after reaction (if any)")]
-        public Color resultColor = Color.white;
+        [Tooltip("Result color after reaction (for Transform type)")]
+        public LiquidColor resultColor = LiquidColor.Green;
         
         [Tooltip("Reaction type: 0=None, 1=Bubble, 2=Explode, 3=Transform")]
         public ReactionType reactionType = ReactionType.None;

@@ -28,10 +28,13 @@ namespace PuzzleGame
     /// </summary>
     public class GameManager : MonoBehaviour, IUpdateable
     {
-        [Header("HUD (optional)")]
-        [SerializeField] private Canvas    hudCanvas;
-        [SerializeField] private TMPro.TextMeshProUGUI moveCountText;
-        [SerializeField] private GameObject winPanel;
+    [Header("HUD (optional)")]
+    [SerializeField] private Canvas    hudCanvas;
+    [SerializeField] private TMPro.TextMeshProUGUI moveCountText;
+    [SerializeField] private GameObject winPanel;
+    // UI panel to display a warning when DI fails. Optional, can be left null.
+    [Header("DI Failure UI")]
+    [SerializeField] private GameObject diErrorPanel;
 
         [Header("UI Reference")]
         [SerializeField] private LevelSelectUI levelSelectUI;
@@ -126,9 +129,14 @@ namespace PuzzleGame
             // Constructor injection başarılı olmadan oyun başlamasın
             if (!_isInitialized)
             {
-                BottleLogger.LogError(
-                    "VContainer DI failed — GameInstaller (LifetimeScope) not found or not configured.\n" +
-                    "Fix: Tools > PuzzleGame > Open Editor > Scene tab > 'Setup Current Scene (GameManager + DI)'");
+                const string errorMsg = "VContainer DI failed — GameInstaller (LifetimeScope) not found or not configured.\n" +
+                                         "Fix: Tools > PuzzleGame > Open Editor > Scene tab > 'Setup Current Scene (GameManager + DI)'";
+                BottleLogger.LogError(errorMsg);
+                // Show UI warning if a panel is assigned
+                if (diErrorPanel != null)
+                {
+                    diErrorPanel.SetActive(true);
+                }
                 enabled = false;
                 return;
             }
@@ -138,6 +146,7 @@ namespace PuzzleGame
             _camera = Camera.main;
             InitAudio();
 
+            SceneManager.sceneUnloaded += OnSceneUnloaded;
             EventAggregator.Subscribe<LevelSelectedEvent>(OnLevelSelected);
             EventAggregator.Subscribe<PourCompletedEvent>(OnPourCompleted);
 
@@ -170,12 +179,51 @@ namespace PuzzleGame
 
         private void OnDestroy()
         {
+            // Clean up particle pools and active tweens on scene unload
+            if (_animationService is System.IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+
+            SceneManager.sceneUnloaded -= OnSceneUnloaded;
             EventAggregator.Unsubscribe<LevelSelectedEvent>(OnLevelSelected);
             EventAggregator.Unsubscribe<PourCompletedEvent>(OnPourCompleted);
-            
+
             if (_historyManager != null)
             {
                 _historyManager.OnMoveCountChanged -= OnMoveCountChanged;
+            }
+
+            _bottles = null;
+            _allBottlesPool = null;
+            _currentLevel = null;
+        }
+
+        private void OnSceneUnloaded(Scene scene)
+        {
+            BottleLogger.LogDebug("Scene unloaded — cleaning up subscriptions and particle pools.");
+            EventAggregator.Clear();
+            if (_animationService is System.IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+        }
+
+        private void OnGUI()
+        {
+            if (!_isInitialized)
+            {
+                var rect = new Rect(20, 20, Screen.width - 40, Screen.height - 40);
+                GUI.Box(rect, "VCONTAINER DI FAILURE");
+                var labelRect = new Rect(40, 60, Screen.width - 80, Screen.height - 120);
+                var style = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 20,
+                    alignment = TextAnchor.MiddleCenter,
+                    wordWrap = true
+                };
+                GUI.Label(labelRect, "VContainer DI failed — GameInstaller (LifetimeScope) not found or not configured.\n\n" +
+                                     "Fix: Tools > PuzzleGame > Open Editor > Scene tab > 'Setup Current Scene (GameManager + DI)'", style);
             }
         }
 
@@ -188,13 +236,28 @@ namespace PuzzleGame
 
         public void OnUpdate(float deltaTime) => Update();
 
+        private class BottleNameComparer : IComparer<BottleController>
+        {
+            public int Compare(BottleController x, BottleController y)
+            {
+                if (x == null && y == null) return 0;
+                if (x == null) return -1;
+                if (y == null) return 1;
+                return string.CompareOrdinal(x.name, y.name);
+            }
+        }
+        private static readonly BottleNameComparer ComparerInstance = new BottleNameComparer();
+
         private void CacheBottles()
         {
-            _allBottlesPool = FindObjectsByType<BottleController>(FindObjectsInactive.Include)
-                             .OrderBy(b => b.name)
-                             .ToArray();
+            var temp = FindObjectsByType<BottleController>(FindObjectsInactive.Include);
+            Array.Sort(temp, ComparerInstance);
+            _allBottlesPool = temp;
 
-            BottleLogger.LogInfo($"Found {_allBottlesPool.Length} bottles in master pool.");
+            if (BottleLogger.IsInfoEnabled)
+            {
+                BottleLogger.LogInfo($"Found {_allBottlesPool.Length} bottles in master pool.");
+            }
 
             if (_allBottlesPool.Length == 0)
                 BottleLogger.LogWarning("No BottleController found in scene.");
@@ -223,10 +286,26 @@ namespace PuzzleGame
                 }
             }
 
-            _bottles = _allBottlesPool
-                       .Where(b => b != null && b.gameObject.activeSelf)
-                       .Cast<IBottleView>()
-                       .ToArray();
+            int activeCount = 0;
+            for (int i = 0; i < _allBottlesPool.Length; i++)
+            {
+                var b = _allBottlesPool[i];
+                if (b != null && b.gameObject.activeSelf)
+                {
+                    activeCount++;
+                }
+            }
+
+            _bottles = new IBottleView[activeCount];
+            int index = 0;
+            for (int i = 0; i < _allBottlesPool.Length; i++)
+            {
+                var b = _allBottlesPool[i];
+                if (b != null && b.gameObject.activeSelf)
+                {
+                    _bottles[index++] = b;
+                }
+            }
 
             _historyManager?.Initialize(_bottles);
             _inputHandlerService?.SetBottles(_bottles);

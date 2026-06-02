@@ -65,7 +65,7 @@ namespace PuzzleGame.Application.Animation
             => Start(new ShakeRotationTween(_host, t, duration, strength, vibrato));
 
         public ITweenHandle TweenCustom(object target, float from, float to, float duration, Action<object, float> onUpdate)
-            => Start(new CustomTween(_host, from, to, duration, onUpdate));
+            => Start(new CustomTween(_host, target, from, to, duration, onUpdate));
 
         public ITweenHandle SequenceCreate() => new SequenceHandle();
 
@@ -83,7 +83,7 @@ namespace PuzzleGame.Application.Animation
         protected Action _onComplete;
         public virtual void Chain(ITweenHandle other) { }
         public virtual void Group(ITweenHandle other) { }
-        public virtual void OnComplete(Action callback) => _onComplete += callback;
+        public virtual ITweenHandle OnComplete(Action callback) { _onComplete += callback; return this; }
         public virtual void SetCycles(int loops, LoopMode mode) { }
         public virtual void Kill() { _onComplete = null; }
         public virtual void Start() { }
@@ -265,10 +265,10 @@ namespace PuzzleGame.Application.Animation
         private readonly object _target;
         private Coroutine _coroutine;
 
-        public CustomTween(MonoBehaviour host, float from, float to, float duration, Action<object, float> onUpdate)
+        public CustomTween(MonoBehaviour host, object target, float from, float to, float duration, Action<object, float> onUpdate)
         {
-            _host = host; _from = from; _to = to;
-            _duration = Mathf.Max(0.001f, duration); _onUpdate = onUpdate; _target = this;
+            _host = host; _target = target; _from = from; _to = to;
+            _duration = Mathf.Max(0.001f, duration); _onUpdate = onUpdate;
         }
 
         public override void Start() => _coroutine = _host.StartCoroutine(Run());
@@ -304,15 +304,16 @@ namespace PuzzleGame.Application.Animation
         public override void Chain(ITweenHandle other) { _chained.Add(other); }
         public override void Group(ITweenHandle other) { _grouped.Add(other); }
 
-        public override void OnComplete(Action callback)
+        public override ITweenHandle OnComplete(Action callback)
         {
             if (_chained.Count == 0 && _grouped.Count == 0)
             {
                 _onComplete = callback;
-                return;
+                return this;
             }
             var last = _chained.Count > 0 ? _chained[_chained.Count - 1] : _grouped[_grouped.Count - 1];
             last.OnComplete(callback);
+            return this;
         }
 
         public override void Start()

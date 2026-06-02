@@ -7,6 +7,7 @@ using PuzzleGame.Domain.Models;
 using PuzzleGame.Infrastructure;
 using PuzzleGame.Infrastructure.Pool;
 using UnityEngine;
+using PuzzleGame.Logging;
 
 namespace PuzzleGame.Application.Services
 {
@@ -15,7 +16,7 @@ namespace PuzzleGame.Application.Services
     /// No MonoBehaviour dependency, no coroutines in this layer.
     /// Particle pools use generic GameObjectPool<T>.
     /// </summary>
-    public class AnimationService : IAnimationService
+    public class AnimationService : IAnimationService, System.IDisposable
     {
         private readonly AnimationConfig _config;
         private readonly ITweenService _tween;
@@ -31,6 +32,11 @@ namespace PuzzleGame.Application.Services
 
         private readonly PoolManager _poolManager;
 
+        private readonly ParticleSystem _splashPrefab;
+        private readonly ParticleSystem _bubblePrefab;
+        private readonly List<ITweenHandle> _activeTweens = new List<ITweenHandle>();
+        private readonly Stack<PourAnimationState> _pourStatePool = new Stack<PourAnimationState>();
+
         public bool IsAnimating => _activeTweenCount > 0;
 
         public AnimationService(AnimationConfig config, ITweenService tween, IAudioService audioService, PoolManager poolManager)
@@ -40,11 +46,61 @@ namespace PuzzleGame.Application.Services
             _audioService = audioService;
             _poolManager = poolManager;
 
-            var splashPrefab = CreateSplashParticlePrefab();
-            var bubblePrefab = CreateBubbleParticlePrefab();
+            _splashPrefab = CreateSplashParticlePrefab();
+            _bubblePrefab = CreateBubbleParticlePrefab();
 
-            _splashPool = _poolManager.RegisterPool<ParticleSystem>("SplashPool", splashPrefab, MaxPoolSize);
-            _bubblePool = _poolManager.RegisterPool<ParticleSystem>("BubblePool", bubblePrefab, MaxPoolSize);
+            _splashPool = _poolManager.RegisterPool<ParticleSystem>("SplashPool", _splashPrefab, MaxPoolSize);
+            _bubblePool = _poolManager.RegisterPool<ParticleSystem>("BubblePool", _bubblePrefab, MaxPoolSize);
+        }
+
+        internal void RegisterTween(ITweenHandle handle)
+        {
+            if (handle == null) return;
+            _activeTweens.Add(handle);
+            handle.OnComplete(() => _activeTweens.Remove(handle));
+        }
+
+        internal PourAnimationState RentPourState()
+        {
+            if (_pourStatePool.Count > 0)
+            {
+                return _pourStatePool.Pop();
+            }
+            return new PourAnimationState();
+        }
+
+        internal void ReturnPourState(PourAnimationState state)
+        {
+            state.Clear();
+            _pourStatePool.Push(state);
+        }
+
+        public void Dispose()
+        {
+            for (int i = _activeTweens.Count - 1; i >= 0; i--)
+            {
+                try
+                {
+                    _activeTweens[i]?.Kill();
+                }
+                catch (Exception ex)
+                {
+                    BottleLogger.LogDebug($"Error killing tween on dispose: {ex.Message}");
+                }
+            }
+            _activeTweens.Clear();
+
+            if (_splashPrefab != null)
+            {
+                UnityEngine.Object.Destroy(_splashPrefab.gameObject);
+            }
+            if (_bubblePrefab != null)
+            {
+                UnityEngine.Object.Destroy(_bubblePrefab.gameObject);
+            }
+
+            _poolManager.RemovePool("SplashPool");
+            _poolManager.RemovePool("BubblePool");
         }
 
         // ──────────────────────────────────────────────
@@ -52,18 +108,19 @@ namespace PuzzleGame.Application.Services
         // ──────────────────────────────────────────────
 
         public void AnimateBottleLift(Transform bottle,
-                                      float height, float duration,
-                                      Func<bool> keepHovering = null,
-                                      Action onComplete = null)
+                                       float height, float duration,
+                                       Func<bool> keepHovering = null,
+                                       Action onComplete = null)
         {
             Vector3 target = bottle.position + Vector3.up * height;
             IncrCount();
-            _tween.TweenPosition(bottle, target, duration, EaseType.OutBack)
+            var t = _tween.TweenPosition(bottle, target, duration, EaseType.OutBack)
                 .OnComplete(() =>
                 {
                     DecrCount();
                     onComplete?.Invoke();
                 });
+            RegisterTween(t);
 
             if (keepHovering != null && _config != null)
             {
@@ -78,133 +135,73 @@ namespace PuzzleGame.Application.Services
                                        Action onComplete = null)
         {
             IncrCount();
-            _tween.TweenPosition(bottle, originalPos, duration, EaseType.InOutSine)
+            var t = _tween.TweenPosition(bottle, originalPos, duration, EaseType.InOutSine)
                 .OnComplete(() =>
                 {
                     DecrCount();
                     onComplete?.Invoke();
                 });
+            RegisterTween(t);
         }
 
         public void AnimatePour(IBottleView source, IBottleView target,
                                 float duration, Action onComplete = null)
         {
-            if (duration <= 0f) duration = 0.001f;
+            if (duration <= 0f)
+            {
+                BottleLogger.LogWarning("AnimatePour called with duration <= 0f. Falling back to 0.001f.");
+                duration = 0.001f;
+            }
 
-            Transform sourceT = source.Transform;
-            Transform targetT = target.Transform;
+            PourAnimationState state = RentPourState();
+            state.Source = source;
+            state.Target = target;
+            state.SourceT = source.Transform;
+            state.TargetT = target.Transform;
 
-            Vector3 toTarget = (targetT.position - sourceT.position).normalized;
-            // 85 degrees is ideal for a natural liquid pour
+            Vector3 toTarget = (state.TargetT.position - state.SourceT.position).normalized;
             float tiltAngle = 85f;
             Vector3 tiltAxis = Vector3.Cross(Vector3.up, toTarget).normalized;
             if (tiltAxis.sqrMagnitude < 0.0001f) tiltAxis = Vector3.forward;
 
-            Vector3 startPos = sourceT.position;
-            Quaternion startRot = sourceT.rotation;
-            Quaternion tiltedRot = Quaternion.AngleAxis(tiltAngle, tiltAxis) * startRot;
+            state.StartPos = state.SourceT.position;
+            state.StartRot = state.SourceT.rotation;
+            state.TiltedRot = Quaternion.AngleAxis(tiltAngle, tiltAxis) * state.StartRot;
 
-            Vector3 targetMouth = targetT.position + Vector3.up * (target.Height + 0.15f);
-            Vector3 localSourceMouth = new Vector3(0f, source.Height, 0f);
-            Vector3 startMouth = startPos + startRot * localSourceMouth;
+            state.TargetMouth = state.TargetT.position + Vector3.up * (target.Height + 0.15f);
+            state.LocalSourceMouth = new Vector3(0f, source.Height, 0f);
+            state.StartMouth = state.StartPos + state.StartRot * state.LocalSourceMouth;
 
             float tiltPortion = _config != null ? _config.tiltPhasePortion : 0.25f;
             float flowPortion = _config != null ? _config.flowPhasePortion : 0.50f;
             float returnPortion = _config != null ? _config.returnPhasePortion : 0.25f;
 
-            float tiltDuration = duration * tiltPortion;
-            float flowDuration = duration * flowPortion;
-            float returnDuration = duration * returnPortion;
+            state.TiltDuration = duration * tiltPortion;
+            state.FlowDuration = duration * flowPortion;
+            state.ReturnDuration = duration * returnPortion;
 
-            var sourceStart = new LayerSnapshot(source.VisualLayers);
-            var targetStart = new LayerSnapshot(target.VisualLayers);
-            LiquidLayer pouredLayer = target.State.TopLayer ?? new LiquidLayer(new DomainColor(0, 0, 0, 0), 0f);
+            state.SourceStart = new LayerSnapshot(source.VisualLayers);
+            state.TargetStart = new LayerSnapshot(target.VisualLayers);
+            state.PouredLayer = target.State.TopLayer ?? new LiquidLayer(new DomainColor(0, 0, 0, 0), 0f);
 
-            LineRenderer lr = StreamRenderer.EnsureLineRenderer(source.GameObject);
-            Color streamColor = ColorAdapter.ToUnity(pouredLayer.Color);
-            StreamRenderer.SetColor(lr, streamColor);
-            lr.enabled = false;
+            state.LineRenderer = StreamRenderer.EnsureLineRenderer(source.GameObject);
+            state.StreamColor = ColorAdapter.ToUnity(state.PouredLayer.Color);
+            StreamRenderer.SetColor(state.LineRenderer, state.StreamColor);
+            state.LineRenderer.enabled = false;
 
-            // Capture for closure
-            ParticleSystem splashPS = null;
-            ParticleSystem bubblePS = null;
+            state.Config = _config;
+            state.TweenService = _tween;
+            state.AudioService = _audioService;
+            state.SplashPool = _splashPool;
+            state.BubblePool = _bubblePool;
+            state.Owner = this;
+            state.OnComplete = onComplete;
 
             IncrCount();
 
-            // Phase 1: Tilt around the mouth pivot
-            var tilt = _tween.TweenCustom(sourceT, 0f, 1f, tiltDuration, (tweenable, val) =>
-            {
-                float easedVal = Mathf.SmoothStep(0f, 1f, val);
-                Quaternion currentRot = Quaternion.Slerp(startRot, tiltedRot, easedVal);
-                Vector3 currentMouth = Vector3.Lerp(startMouth, targetMouth, easedVal);
-                sourceT.rotation = currentRot;
-                sourceT.position = currentMouth - currentRot * localSourceMouth;
-            });
-
-            tilt.OnComplete(() =>
-            {
-                // Phase 2: Flow (Custom Tween updating visuals, stream, and particles)
-                lr.positionCount = StreamRenderer.TotalSegments;
-                lr.enabled = true;
-
-                _audioService?.PlaySfx(AudioClipId.PourLoop);
-
-                splashPS = _splashPool.Rent(target.Transform);
-                bubblePS = _bubblePool.Rent(target.Transform);
-                if (splashPS != null)
-                {
-                    var splashMain = splashPS.main;
-                    splashMain.startColor = streamColor;
-                    splashPS.Play();
-                }
-                if (bubblePS != null) bubblePS.Play();
-
-                var flowCustom = _tween.TweenCustom(sourceT, 0f, 1f, flowDuration, (tweenable, val) =>
-                {
-                    UpdateVisualPourProgress(source, target, sourceStart, targetStart, pouredLayer, val);
-                    StreamRenderer.Update(lr, source, target, sourceT, targetT, val, _config);
-
-                    float currentFill = target.VisualTotalFill;
-                    if (splashPS != null)
-                        splashPS.transform.position = targetT.position + Vector3.up * (target.Height * currentFill);
-
-                    if (bubblePS != null)
-                    {
-                        float liquidHeight = target.Height * currentFill;
-                        var shape = bubblePS.shape;
-                        shape.position = new Vector3(0f, liquidHeight * 0.5f, 0f);
-                        shape.length = Mathf.Max(liquidHeight, 0.1f);
-                    }
-                });
-
-                flowCustom.OnComplete(() =>
-                {
-                    // Phase 3: Return to original position/rotation (around the mouth pivot)
-                    lr.enabled = false;
-                    if (splashPS != null) { splashPS.Stop(); DelayReturnToPool(splashPS, _splashPool, 1.0f); }
-                    if (bubblePS != null) { bubblePS.Stop(); DelayReturnToPool(bubblePS, _bubblePool, 1.5f); }
-
-                    _audioService?.PlaySfx(AudioClipId.PourEnd);
-
-                    var returnCustom = _tween.TweenCustom(sourceT, 0f, 1f, returnDuration, (tweenable, val) =>
-                    {
-                        float easedVal = Mathf.SmoothStep(0f, 1f, val);
-                        Quaternion currentRot = Quaternion.Slerp(tiltedRot, startRot, easedVal);
-                        Vector3 currentMouth = Vector3.Lerp(targetMouth, startMouth, easedVal);
-                        sourceT.rotation = currentRot;
-                        sourceT.position = currentMouth - currentRot * localSourceMouth;
-                    });
-
-                    returnCustom.OnComplete(() =>
-                    {
-                        source.UpdateVisualsFromState();
-                        target.UpdateVisualsFromState();
-                        target.PlaySettleBounce();
-                        DecrCount();
-                        onComplete?.Invoke();
-                    });
-                });
-            });
+            var tilt = _tween.TweenCustom(state, 0f, 1f, state.TiltDuration, PourAnimationState.TiltUpdate);
+            RegisterTween(tilt);
+            tilt.OnComplete(state.OnTiltCompleteCached);
         }
 
         public void AnimateErrorShake(Transform bottle, Action onComplete = null)
@@ -214,13 +211,14 @@ namespace PuzzleGame.Application.Services
             Vector3 startRot = bottle.rotation.eulerAngles;
 
             IncrCount();
-            _tween.TweenShakeRotation(bottle, duration, Vector3.forward * angle, 4)
+            var t = _tween.TweenShakeRotation(bottle, duration, Vector3.forward * angle, 4)
                 .OnComplete(() =>
                 {
                     bottle.rotation = Quaternion.Euler(startRot);
                     DecrCount();
                     onComplete?.Invoke();
                 });
+            RegisterTween(t);
         }
 
         public void AnimateCorkDrop(Transform cork, float bottleHeight, Action onComplete = null)
@@ -237,6 +235,8 @@ namespace PuzzleGame.Application.Services
             IncrCount();
             var t1 = _tween.TweenLocalPosition(cork, endPos, duration, EaseType.OutBounce);
             var t2 = _tween.TweenScale(cork, Vector3.one, duration, EaseType.OutBounce);
+            RegisterTween(t1);
+            RegisterTween(t2);
             
             t1.OnComplete(() =>
             {
@@ -258,11 +258,13 @@ namespace PuzzleGame.Application.Services
             IncrCount();
             var t1 = _tween.TweenCustom(renderer, 0.5f, peakIntensity, flashDuration * 0.2f,
                 (t, val) => SetRimIntensity(renderer, materialSlot, val, propBlock));
+            RegisterTween(t1);
             
             t1.OnComplete(() =>
             {
                 var t2 = _tween.TweenCustom(renderer, peakIntensity, 0.5f, flashDuration * 0.8f,
                     (t, val) => SetRimIntensity(renderer, materialSlot, val, propBlock));
+                RegisterTween(t2);
                 
                 t2.OnComplete(() =>
                 {
@@ -278,7 +280,7 @@ namespace PuzzleGame.Application.Services
         {
             float originalFill = bottle.VisualTotalFill;
             IncrCount();
-            _tween.TweenCustom(bottle, 0f, 1f, duration, (tweenable, progress) =>
+            var t = _tween.TweenCustom(bottle, 0f, 1f, duration, (tweenable, progress) =>
             {
                 float wave = Mathf.Cos(progress * Mathf.PI * 3f) * 0.04f * (1f - progress);
                 bottle.SetVisualState(new List<LiquidLayer>(bottle.State.Layers), originalFill + wave);
@@ -289,14 +291,15 @@ namespace PuzzleGame.Application.Services
                 DecrCount();
                 onComplete?.Invoke();
             });
+            RegisterTween(t);
         }
 
         // ──────────────────────────────────────────────
         //  Private helpers
         // ──────────────────────────────────────────────
 
-        private void IncrCount() => _activeTweenCount++;
-        private void DecrCount() => _activeTweenCount = Mathf.Max(0, _activeTweenCount - 1);
+        internal void IncrCount() => _activeTweenCount++;
+        internal void DecrCount() => _activeTweenCount = Mathf.Max(0, _activeTweenCount - 1);
 
         private static void SetRimIntensity(Renderer renderer, int materialSlot, float val, MaterialPropertyBlock propBlock)
         {
@@ -307,7 +310,7 @@ namespace PuzzleGame.Application.Services
             renderer.SetPropertyBlock(propBlock, materialSlot);
         }
 
-        private void UpdateVisualPourProgress(IBottleView source, IBottleView target,
+        internal void UpdateVisualPourProgress(IBottleView source, IBottleView target,
                                                LayerSnapshot sourceStart, LayerSnapshot targetStart,
                                                LiquidLayer pouredLayer, float t)
         {
@@ -316,7 +319,7 @@ namespace PuzzleGame.Application.Services
             target.SetVisualPourProgress(targetStart, t, false, pouredLayer);
         }
 
-        private void DelayReturnToPool(ParticleSystem ps, IGameObjectPool<ParticleSystem> pool, float delay)
+        internal void DelayReturnToPool(ParticleSystem ps, IGameObjectPool<ParticleSystem> pool, float delay)
         {
             _tween.Delay(delay)
                 .OnComplete(() =>
@@ -329,10 +332,21 @@ namespace PuzzleGame.Application.Services
                 });
         }
 
+        private const string SplashPrefabResourcePath = "Particles/SplashParticle";
+        private const string BubblePrefabResourcePath = "Particles/BubbleParticle";
+
         private static ParticleSystem CreateSplashParticlePrefab()
         {
+            // Try loading from Resources first (avoids runtime GameObject creation + GC alloc)
+            var loaded = Resources.Load<ParticleSystem>(SplashPrefabResourcePath);
+            if (loaded != null)
+                return loaded;
+
+            BottleLogger.LogWarning($"Splash particle prefab not found at Resources/{SplashPrefabResourcePath}. Creating fallback at runtime.");
+
             var go = new GameObject("SplashParticle_Prefab", typeof(ParticleSystem));
             go.SetActive(false);
+            UnityEngine.Object.DontDestroyOnLoad(go); // Survive scene changes; disposed by AnimationService.Dispose
             var ps = go.GetComponent<ParticleSystem>();
             ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
 
@@ -370,8 +384,16 @@ namespace PuzzleGame.Application.Services
 
         private static ParticleSystem CreateBubbleParticlePrefab()
         {
+            // Try loading from Resources first
+            var loaded = Resources.Load<ParticleSystem>(BubblePrefabResourcePath);
+            if (loaded != null)
+                return loaded;
+
+            BottleLogger.LogWarning($"Bubble particle prefab not found at Resources/{BubblePrefabResourcePath}. Creating fallback at runtime.");
+
             var go = new GameObject("BubbleParticle_Prefab", typeof(ParticleSystem));
             go.SetActive(false);
+            UnityEngine.Object.DontDestroyOnLoad(go); // Survive scene changes; disposed by AnimationService.Dispose
             var ps = go.GetComponent<ParticleSystem>();
             ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
 

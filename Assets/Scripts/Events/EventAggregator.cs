@@ -16,21 +16,81 @@ namespace PuzzleGame.Events
     /// </summary>
     public static class EventAggregator
     {
-        private static readonly Dictionary<Type, List<Delegate>> _subscribers =
-            new Dictionary<Type, List<Delegate>>();
+        public interface ISubscription
+        {
+            bool IsAlive { get; }
+            void Invoke(object eventArgs);
+            bool Matches(Delegate d);
+        }
+
+        public class Subscription<T> : ISubscription
+        {
+            private readonly WeakReference _target;
+            private readonly Action<T> _delegate;
+            private readonly System.Reflection.MethodInfo _method;
+            private readonly bool _isStatic;
+
+            public Subscription(Action<T> action)
+            {
+                _method = action.Method;
+                if (action.Target != null)
+                {
+                    _target = new WeakReference(action.Target);
+                    _isStatic = false;
+                }
+                else
+                {
+                    _delegate = action;
+                    _isStatic = true;
+                }
+            }
+
+            public bool IsAlive => _isStatic || (_target != null && _target.IsAlive);
+
+            public bool Matches(Delegate d)
+            {
+                if (d == null) return false;
+                if (_isStatic)
+                {
+                    return d.Target == null && d.Method == _method;
+                }
+                return _target != null && _target.Target == d.Target && d.Method == _method;
+            }
+
+            public void Invoke(object eventArgs)
+            {
+                if (_isStatic)
+                {
+                    _delegate((T)eventArgs);
+                }
+                else
+                {
+                    object target = _target?.Target;
+                    if (target != null)
+                    {
+                        var del = (Action<T>)Delegate.CreateDelegate(typeof(Action<T>), target, _method);
+                        del((T)eventArgs);
+                    }
+                }
+            }
+        }
+
+        private static readonly Dictionary<Type, List<ISubscription>> _subscribers =
+            new Dictionary<Type, List<ISubscription>>();
 
         private const int MaxPoolSize = 16;
 
-        private static readonly Stack<List<Delegate>> _listPool = new Stack<List<Delegate>>();
+        private static readonly Stack<List<ISubscription>> _listPool = new Stack<List<ISubscription>>();
+        private static readonly object _lockObj = new object();
 
-        private static List<Delegate> GetTempList()
+        private static List<ISubscription> GetTempList()
         {
             if (_listPool.Count > 0)
                 return _listPool.Pop();
-            return new List<Delegate>(16);
+            return new List<ISubscription>(16);
         }
 
-        private static void ReleaseTempList(List<Delegate> list)
+        private static void ReleaseTempList(List<ISubscription> list)
         {
             list.Clear();
             if (_listPool.Count < MaxPoolSize)
@@ -44,51 +104,114 @@ namespace PuzzleGame.Events
             if (handler == null) return;
 
             var type = typeof(T);
-            if (!_subscribers.TryGetValue(type, out var list))
+            lock (_lockObj)
             {
-                list = new List<Delegate>();
-                _subscribers[type] = list;
+                if (!_subscribers.TryGetValue(type, out var list))
+                {
+                    list = new List<ISubscription>();
+                    _subscribers[type] = list;
+                }
+                list.Add(new Subscription<T>(handler));
             }
-            list.Add(handler);
         }
 
         public static void Unsubscribe<T>(Action<T> handler)
         {
             if (handler == null) return;
 
-            if (_subscribers.TryGetValue(typeof(T), out var list))
-                list.Remove(handler);
+            lock (_lockObj)
+            {
+                if (_subscribers.TryGetValue(typeof(T), out var list))
+                {
+                    for (int i = list.Count - 1; i >= 0; i--)
+                    {
+                        if (list[i].Matches(handler))
+                        {
+                            list.RemoveAt(i);
+                        }
+                    }
+                }
+            }
         }
 
         // ── Publish ──────────────────────────────────────────────────────────
 
         public static void Publish<T>(T eventArgs)
         {
-            if (!_subscribers.TryGetValue(typeof(T), out var list) || list.Count == 0)
-                return;
+            List<ISubscription> tempList = null;
 
-            // Copy to a pooled list to support safe unsubscription/subscription during dispatch
-            // while maintaining 0 GC allocation.
-            var tempList = GetTempList();
-            tempList.AddRange(list);
+            lock (_lockObj)
+            {
+                if (!_subscribers.TryGetValue(typeof(T), out var list) || list.Count == 0)
+                    return;
 
+                // Clean dead subscriptions first
+                for (int i = list.Count - 1; i >= 0; i--)
+                {
+                    if (!list[i].IsAlive)
+                    {
+                        list.RemoveAt(i);
+                    }
+                }
+
+                if (list.Count == 0) return;
+
+                // Copy to a pooled list to support safe unsubscription/subscription during dispatch
+                tempList = GetTempList();
+                int originalCount = list.Count;
+                for (int i = 0; i < originalCount; i++)
+                {
+                    tempList.Add(list[i]);
+                }
+            }
+
+            List<Exception> exceptions = null;
             int count = tempList.Count;
             for (int i = 0; i < count; i++)
             {
+                var sub = tempList[i];
+                if (!sub.IsAlive) continue;
+
                 try
                 {
-                    ((Action<T>)tempList[i]).Invoke(eventArgs);
+                    sub.Invoke(eventArgs);
                 }
                 catch (Exception ex)
                 {
                     BottleLogger.LogError($"EventAggregator: handler threw for event {typeof(T).Name}: {ex}");
+                    if (exceptions == null)
+                    {
+                        exceptions = new List<Exception>();
+                    }
+                    exceptions.Add(ex);
                 }
             }
 
-            ReleaseTempList(tempList);
+            lock (_lockObj)
+            {
+                ReleaseTempList(tempList);
+            }
+
+            if (exceptions != null)
+            {
+                if (exceptions.Count == 1)
+                {
+                    System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(exceptions[0]).Throw();
+                }
+                else
+                {
+                    throw new AggregateException($"Multiple exceptions thrown during dispatch of event {typeof(T).Name}", exceptions);
+                }
+            }
         }
 
         /// <summary>Removes all subscribers — call on scene unload to prevent stale references.</summary>
-        public static void Clear() => _subscribers.Clear();
+        public static void Clear()
+        {
+            lock (_lockObj)
+            {
+                _subscribers.Clear();
+            }
+        }
     }
 }

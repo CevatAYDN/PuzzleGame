@@ -60,6 +60,27 @@ namespace PuzzleGame.Domain.Models
             _layers.Clear();
             _totalFill = 0f;
         }
+        
+        public bool ReplaceAtIndex(int index, LiquidLayer newLayer)
+        {
+            if (index < 0 || index >= _layers.Count) return false;
+            
+            var oldLayer = _layers[index];
+            _layers[index] = newLayer;
+            _totalFill = _totalFill - oldLayer.Amount + newLayer.Amount;
+            return true;
+        }
+        
+        public bool RemoveAtIndex(int index)
+        {
+            if (index < 0 || index >= _layers.Count) return false;
+            
+            var removed = _layers[index];
+            _layers.RemoveAt(index);
+            _totalFill -= removed.Amount;
+            if (_totalFill < 0.0001f) _totalFill = 0f;
+            return true;
+        }
 
         /// <summary>
         /// Snapshot'tan yükle (Undo için).

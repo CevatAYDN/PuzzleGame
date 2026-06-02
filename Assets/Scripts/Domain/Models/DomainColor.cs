@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace PuzzleGame.Domain.Models
 {
@@ -45,5 +46,17 @@ namespace PuzzleGame.Domain.Models
 
         public static bool operator ==(DomainColor left, DomainColor right) => left.Equals(right);
         public static bool operator !=(DomainColor left, DomainColor right) => !left.Equals(right);
+        
+        /// <summary>
+        /// Implicit conversion from Unity Color to DomainColor.
+        /// </summary>
+        public static implicit operator DomainColor(Color color) => 
+            new DomainColor(color.r, color.g, color.b, color.a);
+        
+        /// <summary>
+        /// Implicit conversion from DomainColor to Unity Color.
+        /// </summary>
+        public static implicit operator Color(DomainColor domainColor) => 
+            new Color(domainColor.R, domainColor.G, domainColor.B, domainColor.A);
     }
 }

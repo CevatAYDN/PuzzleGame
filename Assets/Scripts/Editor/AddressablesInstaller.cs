@@ -114,4 +114,22 @@ namespace PuzzleGame.Editor
         }
     }
 }
+#else
+using UnityEditor;
+
+namespace PuzzleGame.Editor
+{
+    public static class AddressablesInstaller
+    {
+        [MenuItem("Tools/PuzzleGame/Setup Addressables")]
+        public static void Setup()
+        {
+            EditorUtility.DisplayDialog(
+                "Addressables Missing",
+                "Addressables package is not installed or 'ENABLE_ADDRESSABLES' is not defined in Scripting Define Symbols.\n\n" +
+                "To fix: Install Addressables package via Package Manager, and define 'ENABLE_ADDRESSABLES' in Project Settings > Player > Scripting Define Symbols.",
+                "OK");
+        }
+    }
+}
 #endif

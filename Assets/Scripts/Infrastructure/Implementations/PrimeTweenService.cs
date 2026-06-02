@@ -45,7 +45,7 @@ namespace PuzzleGame.Infrastructure.Implementations
         }
 
         public ITweenHandle TweenCustom(object target, float from, float to, float duration, Action<object, float> onUpdate)
-            => Start(PrimeTween.Tween.Custom(target, from, to, duration, (obj, val) => onUpdate(obj, val), ToPrimeEase(EaseType.Linear)));
+            => Start(PrimeTween.Tween.Custom(target, from, to, duration, onUpdate, ToPrimeEase(EaseType.Linear)));
 
         public ITweenHandle SequenceCreate() => StartSequence(PrimeTween.Sequence.Create());
 
@@ -76,7 +76,7 @@ namespace PuzzleGame.Infrastructure.Implementations
         public void Chain(ITweenHandle other) { }
         public void Group(ITweenHandle other) { }
 
-        public void OnComplete(Action callback)
+        public ITweenHandle OnComplete(Action callback)
         {
             _onCompleteCallbacks.Add(callback);
             _tween.OnComplete(() =>
@@ -84,6 +84,7 @@ namespace PuzzleGame.Infrastructure.Implementations
                 for (int i = 0; i < _onCompleteCallbacks.Count; i++)
                     _onCompleteCallbacks[i]?.Invoke();
             });
+            return this;
         }
 
         public void SetCycles(int loops, LoopMode mode)
@@ -112,7 +113,7 @@ namespace PuzzleGame.Infrastructure.Implementations
         public void Chain(ITweenHandle other) { }
         public void Group(ITweenHandle other) { }
 
-        public void OnComplete(Action callback) => _onComplete += callback;
+        public ITweenHandle OnComplete(Action callback) { _onComplete += callback; return this; }
 
         public void SetCycles(int loops, LoopMode mode) { }
 
@@ -150,7 +151,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             else if (other is PrimeTweenSequenceHandle s) _sequence.Group(s._sequence);
         }
 
-        public void OnComplete(Action callback) => _onComplete += callback;
+        public ITweenHandle OnComplete(Action callback) { _onComplete += callback; return this; }
 
         public void SetCycles(int loops, LoopMode mode)
         {

@@ -80,9 +80,38 @@ namespace PuzzleGame.Events.Tests
             EventAggregator.Subscribe<TestEvent>(e => throw new System.Exception("Boom"));
             EventAggregator.Subscribe<TestEvent>(e => callCount++);
 
-            EventAggregator.Publish(new TestEvent());
+            Assert.Throws<System.Exception>(() => EventAggregator.Publish(new TestEvent()));
 
             Assert.That(callCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Publish_Concurrent_DoesNotThrow()
+        {
+            const int threadCount = 10;
+            const int iterations = 100;
+            int callCount = 0;
+
+            EventAggregator.Subscribe<TestEvent>(e => {
+                System.Threading.Interlocked.Increment(ref callCount);
+            });
+
+            var threads = new System.Threading.Thread[threadCount];
+            for (int i = 0; i < threadCount; i++)
+            {
+                threads[i] = new System.Threading.Thread(() =>
+                {
+                    for (int j = 0; j < iterations; j++)
+                    {
+                        EventAggregator.Publish(new TestEvent());
+                    }
+                });
+            }
+
+            foreach (var t in threads) t.Start();
+            foreach (var t in threads) t.Join();
+
+            Assert.That(callCount, Is.EqualTo(threadCount * iterations));
         }
 
         // ── Unsubscribe ─────────────────────────────────────────────────────

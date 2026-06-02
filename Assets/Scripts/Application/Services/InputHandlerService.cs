@@ -82,8 +82,20 @@ namespace PuzzleGame.Application.Services
 
         private void HandleInput(Vector2 screenPos)
         {
+            // Perform raycast against the configured bottle layer mask.
             if (!_inputHandler.Raycast(screenPos, _gameConfig.bottleLayerMask, out RaycastHit hit))
             {
+                if (BottleLogger.IsWarningEnabled)
+                {
+                    if (_inputHandler.Raycast(screenPos, ~0, out RaycastHit debugHit))
+                    {
+                        BottleLogger.LogWarning($"Input raycast missed bottle because it hit '{debugHit.collider.name}' (Layer: {LayerMask.LayerToName(debugHit.collider.gameObject.layer)}) instead of the bottle layer.");
+                    }
+                    else
+                    {
+                        BottleLogger.LogWarning($"Input raycast missed everything at screen position {screenPos}.");
+                    }
+                }
                 if (_selectionService.SelectedBottle != null)
                 {
                     LowerSelectedBottle();
@@ -120,17 +132,17 @@ namespace PuzzleGame.Application.Services
         {
             if (bottle.IsCapped)
             {
-                BottleLogger.LogDebug($"Cannot select completed/capped bottle.");
+                BottleLogger.LogDebug("Cannot select completed/capped bottle.");
                 return;
             }
 
             if (bottle.IsEmpty)
             {
-                BottleLogger.LogDebug($"Cannot select empty bottle.");
+                BottleLogger.LogDebug("Cannot select empty bottle.");
                 return;
             }
 
-            BottleLogger.LogInfo($"Selected bottle.");
+            BottleLogger.LogInfo("Selected bottle.");
             _selectedOriginalPos = bottle.Transform.position;
             _selectionService.Select(bottle.State);
             bottle.SetSelectionHighlight(true);
@@ -149,16 +161,21 @@ namespace PuzzleGame.Application.Services
                 return;
             }
 
-            BottleLogger.LogInfo($"Attempting pour.");
-
-            // Use PourService for both single and multi-layer pours
-            if (_pourService != null && _pourService.TryPour(source, target, _currentLevelData))
+            if (_pourService == null)
             {
-                // Get pour layer count for animation
+                BottleLogger.LogError("TryPour: PourService is null — DI may have failed.");
+                _selectionService.Deselect();
+                return;
+            }
+
+            BottleLogger.LogInfo("Attempting pour.");
+
+            if (_pourService.TryPour(source, target, _currentLevelData))
+            {
                 int pourCount = _pourService.GetPourLayerCount(source, target, _currentLevelData);
-                
-                BottleLogger.LogInfo($"Pour succeeded ({pourCount} layers).");
-                
+                if (BottleLogger.IsInfoEnabled)
+                    BottleLogger.LogInfo($"Pour succeeded ({pourCount} layers).");
+
                 _animationService.AnimatePour(
                     source,
                     target,
@@ -172,46 +189,10 @@ namespace PuzzleGame.Application.Services
                     });
 
                 _selectionService.Deselect();
-                // Note: PourCompletedEvent is now published by PourService
-            }
-            else if (_validator.CanPour(source.State, target.State))
-            {
-                // Fallback to legacy single-layer pour if PourService fails
-                _historyManager?.RecordUndoSnapshot();
-
-                if (source.TryPourTo(target))
-                {
-                    BottleLogger.LogInfo($"Pour succeeded (legacy path).");
-                    _historyManager?.IncrementMoveCount();
-                    _animationService.AnimatePour(
-                        source,
-                        target,
-                        _animConfig.pourDuration,
-                        onComplete: () =>
-                        {
-                            source.SetSelectionHighlight(false);
-                            _animationService.AnimateBottleLower(
-                                source.Transform,
-                                _selectedOriginalPos, _animConfig.liftDuration);
-                        });
-
-                    _selectionService.Deselect();
-                    EventAggregator.Publish(new PourCompletedEvent(source.State, target.State));
-                }
-                else
-                {
-                    BottleLogger.LogDebug($"Pour rejected (legacy path).");
-                    _audioService?.PlaySfx(AudioClipId.Error);
-                    _animationService?.AnimateErrorShake(source.Transform, onComplete: () =>
-                    {
-                        LowerSelectedBottle();
-                        _selectionService.Deselect();
-                    });
-                }
             }
             else
             {
-                BottleLogger.LogDebug($"Pour rejected.");
+                BottleLogger.LogDebug("Pour rejected.");
                 _audioService?.PlaySfx(AudioClipId.Error);
                 _animationService?.AnimateErrorShake(source.Transform, onComplete: () =>
                 {

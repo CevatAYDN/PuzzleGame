@@ -33,11 +33,19 @@ namespace PuzzleGame.Application.Services
     {
         private readonly IBottleValidator _validator;
         private readonly IGameHistoryManager _historyManager;
+        private readonly IReactionService _reactionService;
+        private LevelData _currentLevelData;
         
-        public PourService(IBottleValidator validator, IGameHistoryManager historyManager)
+        public PourService(IBottleValidator validator, IGameHistoryManager historyManager, IReactionService reactionService)
         {
             _validator = validator;
             _historyManager = historyManager;
+            _reactionService = reactionService;
+        }
+        
+        public void SetLevelData(LevelData levelData)
+        {
+            _currentLevelData = levelData;
         }
         
         public bool TryPour(IBottleView source, IBottleView target, LevelData levelData)
@@ -192,6 +200,9 @@ namespace PuzzleGame.Application.Services
                     GetBottleIndex(target),
                     poured));
                 
+                // Check for reactions after pour
+                CheckForReactions(source, target);
+                
                 BottleLogger.LogInfo($"[PourService] Multi-layer pour: {poured} layers from {source.GameObject.name} → {target.GameObject.name}");
                 return true;
             }
@@ -215,6 +226,31 @@ namespace PuzzleGame.Application.Services
                    Mathf.Abs(a.G - b.G) < tolerance &&
                    Mathf.Abs(a.B - b.B) < tolerance &&
                    Mathf.Abs(a.A - b.A) < tolerance;
+        }
+        
+        private void CheckForReactions(IBottleView source, IBottleView target)
+        {
+            if (_currentLevelData == null || !_currentLevelData.enableReactionSystem)
+                return;
+            
+            if (_currentLevelData.reactionConfig == null || !_currentLevelData.reactionConfig.enableReactions)
+                return;
+            
+            if (_reactionService == null) return;
+            
+            // Get all bottles in scene for reaction check
+            var bottles = UnityEngine.Object.FindObjectsByType<UnityEngine.MonoBehaviour>()
+                .OfType<IBottleView>()
+                .ToArray();
+            
+            if (bottles.Length == 0) return;
+            
+            var results = _reactionService.CheckReactions(bottles, _currentLevelData.reactionConfig);
+            
+            if (results.Count > 0)
+            {
+                BottleLogger.LogInfo($"[PourService] {results.Count} reaction(s) detected!");
+            }
         }
     }
 }
