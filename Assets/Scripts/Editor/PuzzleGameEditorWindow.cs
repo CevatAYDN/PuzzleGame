@@ -2,24 +2,49 @@ using UnityEditor;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using PuzzleGame.Domain.Models;
+using PuzzleGame.Application.Services;
 
 namespace PuzzleGame.Editor
 {
     /// <summary>
-    /// PuzzleGame için tüm editor araçları — tek pencerede 3 sekme:
+    /// PuzzleGame için tüm editor araçları — tek pencerede 4 sekme:
     ///   - Data: ScriptableObject asset yönetimi
+    ///   - Levels: Batch level creation ve yönetimi
     ///   - Scene: Sahne oluşturma kontrolü
     ///   - Validate: Proje sağlık kontrolleri
     /// </summary>
     public class PuzzleGameEditorWindow : EditorWindow
     {
-        private enum Tab { Data, Scene, Validate }
+        private enum Tab { Data, Levels, Scene, Validate }
         private Tab _activeTab = Tab.Data;
 
         // ── Data tab ────────────────────────────────────────────────────────
         private bool _overrideExisting = false;
         private Dictionary<string, bool> _dataPresence = new Dictionary<string, bool>();
         private Vector2 _dataScroll;
+
+        // ── Levels tab ──────────────────────────────────────────────────────
+        private float _levelStart = 1;
+        private float _levelEnd = 10;
+        private int _levelSeedBase = 1337;
+        private Difficulty _levelDifficulty = Difficulty.Easy;
+        private int _levelBottleCount = 5;
+        private int _levelColorCount = 3;
+        private int _levelEmptyCount = 2;
+        private int _levelMaxLayers = 4;
+        private int _levelPar = 10;
+        private int _levelGood = 15;
+        private Vector2 _levelsScroll;
+        private List<LevelInfo> _existingLevels = new List<LevelInfo>();
+
+        private struct LevelInfo
+        {
+            public int number;
+            public Difficulty difficulty;
+            public string path;
+            public bool exists;
+        }
 
         // ── Scene tab ───────────────────────────────────────────────────────
         private SceneBuilder.BuildOptions _buildOpts = SceneBuilder.All;
@@ -57,6 +82,7 @@ namespace PuzzleGame.Editor
             switch (_activeTab)
             {
                 case Tab.Data:     DrawDataTab();     break;
+                case Tab.Levels:   DrawLevelsTab();   break;
                 case Tab.Scene:    DrawSceneTab();    break;
                 case Tab.Validate: DrawValidateTab(); break;
             }
@@ -69,6 +95,7 @@ namespace PuzzleGame.Editor
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             if (GUILayout.Toggle(_activeTab == Tab.Data, "Data", EditorStyles.toolbarButton)) _activeTab = Tab.Data;
+            if (GUILayout.Toggle(_activeTab == Tab.Levels, "Levels", EditorStyles.toolbarButton)) _activeTab = Tab.Levels;
             if (GUILayout.Toggle(_activeTab == Tab.Scene, "Scene", EditorStyles.toolbarButton)) _activeTab = Tab.Scene;
             if (GUILayout.Toggle(_activeTab == Tab.Validate, "Validate", EditorStyles.toolbarButton)) _activeTab = Tab.Validate;
             GUILayout.FlexibleSpace();
@@ -326,6 +353,202 @@ namespace PuzzleGame.Editor
         private void RefreshDataPresence()
         {
             _dataPresence = DataAssetCreator.CheckAllExist();
+            RefreshLevelList();
+        }
+
+        private void RefreshLevelList()
+        {
+            _existingLevels.Clear();
+            var guids = AssetDatabase.FindAssets("t:LevelData", new[] { LevelDataBatchCreator.LevelPath });
+            for (int i = 0; i < 100; i++)
+            {
+                string path = $"{LevelDataBatchCreator.LevelPath}/Level_{i:D2}.asset";
+                var level = AssetDatabase.LoadAssetAtPath<LevelData>(path);
+                _existingLevels.Add(new LevelInfo
+                {
+                    number = i,
+                    exists = level != null,
+                    difficulty = level != null ? level.difficulty : Difficulty.Trivial,
+                    path = path
+                });
+            }
+        }
+
+        // ── LEVELS TAB ──────────────────────────────────────────────────────
+
+        private void DrawLevelsTab()
+        {
+            EditorGUILayout.LabelField("Level Asset Management", EditorStyles.boldLabel);
+            EditorGUILayout.Space(4);
+
+            _levelsScroll = EditorGUILayout.BeginScrollView(_levelsScroll);
+
+            // ── Batch Create ─────────────────────────────────────────────
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Batch Create Levels", EditorStyles.miniBoldLabel);
+                EditorGUILayout.Space(4);
+
+                EditorGUILayout.MinMaxSlider("Level Range", ref _levelStart, ref _levelEnd, 1, 999);
+                EditorGUILayout.LabelField($"Range: {(int)_levelStart} — {(int)_levelEnd}");
+
+                _levelSeedBase = EditorGUILayout.IntField("Seed Base", _levelSeedBase);
+                _levelDifficulty = (Difficulty)EditorGUILayout.EnumPopup("Difficulty", _levelDifficulty);
+                _levelBottleCount = EditorGUILayout.IntField("Bottle Count", _levelBottleCount);
+                _levelColorCount = EditorGUILayout.IntField("Color Count", _levelColorCount);
+                _levelEmptyCount = EditorGUILayout.IntField("Empty Bottles", _levelEmptyCount);
+                _levelMaxLayers = EditorGUILayout.IntField("Max Layers", _levelMaxLayers);
+                _levelPar = EditorGUILayout.IntField("Par (3★)", _levelPar);
+                _levelGood = EditorGUILayout.IntField("Good (2★)", _levelGood);
+
+                EditorGUILayout.Space(6);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("Create Custom Range", GUILayout.Height(28)))
+                        EditorApplication.delayCall += CreateCustomLevels;
+                    if (GUILayout.Button("Create 100 Levels (Progressive)", GUILayout.Height(28)))
+                        EditorApplication.delayCall += LevelDataBatchCreator.Create100Levels;
+                }
+            }
+
+            EditorGUILayout.Space(8);
+
+            // ── Existing Levels ──────────────────────────────────────────
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField($"Existing Levels ({_existingLevels.Count(l => l.exists)}/100)", EditorStyles.miniBoldLabel);
+                EditorGUILayout.Space(4);
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("Ping All", EditorStyles.miniButton, GUILayout.Width(80)))
+                        EditorApplication.delayCall += PingAllLevels;
+                    if (GUILayout.Button("Delete Missing Range", EditorStyles.miniButton, GUILayout.Width(120)))
+                        EditorApplication.delayCall += DeleteMissingLevels;
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("Refresh List", EditorStyles.miniButton, GUILayout.Width(90)))
+                        EditorApplication.delayCall += RefreshLevelList;
+                }
+
+                EditorGUILayout.Space(4);
+
+                // Show first 20 levels in list
+                int showCount = Mathf.Min(20, _existingLevels.Count);
+                for (int i = 0; i < showCount; i++)
+                {
+                    var lvl = _existingLevels[i];
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        GUI.contentColor = lvl.exists ? Color.green : Color.gray;
+                        GUILayout.Label(lvl.exists ? "✓" : "✗", GUILayout.Width(20));
+                        GUI.contentColor = Color.white;
+                        GUILayout.Label($"Level {lvl.number:D2}", GUILayout.Width(70));
+                        if (lvl.exists)
+                        {
+                            GUILayout.Label(lvl.difficulty.ToString(), GUILayout.Width(70));
+                        }
+                        else
+                        {
+                            GUILayout.Label("—", GUILayout.Width(70));
+                        }
+                        GUILayout.FlexibleSpace();
+                        if (lvl.exists && GUILayout.Button("Ping", GUILayout.Width(50)))
+                        {
+                            int num = lvl.number;
+                            EditorApplication.delayCall += () =>
+                            {
+                                var obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(lvl.path);
+                                if (obj != null) EditorGUIUtility.PingObject(obj);
+                            };
+                        }
+                        if (lvl.exists && GUILayout.Button("Delete", GUILayout.Width(60)))
+                        {
+                            string p = lvl.path;
+                            int n = lvl.number;
+                            EditorApplication.delayCall += () =>
+                            {
+                                if (AssetDatabase.DeleteAsset(p))
+                                {
+                                    AssetDatabase.Refresh();
+                                    SetStatus($"Level {n:D2} deleted.", MessageType.Info);
+                                    RefreshLevelList();
+                                }
+                            };
+                        }
+                    }
+                }
+
+                if (_existingLevels.Count(l => l.exists) > 20)
+                {
+                    EditorGUILayout.HelpBox(
+                        $"... and {_existingLevels.Count(l => l.exists) - 20} more levels. Use ping/delete above.",
+                        MessageType.None);
+                }
+            }
+
+            EditorGUILayout.EndScrollView();
+        }
+
+        private void CreateCustomLevels()
+        {
+            if (!System.IO.Directory.Exists(LevelDataBatchCreator.LevelPath))
+                System.IO.Directory.CreateDirectory(LevelDataBatchCreator.LevelPath);
+
+            int count = 0;
+            int skipped = 0;
+            for (int i = (int)_levelStart; i <= (int)_levelEnd; i++)
+            {
+                string fileName = $"Level_{i:D2}";
+                string fullPath = $"{LevelDataBatchCreator.LevelPath}/{fileName}.asset";
+
+                var existing = AssetDatabase.LoadAssetAtPath<LevelData>(fullPath);
+                if (existing != null)
+                {
+                    skipped++;
+                    continue;
+                }
+
+                var level = ScriptableObject.CreateInstance<LevelData>();
+                level.levelNumber = i;
+                level.randomSeed = i * _levelSeedBase;
+                level.difficulty = _levelDifficulty;
+                level.bottleCount = _levelBottleCount;
+                level.colorCount = _levelColorCount;
+                level.emptyBottleCount = _levelEmptyCount;
+                level.maxLayersPerBottle = _levelMaxLayers;
+                level.parMoves = _levelPar;
+                level.goodMoves = _levelGood;
+
+                AssetDatabase.CreateAsset(level, fullPath);
+                count++;
+            }
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            SetStatus($"Created {count} levels, skipped {skipped} (already exist).", MessageType.Info);
+            RefreshLevelList();
+        }
+
+        private void PingAllLevels()
+        {
+            int pinged = 0;
+            foreach (var lvl in _existingLevels.Where(l => l.exists).Take(10))
+            {
+                var obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(lvl.path);
+                if (obj != null)
+                {
+                    EditorGUIUtility.PingObject(obj);
+                    pinged++;
+                }
+            }
+            SetStatus($"Pinged {pinged} level assets.", MessageType.Info);
+        }
+
+        private void DeleteMissingLevels()
+        {
+            int start = (int)_levelStart;
+            int end = (int)_levelEnd;
+            SetStatus($"Checked range {start}-{end}. Use Delete button per-level.", MessageType.Info);
         }
 
         // ── SCENE TAB ───────────────────────────────────────────────────────
