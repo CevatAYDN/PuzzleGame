@@ -65,6 +65,9 @@ namespace PuzzleGame
 
         private static readonly WaitForSeconds WinCheckDelay = new WaitForSeconds(0.5f);
         private static readonly Color CamDefaultBgColor = new Color(0.08f, 0.05f, 0.16f, 1f);
+        
+        // DI initialization flag
+        private bool _isInitialized;
 
         [Inject]
         public void Construct(
@@ -104,21 +107,28 @@ namespace PuzzleGame
             _levelSetupService = levelSetupService;
             _levelValidationService = levelValidationService;
             _historyManager = historyManager;
+            
+            // DI injection başarılı - oyunu başlatabiliriz
+            _isInitialized = true;
         }
 
         private void Awake()
         {
             BottleLogger.LogInfo("GameManager Awake.");
+            
+            // DI kontrolünü Awake'te değil, Construct başarılı olduktan sonra yap
+            // VContainer, Construct başarılı olunca _isInitialized'ı true yapacak
         }
 
         private void Start()
         {
-            if (_stateMachine == null)
+            // VContainer DI başarısızsa Construct methodu çağrılmaz
+            // Constructor injection başarılı olmadan oyun başlamasın
+            if (!_isInitialized)
             {
                 BottleLogger.LogError(
-                    "VContainer DI failed — GameInstaller (LifetimeScope) not found in scene.\n" +
-                    "Fix: Add GameInstaller component to any GameObject, or use:\n" +
-                    "  Tools > PuzzleGame > Open Editor > Scene tab > 'Setup Current Scene (Bottles + GameManager + DI)'");
+                    "VContainer DI failed — GameInstaller (LifetimeScope) not found or not configured.\n" +
+                    "Fix: Tools > PuzzleGame > Open Editor > Scene tab > 'Setup Current Scene (GameManager + DI)'");
                 enabled = false;
                 return;
             }

@@ -530,11 +530,35 @@ namespace PuzzleGame.Editor
             var go = new GameObject("GameInstaller");
             var installer = go.AddComponent<Installers.GameInstaller>();
             
-            // Auto-assign configs from Resources
+            // Auto-assign configs from Resources, create defaults if not found
             installer.gameConfig = Resources.Load<GameConfig>("Data/GameConfig");
+            if (installer.gameConfig == null)
+            {
+                installer.gameConfig = ScriptableObject.CreateInstance<GameConfig>();
+                installer.gameConfig.name = "GameConfig";
+                Debug.LogWarning("[SceneBuilder] GameConfig not found in Resources — created default.");
+            }
+            
             installer.animationConfig = Resources.Load<AnimationConfig>("Data/AnimationConfig");
+            if (installer.animationConfig == null)
+            {
+                installer.animationConfig = ScriptableObject.CreateInstance<AnimationConfig>();
+                installer.animationConfig.name = "AnimationConfig";
+            }
+            
             installer.levelConfig = Resources.Load<LevelConfig>("Data/LevelConfig");
+            if (installer.levelConfig == null)
+            {
+                installer.levelConfig = ScriptableObject.CreateInstance<LevelConfig>();
+                installer.levelConfig.name = "LevelConfig";
+            }
+            
             installer.audioConfig = Resources.Load<AudioConfig>("Data/AudioConfig");
+            if (installer.audioConfig == null)
+            {
+                installer.audioConfig = ScriptableObject.CreateInstance<AudioConfig>();
+                installer.audioConfig.name = "AudioConfig";
+            }
             
             Debug.Log("[SceneBuilder] GameInstaller created and configs assigned.");
         }
