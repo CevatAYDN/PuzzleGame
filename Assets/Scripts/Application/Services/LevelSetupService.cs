@@ -17,11 +17,10 @@ namespace PuzzleGame.Application.Services
     /// Handles level setup and initialization logic.
     /// BottleController (MonoBehaviour) yerine IBottleView abstraction kullanır.
     /// </summary>
-    public class LevelSetupService
+    public class LevelSetupService : ILevelSetupService
     {
         private readonly GameConfig _gameConfig;
         private readonly LevelConfig _levelConfig;
-        private readonly LevelData _currentLevel;
         
         private static readonly Color[] DefaultPalette = new Color[]
         {
@@ -33,37 +32,36 @@ namespace PuzzleGame.Application.Services
             new Color(0.95f, 0.50f, 0.15f, 1f),
         };
 
-        public LevelSetupService(GameConfig gameConfig, LevelConfig levelConfig, LevelData currentLevel = null)
+        public LevelSetupService(GameConfig gameConfig, LevelConfig levelConfig)
         {
             _gameConfig = gameConfig;
             _levelConfig = levelConfig;
-            _currentLevel = currentLevel;
         }
 
-        public List<List<LiquidLayer>> GenerateLevelAssignments(IBottleView[] bottles)
+        public List<List<LiquidLayer>> GenerateLevelAssignments(IBottleView[] bottles, LevelData currentLevel)
         {
             if (bottles == null || bottles.Length == 0) 
                 return new List<List<LiquidLayer>>();
 
-            // Determine generation parameters based on _currentLevel first, fallback to levelConfig / defaults
+            // Determine generation parameters based on currentLevel first, fallback to levelConfig / defaults
             bool autoGen = true;
             int empties = 2;
             int seed = 0;
             Color[] pal = DefaultPalette;
             List<List<LiquidLayer>> assignments = null;
 
-            if (_currentLevel != null)
+            if (currentLevel != null)
             {
-                autoGen = _currentLevel.autoGenerate;
-                empties = _currentLevel.emptyBottleCount;
-                seed = _currentLevel.randomSeed;
+                autoGen = currentLevel.autoGenerate;
+                empties = currentLevel.emptyBottleCount;
+                seed = currentLevel.randomSeed;
                 pal = _levelConfig != null && _levelConfig.palette.Length > 0 ? _levelConfig.palette : DefaultPalette;
 
-                if (_currentLevel.autoGenerate)
+                if (currentLevel.autoGenerate)
                 {
                     assignments = LevelGenerator.Generate(
                         bottles.Length,
-                        _currentLevel.maxLayersPerBottle,
+                        currentLevel.maxLayersPerBottle,
                         empties,
                         ConvertPalette(pal),
                         seed);
@@ -72,11 +70,11 @@ namespace PuzzleGame.Application.Services
                 {
                     // Pre-built level: convert List<LevelBottleData> to List<List<LiquidLayer>>
                     assignments = new List<List<LiquidLayer>>();
-                    if (_currentLevel.bottles != null)
+                    if (currentLevel.bottles != null)
                     {
-                        for (int i = 0; i < _currentLevel.bottles.Count; i++)
+                        for (int i = 0; i < currentLevel.bottles.Count; i++)
                         {
-                            var bottleData = _currentLevel.bottles[i];
+                            var bottleData = currentLevel.bottles[i];
                             if (bottleData != null)
                             {
                                 var layers = new List<LiquidLayer>();
@@ -115,13 +113,14 @@ namespace PuzzleGame.Application.Services
         }
 
         public void SetupBottles(IBottleView[] bottles,
-                                IRendererService rendererService,
-                                IBottleValidator validator,
-                                IAnimationService animationService)
+                                 LevelData currentLevel,
+                                 IRendererService rendererService,
+                                 IBottleValidator validator,
+                                 IAnimationService animationService)
         {
             if (bottles.Length == 0) return;
 
-            var assignments = GenerateLevelAssignments(bottles);
+            var assignments = GenerateLevelAssignments(bottles, currentLevel);
 
             for (int i = 0; i < bottles.Length; i++)
             {
@@ -130,17 +129,7 @@ namespace PuzzleGame.Application.Services
                     ? assignments[i]
                     : new List<LiquidLayer>();
 
-                // BottleController'a cast ederek initialize çağır
-                if (bottle is BottleController concrete)
-                {
-                    concrete.Initialize(rendererService, validator, animationService, initial);
-                }
-                else
-                {
-                    // IBottleView üzerinden değilse, sadece state kurulumu yapılır
-                    BottleLogger.LogWarning(
-                        $"Bottle at index {i} is not BottleController, skipping concrete initialization.");
-                }
+                bottle.Initialize(rendererService, validator, animationService, initial);
             }
         }
 

@@ -83,13 +83,13 @@ namespace PuzzleGame.Application.Services
                 });
         }
 
-        public void AnimatePour(BottleController source, BottleController target,
+        public void AnimatePour(IBottleView source, IBottleView target,
                                 float duration, Action onComplete = null)
         {
             if (duration <= 0f) duration = 0.001f;
 
-            Transform sourceT = source.transform;
-            Transform targetT = target.transform;
+            Transform sourceT = source.Transform;
+            Transform targetT = target.Transform;
 
             Vector3 toTarget = (targetT.position - sourceT.position).normalized;
             // 85 degrees is ideal for a natural liquid pour
@@ -117,7 +117,7 @@ namespace PuzzleGame.Application.Services
             var targetStart = new LayerSnapshot(target.VisualLayers);
             LiquidLayer pouredLayer = target.State.TopLayer ?? new LiquidLayer(new DomainColor(0, 0, 0, 0), 0f);
 
-            LineRenderer lr = StreamRenderer.EnsureLineRenderer(source.gameObject);
+            LineRenderer lr = StreamRenderer.EnsureLineRenderer(source.GameObject);
             Color streamColor = ColorAdapter.ToUnity(pouredLayer.Color);
             StreamRenderer.SetColor(lr, streamColor);
             lr.enabled = false;
@@ -146,8 +146,8 @@ namespace PuzzleGame.Application.Services
 
                 _audioService?.PlaySfx(AudioClipId.PourLoop);
 
-                splashPS = _splashPool.Rent(target.transform);
-                bubblePS = _bubblePool.Rent(target.transform);
+                splashPS = _splashPool.Rent(target.Transform);
+                bubblePS = _bubblePool.Rent(target.Transform);
                 if (splashPS != null)
                 {
                     var splashMain = splashPS.main;
@@ -270,7 +270,7 @@ namespace PuzzleGame.Application.Services
             });
         }
 
-        public void AnimateSettleBounce(BottleController bottle, float duration,
+        public void AnimateSettleBounce(IBottleView bottle, float duration,
                                         Action onComplete = null)
         {
             float originalFill = bottle.VisualTotalFill;
@@ -304,7 +304,7 @@ namespace PuzzleGame.Application.Services
             renderer.SetPropertyBlock(propBlock, materialSlot);
         }
 
-        private void UpdateVisualPourProgress(BottleController source, BottleController target,
+        private void UpdateVisualPourProgress(IBottleView source, IBottleView target,
                                                LayerSnapshot sourceStart, LayerSnapshot targetStart,
                                                LiquidLayer pouredLayer, float t)
         {

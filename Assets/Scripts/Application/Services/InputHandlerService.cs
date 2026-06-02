@@ -8,6 +8,7 @@ using PuzzleGame.Logging;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Configuration;
 
+
 namespace PuzzleGame.Application.Services
 {
     /// <summary>
@@ -15,7 +16,7 @@ namespace PuzzleGame.Application.Services
     /// Artık BottleController (MonoBehaviour) yerine IBottleView abstraction kullanır —
     /// Domain katmanı izole kalır, unit testler yazılabilir.
     /// </summary>
-    public class InputHandlerService
+    public class InputHandlerService : IInputHandlerService
     {
         private readonly IInputHandler _inputHandler;
         private readonly Camera _camera;
@@ -26,11 +27,10 @@ namespace PuzzleGame.Application.Services
         private readonly GameConfig _gameConfig;
         private readonly AnimationConfig _animConfig;
         private readonly IAudioService _audioService;
+        private readonly IGameHistoryManager _historyManager;
 
         private IBottleView[] _bottles;
         private Vector3 _selectedOriginalPos;
-        private readonly Action _onPourSucceeded;
-        private readonly Action _onRecordUndoSnapshot;
 
         public InputHandlerService(
             IInputHandler inputHandler,
@@ -42,10 +42,10 @@ namespace PuzzleGame.Application.Services
             GameConfig gameConfig,
             AnimationConfig animConfig,
             IAudioService audioService,
-            Action onPourSucceeded = null,
-            Action onRecordUndoSnapshot = null)
+            IGameHistoryManager historyManager)
         {
             _inputHandler = inputHandler ?? throw new ArgumentNullException(nameof(inputHandler));
+            _camera = camera;
             _stateMachine = stateMachine;
             _animationService = animationService;
             _selectionService = selectionService;
@@ -53,8 +53,7 @@ namespace PuzzleGame.Application.Services
             _gameConfig = gameConfig;
             _animConfig = animConfig;
             _audioService = audioService;
-            _onPourSucceeded = onPourSucceeded;
-            _onRecordUndoSnapshot = onRecordUndoSnapshot;
+            _historyManager = historyManager;
         }
 
         public void SetBottles(IBottleView[] bottles)
@@ -123,11 +122,11 @@ namespace PuzzleGame.Application.Services
             }
 
             BottleLogger.LogInfo($"Selected bottle.");
-            _selectedOriginalPos = (bottle as MonoBehaviour)?.transform.position ?? Vector3.zero;
+            _selectedOriginalPos = bottle.Transform.position;
             _selectionService.Select(bottle.State);
             bottle.SetSelectionHighlight(true);
             _animationService.AnimateBottleLift(
-                (bottle as MonoBehaviour)?.transform,
+                bottle.Transform,
                 _animConfig.liftHeight, _animConfig.liftDuration,
                 keepHovering: () => _selectionService.SelectedBottle == bottle.State);
         }
@@ -146,21 +145,21 @@ namespace PuzzleGame.Application.Services
             if (_validator.CanPour(source.State, target.State))
             {
                 // Başarılı döküm öncesi undo state kaydı
-                _onRecordUndoSnapshot?.Invoke();
+                _historyManager?.RecordUndoSnapshot();
 
                 if (source.TryPourTo(target))
                 {
                     BottleLogger.LogInfo($"Pour succeeded.");
-                    _onPourSucceeded?.Invoke();
+                    _historyManager?.IncrementMoveCount();
                     _animationService.AnimatePour(
-                        source as BottleController,
-                        target as BottleController,
+                        source,
+                        target,
                         _animConfig.pourDuration,
                         onComplete: () =>
                         {
                             source.SetSelectionHighlight(false);
                             _animationService.AnimateBottleLower(
-                                (source as MonoBehaviour)?.transform,
+                                source.Transform,
                                 _selectedOriginalPos, _animConfig.liftDuration);
                         });
 
@@ -172,7 +171,7 @@ namespace PuzzleGame.Application.Services
             {
                 BottleLogger.LogDebug($"Pour rejected.");
                 _audioService?.PlaySfx(AudioClipId.Error);
-                _animationService?.AnimateErrorShake((source as MonoBehaviour)?.transform, onComplete: () =>
+                _animationService?.AnimateErrorShake(source.Transform, onComplete: () =>
                 {
                     LowerSelectedBottle();
                     _selectionService.Deselect();
@@ -187,7 +186,7 @@ namespace PuzzleGame.Application.Services
             {
                 selected.SetSelectionHighlight(false);
                 _animationService.AnimateBottleLower(
-                    (selected as MonoBehaviour)?.transform,
+                    selected.Transform,
                     _selectedOriginalPos, _animConfig.liftDuration);
             }
         }

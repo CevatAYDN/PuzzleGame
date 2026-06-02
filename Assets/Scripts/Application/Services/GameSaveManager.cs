@@ -7,6 +7,8 @@ using PuzzleGame.Domain.Models;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
+using PuzzleGame.Application.Interfaces;
+
 namespace PuzzleGame.Application.Services
 {
     /// <summary>
@@ -126,7 +128,7 @@ namespace PuzzleGame.Application.Services
         /// Level state'ini kaydeder. Atomic write kullanır (yarım kalmış dosya oluşmaz).
         /// </summary>
         public static bool Save(int levelIndex, int moveCount,
-            BottleController[] bottles, bool isCompleted)
+            IBottleView[] bottles, bool isCompleted)
         {
             if (bottles == null) return false;
 

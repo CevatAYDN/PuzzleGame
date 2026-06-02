@@ -27,7 +27,7 @@ namespace PuzzleGame.Application.Interfaces
         /// Plays the pour sequence: tilt source toward target, wait, then restore.
         /// Calls <paramref name="onComplete"/> after the tilt-back finishes.
         /// </summary>
-        void AnimatePour(BottleController source, BottleController target,
+        void AnimatePour(IBottleView source, IBottleView target,
                          float duration, Action onComplete = null);
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace PuzzleGame.Application.Interfaces
         /// <summary>
         /// Plays a settle bounce on the visual fill of a bottle.
         /// </summary>
-        void AnimateSettleBounce(BottleController bottle, float duration,
+        void AnimateSettleBounce(IBottleView bottle, float duration,
                                  Action onComplete = null);
     }
 }

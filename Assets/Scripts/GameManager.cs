@@ -36,30 +36,28 @@ namespace PuzzleGame
         [Header("UI Reference")]
         [SerializeField] private LevelSelectUI levelSelectUI;
 
-        // VContainer injected services
-        [Inject] private GameConfig gameConfig;
-        [Inject] private AnimationConfig animConfig;
-        [Inject] private LevelConfig levelConfig;
-        [Inject] private AudioConfig audioConfig;
+        // VContainer injected configurations
+        private GameConfig gameConfig;
+        private AnimationConfig animConfig;
+        private LevelConfig levelConfig;
+        private AudioConfig audioConfig;
 
-        // VContainer injected interfaces
-        private IInputHandler _inputHandler;
+        // VContainer injected services & interfaces
         private IBottleValidator _validator;
         private IRendererService _rendererService;
         private IAnimationService _animationService;
         private IBottleSelectionService _selectionService;
-        private IGameHistoryService _gameHistoryService;
         private IGameStateMachine _stateMachine;
         private IAudioService _audioService;
         private ILevelRepository _levelRepository;
         private ILevelProgressService _levelProgress;
+        
+        private IInputHandlerService _inputHandlerService;
+        private ILevelSetupService _levelSetupService;
+        private ILevelValidationService _levelValidationService;
+        private IGameHistoryManager _historyManager;
+
         private Camera _camera;
-        private ITweenService _tweenService;
-
-        private InputHandlerService _inputHandlerService;
-        private LevelSetupService _levelSetupService;
-        private GameHistoryManagementService _historyManagementService;
-
         private LevelData _currentLevel;
         private IBottleView[] _bottles;
 
@@ -68,51 +66,45 @@ namespace PuzzleGame
 
         [Inject]
         public void Construct(
-            IInputHandler inputHandler,
+            GameConfig gameConfig,
+            AnimationConfig animConfig,
+            LevelConfig levelConfig,
+            AudioConfig audioConfig,
             IBottleValidator validator,
             IRendererService rendererService,
             IAnimationService animationService,
             IBottleSelectionService selectionService,
-            IGameHistoryService gameHistoryService,
             IGameStateMachine stateMachine,
             ILevelRepository levelRepository,
             ILevelProgressService levelProgress,
             IAudioService audioService,
-            ITweenService tweenService)
+            IInputHandlerService inputHandlerService,
+            ILevelSetupService levelSetupService,
+            ILevelValidationService levelValidationService,
+            IGameHistoryManager historyManager)
         {
             BottleLogger.LogInfo("GameManager.Construct called by VContainer DI.");
-            _inputHandler = inputHandler;
+            this.gameConfig = gameConfig;
+            this.animConfig = animConfig;
+            this.levelConfig = levelConfig;
+            this.audioConfig = audioConfig;
             _validator = validator;
             _rendererService = rendererService;
             _animationService = animationService;
             _selectionService = selectionService;
-            _gameHistoryService = gameHistoryService;
             _stateMachine = stateMachine;
             _levelRepository = levelRepository;
             _levelProgress = levelProgress;
             _audioService = audioService;
-            _tweenService = tweenService;
+            _inputHandlerService = inputHandlerService;
+            _levelSetupService = levelSetupService;
+            _levelValidationService = levelValidationService;
+            _historyManager = historyManager;
         }
 
         private void Awake()
         {
             BottleLogger.LogInfo("GameManager Awake.");
-        }
-
-        private void InitModularServices()
-        {
-            _inputHandlerService = new InputHandlerService(
-                _inputHandler,
-                _camera,
-                _stateMachine,
-                _animationService,
-                _selectionService,
-                _validator,
-                gameConfig,
-                animConfig,
-                _audioService,
-                onPourSucceeded: () => { _historyManagementService?.IncrementMoveCount(); StartCoroutine(DelayedWinCheck()); },
-                onRecordUndoSnapshot: () => { _historyManagementService?.RecordUndoSnapshot(); });
         }
 
         private void Start()
@@ -131,9 +123,14 @@ namespace PuzzleGame
 
             _camera = Camera.main;
             InitAudio();
-            InitModularServices();
 
             EventAggregator.Subscribe<LevelSelectedEvent>(OnLevelSelected);
+            EventAggregator.Subscribe<PourCompletedEvent>(OnPourCompleted);
+
+            if (_historyManager != null)
+            {
+                _historyManager.OnMoveCountChanged += OnMoveCountChanged;
+            }
 
             _stateMachine.TransitionTo(GameState.Menu);
 
@@ -160,6 +157,13 @@ namespace PuzzleGame
         private void OnDestroy()
         {
             EventAggregator.Unsubscribe<LevelSelectedEvent>(OnLevelSelected);
+            EventAggregator.Unsubscribe<PourCompletedEvent>(OnPourCompleted);
+            
+            if (_historyManager != null)
+            {
+                _historyManager.OnMoveCountChanged -= OnMoveCountChanged;
+            }
+
             EventAggregator.Clear();
         }
 
@@ -184,13 +188,7 @@ namespace PuzzleGame
             if (_bottles.Length == 0)
                 BottleLogger.LogWarning("No BottleController found — level will be empty.");
 
-            // History management service — bir kez oluştur
-            if (_historyManagementService == null)
-            {
-                _historyManagementService = new GameHistoryManagementService(_gameHistoryService, _bottles);
-                _historyManagementService.SetMoveCountChangedCallback(OnMoveCountChanged);
-            }
-
+            _historyManager?.Initialize(_bottles);
             _inputHandlerService?.SetBottles(_bottles);
         }
 
@@ -202,14 +200,18 @@ namespace PuzzleGame
                 return;
             }
 
-            _levelSetupService = new LevelSetupService(gameConfig, levelConfig, _currentLevel);
-            _levelSetupService.SetupBottles(_bottles, _rendererService, _validator, _animationService);
+            _levelSetupService?.SetupBottles(_bottles, _currentLevel, _rendererService, _validator, _animationService);
 
             if (_camera != null)
             {
                 _camera.backgroundColor = CamDefaultBgColor;
                 _camera.clearFlags = CameraClearFlags.SolidColor;
             }
+        }
+
+        private void OnPourCompleted(PourCompletedEvent e)
+        {
+            StartCoroutine(DelayedWinCheck());
         }
 
         private IEnumerator DelayedWinCheck()
@@ -246,24 +248,24 @@ namespace PuzzleGame
             {
                 _stateMachine.TransitionTo(GameState.LevelComplete);
                 
-                int stars = _currentLevel != null ? _currentLevel.CalculateStars(_historyManagementService?.CurrentMoveCount ?? 0) : 3;
+                int stars = _currentLevel != null ? _currentLevel.CalculateStars(_historyManager?.CurrentMoveCount ?? 0) : 3;
                 if (_currentLevel != null)
                 {
-                    _levelProgress?.RecordCompletion(_currentLevel.levelNumber, _historyManagementService?.CurrentMoveCount ?? 0, stars);
+                    _levelProgress?.RecordCompletion(_currentLevel.levelNumber, _historyManager?.CurrentMoveCount ?? 0, stars);
                 }
 
                 _audioService?.PlaySfx(AudioClipId.LevelComplete);
 
                 if (winPanel != null) winPanel.SetActive(true);
 
-                EventAggregator.Publish(new LevelCompletedEvent(_historyManagementService?.CurrentMoveCount ?? 0));
+                EventAggregator.Publish(new LevelCompletedEvent(_historyManager?.CurrentMoveCount ?? 0));
             }
         }
 
         public void Undo()
         {
             if (_stateMachine == null || !_stateMachine.IsInState(GameState.Playing)) return;
-            _historyManagementService?.Undo();
+            _historyManager?.Undo();
         }
 
         public void OnLevelSelected(LevelSelectedEvent e)
@@ -275,22 +277,18 @@ namespace PuzzleGame
             {
                 if (winPanel != null) winPanel.SetActive(false);
 
-                var levelValidator = new LevelValidationService();
-                if (!levelValidator.ValidateLevel(_currentLevel, _bottles?.Length ?? 0))
+                if (_levelValidationService != null && !_levelValidationService.ValidateLevel(_currentLevel, _bottles?.Length ?? 0))
                 {
                     BottleLogger.LogError($"Level {e.LevelNumber} failed validation.");
                     _stateMachine?.TransitionTo(GameState.Menu);
                     return;
                 }
 
-                _levelSetupService = new LevelSetupService(gameConfig, levelConfig, _currentLevel);
-
                 _stateMachine?.TransitionTo(GameState.LevelLoading);
 
                 _selectionService?.Deselect();
                 
-                // Reset history and move count properly instead of recreating services
-                _historyManagementService?.ResetAll();
+                _historyManager?.ResetAll();
 
                 SetupBottles();
 
@@ -301,8 +299,8 @@ namespace PuzzleGame
 
         private void UpdateHUD()
         {
-            if (moveCountText != null && _historyManagementService != null)
-                moveCountText.text = $"Hamle: {_historyManagementService.CurrentMoveCount}";
+            if (moveCountText != null && _historyManager != null)
+                moveCountText.text = $"Hamle: {_historyManager.CurrentMoveCount}";
         }
 
         private void OnMoveCountChanged(int moveCount)

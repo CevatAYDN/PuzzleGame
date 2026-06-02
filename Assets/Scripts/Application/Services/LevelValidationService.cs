@@ -2,12 +2,14 @@ using System.Collections.Generic;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Logging;
 
+using PuzzleGame.Application.Interfaces;
+
 namespace PuzzleGame.Application.Services
 {
     /// <summary>
     /// Handles validation of level data before loading
     /// </summary>
-    public class LevelValidationService
+    public class LevelValidationService : ILevelValidationService
     {
         public bool ValidateLevel(LevelData levelData, int totalBottlesAvailable)
         {

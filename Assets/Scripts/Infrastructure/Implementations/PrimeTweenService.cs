@@ -88,7 +88,7 @@ namespace PuzzleGame.Infrastructure.Implementations
 
         public void SetCycles(int loops, LoopMode mode)
         {
-            _tween.SetCycles(loops);
+            _tween.SetRemainingCycles(loops);
         }
 
         public void Kill() => _tween.Stop();
@@ -154,7 +154,7 @@ namespace PuzzleGame.Infrastructure.Implementations
 
         public void SetCycles(int loops, LoopMode mode)
         {
-            _sequence.SetCycles(loops);
+            _sequence.SetRemainingCycles(loops);
         }
 
         public void Kill() => _sequence.Stop();

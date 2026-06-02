@@ -26,6 +26,8 @@ namespace PuzzleGame
         public float VisualTotalFill => _visualTotalFill;
         public float Height => _meshGenerator != null ? _meshGenerator.height : 2.4f;
         public bool IsCapped { get; private set; }
+        public Transform Transform => transform;
+        public GameObject GameObject => gameObject;
 
         private readonly List<LiquidLayer> _visualLayers = new List<LiquidLayer>();
         private float _visualTotalFill = 0f;
@@ -95,6 +97,11 @@ namespace PuzzleGame
             return true;
         }
 
+        public void AddWobbleImpulse(Vector3 direction, float strength)
+        {
+            _wobble?.AddImpulse(direction, strength);
+        }
+
         public bool TryPourTo(IBottleView target)
         {
             if (target == null)
@@ -103,16 +110,9 @@ namespace PuzzleGame
                 return false;
             }
 
-            var targetController = target as BottleController;
-            if (targetController == null)
-            {
-                BottleLogger.LogWarning($"'{name}': TryPourTo target is not a BottleController.");
-                return false;
-            }
-
             if (!_validator.CanPour(State, target.State))
             {
-                BottleLogger.LogDebug($"'{name}' → '{targetController.name}': pour rejected by validator.");
+                BottleLogger.LogDebug($"'{name}' → '{target.GameObject.name}': pour rejected by validator.");
                 return false;
             }
 
@@ -126,17 +126,17 @@ namespace PuzzleGame
             if (!target.State.AddLayer(layer.Value))
             {
                 State.AddLayer(layer.Value);
-                BottleLogger.LogError($"'{name}' → '{targetController.name}': AddLayer failed after validator approval. Rolled back.");
+                BottleLogger.LogError($"'{name}' → '{target.GameObject.name}': AddLayer failed after validator approval. Rolled back.");
                 return false;
             }
 
             // Add wobble impulse for pour effect
             float impulse = visualConfig != null ? visualConfig.pourImpulseStrength : 2.0f;
-            Vector3 pourDirection = (targetController.transform.position - transform.position).normalized;
+            Vector3 pourDirection = (target.Transform.position - transform.position).normalized;
             _wobble?.AddImpulse(-pourDirection, impulse);
-            targetController._wobble?.AddImpulse(pourDirection, impulse * 0.8f);
+            target.AddWobbleImpulse(pourDirection, impulse * 0.8f);
 
-            BottleLogger.LogInfo($"Poured {layer.Value.Color} from '{name}' to '{targetController.name}'.");
+            BottleLogger.LogInfo($"Poured {layer.Value.Color} from '{name}' to '{target.GameObject.name}'.");
             return true;
         }
 

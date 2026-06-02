@@ -58,6 +58,7 @@ namespace PuzzleGame.Installers
                 levelCatalog = System.Array.Empty<LevelData>();
             }
             builder.RegisterInstance(levelCatalog);
+            builder.RegisterInstance<Camera>(Camera.main);
 
             // Infrastructure — no dependencies
             builder.Register<IRendererService, RendererService>(Lifetime.Singleton);
@@ -70,14 +71,11 @@ namespace PuzzleGame.Installers
             builder.Register<ITweenService, CoroutineTweenService>(Lifetime.Singleton);
 #endif
 
-            // Input handler — needs Camera
-            var camera = Camera.main;
+            // Input handler
 #if UNITY_ANDROID || UNITY_IOS
-            builder.Register<IInputHandler, MobileInputHandler>(Lifetime.Singleton)
-                   .WithParameter(camera);
+            builder.Register<IInputHandler, MobileInputHandler>(Lifetime.Singleton);
 #else
-            builder.Register<IInputHandler, InputHandler>(Lifetime.Singleton)
-                   .WithParameter(camera);
+            builder.Register<IInputHandler, InputHandler>(Lifetime.Singleton);
 #endif
 
             // Domain services
@@ -85,16 +83,17 @@ namespace PuzzleGame.Installers
             builder.Register<IBottleValidator, BottleValidationService>(Lifetime.Singleton)
                    .WithParameter(colorTolerance);
             builder.Register<IGameStateMachine, GameStateMachine>(Lifetime.Singleton);
-            builder.Register<IGameHistoryService, GameHistoryService>(Lifetime.Scoped);
+            builder.Register<IGameHistoryManager, GameHistoryManager>(Lifetime.Singleton);
             builder.Register<ILevelProgressService, PlayerPrefsLevelProgressService>(Lifetime.Singleton);
             builder.Register<ILevelRepository, ScriptableObjectLevelRepository>(Lifetime.Singleton);
 
             // Application services — depend on config/tween
             builder.Register<IBottleSelectionService, BottleSelectionService>(Lifetime.Singleton);
-
             builder.Register<IAudioService, AudioService>(Lifetime.Singleton);
-
             builder.Register<IAnimationService, AnimationService>(Lifetime.Singleton);
+            builder.Register<ILevelSetupService, LevelSetupService>(Lifetime.Singleton);
+            builder.Register<ILevelValidationService, LevelValidationService>(Lifetime.Singleton);
+            builder.Register<IInputHandlerService, InputHandlerService>(Lifetime.Singleton);
 
             // GameManager — inject via VContainer
             builder.RegisterComponentInHierarchy<GameManager>();

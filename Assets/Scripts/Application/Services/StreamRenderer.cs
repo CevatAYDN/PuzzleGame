@@ -40,7 +40,7 @@ namespace PuzzleGame.Application.Services
             }
         }
 
-        public static void Update(LineRenderer lr, BottleController source, BottleController target,
+        public static void Update(LineRenderer lr, IBottleView source, IBottleView target,
                                   Transform sourceT, Transform targetT, float t, Configuration.AnimationConfig config)
         {
             if (lr == null) return;
