@@ -14,7 +14,8 @@ namespace PuzzleGame.Application.Services
     /// <summary>
     /// Animation service. Tween logic delegated to ITweenService.
     /// No MonoBehaviour dependency, no coroutines in this layer.
-    /// Particle pools use generic GameObjectPool<T>.
+    /// Particle pools use generic GameObjectPool&lt;T&gt;.
+    /// Particle prefab creation delegated to ParticlePrefabFactory.
     /// </summary>
     public class AnimationService : IAnimationService, System.IDisposable
     {
@@ -46,8 +47,8 @@ namespace PuzzleGame.Application.Services
             _audioService = audioService;
             _poolManager = poolManager;
 
-            _splashPrefab = CreateSplashParticlePrefab();
-            _bubblePrefab = CreateBubbleParticlePrefab();
+            _splashPrefab = ParticlePrefabFactory.CreateSplash();
+            _bubblePrefab = ParticlePrefabFactory.CreateBubble();
 
             _splashPool = _poolManager.RegisterPool<ParticleSystem>("SplashPool", _splashPrefab, MaxPoolSize);
             _bubblePool = _poolManager.RegisterPool<ParticleSystem>("BubblePool", _bubblePrefab, MaxPoolSize);
@@ -237,7 +238,7 @@ namespace PuzzleGame.Application.Services
             var t2 = _tween.TweenScale(cork, Vector3.one, duration, EaseType.OutBounce);
             RegisterTween(t1);
             RegisterTween(t2);
-            
+
             t1.OnComplete(() =>
             {
                 cork.localPosition = endPos;
@@ -259,13 +260,13 @@ namespace PuzzleGame.Application.Services
             var t1 = _tween.TweenCustom(renderer, 0.5f, peakIntensity, flashDuration * 0.2f,
                 (t, val) => SetRimIntensity(renderer, materialSlot, val, propBlock));
             RegisterTween(t1);
-            
+
             t1.OnComplete(() =>
             {
                 var t2 = _tween.TweenCustom(renderer, peakIntensity, 0.5f, flashDuration * 0.8f,
                     (t, val) => SetRimIntensity(renderer, materialSlot, val, propBlock));
                 RegisterTween(t2);
-                
+
                 t2.OnComplete(() =>
                 {
                     SetRimIntensity(renderer, materialSlot, 0.5f, propBlock);
@@ -330,112 +331,6 @@ namespace PuzzleGame.Application.Services
                         pool.Return(ps);
                     }
                 });
-        }
-
-        private const string SplashPrefabResourcePath = "Particles/SplashParticle";
-        private const string BubblePrefabResourcePath = "Particles/BubbleParticle";
-
-        private static ParticleSystem CreateSplashParticlePrefab()
-        {
-            // Try loading from Resources first (avoids runtime GameObject creation + GC alloc)
-            var loaded = Resources.Load<ParticleSystem>(SplashPrefabResourcePath);
-            if (loaded != null)
-                return loaded;
-
-            BottleLogger.LogWarning($"Splash particle prefab not found at Resources/{SplashPrefabResourcePath}. Creating fallback at runtime.");
-
-            var go = new GameObject("SplashParticle_Prefab", typeof(ParticleSystem));
-            go.SetActive(false);
-            UnityEngine.Object.DontDestroyOnLoad(go); // Survive scene changes; disposed by AnimationService.Dispose
-            var ps = go.GetComponent<ParticleSystem>();
-            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-
-            var main = ps.main;
-            main.duration = 1f;
-            main.loop = true;
-            main.startLifetime = new ParticleSystem.MinMaxCurve(0.2f, 0.45f);
-            main.startSpeed = new ParticleSystem.MinMaxCurve(1.5f, 3.2f);
-            main.startSize = new ParticleSystem.MinMaxCurve(0.05f, 0.12f);
-            main.gravityModifier = new ParticleSystem.MinMaxCurve(2.0f);
-            main.simulationSpace = ParticleSystemSimulationSpace.World;
-            main.playOnAwake = false;
-
-            var emission = ps.emission;
-            emission.rateOverTime = new ParticleSystem.MinMaxCurve(45f);
-
-            var shape = ps.shape;
-            shape.shapeType = ParticleSystemShapeType.Cone;
-            shape.angle = 25f;
-            shape.radius = 0.04f;
-            shape.rotation = new Vector3(-90f, 0f, 0f);
-
-            var sizeOverLifetime = ps.sizeOverLifetime;
-            sizeOverLifetime.enabled = true;
-            var curve = new AnimationCurve();
-            curve.AddKey(0f, 1f); curve.AddKey(0.7f, 0.8f); curve.AddKey(1f, 0f);
-            sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, curve);
-
-            var renderer = go.GetComponent<ParticleSystemRenderer>();
-            renderer.renderMode = ParticleSystemRenderMode.Billboard;
-            renderer.sharedMaterial = ParticleMaterialFactory.GetSplashMaterial(TextureGenerator.GetSolidCircleTex());
-
-            return ps;
-        }
-
-        private static ParticleSystem CreateBubbleParticlePrefab()
-        {
-            // Try loading from Resources first
-            var loaded = Resources.Load<ParticleSystem>(BubblePrefabResourcePath);
-            if (loaded != null)
-                return loaded;
-
-            BottleLogger.LogWarning($"Bubble particle prefab not found at Resources/{BubblePrefabResourcePath}. Creating fallback at runtime.");
-
-            var go = new GameObject("BubbleParticle_Prefab", typeof(ParticleSystem));
-            go.SetActive(false);
-            UnityEngine.Object.DontDestroyOnLoad(go); // Survive scene changes; disposed by AnimationService.Dispose
-            var ps = go.GetComponent<ParticleSystem>();
-            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-
-            var main = ps.main;
-            main.duration = 1f;
-            main.loop = true;
-            main.startLifetime = new ParticleSystem.MinMaxCurve(0.6f, 1.2f);
-            main.startSpeed = new ParticleSystem.MinMaxCurve(0.4f, 0.8f);
-            main.startSize = new ParticleSystem.MinMaxCurve(0.04f, 0.10f);
-            main.gravityModifier = new ParticleSystem.MinMaxCurve(-0.06f);
-            main.startColor = new Color(1f, 1f, 1f, 0.45f);
-            main.simulationSpace = ParticleSystemSimulationSpace.Local;
-            main.playOnAwake = false;
-
-            var emission = ps.emission;
-            emission.rateOverTime = new ParticleSystem.MinMaxCurve(15f);
-
-            var shape = ps.shape;
-            shape.shapeType = ParticleSystemShapeType.Cone;
-            shape.angle = 0f;
-            shape.radius = 0.15f;
-            shape.length = 0.1f;
-            shape.rotation = new Vector3(-90f, 0f, 0f);
-
-            var noise = ps.noise;
-            noise.enabled = true;
-            noise.frequency = 2.0f;
-            noise.strength = new ParticleSystem.MinMaxCurve(0.15f);
-            noise.octaveCount = 1;
-
-            var sizeOverLifetime = ps.sizeOverLifetime;
-            sizeOverLifetime.enabled = true;
-            var curve = new AnimationCurve();
-            curve.AddKey(0f, 0.2f); curve.AddKey(0.2f, 1.0f);
-            curve.AddKey(0.8f, 1.0f); curve.AddKey(1f, 0f);
-            sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, curve);
-
-            var renderer = go.GetComponent<ParticleSystemRenderer>();
-            renderer.renderMode = ParticleSystemRenderMode.Billboard;
-            renderer.sharedMaterial = ParticleMaterialFactory.GetBubbleMaterial(TextureGenerator.GetBubbleTex());
-
-            return ps;
         }
     }
 }
