@@ -58,32 +58,27 @@
     <Compile Include="Assets\Scripts\Application\Interfaces\IBottleView.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeGameStateMachine.cs" />
     <Compile Include="Assets\Scripts\Events\FeatureEvents.cs" />
-    <Compile Include="Assets\Scripts\Domain\Interfaces\ILevelRepository.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeInputHandler.cs" />
     <Compile Include="Assets\Tests\Application\BottleSelectionServiceTests.cs" />
     <Compile Include="Assets\Scripts\Events\EventAggregator.cs" />
     <Compile Include="Assets\Scripts\Events\LevelEvents.cs" />
     <Compile Include="Assets\Tests\Application\Services\SecureFileLevelProgressServiceTests.cs" />
-    <Compile Include="Assets\Scripts\Domain\Models\LevelData.cs" />
     <Compile Include="Assets\Scripts\Events\GameEvents.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\ShaderOptimizer.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\IGameStateMachine.cs" />
     <Compile Include="Assets\Scripts\Application\Services\GameStateMachine.cs" />
     <Compile Include="Assets\Scripts\Application\Services\TextureGenerator.cs" />
     <Compile Include="Assets\Scripts\Application\Services\ScriptableObjectLevelRepository.cs" />
-    <Compile Include="Assets\Scripts\Application\Animation\CoroutineTweenService.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeAudioService.cs" />
     <Compile Include="Assets\Scripts\Configuration\AudioConfig.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\PrimeTweenService.cs" />
     <Compile Include="Assets\Tests\Application\Services\GameStateMachineTests.cs" />
+    <Compile Include="Assets\Scripts\Domain\BottleConstants.cs" />
     <Compile Include="Assets\Tests\Domain\Services\BottleValidationServiceTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeBottleView.cs" />
     <Compile Include="Assets\Scripts\Domain\Services\BottleValidationService.cs" />
-    <Compile Include="Assets\Scripts\Domain\Interfaces\ITweenService.cs" />
-    <Compile Include="Assets\TutorialInfo\Readme.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\UpdateManager.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\AudioClipId.cs" />
-    <Compile Include="Assets\Scripts\Domain\Services\SimpleLevelGenerator.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Pool\GameObjectPool.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\DomainColor.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\GameState.cs" />
@@ -91,17 +86,14 @@
     <Compile Include="Assets\Scripts\Application\Services\InputHandlerService.cs" />
     <Compile Include="Assets\Tests\Domain\Models\BottleStateTests.cs" />
     <Compile Include="Assets\Scripts\Application\Services\AudioService.cs" />
-    <Compile Include="Assets\Scripts\Configuration\DifficultyCurve.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Pool\IGameObjectPool.cs" />
     <Compile Include="Assets\Scripts\Application\Services\BottleSelectionService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Interfaces\IInputHandler.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Providers\AddressablesAssetProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Pool\PoolManager.cs" />
-    <Compile Include="Assets\Tests\Application\Services\AnimationServiceTestsExtended.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\BottleState.cs" />
     <Compile Include="Assets\Tests\Infrastructure\Pool\GameObjectPoolTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\AnimationServiceTests.cs" />
-    <Compile Include="Assets\Scripts\Application\Services\PlayerPrefsLevelProgressService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\LevelValidationService.cs" />
     <Compile Include="Assets\Scripts\Configuration\AnimationConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\ILevelValidationService.cs" />
@@ -112,7 +104,6 @@
     <Compile Include="Assets\Scripts\Application\Services\GameSaveManager.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeReactionService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\SecureFileLevelProgressService.cs" />
-    <Compile Include="Assets\Scripts\Configuration\EconomyConfig.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\LiquidLayer.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\ILocalizationService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Interfaces\IUpdateManager.cs" />
@@ -129,11 +120,13 @@
     <Compile Include="Assets\Scripts\Domain\Models\LiquidColor.cs" />
     <Compile Include="Assets\Tests\Application\Services\PourServiceTests.cs" />
     <Compile Include="Assets\Scripts\Configuration\BottleVisualConfig.cs" />
+    <Compile Include="Assets\Scripts\Application\Configuration\LevelFeature.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IUpdateable.cs" />
     <Compile Include="Assets\Scripts\BottleController.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IInputHandlerService.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeBottleSelectionService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Interfaces\IRendererService.cs" />
+    <Compile Include="Assets\Scripts\Application\Interfaces\ITweenService.cs" />
     <Compile Include="Assets\Tests\Domain\Services\LevelGeneratorV2Tests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeHistoryManager.cs" />
     <Compile Include="Assets\Scripts\Domain\Services\LiquidSortSolver.cs" />
@@ -147,7 +140,6 @@
     <Compile Include="Assets\Scripts\Domain\Interfaces\IBottleValidator.cs" />
     <Compile Include="Assets\Scripts\Application\Services\StreamRenderer.cs" />
     <Compile Include="Assets\Scripts\Application\Services\ParticleMaterialFactory.cs" />
-    <Compile Include="Assets\Scripts\Domain\Models\LevelFeature.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\MobileInputHandler.cs" />
     <Compile Include="Assets\Tests\Domain\Services\LevelGeneratorTests.cs" />
     <Compile Include="Assets\Scripts\Configuration\GameConfig.cs" />
@@ -161,6 +153,7 @@
     <Compile Include="Assets\Scripts\Domain\Services\LocalizationService.cs" />
     <Compile Include="Assets\Tests\Application\Services\AudioServiceTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\LevelSetupServiceTests.cs" />
+    <Compile Include="Assets\Scripts\Application\Interfaces\ILevelRepository.cs" />
     <Compile Include="Assets\Scripts\Application\Services\LevelSetupService.cs" />
     <Compile Include="Assets\Scripts\Installers\GameInstaller.cs" />
     <Compile Include="Assets\Scripts\URPConfigHelper.cs" />
@@ -169,17 +162,15 @@
     <Compile Include="Assets\Tests\Application\Services\LevelValidationServiceTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeBottleValidator.cs" />
     <Compile Include="Assets\Tests\Domain\BottleStateReplaceLayersTests.cs" />
+    <Compile Include="Assets\Scripts\Application\Configuration\LevelData.cs" />
     <Compile Include="Assets\Scripts\Application\Services\ReactionService.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Shaders\PremiumBottleGlass.shader" />
-    <None Include="Assets\TutorialInfo\StyleSheets\ReadmeEditor.uss" />
     <None Include="Assets\Shaders\Mobile\MobileLiquid.shader" />
-    <None Include="Assets\TutorialInfo\StyleSheets\ReadmeEditorLight.uss" />
     <None Include="Assets\Shaders\LayeredLiquid.shader" />
     <None Include="Assets\Shaders\Mobile\MobileBottle.shader" />
     <None Include="Assets\Shaders\BottleGlass.shader" />
-    <None Include="Assets\TutorialInfo\StyleSheets\ReadmeEditorDark.uss" />
     <None Include="Assets\Shaders\PremiumLayeredLiquid.shader" />
   </ItemGroup>
   <ItemGroup>

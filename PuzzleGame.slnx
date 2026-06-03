@@ -1,7 +1,11 @@
 ﻿<Solution>
-  <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="PuzzleGame.Tests.csproj" />
+  <Project Path="PuzzleGame.Infrastructure.csproj" />
+  <Project Path="PuzzleGame.Application.csproj" />
   <Project Path="PrimeTween.Demo.csproj" />
-  <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="PuzzleGame.Editor.csproj" />
+  <Project Path="PuzzleGame.Composition.csproj" />
+  <Project Path="PuzzleGame.Domain.csproj" />
   <Project Path="PrimeTween.Debug.csproj" />
   <Project Path="PrimeTween.Installer.csproj" />
 </Solution>
