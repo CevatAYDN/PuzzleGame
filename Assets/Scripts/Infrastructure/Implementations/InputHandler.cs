@@ -1,4 +1,4 @@
-using PuzzleGame.Infrastructure.Interfaces;
+using PuzzleGame.Application.Interfaces;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;

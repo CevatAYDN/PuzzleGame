@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace PuzzleGame.Infrastructure.Pool
+namespace PuzzleGame.Application.Interfaces
 {
     /// <summary>
     /// Generic pool contract. Type-safe, capacity-bound.

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Interfaces;
-using PuzzleGame.Infrastructure.Pool;
+// IGameObjectPool now in PuzzleGame.Application.Interfaces
 using PuzzleGame.Application.Logging;
 using UnityEngine;
 using UnityEngine.Audio;
@@ -19,7 +19,7 @@ namespace PuzzleGame.Application.Services
     {
         private readonly AudioConfig _config;
         private readonly ITweenService _tween;
-        private readonly PoolManager _poolManager;
+        private readonly IPoolManager _poolManager;
         private readonly IGameObjectPool<AudioSource> _sfxPool;
         private readonly IGameObjectPool<AudioSource> _musicPool;
 
@@ -49,7 +49,7 @@ namespace PuzzleGame.Application.Services
             set { _config.sfxVolume = Mathf.Clamp01(value); }
         }
 
-        public AudioService(AudioConfig config, ITweenService tween, PoolManager poolManager)
+        public AudioService(AudioConfig config, ITweenService tween, IPoolManager poolManager)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _tween = tween ?? throw new ArgumentNullException(nameof(tween));

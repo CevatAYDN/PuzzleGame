@@ -32,7 +32,7 @@ namespace PuzzleGame.Domain.Models
     /// <summary>
     /// Pure Domain extension methods for LiquidColor ↔ DomainColor conversion.
     /// UnityEngine.Color conversions live in <c>ColorAdapter</c> (Infrastructure)
-    /// — chain <c>LiquidColor.ToDefaultDomainColor()</c> + <c>ColorAdapter.ToUnity()</c>
+    /// — chain <c>LiquidColor.ToDefaultDomainColor()</c> + <c>ColorAdapter.ToUnityStatic()</c>
     /// when a Unity Color is needed from a LiquidColor.
     /// </summary>
     public static class LiquidColorExtensions

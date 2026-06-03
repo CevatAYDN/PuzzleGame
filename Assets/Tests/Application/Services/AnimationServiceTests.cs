@@ -4,6 +4,7 @@ using PuzzleGame.Application.Services;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Infrastructure.Pool;
+using PuzzleGame.Infrastructure;
 using PuzzleGame.Application.Logging;
 using PuzzleGame.Tests.Fakes;
 
@@ -37,7 +38,7 @@ namespace PuzzleGame.Tests.Application.Services
             _audioService = new FakeAudioService();
             _poolManager = new PoolManager();
 
-            _sut = new AnimationService(_config, _tweenService, _audioService, _poolManager);
+            _sut = new AnimationService(_config, _tweenService, _audioService, _poolManager, new ColorAdapter());
         }
 
         [TearDown]

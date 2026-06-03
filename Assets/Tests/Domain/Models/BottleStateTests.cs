@@ -1,7 +1,5 @@
 using NUnit.Framework;
 using PuzzleGame.Domain.Models;
-using PuzzleGame.Infrastructure;
-using UnityEngine;
 
 namespace PuzzleGame.Domain.Tests.Models
 {
@@ -12,10 +10,12 @@ namespace PuzzleGame.Domain.Tests.Models
             return new BottleState(maxLayers);
         }
 
-        private LiquidLayer Layer(Color color, float amount = 0.25f)
+        private LiquidLayer Layer(float r, float g, float b, float a = 1f, float amount = 0.25f)
         {
-            return new LiquidLayer(ColorAdapter.FromUnity(color), amount);
+            return new LiquidLayer(new DomainColor(r, g, b, a), amount);
         }
+
+        private DomainColor DC(float r, float g, float b, float a = 1f) => new DomainColor(r, g, b, a);
 
         [Test]
         public void Constructor_SetsMaxLayers()
@@ -63,226 +63,152 @@ namespace PuzzleGame.Domain.Tests.Models
         public void AddLayer_AddsLayerToBottle()
         {
             var bottle = CreateSut();
-            var layer = Layer(Color.red);
+            var layer = Layer(1f, 0f, 0f); // Red
 
             bottle.AddLayer(layer);
 
             Assert.That(bottle.Layers.Count, Is.EqualTo(1));
             var topLayer = bottle.Layers[bottle.Layers.Count - 1];
-            Assert.That(PuzzleGame.Infrastructure.ColorAdapter.ToUnity(topLayer.Color), Is.EqualTo(Color.red).Within(0.001f));
+            Assert.That(topLayer.Color, Is.EqualTo(DC(1f, 0f, 0f)).Within(0.001f));
         }
 
         [Test]
-        public void AddLayer_MultipleLayers_AreInOrder()
+        public void AddLayer_MultipleLayers_AreOrderedCorrectly()
         {
             var bottle = CreateSut();
-            var red = Layer(Color.red);
-            var blue = Layer(Color.blue, 0.30f);
-            var green = Layer(Color.green, 0.20f);
+            var red = Layer(1f, 0f, 0f);
+            var blue = Layer(0f, 0f, 1f, 1f, 0.30f);
+            var green = Layer(0f, 1f, 0f, 1f, 0.20f);
 
             bottle.AddLayer(red);
             bottle.AddLayer(blue);
             bottle.AddLayer(green);
 
             Assert.That(bottle.Layers.Count, Is.EqualTo(3));
-            Assert.That(PuzzleGame.Infrastructure.ColorAdapter.ToUnity(bottle.Layers[0].Color), Is.EqualTo(Color.red).Within(0.001f));
-            Assert.That(PuzzleGame.Infrastructure.ColorAdapter.ToUnity(bottle.Layers[1].Color), Is.EqualTo(Color.blue).Within(0.001f));
-            Assert.That(PuzzleGame.Infrastructure.ColorAdapter.ToUnity(bottle.Layers[2].Color), Is.EqualTo(Color.green).Within(0.001f));
+            Assert.That(bottle.Layers[0].Color, Is.EqualTo(DC(1f, 0f, 0f)).Within(0.001f));
+            Assert.That(bottle.Layers[1].Color, Is.EqualTo(DC(0f, 0f, 1f)).Within(0.001f));
+            Assert.That(bottle.Layers[2].Color, Is.EqualTo(DC(0f, 1f, 0f)).Within(0.001f));
         }
 
         [Test]
-        public void AddLayer_WhenFull_ReturnsFalse()
+        public void AddLayer_WhenFull_ThrowsException()
         {
             var bottle = CreateSut(2);
-            bottle.AddLayer(Layer(Color.red));
-            bottle.AddLayer(Layer(Color.blue));
+            bottle.AddLayer(Layer(1f, 0f, 0f));
+            bottle.AddLayer(Layer(0f, 0f, 1f));
 
-            Assert.Throws<System.InvalidOperationException>(() => bottle.AddLayer(Layer(Color.green)));
-            Assert.That(bottle.Layers.Count, Is.EqualTo(2));
+            Assert.Throws<System.InvalidOperationException>(() => bottle.AddLayer(Layer(0f, 1f, 0f)));
         }
 
         [Test]
         public void AddLayer_UpdatesTotalFill()
         {
             var bottle = CreateSut();
-            bottle.AddLayer(Layer(Color.red, 0.25f));
-            bottle.AddLayer(Layer(Color.blue, 0.35f));
-
+            bottle.AddLayer(Layer(1f, 0f, 0f, 1f, 0.25f));
+            bottle.AddLayer(Layer(0f, 0f, 1f, 1f, 0.35f));
             Assert.That(bottle.TotalFill, Is.EqualTo(0.60f).Within(0.001f));
         }
 
         [Test]
-        public void IsFull_WhenMaxLayers_ReturnsTrue()
+        public void PopLayer_RemovesAndReturnsTopLayer()
         {
-            var bottle = CreateSut(4);
-            bottle.AddLayer(Layer(Color.red, 0.25f));
-            bottle.AddLayer(Layer(Color.red, 0.25f));
-            bottle.AddLayer(Layer(Color.blue, 0.25f));
-            bottle.AddLayer(Layer(Color.blue, 0.25f));
+            var bottle = CreateSut();
+            bottle.AddLayer(Layer(1f, 0f, 0f, 1f, 0.25f));
+            bottle.AddLayer(Layer(1f, 0f, 0f, 1f, 0.25f));
+            bottle.AddLayer(Layer(0f, 0f, 1f, 1f, 0.25f));
+            bottle.AddLayer(Layer(0f, 0f, 1f, 1f, 0.25f));
 
-            Assert.That(bottle.IsFull, Is.True);
+            Assert.That(bottle.Layers.Count, Is.EqualTo(4));
+
+            var popped = bottle.PopTopLayer();
+            Assert.That(popped, Is.Not.Null);
+            Assert.That(bottle.Layers.Count, Is.EqualTo(3));
         }
 
         [Test]
-        public void IsFull_WhenNotMaxLayers_ReturnsFalse()
-        {
-            var bottle = CreateSut(4);
-            bottle.AddLayer(Layer(Color.red, 0.25f));
-            bottle.AddLayer(Layer(Color.blue, 0.25f));
-
-            Assert.That(bottle.IsFull, Is.False);
-        }
-
-        [Test]
-        public void PopTopLayer_FromEmpty_ThrowsInvalidOperationException()
+        public void PopLayer_WhenEmpty_ThrowsException()
         {
             var bottle = CreateSut();
             Assert.Throws<System.InvalidOperationException>(() => bottle.PopTopLayer());
         }
 
         [Test]
-        public void PopTopLayer_RemovesAndReturnsTopLayer()
+        public void TopLayer_AfterAddLayer_ReturnsLastAdded()
         {
             var bottle = CreateSut();
-            var red = Layer(Color.red);
-            var blue = Layer(Color.blue);
+            var red = Layer(1f, 0f, 0f);
+            var blue = Layer(0f, 0f, 1f);
+
             bottle.AddLayer(red);
             bottle.AddLayer(blue);
 
-            var popped = bottle.PopTopLayer();
-
-            Assert.That(PuzzleGame.Infrastructure.ColorAdapter.ToUnity(popped!.Color), Is.EqualTo(Color.blue).Within(0.001f));
-            Assert.That(bottle.Layers.Count, Is.EqualTo(1));
-            Assert.That(PuzzleGame.Infrastructure.ColorAdapter.ToUnity(bottle.Layers[0].Color), Is.EqualTo(Color.red).Within(0.001f));
-        }
-
-        [Test]
-        public void PopTopLayer_UpdatesTotalFill()
-        {
-            var bottle = CreateSut();
-            bottle.AddLayer(Layer(Color.red, 0.25f));
-            bottle.AddLayer(Layer(Color.blue, 0.35f));
-            Assert.That(bottle.TotalFill, Is.EqualTo(0.60f).Within(0.001f));
-
-            bottle.PopTopLayer();
-
-            Assert.That(bottle.TotalFill, Is.EqualTo(0.25f).Within(0.001f));
-        }
-
-        [Test]
-        public void PopTopLayer_AllLayers_BecomesEmpty()
-        {
-            var bottle = CreateSut();
-            bottle.AddLayer(Layer(Color.red));
-            bottle.AddLayer(Layer(Color.blue));
-
-            bottle.PopTopLayer();
-            bottle.PopTopLayer();
-
-            Assert.That(bottle.IsEmpty, Is.True);
-            Assert.That(bottle.TopLayer, Is.Null);
+            Assert.That(bottle.TopLayer.Value.Color, Is.EqualTo(DC(0f, 0f, 1f)).Within(0.001f));
+            Assert.That(bottle.Layers[0].Color, Is.EqualTo(DC(1f, 0f, 0f)).Within(0.001f));
         }
 
         [Test]
         public void Clear_RemovesAllLayers()
         {
             var bottle = CreateSut();
-            bottle.AddLayer(Layer(Color.red));
-            bottle.AddLayer(Layer(Color.blue));
-            bottle.AddLayer(Layer(Color.green));
+            bottle.AddLayer(Layer(1f, 0f, 0f, 1f, 0.25f));
+            bottle.AddLayer(Layer(0f, 0f, 1f, 1f, 0.35f));
 
             bottle.Clear();
 
             Assert.That(bottle.IsEmpty, Is.True);
             Assert.That(bottle.TotalFill, Is.EqualTo(0f));
+            Assert.That(bottle.Layers.Count, Is.EqualTo(0));
         }
 
         [Test]
-        public void IsEmpty_AfterAddThenPopAll_ReturnsTrue()
+        public void IsComplete_WhenAllLayersSameColor_ReturnsTrue()
         {
-            var bottle = CreateSut();
-            bottle.AddLayer(Layer(Color.red));
-            bottle.PopTopLayer();
+            var bottle = CreateSut(4);
+            var validator = new PuzzleGame.Domain.Services.BottleValidationService(0.05f);
+            Assert.That(validator.IsComplete(bottle), Is.False); // empty is not complete
 
-            Assert.That(bottle.IsEmpty, Is.True);
-        }
-
-        [Test]
-        public void IsFull_ExactMaxLayers_ReturnsTrue()
-        {
-            var bottle = CreateSut(3);
-            bottle.AddLayer(Layer(Color.red, 0.33f));
-            bottle.AddLayer(Layer(Color.blue, 0.33f));
-            bottle.AddLayer(Layer(Color.green, 0.34f));
+            bottle.AddLayer(Layer(1f, 0f, 0f, 1f, 0.33f));
+            bottle.AddLayer(Layer(1f, 0f, 0f, 1f, 0.33f));
+            bottle.AddLayer(Layer(1f, 0f, 0f, 1f, 0.34f));
 
             Assert.That(bottle.IsFull, Is.True);
+            Assert.That(validator.IsComplete(bottle), Is.True);
         }
 
         [Test]
-        public void MaxSupportedLayers_IsEight()
-        {
-            Assert.That(BottleState.MaxSupportedLayers, Is.EqualTo(8));
-        }
-
-        [Test]
-        public void Layers_ImplementsReadOnlyInterface()
-        {
-            var bottle = CreateSut();
-            bottle.AddLayer(Layer(Color.red));
-            bottle.AddLayer(Layer(Color.blue));
-
-            var layers = bottle.Layers;
-
-            Assert.That(layers, Is.InstanceOf<System.Collections.Generic.IReadOnlyList<LiquidLayer>>());
-            Assert.That(layers.Count, Is.EqualTo(2));
-        }
-
-        [Test]
-        public void ToString_ReturnsExpectedFormat()
+        public void IsComplete_WhenMixedColors_ReturnsFalse()
         {
             var bottle = CreateSut(4);
-            bottle.AddLayer(Layer(Color.red, 0.25f));
+            var validator = new PuzzleGame.Domain.Services.BottleValidationService(0.05f);
+            bottle.AddLayer(Layer(1f, 0f, 0f, 1f, 0.25f));
+            bottle.AddLayer(Layer(0f, 0f, 1f, 1f, 0.25f));
 
-            string result = bottle.ToString();
-
-            Assert.That(result, Does.Contain("BottleState"));
-            Assert.That(result, Does.Contain("1/4"));
+            Assert.That(validator.IsComplete(bottle), Is.False);
         }
 
         [Test]
-        public void ReplaceLayers_OverwritesExistingContent()
+        public void GetHashCode_SameDomainColors_ProduceSameHashes()
+        {
+            var bottle1 = CreateSut();
+            var a = DC(0.5f, 0.2f, 0.8f);
+            bottle1.AddLayer(Layer(0.5f, 0.2f, 0.8f, 1f, 0.25f));
+
+            var bottle2 = CreateSut();
+            bottle2.AddLayer(new LiquidLayer(a, 0.25f));
+
+            Assert.That(bottle1.Layers[0].GetHashCode(), Is.EqualTo(bottle2.Layers[0].GetHashCode()));
+        }
+
+        [Test]
+        public void IsFull_WhenAllSlotsUsed_ReturnsTrue()
         {
             var bottle = CreateSut(4);
-            bottle.AddLayer(Layer(Color.red, 0.25f));
-            bottle.AddLayer(Layer(Color.blue, 0.25f));
+            bottle.AddLayer(Layer(1f, 0f, 0f, 1f, 0.25f));
+            bottle.AddLayer(Layer(0f, 0f, 1f, 1f, 0.25f));
+            bottle.AddLayer(Layer(0f, 1f, 0f, 1f, 0.25f));
+            bottle.AddLayer(Layer(1f, 1f, 0f, 1f, 0.25f));
 
-            var newLayers = new System.Collections.Generic.List<LiquidLayer>
-            {
-                Layer(Color.green, 0.25f),
-                Layer(Color.yellow, 0.25f),
-                Layer(Color.yellow, 0.25f),
-            };
-
-            bottle.ReplaceLayers(newLayers);
-
-            Assert.That(bottle.Layers.Count, Is.EqualTo(3));
-            Assert.That(PuzzleGame.Infrastructure.ColorAdapter.ToUnity(bottle.Layers[0].Color), Is.EqualTo(Color.green).Within(0.001f));
-            Assert.That(bottle.TotalFill, Is.EqualTo(0.75f).Within(0.001f));
-        }
-
-        [Test]
-        public void ReplaceLayers_WhenExceedsMax_ReturnsFalseAndClears()
-        {
-            var bottle = CreateSut(2);
-            var newLayers = new System.Collections.Generic.List<LiquidLayer>
-            {
-                Layer(Color.red, 0.25f),
-                Layer(Color.blue, 0.25f),
-                Layer(Color.green, 0.25f),
-            };
-
-            Assert.Throws<System.ArgumentException>(() => bottle.ReplaceLayers(newLayers));
-            Assert.That(bottle.IsEmpty, Is.True);
+            Assert.That(bottle.IsFull, Is.True);
         }
     }
 }

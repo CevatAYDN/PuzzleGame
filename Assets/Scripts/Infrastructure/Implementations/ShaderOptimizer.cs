@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using PuzzleGame.Domain;
+using PuzzleGame.Application.Interfaces;
 
 namespace PuzzleGame.Infrastructure.Implementations
 {
@@ -55,12 +56,10 @@ namespace PuzzleGame.Infrastructure.Implementations
             if (cpuCores >= 4 && memMb >= 3072) return 1;
             return 0;
         }
-    }
-
-    public interface IShaderOptimizer
-    {
-        void Initialize(bool applyMobileDefaults);
-        void ApplyLowQualityMode();
-        int GetRecommendedQualityLevel();
+        public void OptimizeMaterial(Material mat)
+        {
+            if (mat == null) return;
+            mat.shader.maximumLOD = Shader.globalMaximumLOD;
+        }
     }
 }

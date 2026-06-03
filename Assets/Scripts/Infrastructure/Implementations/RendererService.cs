@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using PuzzleGame.Domain;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Infrastructure;
-using PuzzleGame.Infrastructure.Interfaces;
+using PuzzleGame.Application.Interfaces;
 using UnityEngine;
 
 namespace PuzzleGame.Infrastructure.Implementations
@@ -31,9 +31,18 @@ namespace PuzzleGame.Infrastructure.Implementations
         private static readonly int SurfaceHeightID = Shader.PropertyToID("_SurfaceHeight");
         private static readonly int GlassColorID    = Shader.PropertyToID("_Color");
 
+        private readonly IColorAdapter _colorAdapter;
+
         private readonly MaterialPropertyBlock _liquidBlock = new MaterialPropertyBlock();
         private readonly MaterialPropertyBlock _glassBlock  = new MaterialPropertyBlock();
         private readonly List<LiquidLayer> _mergedLayers = new List<LiquidLayer>();
+
+        public RendererService() : this(new ColorAdapter()) { }
+
+        public RendererService(IColorAdapter colorAdapter)
+        {
+            _colorAdapter = colorAdapter ?? throw new ArgumentNullException(nameof(colorAdapter));
+        }
 
         public void UpdateLiquid(Renderer renderer, IReadOnlyList<LiquidLayer> layers, float totalFill,
                                  float saturationBoost, float brightnessBoost, int materialIndex = 1)
@@ -69,7 +78,7 @@ namespace PuzzleGame.Infrastructure.Implementations
                 if (i < _mergedLayers.Count)
                 {
                     var layer = _mergedLayers[i];
-                    color      = AdjustColor(ColorAdapter.ToUnity(layer.Color), saturationBoost, brightnessBoost);
+                    color      = AdjustColor(_colorAdapter.ToUnity(layer.Color), saturationBoost, brightnessBoost);
                     cumulative += layer.Amount;
                     fill       = cumulative;
                 }
@@ -99,7 +108,7 @@ namespace PuzzleGame.Infrastructure.Implementations
                             if (i < _mergedLayers.Count)
                             {
                                 var layer = _mergedLayers[i];
-                                color      = AdjustColor(ColorAdapter.ToUnity(layer.Color), saturationBoost, brightnessBoost);
+                                color      = AdjustColor(_colorAdapter.ToUnity(layer.Color), saturationBoost, brightnessBoost);
                                 cumulative += layer.Amount;
                                 fill       = cumulative;
                             }
@@ -132,7 +141,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             }
             else
             {
-                var uColor = ColorAdapter.ToUnity(baseColor);
+                var uColor = _colorAdapter.ToUnity(baseColor);
                 glassColor = new Color(
                     uColor.r * BottleConstants.GlassTintMultiplier + BottleConstants.GlassTintBase,
                     uColor.g * BottleConstants.GlassTintMultiplier + BottleConstants.GlassTintBase,

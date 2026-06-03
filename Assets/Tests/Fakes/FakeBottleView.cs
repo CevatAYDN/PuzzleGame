@@ -3,7 +3,7 @@ using UnityEngine;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
-using PuzzleGame.Infrastructure.Interfaces;
+// IRendererService now in PuzzleGame.Application.Interfaces
 
 namespace PuzzleGame.Tests.Fakes
 {
@@ -16,6 +16,7 @@ namespace PuzzleGame.Tests.Fakes
         public BottleState State { get; }
         public bool IsEmpty => State.IsEmpty;
         public bool IsCapped { get; set; }
+        public int BottleIndex { get; set; }
         public Transform Transform { get; set; }
         public GameObject GameObject { get; set; }
         public float Height { get; set; } = 2f;

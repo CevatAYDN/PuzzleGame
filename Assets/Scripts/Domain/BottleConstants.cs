@@ -53,17 +53,6 @@ namespace PuzzleGame.Domain
         /// <summary>Initial BFS depth (replaces the int.MaxValue sentinel).</summary>
         public const int SolverInitialDepth = 0;
 
-        // ── Cork (Bottle Cap) Geometry ──────────────────────────────────
-        public const float CorkRadius = 0.15f;
-        public const float CorkHeight = 0.25f;
-        public const int   CorkSegments = 16;
-        public const float CorkYOffset = 0.05f;
-
-        // ── Cork Material Color ─────────────────────────────────────────
-        public const float CorkWoodR = 0.45f;
-        public const float CorkWoodG = 0.28f;
-        public const float CorkWoodB = 0.16f;
-
         // ── Animation Defaults (compile-time — config can override) ────
         public const float WobbleBaseImpulse = 2.0f;
         public const float WobbleTargetMultiplier = 0.8f;

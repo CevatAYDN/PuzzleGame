@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using PuzzleGame.Application.Interfaces;
-using PuzzleGame.Domain;
 using UnityEngine;
+using PuzzleGame.Infrastructure;
 
 namespace PuzzleGame
 {
@@ -105,7 +105,7 @@ namespace PuzzleGame
             var cork = new GameObject("Cork");
             cork.transform.SetParent(_bottleTransform, false);
             float bottleHeight = _bottleHeightProvider();
-            cork.transform.localPosition = new Vector3(0f, bottleHeight - BottleConstants.CorkYOffset, 0f);
+            cork.transform.localPosition = new Vector3(0f, bottleHeight - PuzzleGame.Infrastructure.CorkConstants.YOffset, 0f);
             cork.transform.localRotation = Quaternion.identity;
             cork.transform.localScale = Vector3.zero;
 
@@ -113,9 +113,9 @@ namespace PuzzleGame
             var corkRenderer = cork.AddComponent<MeshRenderer>();
 
             var mesh = new Mesh { name = "CorkMesh" };
-            int segments = BottleConstants.CorkSegments;
+            int segments = PuzzleGame.Infrastructure.CorkConstants.Segments;
             float r = _neckRadiusProvider();
-            float h = BottleConstants.CorkHeight;
+            float h = PuzzleGame.Infrastructure.CorkConstants.Height;
 
             var verts = new List<Vector3>();
             var tris = new List<int>();
@@ -172,9 +172,9 @@ namespace PuzzleGame
             var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default");
             var mat = new Material(shader);
             Color woodColor = new Color(
-                BottleConstants.CorkWoodR,
-                BottleConstants.CorkWoodG,
-                BottleConstants.CorkWoodB);
+                PuzzleGame.Infrastructure.CorkConstants.WoodR,
+                PuzzleGame.Infrastructure.CorkConstants.WoodG,
+                PuzzleGame.Infrastructure.CorkConstants.WoodB);
             mat.color = woodColor;
             mat.SetColor("_BaseColor", woodColor);
             corkRenderer.sharedMaterial = mat;

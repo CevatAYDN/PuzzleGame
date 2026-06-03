@@ -8,9 +8,10 @@ using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Services;
-using PuzzleGame.Infrastructure.Interfaces;
+using PuzzleGame.Application.Events;
 using PuzzleGame.Infrastructure.Implementations;
 using PuzzleGame.Infrastructure.Pool;
+using PuzzleGame.Infrastructure;
 using PuzzleGame.Application.Logging;
 
 namespace PuzzleGame.Installers
@@ -59,9 +60,11 @@ namespace PuzzleGame.Installers
 
             // Infrastructure — no dependencies
             builder.Register<IRendererService, RendererService>(Lifetime.Singleton);
-            builder.Register<IShaderOptimizer, ShaderOptimizer>(Lifetime.Singleton);
-            builder.Register<PoolManager>(Lifetime.Singleton);
-            builder.RegisterInstance<IUpdateManager>(UpdateManager.Instance);
+            builder.Register<IPoolManager, PoolManager>(Lifetime.Singleton);
+            builder.Register<IColorAdapter, ColorAdapter>(Lifetime.Singleton);
+            builder.Register<IEventAggregator, EventAggregator>(Lifetime.Singleton);
+            builder.RegisterComponentOnNewGameObject<UpdateManager>(Lifetime.Singleton)
+                .UnderTransform((Transform)null); // DontDestroyOnLoad — root GameObject
 
             // Tween service — PrimeTween is the chosen impl. Coroutine fallback removed (orphan v2).
             builder.Register<ITweenService, PrimeTweenService>(Lifetime.Singleton);

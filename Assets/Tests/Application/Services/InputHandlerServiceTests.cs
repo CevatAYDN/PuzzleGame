@@ -13,6 +13,7 @@ namespace PuzzleGame.Tests.Application.Services
     public class InputHandlerServiceTests
     {
         private InputHandlerService _sut;
+        private EventAggregator _eventAggregator;
         private FakeInputHandler _inputHandler;
         private FakeGameStateMachine _stateMachine;
         private FakeAnimationService _animationService;
@@ -28,7 +29,7 @@ namespace PuzzleGame.Tests.Application.Services
         public void SetUp()
         {
             BottleLogger.SetLevel(BottleLogger.Level.Error, false);
-            EventAggregator.Clear();
+            _eventAggregator = new EventAggregator();
 
             _inputHandler = new FakeInputHandler();
             _stateMachine = new FakeGameStateMachine();
@@ -56,7 +57,7 @@ namespace PuzzleGame.Tests.Application.Services
         [TearDown]
         public void TearDown()
         {
-            EventAggregator.Clear();
+            _eventAggregator?.Clear();
             if (_gameConfig != null) ScriptableObject.DestroyImmediate(_gameConfig);
             if (_animConfig != null) ScriptableObject.DestroyImmediate(_animConfig);
         }

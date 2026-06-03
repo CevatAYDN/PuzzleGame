@@ -2,8 +2,6 @@ using UnityEngine;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Interfaces;
-using PuzzleGame.Infrastructure.Implementations;
-
 namespace PuzzleGame
 {
     [RequireComponent(typeof(Renderer))]
@@ -12,6 +10,7 @@ namespace PuzzleGame
         [Header("Configuration")]
         public Application.Configuration.WobbleConfig config;
 
+        private IUpdateManager _updateManager;
         private Renderer _renderer;
         private MaterialPropertyBlock _propBlock;
         private Vector3 _previousPosition;
@@ -34,9 +33,18 @@ namespace PuzzleGame
             _propBlock = new MaterialPropertyBlock();
         }
 
+        /// <summary>
+        /// Sets the update manager reference. Called by BottlePoolInitializer after instantiation.
+        /// For scene-placed bottles, call this from the composition root.
+        /// </summary>
+        public void SetUpdateManager(IUpdateManager updateManager)
+        {
+            _updateManager = updateManager;
+        }
+
         private void OnEnable()
         {
-            UpdateManager.Instance?.Register(this);
+            _updateManager?.Register(this);
         }
 
         private void Start()
@@ -147,7 +155,7 @@ namespace PuzzleGame
                 _renderer.SetPropertyBlock(_propBlock, _liquidMatIndex);
             }
 
-            UpdateManager.Instance?.Unregister(this);
+            _updateManager?.Unregister(this);
         }
 
         /// <summary>

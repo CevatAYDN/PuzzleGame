@@ -1,29 +1,29 @@
 using System;
 using System.Collections.Generic;
+using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Logging;
 
 namespace PuzzleGame.Application.Events
 {
     /// <summary>
     /// Lightweight, type-safe publish/subscribe bus.
-    /// Use it to decouple systems that should not reference each other directly
-    /// (e.g. GameManager → UI, AudioManager, ParticleManager).
+    /// Instance-based — inject via IEventAggregator for testability.
     ///
     /// Usage:
-    ///   EventAggregator.Subscribe&lt;PourCompletedEvent&gt;(OnPourCompleted);
-    ///   EventAggregator.Publish(new PourCompletedEvent(source, target));
-    ///   EventAggregator.Unsubscribe&lt;PourCompletedEvent&gt;(OnPourCompleted);
+    ///   _eventAggregator.Subscribe&lt;PourCompletedEvent&gt;(OnPourCompleted);
+    ///   _eventAggregator.Publish(new PourCompletedEvent(source, target));
+    ///   _eventAggregator.Unsubscribe&lt;PourCompletedEvent&gt;(OnPourCompleted);
     /// </summary>
-    public static class EventAggregator
+    public class EventAggregator : IEventAggregator
     {
-        public interface ISubscription
+        private interface ISubscription
         {
             bool IsAlive { get; }
             void Invoke(object eventArgs);
             bool Matches(Delegate d);
         }
 
-        public class Subscription<T> : ISubscription
+        private class Subscription<T> : ISubscription
         {
             private readonly Action<T> _delegate;
 
@@ -45,141 +45,107 @@ namespace PuzzleGame.Application.Events
             }
         }
 
-        private static readonly Dictionary<Type, List<ISubscription>> _subscribers =
+        private readonly Dictionary<Type, List<ISubscription>> _subscribers =
             new Dictionary<Type, List<ISubscription>>();
 
         private const int MaxPoolSize = 16;
 
-        private static readonly Stack<List<ISubscription>> _listPool = new Stack<List<ISubscription>>();
-        private static readonly object _lockObj = new object();
+        private readonly Stack<List<ISubscription>> _listPool = new Stack<List<ISubscription>>();
+        private readonly object _lockObj = new object();
 
-        private static List<ISubscription> GetTempList()
+        private List<ISubscription> GetTempList()
         {
-            if (_listPool.Count > 0)
-                return _listPool.Pop();
-            return new List<ISubscription>(16);
-        }
-
-        private static void ReleaseTempList(List<ISubscription> list)
-        {
-            list.Clear();
-            if (_listPool.Count < MaxPoolSize)
-                _listPool.Push(list);
-        }
-
-        // ── Subscribe / Unsubscribe ──────────────────────────────────────────
-
-        public static void Subscribe<T>(Action<T> handler)
-        {
-            if (handler == null) return;
-
-            var type = typeof(T);
             lock (_lockObj)
             {
-                if (!_subscribers.TryGetValue(type, out var list))
+                return _listPool.Count > 0 ? _listPool.Pop() : new List<ISubscription>(8);
+            }
+        }
+
+        private void ReturnTempList(List<ISubscription> list)
+        {
+            list.Clear();
+            lock (_lockObj)
+            {
+                if (_listPool.Count < MaxPoolSize)
+                    _listPool.Push(list);
+            }
+        }
+
+        public void Subscribe<T>(Action<T> handler)
+        {
+            if (handler == null) throw new ArgumentNullException(nameof(handler));
+
+            lock (_lockObj)
+            {
+                if (!_subscribers.TryGetValue(typeof(T), out var list))
                 {
-                    list = new List<ISubscription>();
-                    _subscribers[type] = list;
+                    list = GetTempList();
+                    _subscribers[typeof(T)] = list;
                 }
                 list.Add(new Subscription<T>(handler));
             }
         }
 
-        public static void Unsubscribe<T>(Action<T> handler)
+        public void Unsubscribe<T>(Action<T> handler)
         {
-            if (handler == null) return;
+            if (handler == null) throw new ArgumentNullException(nameof(handler));
 
             lock (_lockObj)
             {
-                if (_subscribers.TryGetValue(typeof(T), out var list))
+                if (!_subscribers.TryGetValue(typeof(T), out var list))
+                    return;
+
+                for (int i = list.Count - 1; i >= 0; i--)
                 {
-                    for (int i = list.Count - 1; i >= 0; i--)
+                    if (list[i].Matches(handler))
                     {
-                        if (list[i].Matches(handler))
-                        {
-                            list.RemoveAt(i);
-                        }
+                        list.RemoveAt(i);
                     }
+                }
+
+                if (list.Count == 0)
+                {
+                    _subscribers.Remove(typeof(T));
+                    ReturnTempList(list);
                 }
             }
         }
 
-        // ── Publish ──────────────────────────────────────────────────────────
-
-        public static void Publish<T>(T eventArgs)
+        public void Publish<T>(T eventArgs)
         {
-            List<ISubscription> tempList = null;
+            IEnumerable<ISubscription> snapshot;
 
             lock (_lockObj)
             {
                 if (!_subscribers.TryGetValue(typeof(T), out var list) || list.Count == 0)
                     return;
 
-                // Clean dead subscriptions first
-                for (int i = list.Count - 1; i >= 0; i--)
-                {
-                    if (!list[i].IsAlive)
-                    {
-                        list.RemoveAt(i);
-                    }
-                }
-
-                if (list.Count == 0) return;
-
-                // Copy to a pooled list to support safe unsubscription/subscription during dispatch
-                tempList = GetTempList();
-                int originalCount = list.Count;
-                for (int i = 0; i < originalCount; i++)
-                {
-                    tempList.Add(list[i]);
-                }
+                snapshot = list.ToArray(); // Thread-safe copy
             }
 
-            List<Exception> exceptions = null;
-            int count = tempList.Count;
-            for (int i = 0; i < count; i++)
+            foreach (var sub in snapshot)
             {
-                var sub = tempList[i];
-                if (!sub.IsAlive) continue;
-
                 try
                 {
                     sub.Invoke(eventArgs);
                 }
                 catch (Exception ex)
                 {
-                    BottleLogger.LogError($"EventAggregator: handler threw for event {typeof(T).Name}: {ex}");
-                    if (exceptions == null)
-                    {
-                        exceptions = new List<Exception>();
-                    }
-                    exceptions.Add(ex);
-                }
-            }
-
-            lock (_lockObj)
-            {
-                ReleaseTempList(tempList);
-            }
-
-            if (exceptions != null)
-            {
-                if (exceptions.Count == 1)
-                {
-                    System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(exceptions[0]).Throw();
-                }
-                else
-                {
-                    throw new AggregateException($"Multiple exceptions thrown during dispatch of event {typeof(T).Name}", exceptions);
+                    BottleLogger.LogError($"EventAggregator: Subscriber threw on {typeof(T).Name}: {ex}");
                 }
             }
         }
 
-        /// <summary>Removes all subscribers — call on scene unload to prevent stale references.</summary>
-        public static void Clear()
+        public void Clear()
         {
             lock (_lockObj)
             {
+                foreach (var list in _subscribers.Values)
+                {
+                    list.Clear();
+                    if (_listPool.Count < MaxPoolSize)
+                        _listPool.Push(list);
+                }
                 _subscribers.Clear();
             }
         }

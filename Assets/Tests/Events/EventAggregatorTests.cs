@@ -8,18 +8,20 @@ namespace PuzzleGame.Events.Tests
 {
     public class EventAggregatorTests
     {
+        private EventAggregator _eventAggregator;
+
         [SetUp]
         public void SetUp()
         {
-            EventAggregator.Clear(); // Önce temizle (önceki testten kalma varsa)
+            _eventAggregator = new EventAggregator();
             BottleLogger.SetLevel(BottleLogger.Level.Error, false);
         }
 
         [TearDown]
         public void TearDown()
         {
-            BottleLogger.SetLevel(BottleLogger.Level.Error, false); // SetUp ile aynı
-            EventAggregator.Clear();
+            BottleLogger.SetLevel(BottleLogger.Level.Error, false);
+            _eventAggregator?.Clear();
         }
 
         // ── Subscribe / Publish ─────────────────────────────────────────────
@@ -28,9 +30,9 @@ namespace PuzzleGame.Events.Tests
         public void SubscribeAndPublish_HandlerIsCalled()
         {
             bool called = false;
-            EventAggregator.Subscribe<TestEvent>(e => called = true);
+            _eventAggregator.Subscribe<TestEvent>(e => called = true);
 
-            EventAggregator.Publish(new TestEvent());
+            _eventAggregator.Publish(new TestEvent());
 
             Assert.That(called, Is.True);
         }
@@ -39,10 +41,10 @@ namespace PuzzleGame.Events.Tests
         public void SubscribeAndPublish_HandlerReceivesCorrectData()
         {
             TestEvent received = default;
-            EventAggregator.Subscribe<TestEvent>(e => received = e);
+            _eventAggregator.Subscribe<TestEvent>(e => received = e);
 
             var sent = new TestEvent { Value = 42 };
-            EventAggregator.Publish(sent);
+            _eventAggregator.Publish(sent);
 
             Assert.That(received.Value, Is.EqualTo(42));
         }
@@ -50,13 +52,13 @@ namespace PuzzleGame.Events.Tests
         [Test]
         public void Publish_WithoutSubscribers_DoesNotThrow()
         {
-            Assert.DoesNotThrow(() => EventAggregator.Publish(new TestEvent()));
+            Assert.DoesNotThrow(() => _eventAggregator.Publish(new TestEvent()));
         }
 
         [Test]
         public void Subscribe_NullHandler_DoesNotThrow()
         {
-            Assert.DoesNotThrow(() => EventAggregator.Subscribe<TestEvent>(null));
+            Assert.DoesNotThrow(() => _eventAggregator.Subscribe<TestEvent>(null));
         }
 
         // ── Multiple subscribers ────────────────────────────────────────────
@@ -65,10 +67,10 @@ namespace PuzzleGame.Events.Tests
         public void MultipleSubscribers_AllCalled()
         {
             int callCount = 0;
-            EventAggregator.Subscribe<TestEvent>(e => callCount++);
-            EventAggregator.Subscribe<TestEvent>(e => callCount++);
+            _eventAggregator.Subscribe<TestEvent>(e => callCount++);
+            _eventAggregator.Subscribe<TestEvent>(e => callCount++);
 
-            EventAggregator.Publish(new TestEvent());
+            _eventAggregator.Publish(new TestEvent());
 
             Assert.That(callCount, Is.EqualTo(2));
         }
@@ -77,10 +79,10 @@ namespace PuzzleGame.Events.Tests
         public void MultipleSubscribers_ThrowingOne_DoesNotAffectOthers()
         {
             int callCount = 0;
-            EventAggregator.Subscribe<TestEvent>(e => throw new System.Exception("Boom"));
-            EventAggregator.Subscribe<TestEvent>(e => callCount++);
+            _eventAggregator.Subscribe<TestEvent>(e => throw new System.Exception("Boom"));
+            _eventAggregator.Subscribe<TestEvent>(e => callCount++);
 
-            Assert.Throws<System.Exception>(() => EventAggregator.Publish(new TestEvent()));
+            Assert.Throws<System.Exception>(() => _eventAggregator.Publish(new TestEvent()));
 
             Assert.That(callCount, Is.EqualTo(1));
         }
@@ -92,7 +94,7 @@ namespace PuzzleGame.Events.Tests
             const int iterations = 100;
             int callCount = 0;
 
-            EventAggregator.Subscribe<TestEvent>(e => {
+            _eventAggregator.Subscribe<TestEvent>(e => {
                 System.Threading.Interlocked.Increment(ref callCount);
             });
 
@@ -103,7 +105,7 @@ namespace PuzzleGame.Events.Tests
                 {
                     for (int j = 0; j < iterations; j++)
                     {
-                        EventAggregator.Publish(new TestEvent());
+                        _eventAggregator.Publish(new TestEvent());
                     }
                 });
             }
@@ -122,9 +124,9 @@ namespace PuzzleGame.Events.Tests
             bool called = false;
             System.Action<TestEvent> handler = e => called = true;
 
-            EventAggregator.Subscribe(handler);
-            EventAggregator.Unsubscribe(handler);
-            EventAggregator.Publish(new TestEvent());
+            _eventAggregator.Subscribe(handler);
+            _eventAggregator.Unsubscribe(handler);
+            _eventAggregator.Publish(new TestEvent());
 
             Assert.That(called, Is.False);
         }
@@ -132,7 +134,7 @@ namespace PuzzleGame.Events.Tests
         [Test]
         public void Unsubscribe_NullHandler_DoesNotThrow()
         {
-            Assert.DoesNotThrow(() => EventAggregator.Unsubscribe<TestEvent>(null));
+            Assert.DoesNotThrow(() => _eventAggregator.Unsubscribe<TestEvent>(null));
         }
 
         [Test]
@@ -140,7 +142,7 @@ namespace PuzzleGame.Events.Tests
         {
             System.Action<TestEvent> handler = e => { };
 
-            Assert.DoesNotThrow(() => EventAggregator.Unsubscribe(handler));
+            Assert.DoesNotThrow(() => _eventAggregator.Unsubscribe(handler));
         }
 
         [Test]
@@ -150,14 +152,14 @@ namespace PuzzleGame.Events.Tests
             System.Action<TestEvent> selfRemoving = null;
             selfRemoving = e =>
             {
-                EventAggregator.Unsubscribe(selfRemoving);
+                _eventAggregator.Unsubscribe(selfRemoving);
             };
             System.Action<TestEvent> other = e => callCount++;
 
-            EventAggregator.Subscribe(selfRemoving);
-            EventAggregator.Subscribe(other);
+            _eventAggregator.Subscribe(selfRemoving);
+            _eventAggregator.Subscribe(other);
 
-            EventAggregator.Publish(new TestEvent());
+            _eventAggregator.Publish(new TestEvent());
 
             Assert.That(callCount, Is.EqualTo(1));
         }
@@ -168,10 +170,10 @@ namespace PuzzleGame.Events.Tests
         public void Clear_RemovesAllSubscribers()
         {
             bool called = false;
-            EventAggregator.Subscribe<TestEvent>(e => called = true);
+            _eventAggregator.Subscribe<TestEvent>(e => called = true);
 
-            EventAggregator.Clear();
-            EventAggregator.Publish(new TestEvent());
+            _eventAggregator.Clear();
+            _eventAggregator.Publish(new TestEvent());
 
             Assert.That(called, Is.False);
         }
@@ -179,8 +181,8 @@ namespace PuzzleGame.Events.Tests
         [Test]
         public void Clear_CanBeCalledMultipleTimes()
         {
-            Assert.DoesNotThrow(() => EventAggregator.Clear());
-            Assert.DoesNotThrow(() => EventAggregator.Clear());
+            Assert.DoesNotThrow(() => _eventAggregator.Clear());
+            Assert.DoesNotThrow(() => _eventAggregator.Clear());
         }
 
         // ── Type isolation ──────────────────────────────────────────────────
@@ -191,10 +193,10 @@ namespace PuzzleGame.Events.Tests
             bool testEventCalled = false;
             bool otherEventCalled = false;
 
-            EventAggregator.Subscribe<TestEvent>(e => testEventCalled = true);
-            EventAggregator.Subscribe<OtherTestEvent>(e => otherEventCalled = true);
+            _eventAggregator.Subscribe<TestEvent>(e => testEventCalled = true);
+            _eventAggregator.Subscribe<OtherTestEvent>(e => otherEventCalled = true);
 
-            EventAggregator.Publish(new TestEvent());
+            _eventAggregator.Publish(new TestEvent());
 
             Assert.That(testEventCalled, Is.True);
             Assert.That(otherEventCalled, Is.False);
@@ -206,11 +208,11 @@ namespace PuzzleGame.Events.Tests
         public void PourCompletedEvent_CanBePublishedAndReceived()
         {
             PourCompletedEvent received = default;
-            EventAggregator.Subscribe<PourCompletedEvent>(e => received = e);
+            _eventAggregator.Subscribe<PourCompletedEvent>(e => received = e);
 
             var source = new BottleState(4);
             var target = new BottleState(4);
-            EventAggregator.Publish(new PourCompletedEvent(source, target));
+            _eventAggregator.Publish(new PourCompletedEvent(source, target));
 
             Assert.That(received.Source, Is.EqualTo(source));
             Assert.That(received.Target, Is.EqualTo(target));
@@ -220,10 +222,10 @@ namespace PuzzleGame.Events.Tests
         public void BottleSelectedEvent_CanBePublishedAndReceived()
         {
             BottleSelectedEvent received = default;
-            EventAggregator.Subscribe<BottleSelectedEvent>(e => received = e);
+            _eventAggregator.Subscribe<BottleSelectedEvent>(e => received = e);
 
             var bottle = new BottleState(4);
-            EventAggregator.Publish(new BottleSelectedEvent(bottle));
+            _eventAggregator.Publish(new BottleSelectedEvent(bottle));
 
             Assert.That(received.Bottle, Is.EqualTo(bottle));
         }
@@ -232,9 +234,9 @@ namespace PuzzleGame.Events.Tests
         public void LevelCompletedEvent_CanBePublishedAndReceived()
         {
             LevelCompletedEvent received = default;
-            EventAggregator.Subscribe<LevelCompletedEvent>(e => received = e);
+            _eventAggregator.Subscribe<LevelCompletedEvent>(e => received = e);
 
-            EventAggregator.Publish(new LevelCompletedEvent(15));
+            _eventAggregator.Publish(new LevelCompletedEvent(15));
 
             Assert.That(received.MoveCount, Is.EqualTo(15));
         }

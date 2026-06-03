@@ -3,7 +3,7 @@ using UnityEngine;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Configuration;
-using PuzzleGame.Infrastructure.Interfaces;
+// IInputHandler now in PuzzleGame.Application.Interfaces
 using PuzzleGame.Application.Events;
 using PuzzleGame.Application.Logging;
 using PuzzleGame.Application.Interfaces;
@@ -268,20 +268,14 @@ namespace PuzzleGame.Application.Services
         }
 
         /// <summary>
-        /// Static pre-configured LevelData for play-test mode (editor direct play).
-        /// Avoids runtime ScriptableObject.CreateInstance allocation.
-        /// Created once via ScriptableObject.CreateInstance at class initialization time
-        /// (editor-safe, no scene context needed).
+        /// Cached play-test defaults — pure POCO, no ScriptableObject dependency.
+        /// Used when no level data is set (editor direct play mode).
         /// </summary>
-        private static readonly LevelData _playTestDefaults = CreatePlayTestDefaults();
-
-        private static LevelData CreatePlayTestDefaults()
+        private static readonly LevelData _playTestDefaults = new LevelData
         {
-            var ld = ScriptableObject.CreateInstance<LevelData>();
-            ld.autoGenerate = false;
-            ld.enableMultiLayerPour = false;
-            ld.enableReactionSystem = false;
-            return ld;
-        }
+            autoGenerate = false,
+            enableMultiLayerPour = false,
+            enableReactionSystem = false
+        };
     }
 }

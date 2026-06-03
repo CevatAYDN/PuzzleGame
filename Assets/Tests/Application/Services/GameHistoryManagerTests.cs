@@ -5,7 +5,7 @@ using PuzzleGame.Application.Services;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Domain.Interfaces;
-using PuzzleGame.Infrastructure.Interfaces;
+// IRendererService now in PuzzleGame.Application.Interfaces
 
 namespace PuzzleGame.Tests.Application.Services
 {
@@ -114,6 +114,7 @@ namespace PuzzleGame.Tests.Application.Services
             public BottleState State { get; }
             public bool IsEmpty => State.IsEmpty;
             public bool IsCapped => false;
+            public int BottleIndex { get; set; }
             public Transform Transform => null;
             public GameObject GameObject => null;
             public float Height => 2f;

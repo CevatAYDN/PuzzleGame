@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using PuzzleGame.Infrastructure.Interfaces;
+using PuzzleGame.Application.Interfaces;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif

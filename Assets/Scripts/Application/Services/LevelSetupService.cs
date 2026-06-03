@@ -4,11 +4,9 @@ using PuzzleGame.Domain;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Services;
-using PuzzleGame.Infrastructure;
 using PuzzleGame.Application.Logging;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Application.Interfaces;
-using PuzzleGame.Infrastructure.Interfaces;
 
 namespace PuzzleGame.Application.Services
 {
@@ -34,12 +32,15 @@ namespace PuzzleGame.Application.Services
             new DomainColor(0.95f, 0.50f, 0.15f, 1f),
         };
 
-        public LevelSetupService(GameConfig gameConfig, LevelConfig levelConfig, ILevelGenerator levelGenerator)
+        public LevelSetupService(GameConfig gameConfig, LevelConfig levelConfig, ILevelGenerator levelGenerator, IColorAdapter colorAdapter)
         {
             _gameConfig = gameConfig;
             _levelConfig = levelConfig;
             _levelGenerator = levelGenerator;
+            _colorAdapter = colorAdapter;
         }
+
+        private readonly IColorAdapter _colorAdapter;
 
         public List<List<LiquidLayer>> GenerateLevelAssignments(IBottleView[] bottles, LevelData currentLevel)
         {
@@ -87,7 +88,7 @@ namespace PuzzleGame.Application.Services
                     {
                         foreach (var layerData in bottleData.layers)
                         {
-                            layers.Add(new LiquidLayer(ColorAdapter.FromUnity(layerData.color), layerData.amount));
+                            layers.Add(new LiquidLayer(_colorAdapter.FromUnity(layerData.color), layerData.amount));
                         }
                     }
                     assignments.Add(layers);
@@ -134,11 +135,11 @@ namespace PuzzleGame.Application.Services
             }
         }
 
-        private static DomainColor[] ConvertPalette(UnityEngine.Color[] colors)
+        private DomainColor[] ConvertPalette(UnityEngine.Color[] colors)
         {
             var result = new DomainColor[colors.Length];
             for (int i = 0; i < colors.Length; i++)
-                result[i] = ColorAdapter.FromUnity(colors[i]);
+                result[i] = _colorAdapter.FromUnity(colors[i]);
             return result;
         }
     }

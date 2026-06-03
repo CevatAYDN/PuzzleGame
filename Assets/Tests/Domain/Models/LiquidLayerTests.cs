@@ -1,8 +1,5 @@
 using NUnit.Framework;
 using PuzzleGame.Domain.Models;
-using PuzzleGame.Infrastructure;
-using UnityEngine;
-
 namespace PuzzleGame.Domain.Tests.Models
 {
     public class LiquidLayerTests
@@ -20,24 +17,24 @@ namespace PuzzleGame.Domain.Tests.Models
         [Test]
         public void Constructor_WithUnityColorViaAdapter_SetsProperties()
         {
-            var unityColor = new Color(0.5f, 0.3f, 0.8f, 1f);
-            var layer = new LiquidLayer(ColorAdapter.FromUnity(unityColor), 0.25f);
+            var domainColor = new DomainColor(0.5f, 0.3f, 0.8f, 1f);
+            var layer = new LiquidLayer(domainColor, 0.25f);
 
-            Assert.That(ColorAdapter.ToUnity(layer.Color), Is.EqualTo(unityColor));
+            Assert.That(layer.Color, Is.EqualTo(domainColor));
             Assert.That(layer.Amount, Is.EqualTo(0.25f));
         }
 
         [Test]
         public void Constructor_WithNegativeAmount_ClampsToZero()
         {
-            var layer = new LiquidLayer(ColorAdapter.FromUnity(Color.red), -0.5f);
+            var layer = new LiquidLayer(new DomainColor(1f, 0f, 0f), -0.5f);
             Assert.That(layer.Amount, Is.EqualTo(0f));
         }
 
         [Test]
         public void Constructor_WithZeroAmount_AmountIsZero()
         {
-            var layer = new LiquidLayer(ColorAdapter.FromUnity(Color.blue), 0f);
+            var layer = new LiquidLayer(new DomainColor(0f, 0f, 1f), 0f);
             Assert.That(layer.Amount, Is.EqualTo(0f));
         }
 
@@ -51,7 +48,7 @@ namespace PuzzleGame.Domain.Tests.Models
         [Test]
         public void IsEmpty_WithZeroAmount_ReturnsTrue()
         {
-            var layer = new LiquidLayer(ColorAdapter.FromUnity(Color.red), 0f);
+            var layer = new LiquidLayer(new DomainColor(1f, 0f, 0f), 0f);
             Assert.That(layer.IsEmpty, Is.True);
         }
 
@@ -68,8 +65,8 @@ namespace PuzzleGame.Domain.Tests.Models
             var original = new LiquidLayer(new DomainColor(1, 0, 0, 1), 0.25f);
             var modified = original.WithColor(new DomainColor(0, 0, 1, 1));
 
-            Assert.That(ColorAdapter.ToUnity(original.Color), Is.EqualTo(Color.red));
-            Assert.That(ColorAdapter.ToUnity(modified.Color), Is.EqualTo(Color.blue));
+            Assert.That(original.Color, Is.EqualTo(new DomainColor(1, 0, 0, 1)));
+            Assert.That(modified.Color, Is.EqualTo(new DomainColor(0, 0, 1, 1)));
             Assert.That(modified.Amount, Is.EqualTo(original.Amount));
         }
 

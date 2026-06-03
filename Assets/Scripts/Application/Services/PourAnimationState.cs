@@ -4,7 +4,7 @@ using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
-using PuzzleGame.Infrastructure.Pool;
+// IGameObjectPool now in PuzzleGame.Application.Interfaces
 
 namespace PuzzleGame.Application.Services
 {

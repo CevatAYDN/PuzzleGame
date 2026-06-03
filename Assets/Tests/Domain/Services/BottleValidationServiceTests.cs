@@ -1,8 +1,6 @@
 using NUnit.Framework;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Domain.Services;
-using PuzzleGame.Infrastructure;
-using UnityEngine;
 
 namespace PuzzleGame.Domain.Tests.Services
 {
@@ -22,14 +20,17 @@ namespace PuzzleGame.Domain.Tests.Services
 
         private DomainColor DC(float r, float g, float b, float a = 1f) => new DomainColor(r, g, b, a);
         private LiquidLayer Layer(DomainColor c, float a = 0.25f) => new LiquidLayer(c, a);
-        private DomainColor UnityToDomain(Color c) => ColorAdapter.FromUnity(c);
 
-        private void FillBottle(BottleState bottle, int count, Color? color = null)
+        private void FillBottle(BottleState bottle, int count, DomainColor? color = null)
         {
-            Color c = color ?? Color.red;
+            DomainColor c = color ?? DC(1f, 0f, 0f);
             for (int i = 0; i < count; i++)
-                bottle.AddLayer(Layer(UnityToDomain(c), 0.25f));
+                bottle.AddLayer(Layer(c, 0.25f));
         }
+
+        private DomainColor Red() => DC(1f, 0f, 0f);
+        private DomainColor Blue() => DC(0f, 0f, 1f);
+        private DomainColor Green() => DC(0f, 1f, 0f);
 
         // ── ColorsMatch ─────────────────────────────────────────────────────
 
@@ -92,7 +93,7 @@ namespace PuzzleGame.Domain.Tests.Services
         [Test]
         public void CanPour_IntoFullTarget_ReturnsFalse()
         {
-            _source.AddLayer(Layer(UnityToDomain(Color.red)));
+            _source.AddLayer(Layer(Red()));
             FillBottle(_target, 4);
             Assert.That(_validator.CanPour(_source, _target), Is.False);
         }
@@ -100,30 +101,30 @@ namespace PuzzleGame.Domain.Tests.Services
         [Test]
         public void CanPour_SameBottle_ReturnsFalse()
         {
-            _source.AddLayer(Layer(UnityToDomain(Color.red)));
+            _source.AddLayer(Layer(Red()));
             Assert.That(_validator.CanPour(_source, _source), Is.False);
         }
 
         [Test]
         public void CanPour_IntoEmptyTarget_ReturnsTrue()
         {
-            _source.AddLayer(Layer(UnityToDomain(Color.red)));
+            _source.AddLayer(Layer(Red()));
             Assert.That(_validator.CanPour(_source, _target), Is.True);
         }
 
         [Test]
         public void CanPour_MatchingColors_ReturnsTrue()
         {
-            _source.AddLayer(Layer(UnityToDomain(Color.red)));
-            _target.AddLayer(Layer(UnityToDomain(Color.red)));
+            _source.AddLayer(Layer(Red()));
+            _target.AddLayer(Layer(Red()));
             Assert.That(_validator.CanPour(_source, _target), Is.True);
         }
 
         [Test]
         public void CanPour_DifferentColors_ReturnsFalse()
         {
-            _source.AddLayer(Layer(UnityToDomain(Color.red)));
-            _target.AddLayer(Layer(UnityToDomain(Color.blue)));
+            _source.AddLayer(Layer(Red()));
+            _target.AddLayer(Layer(Blue()));
             Assert.That(_validator.CanPour(_source, _target), Is.False);
         }
 
@@ -136,7 +137,7 @@ namespace PuzzleGame.Domain.Tests.Services
         [Test]
         public void CanPour_TargetIsNull_ThrowsArgumentNullException()
         {
-            _source.AddLayer(Layer(UnityToDomain(Color.red)));
+            _source.AddLayer(Layer(Red()));
             Assert.Throws<System.ArgumentNullException>(() => _validator.CanPour(_source, null));
         }
 
@@ -165,7 +166,7 @@ namespace PuzzleGame.Domain.Tests.Services
         [Test]
         public void IsComplete_FullSingleColor_ReturnsTrue()
         {
-            FillBottle(_source, 4, Color.red);
+            FillBottle(_source, 4, Red());
             Assert.That(_validator.IsComplete(_source), Is.True);
         }
 
@@ -182,24 +183,24 @@ namespace PuzzleGame.Domain.Tests.Services
         [Test]
         public void IsComplete_NotFull_ReturnsFalse()
         {
-            _source.AddLayer(Layer(UnityToDomain(Color.red)));
+            _source.AddLayer(Layer(Red()));
             Assert.That(_validator.IsComplete(_source), Is.False);
         }
 
         [Test]
         public void IsComplete_MixedColors_ReturnsFalse()
         {
-            _source.AddLayer(Layer(UnityToDomain(Color.red)));
-            _source.AddLayer(Layer(UnityToDomain(Color.blue)));
-            _source.AddLayer(Layer(UnityToDomain(Color.green)));
+            _source.AddLayer(Layer(Red()));
+            _source.AddLayer(Layer(Blue()));
+            _source.AddLayer(Layer(Green()));
             Assert.That(_validator.IsComplete(_source), Is.False);
         }
 
         [Test]
         public void IsComplete_FullButTwoColors_ReturnsFalse()
         {
-            FillBottle(_source, 2, Color.red);
-            FillBottle(_source, 2, Color.blue);
+            FillBottle(_source, 2, Red());
+            FillBottle(_source, 2, Blue());
             Assert.That(_validator.IsComplete(_source), Is.False);
         }
 

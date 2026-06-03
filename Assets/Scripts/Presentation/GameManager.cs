@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -10,10 +9,6 @@ using PuzzleGame.Domain.Services;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Application.Services;
 using PuzzleGame.Application.Interfaces;
-using PuzzleGame.Infrastructure.Interfaces;
-using PuzzleGame.Infrastructure.Implementations;
-using PuzzleGame.Infrastructure;
-using PuzzleGame.Infrastructure.Pool;
 using PuzzleGame.Application.Events;
 using PuzzleGame.Application.Logging;
 using PuzzleGame.Application.UI;
@@ -63,9 +58,9 @@ namespace PuzzleGame
         private LevelData _currentLevel;
         private BottlePoolInitializer _poolInitializer;
         private IShaderOptimizer _shaderOptimizer;
-
-        private static readonly WaitForSeconds WinCheckDelay =
-            new WaitForSeconds(BottleConstants.WinCheckDelaySeconds);
+        private IEventAggregator _eventAggregator;
+        private IUpdateManager _updateManager;
+        private ITweenService _tweenService;
 
         private bool _isInitialized;
 
@@ -88,7 +83,10 @@ namespace PuzzleGame
             ILevelValidationService levelValidationService,
             IGameHistoryManager historyManager,
             ILocalizationService localizationService,
-            IShaderOptimizer shaderOptimizer)
+            IShaderOptimizer shaderOptimizer,
+            IEventAggregator eventAggregator,
+            IUpdateManager updateManager,
+            ITweenService tweenService)
         {
             if (validator == null)        throw new ArgumentNullException(nameof(validator));
             if (stateMachine == null)     throw new ArgumentNullException(nameof(stateMachine));
@@ -116,6 +114,9 @@ namespace PuzzleGame
             _levelValidationService = levelValidationService;
             _historyManager = historyManager;
             _shaderOptimizer = shaderOptimizer;
+            _eventAggregator = eventAggregator;
+            _updateManager = updateManager;
+            _tweenService = tweenService;
 
             _isInitialized = true;
         }
@@ -139,8 +140,8 @@ namespace PuzzleGame
             InitAudio();
 
             SceneManager.sceneUnloaded += OnSceneUnloaded;
-            EventAggregator.Subscribe<LevelSelectedEvent>(OnLevelSelected);
-            EventAggregator.Subscribe<PourCompletedEvent>(OnPourCompleted);
+            _eventAggregator.Subscribe<LevelSelectedEvent>(OnLevelSelected);
+            _eventAggregator.Subscribe<PourCompletedEvent>(OnPourCompleted);
 
             _historyManager.OnMoveCountChanged += OnMoveCountChanged;
 
@@ -162,7 +163,7 @@ namespace PuzzleGame
 
             _poolInitializer = new BottlePoolInitializer(
                 _levelSetupService, _rendererService, _validator, _animationService,
-                _inputHandlerService, _historyManager, _camera);
+                _inputHandlerService, _historyManager, _updateManager, _camera);
 
             _poolInitializer.InitializeForLevel(_currentLevel);
             InitHUD();
@@ -185,8 +186,8 @@ namespace PuzzleGame
             }
 
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
-            EventAggregator.Unsubscribe<LevelSelectedEvent>(OnLevelSelected);
-            EventAggregator.Unsubscribe<PourCompletedEvent>(OnPourCompleted);
+            _eventAggregator.Unsubscribe<LevelSelectedEvent>(OnLevelSelected);
+            _eventAggregator.Unsubscribe<PourCompletedEvent>(OnPourCompleted);
 
             if (_historyManager != null)
             {
@@ -199,7 +200,7 @@ namespace PuzzleGame
         private void OnSceneUnloaded(Scene scene)
         {
             BottleLogger.LogDebug("Scene unloaded — cleaning up subscriptions and particle pools.");
-            EventAggregator.Clear();
+            _eventAggregator.Clear();
             if (_animationService is System.IDisposable disposable)
             {
                 disposable.Dispose();
@@ -235,13 +236,9 @@ namespace PuzzleGame
 
         private void OnPourCompleted(PourCompletedEvent e)
         {
-            StartCoroutine(DelayedWinCheck());
-        }
-
-        private IEnumerator DelayedWinCheck()
-        {
-            yield return WinCheckDelay;
-            CheckWinCondition();
+            _tweenService.Delay(BottleConstants.WinCheckDelaySeconds)
+                .OnComplete(CheckWinCondition)
+                .Start();
         }
 
         private void CheckWinCondition()
@@ -284,7 +281,7 @@ namespace PuzzleGame
 
                 if (winPanel != null) winPanel.SetActive(true);
 
-                EventAggregator.Publish(new LevelCompletedEvent(moveCount));
+                _eventAggregator.Publish(new LevelCompletedEvent(moveCount));
             }
         }
 

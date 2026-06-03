@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using PuzzleGame.Domain;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Interfaces;
@@ -80,7 +79,7 @@ namespace PuzzleGame.Application.Services
                 }
             }
 
-            _moveCount = Mathf.Max(0, _moveCount - 1);
+            _moveCount = Math.Max(0, _moveCount - 1);
             OnMoveCountChanged?.Invoke(_moveCount);
             BottleLogger.LogInfo($"Undo performed. Current moves: {_moveCount}");
         }

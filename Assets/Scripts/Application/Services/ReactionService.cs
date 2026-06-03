@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using PuzzleGame.Domain.Models;
-using PuzzleGame.Infrastructure;
 using PuzzleGame.Application.Configuration.FeatureSystem;
 using PuzzleGame.Application.Events;
 using PuzzleGame.Application.Logging;
@@ -15,18 +14,17 @@ namespace PuzzleGame.Application.Services
     /// - Explosion: Bottle disappears, creating empty space
     /// - Transform: Colors convert to new color
     /// </summary>
-    public interface IReactionService
-    {
-        /// <summary>
-        /// Check for reactions in all bottles after a pour.
-        /// Returns number of bottles that had reactions.
-        /// </summary>
-        /// <exception cref="ArgumentNullException">If bottles is null.</exception>
-        int CheckReactions(IBottleView[] bottles, ReactionSystemData config);
-    }
-
     public class ReactionService : IReactionService
     {
+        private readonly IColorAdapter _colorAdapter;
+        private readonly IEventAggregator _eventAggregator;
+
+        public ReactionService(IColorAdapter colorAdapter, IEventAggregator eventAggregator)
+        {
+            _colorAdapter = colorAdapter ?? throw new ArgumentNullException(nameof(colorAdapter));
+            _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
+        }
+
         public int CheckReactions(IBottleView[] bottles, ReactionSystemData config)
         {
             if (bottles == null) throw new ArgumentNullException(nameof(bottles));
@@ -120,7 +118,7 @@ namespace PuzzleGame.Application.Services
         {
             var position = bottle.Transform.position;
 
-            EventAggregator.Publish(new BottleExplodedEvent(
+            _eventAggregator.Publish(new BottleExplodedEvent(
                 result.BottleIndex,
                 position));
 
@@ -151,22 +149,22 @@ namespace PuzzleGame.Application.Services
                     ex);
             }
 
-            EventAggregator.Publish(new ReactionTriggeredEvent(
+            _eventAggregator.Publish(new ReactionTriggeredEvent(
                 result.BottleIndex,
                 ReactionRule.ReactionType.Transform,
-                ColorAdapter.ToUnity(resultColor.ToDefaultDomainColor()),
-                ColorAdapter.ToUnity(resultColor.ToDefaultDomainColor())));
+                _colorAdapter.ToUnity(resultColor.ToDefaultDomainColor()),
+                _colorAdapter.ToUnity(resultColor.ToDefaultDomainColor())));
 
             BottleLogger.LogInfo($"[ReactionService] TRANSFORM at {bottle.GameObject.name}: colors combined into {resultColor}");
         }
 
         private void ProcessBubble(IBottleView bottle, ReactionResult result)
         {
-            EventAggregator.Publish(new ReactionTriggeredEvent(
+            _eventAggregator.Publish(new ReactionTriggeredEvent(
                 result.BottleIndex,
                 ReactionRule.ReactionType.Bubble,
-                ColorAdapter.ToUnity(result.Rule.colorA.ToDefaultDomainColor()),
-                ColorAdapter.ToUnity(result.Rule.colorB.ToDefaultDomainColor())));
+                _colorAdapter.ToUnity(result.Rule.colorA.ToDefaultDomainColor()),
+                _colorAdapter.ToUnity(result.Rule.colorB.ToDefaultDomainColor())));
 
             BottleLogger.LogDebug($"[ReactionService] BUBBLE at {bottle.GameObject.name}.");
         }

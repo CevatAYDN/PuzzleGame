@@ -34,17 +34,26 @@ namespace PuzzleGame.Application.UI
 
         private ILevelRepository _repository;
         private ILevelProgressService _progress;
+        private IEventAggregator _eventAggregator;
 
         private LevelButtonView[] _buttons;
 
+        [VContainer.Inject]
+        public void Construct(ILevelRepository repository, ILevelProgressService progress, IEventAggregator eventAggregator)
+        {
+            _repository = repository;
+            _progress = progress;
+            _eventAggregator = eventAggregator;
+        }
+
         private void Start()
         {
-            EventAggregator.Subscribe<GameStateChangedEvent>(OnGameStateChanged);
+            _eventAggregator?.Subscribe<GameStateChangedEvent>(OnGameStateChanged);
         }
 
         private void OnDestroy()
         {
-            EventAggregator.Unsubscribe<GameStateChangedEvent>(OnGameStateChanged);
+            _eventAggregator?.Unsubscribe<GameStateChangedEvent>(OnGameStateChanged);
         }
 
         private void OnGameStateChanged(GameStateChangedEvent e)
@@ -113,7 +122,7 @@ namespace PuzzleGame.Application.UI
             var levelData = _repository?.GetByNumber(levelNumber);
             if (levelData == null) return;
 
-            EventAggregator.Publish(new LevelSelectedEvent(levelNumber));
+            _eventAggregator.Publish(new LevelSelectedEvent(levelNumber));
 
             // Hide this UI after selection
             gameObject.SetActive(false);

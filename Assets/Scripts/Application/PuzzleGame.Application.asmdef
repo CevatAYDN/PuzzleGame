@@ -3,7 +3,6 @@
     "rootNamespace": "PuzzleGame.Application",
     "references": [
         "PuzzleGame.Domain",
-        "PuzzleGame.Infrastructure",
         "VContainer",
         "PrimeTween.Runtime",
         "Unity.TextMeshPro"

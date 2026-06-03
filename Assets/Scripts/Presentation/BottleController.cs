@@ -4,7 +4,6 @@ using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Domain;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
-using PuzzleGame.Infrastructure.Interfaces;
 using PuzzleGame.Application.Logging;
 using UnityEngine;
 using PuzzleGame.Application.Configuration;
@@ -89,7 +88,7 @@ namespace PuzzleGame
             _corkController = new BottleCorkController(
                 transform, _animationService,
                 () => Height,
-                () => _meshGenerator != null ? _meshGenerator.neckRadius : BottleConstants.CorkRadius,
+                () => _meshGenerator != null ? _meshGenerator.neckRadius : PuzzleGame.Infrastructure.CorkConstants.Radius,
                 corkObject);
             _corkController.EnsureCork();
             corkObject = _corkController.CorkObject;
@@ -103,7 +102,7 @@ namespace PuzzleGame
             {
                 _state.AddLayer(layer);
                 _visualLayers.Add(layer);
-                _serializedLayers.Add(new LevelLayerData { color = ColorAdapter.ToUnity(layer.Color), amount = layer.Amount });
+                _serializedLayers.Add(new LevelLayerData { color = ColorAdapter.ToUnityStatic(layer.Color), amount = layer.Amount });
             }
             _visualTotalFill = _state.TotalFill;
 
@@ -143,7 +142,7 @@ namespace PuzzleGame
             _corkController = new BottleCorkController(
                 transform, _animationService,
                 () => Height,
-                () => _meshGenerator != null ? _meshGenerator.neckRadius : BottleConstants.CorkRadius,
+                () => _meshGenerator != null ? _meshGenerator.neckRadius : PuzzleGame.Infrastructure.CorkConstants.Radius,
                 corkObject);
 
             int maxLayers = visualConfig != null ? visualConfig.maxLayers : BottleConstants.DefaultLayerCapacity;
@@ -153,7 +152,7 @@ namespace PuzzleGame
             {
                 foreach (var layerData in _serializedLayers)
                 {
-                    var layer = new LiquidLayer(ColorAdapter.FromUnity(layerData.color), layerData.amount);
+                    var layer = new LiquidLayer(ColorAdapter.FromUnityStatic(layerData.color), layerData.amount);
                     _state.AddLayer(layer);
                     _visualLayers.Add(layer);
                 }
@@ -236,7 +235,7 @@ namespace PuzzleGame
                 for (int i = 0; i < count; i++)
                 {
                     _visualLayers.Add(layers[i]);
-                    _serializedLayers.Add(new LevelLayerData { color = ColorAdapter.ToUnity(layers[i].Color), amount = layers[i].Amount });
+                    _serializedLayers.Add(new LevelLayerData { color = ColorAdapter.ToUnityStatic(layers[i].Color), amount = layers[i].Amount });
                 }
             }
             _visualTotalFill = totalFill;
@@ -304,7 +303,7 @@ namespace PuzzleGame
             _serializedLayers.Clear();
             foreach (var layer in State.Layers)
             {
-                _serializedLayers.Add(new LevelLayerData { color = ColorAdapter.ToUnity(layer.Color), amount = layer.Amount });
+                _serializedLayers.Add(new LevelLayerData { color = ColorAdapter.ToUnityStatic(layer.Color), amount = layer.Amount });
             }
             UpdateVisuals();
 

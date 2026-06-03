@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Interfaces;
-using PuzzleGame.Infrastructure.Interfaces;
+// IRendererService now in PuzzleGame.Application.Interfaces
 
 namespace PuzzleGame.Application.Interfaces
 {

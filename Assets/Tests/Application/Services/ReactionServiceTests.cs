@@ -14,19 +14,22 @@ namespace PuzzleGame.Tests.Application.Services
     public class ReactionServiceTests
     {
         private ReactionService _sut;
+        private EventAggregator _eventAggregator;
+        private IColorAdapter _colorAdapter;
 
         [SetUp]
         public void SetUp()
         {
             BottleLogger.SetLevel(BottleLogger.Level.Error, false);
-            EventAggregator.Clear();
-            _sut = new ReactionService();
+            _eventAggregator = new EventAggregator();
+            _colorAdapter = new PuzzleGame.Infrastructure.ColorAdapter();
+            _sut = new ReactionService(_colorAdapter, _eventAggregator);
         }
 
         [TearDown]
         public void TearDown()
         {
-            EventAggregator.Clear();
+            _eventAggregator?.Clear();
         }
 
         [Test]
@@ -169,7 +172,7 @@ namespace PuzzleGame.Tests.Application.Services
             foreach (var c in colors)
             {
                 var domainColor = c.ToDefaultDomainColor();
-                var unityColor = PuzzleGame.Infrastructure.ColorAdapter.ToUnity(domainColor);
+                var unityColor = PuzzleGame.Infrastructure.ColorAdapter.ToUnityStatic(domainColor);
                 state.AddLayer(new LiquidLayer(domainColor, 1f, c));
             }
             var go = new UnityEngine.GameObject("TestBottle");

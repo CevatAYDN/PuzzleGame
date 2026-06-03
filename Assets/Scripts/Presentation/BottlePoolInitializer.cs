@@ -5,7 +5,7 @@ using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Application.Logging;
-using PuzzleGame.Infrastructure.Interfaces;
+// IRendererService now in PuzzleGame.Application.Interfaces
 using UnityEngine;
 
 namespace PuzzleGame
@@ -37,6 +37,7 @@ namespace PuzzleGame
             IAnimationService animationService,
             IInputHandlerService inputHandlerService,
             IGameHistoryManager historyManager,
+            IUpdateManager updateManager,
             Camera camera)
         {
             _levelSetupService = levelSetupService;
@@ -45,8 +46,11 @@ namespace PuzzleGame
             _animationService = animationService;
             _inputHandlerService = inputHandlerService;
             _historyManager = historyManager;
+            _updateManager = updateManager;
             _camera = camera;
         }
+
+        private readonly IUpdateManager _updateManager;
 
         /// <summary>
         /// Discovers bottles in scene (once), activates the correct count for the level,
@@ -95,6 +99,14 @@ namespace PuzzleGame
                 {
                     _bottles[index++] = b;
                 }
+            }
+
+            // Wire Wobble components to the update manager
+            for (int i = 0; i < _allBottlesPool.Length; i++)
+            {
+                var wobble = _allBottlesPool[i]?.GetComponent<Wobble>();
+                if (wobble != null)
+                    wobble.SetUpdateManager(_updateManager);
             }
 
             _historyManager.Initialize(_bottles);

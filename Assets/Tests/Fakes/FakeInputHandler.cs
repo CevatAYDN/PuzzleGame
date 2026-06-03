@@ -1,5 +1,5 @@
 using UnityEngine;
-using PuzzleGame.Infrastructure.Interfaces;
+using PuzzleGame.Application.Interfaces;
 
 namespace PuzzleGame.Tests.Fakes
 {
@@ -34,6 +34,13 @@ namespace PuzzleGame.Tests.Fakes
             LastRaycastLayerMask = layerMask;
             hit = RaycastHitResult;
             return RaycastResult;
+        }
+
+        public bool Raycast(Vector2 screenPos, LayerMask layerMask, out RaycastHit hit, out Collider hitCollider)
+        {
+            bool result = Raycast(screenPos, layerMask, out hit);
+            hitCollider = result && RaycastHitResult.collider != null ? RaycastHitResult.collider : null;
+            return result;
         }
 
         public void SimulateClick(Vector2 pos, bool raycastSuccess = true, RaycastHit hit = default)

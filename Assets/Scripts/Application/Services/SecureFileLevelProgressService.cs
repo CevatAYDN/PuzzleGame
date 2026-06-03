@@ -12,6 +12,13 @@ namespace PuzzleGame.Application.Services
     /// </summary>
     public class SecureFileLevelProgressService : ILevelProgressService
     {
+        private readonly IEventAggregator _eventAggregator;
+
+        public SecureFileLevelProgressService(IEventAggregator eventAggregator)
+        {
+            _eventAggregator = eventAggregator ?? throw new System.ArgumentNullException(nameof(eventAggregator));
+        }
+
         public bool IsUnlocked(int levelNumber)
         {
             if (levelNumber <= 1) return true;
@@ -56,7 +63,7 @@ namespace PuzzleGame.Application.Services
             // Record completion securely. Passing an empty array of bottles since the level is completed.
             GameSaveManager.Save(levelNumber, moveCount, System.Array.Empty<IBottleView>(), isCompleted: true, stars: stars);
 
-            EventAggregator.Publish(new Events.LevelProgressChangedEvent(levelNumber, stars, moveCount));
+            _eventAggregator.Publish(new Events.LevelProgressChangedEvent(levelNumber, stars, moveCount));
         }
 
         public void ResetAll()

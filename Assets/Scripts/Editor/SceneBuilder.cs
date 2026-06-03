@@ -9,7 +9,7 @@ using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Domain.Services;
 using PuzzleGame.Domain.Interfaces;
-using PuzzleGame.Infrastructure.Interfaces;
+using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Infrastructure.Implementations;
 using PuzzleGame.Infrastructure;
 
@@ -671,7 +671,7 @@ namespace PuzzleGame.Editor
                 if (colors[i].a > 0.01f)
                 {
                     float amount = i == 0 ? heights[0] : heights[i] - heights[i - 1];
-                    layers.Add(new LiquidLayer(ColorAdapter.FromUnity(colors[i]), amount));
+                    layers.Add(new LiquidLayer(ColorAdapter.FromUnityStatic(colors[i]), amount));
                 }
             }
             return layers;

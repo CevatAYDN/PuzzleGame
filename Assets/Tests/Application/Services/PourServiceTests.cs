@@ -16,6 +16,7 @@ namespace PuzzleGame.Tests.Application.Services
         private FakeBottleValidator _validator;
         private FakeHistoryManager _historyManager;
         private FakeReactionService _reactionService;
+        private EventAggregator _eventAggregator;
 
         private BottleState CreateBottle(int maxLayers = 4)
         {
@@ -32,17 +33,17 @@ namespace PuzzleGame.Tests.Application.Services
         public void SetUp()
         {
             BottleLogger.SetLevel(BottleLogger.Level.Error, false);
-            EventAggregator.Clear();
+            _eventAggregator = new EventAggregator();
             _validator = new FakeBottleValidator();
             _historyManager = new FakeHistoryManager();
             _reactionService = new FakeReactionService();
-            _sut = new PourService(_validator, _historyManager, _reactionService);
+            _sut = new PourService(_validator, _historyManager, _reactionService, _eventAggregator);
         }
 
         [TearDown]
         public void TearDown()
         {
-            EventAggregator.Clear();
+            _eventAggregator?.Clear();
         }
 
         // ── Null / Edge cases ─────────────────────────────────────────────────

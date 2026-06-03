@@ -52,14 +52,12 @@
     <Compile Include="Assets\Scripts\Infrastructure\Providers\IAssetProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\ColorAdapter.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\ShaderOptimizer.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\CorkConstants.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\UpdateManager.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Pool\GameObjectPool.cs" />
-    <Compile Include="Assets\Scripts\Infrastructure\Pool\IGameObjectPool.cs" />
-    <Compile Include="Assets\Scripts\Infrastructure\Interfaces\IInputHandler.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Providers\AddressablesAssetProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Pool\PoolManager.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\RendererService.cs" />
-    <Compile Include="Assets\Scripts\Infrastructure\Interfaces\IRendererService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\MobileInputHandler.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\InputHandler.cs" />
   </ItemGroup>
@@ -1214,6 +1212,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="PuzzleGame.Domain.csproj" />
+    <ProjectReference Include="PuzzleGame.Application.csproj" />
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <ItemGroup>

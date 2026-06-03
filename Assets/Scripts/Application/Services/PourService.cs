@@ -20,13 +20,15 @@ namespace PuzzleGame.Application.Services
         private readonly IBottleValidator _validator;
         private readonly IGameHistoryManager _historyManager;
         private readonly IReactionService _reactionService;
+        private readonly IEventAggregator _eventAggregator;
         private LevelData _currentLevelData;
 
-        public PourService(IBottleValidator validator, IGameHistoryManager historyManager, IReactionService reactionService)
+        public PourService(IBottleValidator validator, IGameHistoryManager historyManager, IReactionService reactionService, IEventAggregator eventAggregator)
         {
             _validator = validator;
             _historyManager = historyManager;
             _reactionService = reactionService;
+            _eventAggregator = eventAggregator;
         }
 
 
@@ -44,7 +46,7 @@ namespace PuzzleGame.Application.Services
 
             bool enableMultiLayer = levelData.enableMultiLayerPour;
 
-            EventAggregator.Publish(new PourStartedEvent(
+            _eventAggregator.Publish(new PourStartedEvent(
                 GetBottleIndex(source),
                 GetBottleIndex(target),
                 enableMultiLayer));
@@ -106,7 +108,7 @@ namespace PuzzleGame.Application.Services
         {
             if (source.State.IsEmpty)
             {
-                EventAggregator.Publish(new PourRejectedEvent(
+                _eventAggregator.Publish(new PourRejectedEvent(
                     GetBottleIndex(source),
                     GetBottleIndex(target),
                     "source_empty"));
@@ -115,7 +117,7 @@ namespace PuzzleGame.Application.Services
 
             if (!_validator.CanPour(source.State, target.State))
             {
-                EventAggregator.Publish(new PourRejectedEvent(
+                _eventAggregator.Publish(new PourRejectedEvent(
                     GetBottleIndex(source),
                     GetBottleIndex(target),
                     "validator_rejected"));
@@ -141,7 +143,7 @@ namespace PuzzleGame.Application.Services
             _historyManager.RecordUndoSnapshot();
             _historyManager.IncrementMoveCount();
 
-            EventAggregator.Publish(new PourCompletedEvent(source.State, target.State));
+            _eventAggregator.Publish(new PourCompletedEvent(source.State, target.State));
 
             CheckForReactions(source, target, activeBottles);
 
@@ -156,7 +158,7 @@ namespace PuzzleGame.Application.Services
             if (pourCount == 0)
             {
                 BottleLogger.LogDebug("[PourService] Multi-layer pour: no valid pour found");
-                EventAggregator.Publish(new PourRejectedEvent(
+                _eventAggregator.Publish(new PourRejectedEvent(
                     GetBottleIndex(source),
                     GetBottleIndex(target),
                     "no_matching_layers"));
@@ -166,11 +168,11 @@ namespace PuzzleGame.Application.Services
             var topLayerOpt = source.State.TopLayer;
             var topColor = topLayerOpt?.Color ?? default;
 
-            EventAggregator.Publish(new MultiLayerPourStartedEvent(
+            _eventAggregator.Publish(new MultiLayerPourStartedEvent(
                 GetBottleIndex(source),
                 GetBottleIndex(target),
                 pourCount,
-                Color.white));
+                UnityEngine.Color.white));
 
             int poured = 0;
             var rolledBackLayers = new System.Collections.Generic.List<LiquidLayer>(pourCount);
@@ -211,7 +213,7 @@ namespace PuzzleGame.Application.Services
                 _historyManager.RecordUndoSnapshot();
                 _historyManager.IncrementMoveCount();
 
-                EventAggregator.Publish(new MultiLayerPourCompletedEvent(
+                _eventAggregator.Publish(new MultiLayerPourCompletedEvent(
                     GetBottleIndex(source),
                     GetBottleIndex(target),
                     poured));

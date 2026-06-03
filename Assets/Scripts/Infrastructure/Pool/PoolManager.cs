@@ -1,16 +1,18 @@
 using System;
 using System.Collections.Generic;
+using PuzzleGame.Application.Interfaces;
 using UnityEngine;
 
 namespace PuzzleGame.Infrastructure.Pool
 {
     /// <summary>
     /// Central pool registry. Manages named pools for different object types.
+    /// Implements IPoolManager for clean DI through Application layer.
     /// - RegisterPool: creates a new pool by name
     /// - Rent/Return: type-safe access via named pools
     /// - Cleanup: destroy all pooled objects (scene unload)
     /// </summary>
-    public sealed class PoolManager : System.IDisposable
+    public sealed class PoolManager : IPoolManager
     {
         private readonly Dictionary<string, INamedPool> _pools = new Dictionary<string, INamedPool>();
 
@@ -116,6 +118,18 @@ namespace PuzzleGame.Infrastructure.Pool
                 entry.DestroyAll();
                 _pools.Remove(name);
             }
+        }
+
+        // ── Generic wrappers for IPoolManager interface compliance ──────────
+
+        public void Prewarm<T>(string name, int count, Transform parent = null) where T : Component
+        {
+            Prewarm(name, count, parent);
+        }
+
+        public void RemovePool<T>(string name) where T : Component
+        {
+            RemovePool(name);
         }
 
         // Internal non-generic interface for heterogeneous management

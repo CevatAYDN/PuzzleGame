@@ -4,8 +4,7 @@ using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
-using PuzzleGame.Infrastructure;
-using PuzzleGame.Infrastructure.Pool;
+// Infrastructure dependencies now through interfaces (IColorAdapter, IPoolManager)
 using UnityEngine;
 using PuzzleGame.Application.Logging;
 
@@ -31,7 +30,8 @@ namespace PuzzleGame.Application.Services
 
         private static readonly int RimIntensityID = Shader.PropertyToID("_RimIntensity");
 
-        private readonly PoolManager _poolManager;
+        private readonly IPoolManager _poolManager;
+        private readonly IColorAdapter _colorAdapter;
 
         private readonly ParticleSystem _splashPrefab;
         private readonly ParticleSystem _bubblePrefab;
@@ -41,12 +41,13 @@ namespace PuzzleGame.Application.Services
 
         public bool IsAnimating => _activeTweenCount > 0;
 
-        public AnimationService(AnimationConfig config, ITweenService tween, IAudioService audioService, PoolManager poolManager)
+        public AnimationService(AnimationConfig config, ITweenService tween, IAudioService audioService, IPoolManager poolManager, IColorAdapter colorAdapter)
         {
             _config = config;
             _tween = tween ?? throw new ArgumentNullException(nameof(tween));
             _audioService = audioService;
             _poolManager = poolManager;
+            _colorAdapter = colorAdapter;
 
             _splashPrefab = ParticlePrefabFactory.CreateSplash();
             _bubblePrefab = ParticlePrefabFactory.CreateBubble();
@@ -95,8 +96,9 @@ namespace PuzzleGame.Application.Services
                 UnityEngine.Object.Destroy(_bubblePrefab.gameObject);
             }
 
-            _poolManager.RemovePool("SplashPool");
-            _poolManager.RemovePool("BubblePool");
+            _poolManager.RemovePool<ParticleSystem>("SplashPool");
+            _poolManager.RemovePool<ParticleSystem>("BubblePool");
+
         }
 
         // ──────────────────────────────────────────────
@@ -181,7 +183,7 @@ namespace PuzzleGame.Application.Services
             state.PouredLayer = target.State.TopLayer ?? new LiquidLayer(new DomainColor(0, 0, 0, 0), 0f);
 
             state.LineRenderer = StreamRenderer.EnsureLineRenderer(source.GameObject);
-            state.StreamColor = ColorAdapter.ToUnity(state.PouredLayer.Color);
+            state.StreamColor = _colorAdapter.ToUnity(state.PouredLayer.Color);
             StreamRenderer.SetColor(state.LineRenderer, state.StreamColor);
             state.LineRenderer.enabled = false;
 

@@ -12,6 +12,7 @@ namespace PuzzleGame.Tests.Application
 {
     public class GameManagerTests
     {
+        private EventAggregator _eventAggregator;
         private FakeHistoryManager _historyManager;
         private FakeBottleSelectionService _selectionService;
         private FakeAnimationService _animationService;
@@ -24,7 +25,7 @@ namespace PuzzleGame.Tests.Application
         public void SetUp()
         {
             BottleLogger.SetLevel(BottleLogger.Level.Error, false);
-            EventAggregator.Clear();
+            _eventAggregator = new EventAggregator();
 
             _historyManager = new FakeHistoryManager();
             _selectionService = new FakeBottleSelectionService();
@@ -38,7 +39,7 @@ namespace PuzzleGame.Tests.Application
         [TearDown]
         public void TearDown()
         {
-            EventAggregator.Clear();
+            _eventAggregator?.Clear();
         }
 
         // ── PourService ───────────────────────────────────────────────────────
@@ -50,7 +51,7 @@ namespace PuzzleGame.Tests.Application
             var target = CreateEmptyBottle();
             var levelData = CreateLevelData(enableMultiLayer: false);
 
-            var sut = new PourService(_validator, _historyManager, reactionService: new FakeReactionService());
+            var sut = new PourService(_validator, _historyManager, new FakeReactionService(), _eventAggregator);
             _validator.CanPourResult = true;
 
             bool result = sut.TryPour(source, target, levelData, new IBottleView[] { source, target });
@@ -72,7 +73,7 @@ namespace PuzzleGame.Tests.Application
             var sv = new FakeBottleView(source) { GameObject = new UnityEngine.GameObject("S"), Transform = new UnityEngine.GameObject("ST").transform };
             var tv = new FakeBottleView(target) { GameObject = new UnityEngine.GameObject("T"), Transform = new UnityEngine.GameObject("TT").transform };
 
-            var sut = new PourService(_validator, _historyManager, new FakeReactionService());
+            var sut = new PourService(_validator, _historyManager, new FakeReactionService(), _eventAggregator);
 
             int count = sut.GetPourLayerCount(sv, tv, levelData);
             Assert.That(count, Is.EqualTo(2));

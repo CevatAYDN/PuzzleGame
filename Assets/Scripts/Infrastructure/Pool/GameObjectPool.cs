@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using PuzzleGame.Application.Interfaces;
 
 namespace PuzzleGame.Infrastructure.Pool
 {

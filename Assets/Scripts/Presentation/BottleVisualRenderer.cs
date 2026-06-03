@@ -4,7 +4,7 @@ using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain;
 using PuzzleGame.Domain.Models;
-using PuzzleGame.Infrastructure.Interfaces;
+// IRendererService now in PuzzleGame.Application.Interfaces
 using UnityEngine;
 
 namespace PuzzleGame

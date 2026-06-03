@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace PuzzleGame.Infrastructure.Interfaces
+namespace PuzzleGame.Application.Interfaces
 {
     /// <summary>
     /// Abstracts Unity's input system for raycast and pointer detection.

@@ -9,11 +9,13 @@ namespace PuzzleGame.Tests.Application.Services
     public class SecureFileLevelProgressServiceTests
     {
         private SecureFileLevelProgressService _sut;
+        private EventAggregator _eventAggregator;
 
         [SetUp]
         public void Setup()
         {
-            _sut = new SecureFileLevelProgressService();
+            _eventAggregator = new EventAggregator();
+            _sut = new SecureFileLevelProgressService(_eventAggregator);
             _sut.ResetAll();
         }
 
@@ -21,7 +23,7 @@ namespace PuzzleGame.Tests.Application.Services
         public void Teardown()
         {
             _sut?.ResetAll();
-            EventAggregator.Clear();
+            _eventAggregator?.Clear();
         }
 
         [Test]
@@ -113,7 +115,7 @@ namespace PuzzleGame.Tests.Application.Services
         public void RecordCompletion_PublishesEvent()
         {
             LevelProgressChangedEvent? received = null;
-            EventAggregator.Subscribe<LevelProgressChangedEvent>(e => received = e);
+            _eventAggregator.Subscribe<LevelProgressChangedEvent>(e => received = e);
 
             _sut.RecordCompletion(1, 10, 3);
 

@@ -17,9 +17,9 @@ namespace PuzzleGame.Application.Tests
         {
             _service = new BottleSelectionService();
             _bottleA = new BottleState(4);
-            _bottleA.AddLayer(new LiquidLayer(ColorAdapter.FromUnity(Color.red), 0.25f));
+            _bottleA.AddLayer(new LiquidLayer(ColorAdapter.FromUnityStatic(Color.red), 0.25f));
             _bottleB = new BottleState(4);
-            _bottleB.AddLayer(new LiquidLayer(ColorAdapter.FromUnity(Color.blue), 0.25f));
+            _bottleB.AddLayer(new LiquidLayer(ColorAdapter.FromUnityStatic(Color.blue), 0.25f));
         }
 
         [Test]

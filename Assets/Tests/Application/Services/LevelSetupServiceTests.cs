@@ -7,6 +7,7 @@ using PuzzleGame.Application.Services;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Domain;
+using PuzzleGame.Infrastructure;
 using PuzzleGame.Application.Logging;
 using PuzzleGame.Tests.Fakes;
 
@@ -35,7 +36,7 @@ namespace PuzzleGame.Tests.Application.Services
             };
 
             _levelGenerator = new FakeLevelGenerator();
-            _sut = new LevelSetupService(_gameConfig, _levelConfig, _levelGenerator);
+            _sut = new LevelSetupService(_gameConfig, _levelConfig, _levelGenerator, new ColorAdapter());
         }
 
         [TearDown]

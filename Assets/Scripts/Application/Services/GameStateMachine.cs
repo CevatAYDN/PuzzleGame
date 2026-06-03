@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
+using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Events;
 
 namespace PuzzleGame.Application.Services
@@ -20,10 +21,14 @@ namespace PuzzleGame.Application.Services
 
         public GameState Current => _current;
         public GameState Previous => _previous;
+        private readonly IEventAggregator _eventAggregator;
+
         public event Action<GameState, GameState> OnStateChanged;
 
-        public GameStateMachine()
+        public GameStateMachine(IEventAggregator eventAggregator)
         {
+            _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
+
             // Default guard'lar — her kural CanTransitionTo() içinde override edilebilir
             // Boot → her yere
             _rules[(GameState.Boot, GameState.Menu)] = () => true;
@@ -68,7 +73,7 @@ namespace PuzzleGame.Application.Services
             _current = next;
 
             OnStateChanged?.Invoke(prev, next);
-            EventAggregator.Publish(new GameStateChangedEvent(prev, next));
+            _eventAggregator.Publish(new GameStateChangedEvent(prev, next));
             return true;
         }
 

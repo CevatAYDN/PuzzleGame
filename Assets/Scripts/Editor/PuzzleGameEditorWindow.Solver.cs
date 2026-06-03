@@ -25,7 +25,7 @@ namespace PuzzleGame.Editor
                 Color[] palette = levelConfig != null && levelConfig.palette.Length > 0 ? levelConfig.palette : SceneBuilder.DefaultPalette;
                 var domainPalette = new DomainColor[palette.Length];
                 for (int i = 0; i < palette.Length; i++)
-                    domainPalette[i] = ColorAdapter.FromUnity(palette[i]);
+                    domainPalette[i] = ColorAdapter.FromUnityStatic(palette[i]);
 
                 return generator.Generate(
                     level.bottleCount,
@@ -47,7 +47,7 @@ namespace PuzzleGame.Editor
                         {
                             foreach (var layer in bottle.layers)
                             {
-                                layers.Add(new LiquidLayer(ColorAdapter.FromUnity(layer.color), layer.amount));
+                                layers.Add(new LiquidLayer(ColorAdapter.FromUnityStatic(layer.color), layer.amount));
                             }
                         }
                         assignments.Add(layers);
@@ -61,7 +61,7 @@ namespace PuzzleGame.Editor
         {
             var result = new DomainColor[colors.Length];
             for (int i = 0; i < colors.Length; i++)
-                result[i] = ColorAdapter.FromUnity(colors[i]);
+                result[i] = ColorAdapter.FromUnityStatic(colors[i]);
             return result;
         }
 
@@ -404,7 +404,7 @@ namespace PuzzleGame.Editor
                 var layers = assignments[i];
                 var colors = new Color[layers.Count];
                 for (int j = 0; j < layers.Count; j++)
-                    colors[j] = ColorAdapter.ToUnity(layers[j].Color);
+                    colors[j] = ColorAdapter.ToUnityStatic(layers[j].Color);
 
                 // Build with layers
                 var bottleCfg = SceneBuilder.BottleConfig.WithLayers(
@@ -462,7 +462,7 @@ namespace PuzzleGame.Editor
                     foreach (var layer in bottle.State.Layers)
                     {
                         var layerData = new LevelLayerData();
-                        layerData.color = ColorAdapter.ToUnity(layer.Color);
+                        layerData.color = ColorAdapter.ToUnityStatic(layer.Color);
                         layerData.amount = layer.Amount;
                         bottleData.layers.Add(layerData);
                     }

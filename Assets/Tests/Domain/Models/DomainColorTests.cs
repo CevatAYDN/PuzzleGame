@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using PuzzleGame.Domain;
 using PuzzleGame.Domain.Models;
 using System.Collections.Generic;
 

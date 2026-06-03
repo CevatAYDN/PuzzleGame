@@ -8,17 +8,19 @@ namespace PuzzleGame.Tests.Application.Services
     public class GameStateMachineTests
     {
         private GameStateMachine _sut;
+        private EventAggregator _eventAggregator;
 
         [SetUp]
         public void Setup()
         {
-            _sut = new GameStateMachine();
+            _eventAggregator = new EventAggregator();
+            _sut = new GameStateMachine(_eventAggregator);
         }
 
         [TearDown]
         public void Teardown()
         {
-            EventAggregator.Clear();
+            _eventAggregator?.Clear();
         }
 
         [Test]
@@ -97,7 +99,7 @@ namespace PuzzleGame.Tests.Application.Services
         public void EventAggregator_EventPublished_OnTransition()
         {
             GameStateChangedEvent? received = null;
-            EventAggregator.Subscribe<GameStateChangedEvent>(e => received = e);
+            _eventAggregator.Subscribe<GameStateChangedEvent>(e => received = e);
 
             _sut.TransitionTo(GameState.Menu);
 
