@@ -1,0 +1,19 @@
+{
+    "name": "PuzzleGame.Infrastructure",
+    "rootNamespace": "PuzzleGame.Infrastructure",
+    "references": [
+        "PuzzleGame.Domain",
+        "PuzzleGame.Application",
+        "VContainer",
+        "PrimeTween.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
