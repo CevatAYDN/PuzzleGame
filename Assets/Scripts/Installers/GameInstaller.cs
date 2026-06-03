@@ -8,7 +8,6 @@ using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Services;
-using PuzzleGame.Application.Animation;
 using PuzzleGame.Infrastructure.Interfaces;
 using PuzzleGame.Infrastructure.Implementations;
 using PuzzleGame.Infrastructure.Pool;

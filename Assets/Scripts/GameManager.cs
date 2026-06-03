@@ -17,7 +17,6 @@ using PuzzleGame.Infrastructure.Pool;
 using PuzzleGame.Events;
 using PuzzleGame.Logging;
 using PuzzleGame.Configuration;
-using PuzzleGame.Application.Animation;
 using PuzzleGame.Application.UI;
 using VContainer;
 

@@ -1,0 +1,20 @@
+{
+    "name": "PuzzleGame.Composition",
+    "rootNamespace": "PuzzleGame",
+    "references": [
+        "PuzzleGame.Domain",
+        "PuzzleGame.Application",
+        "PuzzleGame.Infrastructure",
+        "VContainer",
+        "PrimeTween.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
