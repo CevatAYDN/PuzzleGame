@@ -152,7 +152,8 @@ namespace PuzzleGame
             else
             {
                 _stateMachine.TransitionTo(GameState.Playing);
-                if (_currentLevel == null && _levelRepository != null && _levelRepository.AllLevels != null && _levelRepository.AllLevels.Count > 0)
+                bool hasSceneBottles = FindObjectsByType<BottleController>(FindObjectsInactive.Include).Length > 0;
+                if (!hasSceneBottles && _currentLevel == null && _levelRepository != null && _levelRepository.AllLevels != null && _levelRepository.AllLevels.Count > 0)
                 {
                     _currentLevel = _levelRepository.AllLevels[0];
                 }
@@ -162,10 +163,7 @@ namespace PuzzleGame
                 _levelSetupService, _rendererService, _validator, _animationService,
                 _inputHandlerService, _historyManager, _camera);
 
-            if (_currentLevel != null)
-            {
-                _poolInitializer.InitializeForLevel(_currentLevel);
-            }
+            _poolInitializer.InitializeForLevel(_currentLevel);
             InitHUD();
         }
 

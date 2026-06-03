@@ -216,9 +216,10 @@ namespace PuzzleGame.Application.Services
 
             BottleLogger.LogInfo("Attempting pour.");
 
-            int pourCount = _pourService.GetPourLayerCount(source, target, _currentLevelData);
+            var activeLevelData = GetActiveLevelData();
+            int pourCount = _pourService.GetPourLayerCount(source, target, activeLevelData);
 
-            if (_pourService.TryPour(source, target, _currentLevelData, _bottles))
+            if (_pourService.TryPour(source, target, activeLevelData, _bottles))
             {
                 if (BottleLogger.IsInfoEnabled)
                     BottleLogger.LogInfo($"Pour succeeded ({pourCount} layers).");
@@ -267,6 +268,18 @@ namespace PuzzleGame.Application.Services
             foreach (var b in _bottles)
                 if (b != null && b.State == state) return b;
             return null;
+        }
+
+        private LevelData GetActiveLevelData()
+        {
+            if (_currentLevelData != null) return _currentLevelData;
+            
+            // Fallback for play test mode (direct play from scene without selection UI)
+            var fallback = ScriptableObject.CreateInstance<LevelData>();
+            fallback.autoGenerate = false;
+            fallback.enableMultiLayerPour = false;
+            fallback.enableReactionSystem = false;
+            return fallback;
         }
     }
 }

@@ -7,6 +7,8 @@ using PuzzleGame.Domain.Models;
 using PuzzleGame.Infrastructure.Interfaces;
 using PuzzleGame.Application.Logging;
 using UnityEngine;
+using PuzzleGame.Application.Configuration;
+using PuzzleGame.Infrastructure;
 
 namespace PuzzleGame
 {
@@ -23,7 +25,22 @@ namespace PuzzleGame
 
         public GameObject corkObject;
 
-        public BottleState State { get; private set; }
+        [SerializeField] private List<LevelLayerData> _serializedLayers = new List<LevelLayerData>();
+
+        public BottleState State
+        {
+            get
+            {
+                if (_state == null)
+                {
+                    RestoreStateFromSerialized();
+                }
+                return _state;
+            }
+            private set => _state = value;
+        }
+        private BottleState _state;
+
         public IReadOnlyList<LiquidLayer> VisualLayers => _visualLayers;
         public float VisualTotalFill => _visualTotalFill;
         public float Height => _meshGenerator != null ? _meshGenerator.height : BottleConstants.DefaultBottleHeight;
@@ -73,17 +90,63 @@ namespace PuzzleGame
             SetSelectionHighlight(false);
 
             int maxLayers = visualConfig != null ? visualConfig.maxLayers : BottleConstants.DefaultLayerCapacity;
-            State = new BottleState(maxLayers);
+            _state = new BottleState(maxLayers);
             _visualLayers.Clear();
+            _serializedLayers.Clear();
             foreach (var layer in initialLayers)
             {
-                State.AddLayer(layer);
+                _state.AddLayer(layer);
                 _visualLayers.Add(layer);
+                _serializedLayers.Add(new LevelLayerData { color = ColorAdapter.ToUnity(layer.Color), amount = layer.Amount });
             }
-            _visualTotalFill = State.TotalFill;
+            _visualTotalFill = _state.TotalFill;
 
             BottleLogger.LogDebug($"Bottle '{name}' initialized with {initialLayers.Count} layers.");
             UpdateVisuals();
+
+#if UNITY_EDITOR
+            if (!UnityEngine.Application.isPlaying)
+            {
+                UnityEditor.EditorUtility.SetDirty(this);
+                if (gameObject.scene.IsValid())
+                {
+                    UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+                }
+            }
+#endif
+        }
+
+        private void RestoreStateFromSerialized()
+        {
+            if (_rendererService == null) _rendererService = new PuzzleGame.Infrastructure.Implementations.RendererService();
+            if (_validator == null) _validator = new PuzzleGame.Domain.Services.BottleValidationService();
+            _meshGenerator = GetComponent<BottleMeshGenerator>();
+            _renderer = GetComponent<Renderer>();
+            _wobble = GetComponent<Wobble>();
+
+            _visualRenderer = new BottleVisualRenderer(
+                _renderer, _rendererService, visualConfig,
+                () => _visualLayers, () => _visualTotalFill);
+
+            _corkController = new BottleCorkController(
+                transform, _animationService,
+                () => Height,
+                () => _meshGenerator != null ? _meshGenerator.neckRadius : BottleConstants.CorkRadius,
+                corkObject);
+
+            int maxLayers = visualConfig != null ? visualConfig.maxLayers : BottleConstants.DefaultLayerCapacity;
+            _state = new BottleState(maxLayers);
+            _visualLayers.Clear();
+            if (_serializedLayers != null)
+            {
+                foreach (var layerData in _serializedLayers)
+                {
+                    var layer = new LiquidLayer(ColorAdapter.FromUnity(layerData.color), layerData.amount);
+                    _state.AddLayer(layer);
+                    _visualLayers.Add(layer);
+                }
+            }
+            _visualTotalFill = _state.TotalFill;
         }
 
         public bool IsEmpty => State?.IsEmpty ?? true;
@@ -154,16 +217,29 @@ namespace PuzzleGame
         public void SetVisualState(IReadOnlyList<LiquidLayer> layers, float totalFill)
         {
             _visualLayers.Clear();
+            _serializedLayers.Clear();
             if (layers != null)
             {
                 int count = layers.Count;
                 for (int i = 0; i < count; i++)
                 {
                     _visualLayers.Add(layers[i]);
+                    _serializedLayers.Add(new LevelLayerData { color = ColorAdapter.ToUnity(layers[i].Color), amount = layers[i].Amount });
                 }
             }
             _visualTotalFill = totalFill;
             UpdateVisuals();
+
+#if UNITY_EDITOR
+            if (!UnityEngine.Application.isPlaying)
+            {
+                UnityEditor.EditorUtility.SetDirty(this);
+                if (gameObject.scene.IsValid())
+                {
+                    UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+                }
+            }
+#endif
         }
 
         public void SetVisualPourProgress(LayerSnapshot startLayers, float t, bool isSource, LiquidLayer pouredLayer)
@@ -213,7 +289,23 @@ namespace PuzzleGame
             _visualLayers.Clear();
             _visualLayers.AddRange(State.Layers);
             _visualTotalFill = State.TotalFill;
+            _serializedLayers.Clear();
+            foreach (var layer in State.Layers)
+            {
+                _serializedLayers.Add(new LevelLayerData { color = ColorAdapter.ToUnity(layer.Color), amount = layer.Amount });
+            }
             UpdateVisuals();
+
+#if UNITY_EDITOR
+            if (!UnityEngine.Application.isPlaying)
+            {
+                UnityEditor.EditorUtility.SetDirty(this);
+                if (gameObject.scene.IsValid())
+                {
+                    UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+                }
+            }
+#endif
         }
 
         public void UpdateVisuals()
@@ -251,6 +343,15 @@ namespace PuzzleGame
         {
             _animationService?.AnimateSettleBounce(this, BottleConstants.SettleBounceDuration, onComplete: null);
         }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (UnityEngine.Application.isPlaying) return;
+            RestoreStateFromSerialized();
+            UpdateVisuals();
+        }
+#endif
 
         private void OnDestroy()
         {

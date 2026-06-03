@@ -101,6 +101,22 @@ namespace PuzzleGame.Application.Services
         {
             if (bottles.Length == 0) return;
 
+            if (currentLevel == null)
+            {
+                // Play test mode: initialize bottles using their existing serialized/state layers!
+                for (int i = 0; i < bottles.Length; i++)
+                {
+                    var bottle = bottles[i];
+                    var initial = new List<LiquidLayer>();
+                    if (bottle.State != null && bottle.State.Layers != null)
+                    {
+                        initial.AddRange(bottle.State.Layers);
+                    }
+                    bottle.Initialize(rendererService, validator, animationService, initial);
+                }
+                return;
+            }
+
             var assignments = GenerateLevelAssignments(bottles, currentLevel);
 
             for (int i = 0; i < bottles.Length; i++)

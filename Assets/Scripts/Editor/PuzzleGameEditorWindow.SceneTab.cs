@@ -189,7 +189,10 @@ namespace PuzzleGame.Editor
                     if (firstEmpty && i == 0)
                         colors = System.Array.Empty<Color>();
                     else
-                        colors = new[] { SceneBuilder.DefaultPalette[i % SceneBuilder.DefaultPalette.Length] };
+                    {
+                        var color = SceneBuilder.DefaultPalette[i % SceneBuilder.DefaultPalette.Length];
+                        colors = new[] { color, color, color, color };
+                    }
 
                     SceneBuilder.CreateBottle(SceneBuilder.BottleConfig.WithColors(
                         positions[i], colors, _shaderVariant, "Bottle"));

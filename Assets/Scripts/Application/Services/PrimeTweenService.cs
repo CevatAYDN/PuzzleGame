@@ -70,6 +70,7 @@ namespace PuzzleGame.Application.Services
     {
         internal readonly Tween _tween;
         private Action _onComplete;
+        private bool _isCallbackRegistered;
 
         public PrimeTweenHandle(Tween tween) => _tween = tween;
 
@@ -80,7 +81,11 @@ namespace PuzzleGame.Application.Services
         {
             if (callback == null) return this;
             _onComplete += callback;
-            _tween.OnComplete(_onComplete);
+            if (!_isCallbackRegistered)
+            {
+                _isCallbackRegistered = true;
+                _tween.OnComplete(() => _onComplete?.Invoke());
+            }
             return this;
         }
 
@@ -105,31 +110,35 @@ namespace PuzzleGame.Application.Services
             _tween = tween;
             _target = target;
             _startRot = startRot;
-        }
 
-        public void Chain(ITweenHandle other) { }
-        public void Group(ITweenHandle other) { }
-
-        public ITweenHandle OnComplete(Action callback) { _onComplete += callback; return this; }
-
-        public void SetCycles(int loops, LoopMode mode) { }
-
-        public void Kill() => _tween.Stop();
-        public void Start()
-        {
             _tween.OnComplete(() =>
             {
                 if (_target != null) _target.rotation = _startRot;
                 _onComplete?.Invoke();
             });
         }
+
+        public void Chain(ITweenHandle other) { }
+        public void Group(ITweenHandle other) { }
+
+        public ITweenHandle OnComplete(Action callback)
+        {
+            if (callback == null) return this;
+            _onComplete += callback;
+            return this;
+        }
+
+        public void SetCycles(int loops, LoopMode mode) { }
+
+        public void Kill() => _tween.Stop();
+        public void Start() { }
     }
 
     internal class PrimeTweenSequenceHandle : ITweenHandle
     {
         internal Sequence _sequence;
-        private bool _started;
         private Action _onComplete;
+        private bool _isCallbackRegistered;
 
         public PrimeTweenSequenceHandle(Sequence sequence)
         {
@@ -148,7 +157,17 @@ namespace PuzzleGame.Application.Services
             else if (other is PrimeTweenSequenceHandle s) _sequence.Group(s._sequence);
         }
 
-        public ITweenHandle OnComplete(Action callback) { _onComplete += callback; return this; }
+        public ITweenHandle OnComplete(Action callback)
+        {
+            if (callback == null) return this;
+            _onComplete += callback;
+            if (!_isCallbackRegistered)
+            {
+                _isCallbackRegistered = true;
+                _sequence.OnComplete(() => _onComplete?.Invoke());
+            }
+            return this;
+        }
 
         public void SetCycles(int loops, LoopMode mode)
         {
@@ -157,13 +176,7 @@ namespace PuzzleGame.Application.Services
 
         public void Kill() => _sequence.Stop();
 
-        public void Start()
-        {
-            if (_started) return;
-            _started = true;
-            if (_onComplete != null)
-                _sequence.OnComplete(_onComplete);
-        }
+        public void Start() { }
     }
 }
 #endif
