@@ -73,7 +73,7 @@ namespace PuzzleGame.Application.Events
 
         public void Subscribe<T>(Action<T> handler)
         {
-            if (handler == null) throw new ArgumentNullException(nameof(handler));
+            if (handler == null) return;
 
             lock (_lockObj)
             {
@@ -88,7 +88,7 @@ namespace PuzzleGame.Application.Events
 
         public void Unsubscribe<T>(Action<T> handler)
         {
-            if (handler == null) throw new ArgumentNullException(nameof(handler));
+            if (handler == null) return;
 
             lock (_lockObj)
             {
@@ -128,6 +128,7 @@ namespace PuzzleGame.Application.Events
                 snapshot.AddRange(list);
             }
 
+            Exception firstException = null;
             try
             {
                 foreach (var sub in snapshot)
@@ -139,7 +140,15 @@ namespace PuzzleGame.Application.Events
                     catch (Exception ex)
                     {
                         BottleLogger.LogError($"EventAggregator: Subscriber threw on {typeof(T).Name}: {ex}");
+                        if (firstException == null)
+                        {
+                            firstException = ex;
+                        }
                     }
+                }
+                if (firstException != null)
+                {
+                    throw firstException;
                 }
             }
             finally

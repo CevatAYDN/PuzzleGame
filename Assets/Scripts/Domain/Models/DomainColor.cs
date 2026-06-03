@@ -30,10 +30,10 @@ namespace PuzzleGame.Domain.Models
         public override string ToString() => $"DomainColor(r={R:F3}, g={G:F3}, b={B:F3}, a={A:F3})";
 
         public bool Equals(DomainColor other) =>
-            Math.Abs(R - other.R) < BottleConstants.DomainColorHashEpsilon &&
-            Math.Abs(G - other.G) < BottleConstants.DomainColorHashEpsilon &&
-            Math.Abs(B - other.B) < BottleConstants.DomainColorHashEpsilon &&
-            Math.Abs(A - other.A) < BottleConstants.DomainColorHashEpsilon;
+            RoundedHash(R) == RoundedHash(other.R) &&
+            RoundedHash(G) == RoundedHash(other.G) &&
+            RoundedHash(B) == RoundedHash(other.B) &&
+            RoundedHash(A) == RoundedHash(other.A);
 
         public override bool Equals(object obj) => obj is DomainColor other && Equals(other);
 
@@ -44,7 +44,7 @@ namespace PuzzleGame.Domain.Models
             // different hash codes if their raw float bits differ, breaking Dictionary/HashSet invariants.
             //
             // Solution: round each channel to an epsilon-sized bucket before hashing.
-            // This guarantees: if Equals(a, b) == true → a.GetHashCode() == b.GetHashCode().
+            // This guarantees: if Equals(a, b) == true -> a.GetHashCode() == b.GetHashCode().
             return HashCode.Combine(
                 RoundedHash(R),
                 RoundedHash(G),
@@ -57,8 +57,8 @@ namespace PuzzleGame.Domain.Models
         /// </summary>
         private static int RoundedHash(float v)
         {
-            // Divide by epsilon, round to nearest int — values within epsilon map to the same bucket.
-            int bucket = (int)Math.Round(v / BottleConstants.DomainColorHashEpsilon);
+            // Divide by epsilon, round to nearest int - values within epsilon map to the same bucket.
+            int bucket = (int)Math.Round(v / BottleConstants.ColorMatchEpsilon);
             return bucket;
         }
 

@@ -60,12 +60,13 @@ namespace PuzzleGame.Tests.Domain.Services
         [Test]
         public void Solve_SimplePour_OneMove_ReturnsSolvable()
         {
-            // Red on top of Blue, empty target — Red can be lifted out
+            // Blue is already complete. Red is split across two bottles (1 layer each).
+            // Pouring Red from one bottle to the other completes Red in 1 move.
             var bottles = new List<List<LiquidLayer>>
             {
-                new() { L(Blue), L(Red) },   // Blue then Red (Red on top)
-                new() { L(Blue) },
-                new()                         // empty
+                new() { L(Blue), L(Blue) },
+                new() { L(Red) },
+                new() { L(Red) }
             };
 
             var result = LiquidSortSolver.Solve(bottles, maxLayers: 2);

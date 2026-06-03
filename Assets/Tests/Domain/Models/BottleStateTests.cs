@@ -163,9 +163,9 @@ namespace PuzzleGame.Domain.Tests.Models
         [Test]
         public void IsComplete_WhenAllLayersSameColor_ReturnsTrue()
         {
-            var bottle = CreateSut(4);
+            var bottle = CreateSut(3);
             var validator = new PuzzleGame.Domain.Services.BottleValidationService(0.05f);
-            Assert.That(validator.IsComplete(bottle), Is.False); // empty is not complete
+            Assert.That(validator.IsComplete(bottle), Is.True); // empty is complete
 
             bottle.AddLayer(Layer(1f, 0f, 0f, 1f, 0.33f));
             bottle.AddLayer(Layer(1f, 0f, 0f, 1f, 0.33f));

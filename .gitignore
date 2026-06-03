@@ -75,3 +75,7 @@ crashlytics-build.properties
 
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# Temporary test run artifacts and logs
+Temp_TestRun/
+unity_test*.log
