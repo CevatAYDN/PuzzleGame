@@ -26,8 +26,6 @@ MonoBehaviour:
   previewImage: {fileID: 0}
   enableMultiLayerPour: 1
   enableReactionSystem: 1
-  enableKeyAndLock: 0
-  enableBreakableBottles: 0
   multiLayerPourConfig:
     featureType: 0
     isEnabled: 0
@@ -44,32 +42,3 @@ MonoBehaviour:
       resultColor: 3
       reactionType: 1
       effectPrefab: {fileID: 0}
-  keyAndLockConfig:
-    featureType: 0
-    isEnabled: 0
-    enableKeysAndLocks: 1
-    keys: []
-    locks: []
-    bonusMovesOnUnlock: 2
-  breakableBottleConfig:
-    featureType: 0
-    isEnabled: 0
-    enableBreakableBottles: 1
-    breakCondition: 0
-    shakeThreshold: 3
-    maxLayersToBreak: 4
-    penaltyMoves: 5
-    levelFailedOnBreak: 1
-  limitedMovesConfig:
-    featureType: 0
-    isEnabled: 0
-    enableHardLimit: 0
-    hardMoveLimit: 15
-    progressiveLimit: 0
-    movesDecreasePerPour: 1
-  bonusObjectivesConfig:
-    featureType: 0
-    isEnabled: 0
-    enableBonusObjectives: 0
-    objectives: []
-    bonusStarsOnComplete: 1

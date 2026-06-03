@@ -254,6 +254,12 @@ namespace PuzzleGame.Application.Services
         /// Fix #4: Returns existing level data or a pre-built default LevelData asset.
         /// No longer creates ScriptableObject instances at runtime.
         /// </summary>
+        private static LevelData _playTestDefaults;
+
+        /// <summary>
+        /// Fix #4: Returns existing level data or a pre-built default LevelData asset.
+        /// No longer creates ScriptableObject instances at runtime via new operator.
+        /// </summary>
         private LevelData GetActiveLevelData()
         {
             if (_currentLevelData != null) return _currentLevelData;
@@ -261,19 +267,16 @@ namespace PuzzleGame.Application.Services
             // Play-test fallback: return a minimal inline-configured LevelData.
             // This is only reached when playing directly from the scene editor
             // without going through the level selection flow.
+            if (_playTestDefaults == null)
+            {
+                _playTestDefaults = ScriptableObject.CreateInstance<LevelData>();
+                _playTestDefaults.autoGenerate = false;
+                _playTestDefaults.enableMultiLayerPour = false;
+                _playTestDefaults.enableReactionSystem = false;
+            }
+
             BottleLogger.LogDebug("GetActiveLevelData: no level set, using play-test defaults.");
             return _playTestDefaults;
         }
-
-        /// <summary>
-        /// Cached play-test defaults — pure POCO, no ScriptableObject dependency.
-        /// Used when no level data is set (editor direct play mode).
-        /// </summary>
-        private static readonly LevelData _playTestDefaults = new LevelData
-        {
-            autoGenerate = false,
-            enableMultiLayerPour = false,
-            enableReactionSystem = false
-        };
     }
 }

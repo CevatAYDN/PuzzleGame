@@ -24,3 +24,16 @@ MonoBehaviour:
   parMoves: 8
   goodMoves: 11
   previewImage: {fileID: 0}
+  enableMultiLayerPour: 1
+  enableReactionSystem: 0
+  multiLayerPourConfig:
+    featureType: 0
+    isEnabled: 0
+    pourAllMatching: 1
+    pourConsecutiveOnly: 1
+    minConsecutiveForPour: 2
+  reactionConfig:
+    featureType: 0
+    isEnabled: 0
+    enableReactions: 1
+    reactionRules: []
