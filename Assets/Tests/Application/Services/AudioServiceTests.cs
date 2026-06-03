@@ -1,5 +1,4 @@
 using NUnit.Framework;
-using PuzzleGame.Application.Animation;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Services;
 using PuzzleGame.Configuration;

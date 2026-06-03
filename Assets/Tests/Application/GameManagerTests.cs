@@ -1,6 +1,8 @@
 using NUnit.Framework;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Services;
+using PuzzleGame.Application.Configuration;
+using PuzzleGame.Application.Configuration.FeatureSystem;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Events;
 using PuzzleGame.Logging;
@@ -99,7 +101,7 @@ namespace PuzzleGame.Tests.Application
             {
                 levelNumber = 1,
                 enableMultiLayerPour = enableMultiLayer,
-                multiLayerPourConfig = new PuzzleGame.Domain.Models.FeatureSystem.MultiLayerPourData
+                multiLayerPourConfig = new PuzzleGame.Application.Configuration.FeatureSystem.MultiLayerPourData
                 {
                     pourAllMatching = true,
                     pourConsecutiveOnly = true,
