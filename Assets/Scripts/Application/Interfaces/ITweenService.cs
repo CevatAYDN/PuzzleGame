@@ -1,7 +1,7 @@
 using UnityEngine;
 using System;
 
-namespace PuzzleGame.Domain.Interfaces
+namespace PuzzleGame.Application.Interfaces
 {
     /// <summary>
     /// Lightweight tween abstraction. AnimationService uses this via DI.

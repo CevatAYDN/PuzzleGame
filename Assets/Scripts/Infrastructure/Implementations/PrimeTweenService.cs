@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using PrimeTween;
 using UnityEngine;
-using PuzzleGame.Domain.Interfaces;
+using PuzzleGame.Application.Interfaces;
 
 namespace PuzzleGame.Infrastructure.Implementations
 {
