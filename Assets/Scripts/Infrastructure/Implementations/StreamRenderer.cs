@@ -24,6 +24,8 @@ namespace PuzzleGame.Infrastructure.Implementations
                 lr.useWorldSpace = true;
                 lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 lr.receiveShadows = false;
+                lr.numCapVertices = 8;
+                lr.numCornerVertices = 8;
                 var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default");
                 if (shader != null) lr.material = new Material(shader);
             }

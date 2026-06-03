@@ -140,15 +140,15 @@ Shader "Custom/PremiumBottleGlass"
                 float3 glassColor = _Color.rgb;
                 float glassAlpha = _GlassAlpha;
 
-                // Inner white highlight line
-                float NdotV = dot(normalWS, viewDirWS);
-                float innerLine = smoothstep(_InnerLineWidth, 0.0, abs(NdotV - 0.7));
-                innerLine *= smoothstep(0.65, 0.75, NdotV);
-                float3 innerLineColor = _InnerLineColor.rgb * innerLine * 0.8;
+                // Inner white highlight line (make it sharper and brighter)
+                float NdotV = saturate(dot(normalWS, viewDirWS));
+                float innerLine = smoothstep(_InnerLineWidth + 0.1, 0.0, abs(NdotV - 0.4));
+                innerLine *= smoothstep(0.2, 0.5, NdotV);
+                float3 innerLineColor = _InnerLineColor.rgb * innerLine * 2.5;
 
-                // Blue outline on edges
-                float outline = smoothstep(0.3 + _OutlineWidth, 0.3, NdotV);
-                float3 outlineColor = _OutlineColor.rgb * outline;
+                // Stronger edge outline (like the reference image)
+                float outline = smoothstep(0.4 + _OutlineWidth, 0.2, NdotV);
+                float3 outlineColor = _OutlineColor.rgb * outline * 1.5;
 
                 float3 specular = CalculateSpecular(normalWS, viewDirWS, lightDir, lightIntensity);
 

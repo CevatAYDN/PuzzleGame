@@ -323,10 +323,19 @@ Shader "Custom/PremiumLayeredLiquid"
 
                 float sparkle = CalculateSparkle(input.positionWS, normalWS, viewDir, time) * _SparkleIntensity;
 
+                // Rim Light & Volume Shadow for cylindrical feel
+                float rim = 1.0 - NdotV;
+                float rimIntensity = smoothstep(0.6, 1.0, rim);
+                float3 rimColor = layerColor.rgb * rimIntensity * 2.0;
+                
+                float volumeShadow = smoothstep(0.3, 1.0, rim);
+                layerColor.rgb = lerp(layerColor.rgb, layerColor.rgb * 0.4, volumeShadow * 0.8);
+
                 float3 finalColor = layerColor.rgb * boundaryFactor;
 
                 finalColor += specularColor;
-                finalColor += surfaceHighlightColor;
+                finalColor += surfaceHighlightColor * 2.5; // Boost surface highlight
+                finalColor += rimColor;
                 finalColor += foamColored.rgb;
                 finalColor += bubbleColored.rgb;
                 finalColor += sparkle * mainLight.color;
@@ -334,7 +343,8 @@ Shader "Custom/PremiumLayeredLiquid"
                 float finalAlpha = layerColor.a * layerAlpha * (1.0 - _Transparency) * surfaceAlpha;
                 finalAlpha = saturate(finalAlpha);
 
-                float4 topColor = _Color4 * (foam + step(surfaceDist, 0.5));
+                float4 topColor = _Color4;
+                topColor.rgb += _HighlightColor.rgb * 0.5; // Make top surface brighter
                 return facing > 0 ? half4(finalColor, finalAlpha) : half4(topColor.rgb, finalAlpha);
             }
             ENDHLSL
