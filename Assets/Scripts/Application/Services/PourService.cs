@@ -1,6 +1,4 @@
 using System;
-using System.Linq;
-using UnityEngine;
 using PuzzleGame.Domain;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Configuration;
@@ -15,13 +13,8 @@ namespace PuzzleGame.Application.Services
     /// <summary>
     /// Modular pour service that handles both single and multi-layer pours.
     /// Supports data-driven feature flags from LevelData.
+    /// IPourService interface lives in Application/Interfaces/IPourService.cs (Fix #6).
     /// </summary>
-    public interface IPourService
-    {
-        bool TryPour(IBottleView source, IBottleView target, LevelData levelData, IBottleView[] activeBottles);
-        int GetPourLayerCount(IBottleView source, IBottleView target, LevelData levelData);
-    }
-
     public class PourService : IPourService
     {
         private readonly IBottleValidator _validator;
@@ -35,6 +28,7 @@ namespace PuzzleGame.Application.Services
             _historyManager = historyManager;
             _reactionService = reactionService;
         }
+
 
         public void SetLevelData(LevelData levelData)
         {
@@ -231,21 +225,16 @@ namespace PuzzleGame.Application.Services
             return false;
         }
 
-        private int GetBottleIndex(IBottleView bottle)
-        {
-            var name = bottle.GameObject.name;
-            var parts = name.Split('_');
-            if (parts.Length > 1 && int.TryParse(parts[parts.Length - 1], out int index))
-                return index;
-            return 0;
-        }
+        // Fix #14: Use BottleIndex property instead of parsing GameObject.name.
+        private static int GetBottleIndex(IBottleView bottle) => bottle.BottleIndex;
 
-        private bool IsColorMatch(DomainColor a, DomainColor b, float tolerance = BottleConstants.ColorMatchEpsilon)
+        // Fix #2: Use System.Math.Abs instead of UnityEngine.Mathf.Abs — pure C#, no Unity dependency.
+        private static bool IsColorMatch(DomainColor a, DomainColor b, float tolerance = BottleConstants.ColorMatchEpsilon)
         {
-            return UnityEngine.Mathf.Abs(a.R - b.R) < tolerance &&
-                   UnityEngine.Mathf.Abs(a.G - b.G) < tolerance &&
-                   UnityEngine.Mathf.Abs(a.B - b.B) < tolerance &&
-                   UnityEngine.Mathf.Abs(a.A - b.A) < tolerance;
+            return Math.Abs(a.R - b.R) < tolerance &&
+                   Math.Abs(a.G - b.G) < tolerance &&
+                   Math.Abs(a.B - b.B) < tolerance &&
+                   Math.Abs(a.A - b.A) < tolerance;
         }
 
         private void CheckForReactions(IBottleView source, IBottleView target, IBottleView[] activeBottles)

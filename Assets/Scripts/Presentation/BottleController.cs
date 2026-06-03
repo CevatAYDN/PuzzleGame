@@ -48,6 +48,12 @@ namespace PuzzleGame
         public Transform Transform => transform;
         public GameObject GameObject => gameObject;
 
+        /// <summary>
+        /// Fix #14: Pool-assigned index set by BottlePoolInitializer.
+        /// Replaces the fragile GameObject.name-parsing approach in PourService.
+        /// </summary>
+        public int BottleIndex { get; set; }
+
         private readonly List<LiquidLayer> _visualLayers = new List<LiquidLayer>();
         private float _visualTotalFill = 0f;
 
@@ -118,8 +124,14 @@ namespace PuzzleGame
 
         private void RestoreStateFromSerialized()
         {
+            // Fix #8: Direct instantiation here bypasses DI (and therefore GameConfig.colorMatchTolerance).
+            // This path is ONLY safe in editor/play-test mode where DI is not running.
+            // At runtime with VContainer, Initialize() is called by BottlePoolInitializer before
+            // any State access, so this fallback is never reached in production.
             if (_rendererService == null) _rendererService = new PuzzleGame.Infrastructure.Implementations.RendererService();
             if (_validator == null) _validator = new PuzzleGame.Domain.Services.BottleValidationService();
+            // Note: BottleValidationService() uses default colorTolerance (BottleConstants.ColorMatchEpsilon).
+            // This is acceptable for editor preview; production always uses the DI-injected instance.
             _meshGenerator = GetComponent<BottleMeshGenerator>();
             _renderer = GetComponent<Renderer>();
             _wobble = GetComponent<Wobble>();

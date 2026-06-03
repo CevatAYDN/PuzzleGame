@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
 using PuzzleGame.Domain;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Configuration;
@@ -16,22 +14,24 @@ namespace PuzzleGame.Application.Services
 {
     /// <summary>
     /// Handles level setup and initialization logic.
-    /// BottleController (MonoBehaviour) yerine IBottleView abstraction kullanır.
+    /// Uses IBottleView abstraction instead of BottleController (MonoBehaviour).
+    /// Fix #1: DefaultPalette is now DomainColor[] — no UnityEngine.Color dependency.
     /// </summary>
     public class LevelSetupService : ILevelSetupService
     {
         private readonly GameConfig _gameConfig;
         private readonly LevelConfig _levelConfig;
         private readonly ILevelGenerator _levelGenerator;
-        
-        private static readonly Color[] DefaultPalette = new Color[]
+
+        // Fix #1: Pure C# DomainColor — no UnityEngine.Color dependency.
+        private static readonly DomainColor[] DefaultPalette =
         {
-            new Color(0.95f, 0.20f, 0.55f, 1f),
-            new Color(0.20f, 0.55f, 0.95f, 1f),
-            new Color(0.30f, 0.85f, 0.35f, 1f),
-            new Color(0.98f, 0.80f, 0.15f, 1f),
-            new Color(0.70f, 0.30f, 0.90f, 1f),
-            new Color(0.95f, 0.50f, 0.15f, 1f),
+            new DomainColor(0.95f, 0.20f, 0.55f, 1f),
+            new DomainColor(0.20f, 0.55f, 0.95f, 1f),
+            new DomainColor(0.30f, 0.85f, 0.35f, 1f),
+            new DomainColor(0.98f, 0.80f, 0.15f, 1f),
+            new DomainColor(0.70f, 0.30f, 0.90f, 1f),
+            new DomainColor(0.95f, 0.50f, 0.15f, 1f),
         };
 
         public LevelSetupService(GameConfig gameConfig, LevelConfig levelConfig, ILevelGenerator levelGenerator)
@@ -54,9 +54,13 @@ namespace PuzzleGame.Application.Services
             int empties = currentLevel.emptyBottleCount;
             int seed = currentLevel.randomSeed;
             Difficulty diff = currentLevel.difficulty;
-            Color[] pal = _levelConfig != null && _levelConfig.palette.Length > 0
-                ? _levelConfig.palette
+
+            // Fix #1: Convert LevelConfig.palette (UnityEngine.Color[]) only at the boundary.
+            // DefaultPalette is now DomainColor[] so conversion is not needed for the default case.
+            DomainColor[] pal = _levelConfig != null && _levelConfig.palette != null && _levelConfig.palette.Length > 0
+                ? ConvertPalette(_levelConfig.palette)
                 : DefaultPalette;
+
 
             if (currentLevel.autoGenerate)
             {
@@ -64,7 +68,7 @@ namespace PuzzleGame.Application.Services
                     bottles.Length,
                     currentLevel.maxLayersPerBottle,
                     empties,
-                    ConvertPalette(pal),
+                    pal,
                     diff,
                     seed);
             }
@@ -130,7 +134,7 @@ namespace PuzzleGame.Application.Services
             }
         }
 
-        private DomainColor[] ConvertPalette(Color[] colors)
+        private static DomainColor[] ConvertPalette(UnityEngine.Color[] colors)
         {
             var result = new DomainColor[colors.Length];
             for (int i = 0; i < colors.Length; i++)

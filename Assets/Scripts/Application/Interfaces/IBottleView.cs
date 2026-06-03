@@ -22,6 +22,12 @@ namespace PuzzleGame.Application.Interfaces
         IReadOnlyList<LiquidLayer> VisualLayers { get; }
         float VisualTotalFill { get; }
 
+        /// <summary>
+        /// Pool-assigned index. Set by BottlePoolInitializer so PourService
+        /// never needs to parse GameObject.name strings.
+        /// </summary>
+        int BottleIndex { get; set; }
+
         void Initialize(IRendererService rendererService,
                         IBottleValidator validator,
                         IAnimationService animationService,

@@ -8,6 +8,10 @@ namespace PuzzleGame.Domain.Services
     /// <summary>
     /// Basit localization servisi.
     /// Dictionary tabanlı, temiz ve test edilebilir.
+    ///
+    /// Fix #17: Accepts an optional ITranslationProvider for data-driven translations.
+    /// When no provider is supplied, falls back to the built-in hardcoded strings
+    /// (backward compatible). To add new languages, inject a custom ITranslationProvider.
     /// </summary>
     public class LocalizationService : ILocalizationService
     {
@@ -20,10 +24,30 @@ namespace PuzzleGame.Domain.Services
             set => SetLanguage(value);
         }
 
-        public LocalizationService(SupportedLanguage defaultLanguage = SupportedLanguage.Turkish)
+        /// <param name="defaultLanguage">Initial language.</param>
+        /// <param name="provider">
+        /// Optional translation provider. If null, built-in hardcoded strings are used.
+        /// Injecting a provider (e.g. JSON file loader) follows OCP — no code change needed
+        /// to add new languages.
+        /// </param>
+        public LocalizationService(
+            SupportedLanguage defaultLanguage = SupportedLanguage.Turkish,
+            ITranslationProvider provider = null)
         {
             _currentLanguage = defaultLanguage;
-            LoadDefaultTranslations();
+
+            if (provider != null)
+            {
+                var data = provider.Load();
+                foreach (var kvp in data)
+                {
+                    _translations[kvp.Key] = new Dictionary<SupportedLanguage, string>(kvp.Value);
+                }
+            }
+            else
+            {
+                LoadDefaultTranslations();
+            }
         }
 
         public string GetString(string key)

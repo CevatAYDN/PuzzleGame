@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using PuzzleGame.Domain.Interfaces;
+using PuzzleGame.Application.Interfaces;
 using UnityEngine;
 
 namespace PuzzleGame.Infrastructure.Implementations

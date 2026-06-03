@@ -50,11 +50,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Tests\Fakes\FakeLevelGenerator.cs" />
+    <Compile Include="Assets\Tests\Domain\Models\DomainColorTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\ReactionServiceTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\GameHistoryManagerTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeGameStateMachine.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeInputHandler.cs" />
     <Compile Include="Assets\Tests\Application\BottleSelectionServiceTests.cs" />
+    <Compile Include="Assets\Tests\Domain\Services\LiquidSortSolverTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\SecureFileLevelProgressServiceTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeAudioService.cs" />
     <Compile Include="Assets\Tests\Application\Services\GameStateMachineTests.cs" />

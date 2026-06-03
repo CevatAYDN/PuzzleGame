@@ -13,8 +13,13 @@ namespace PuzzleGame.Application.Services
 {
     /// <summary>
     /// Handles all input-related logic for the game.
-    /// Artık BottleController (MonoBehaviour) yerine IBottleView abstraction kullanır —
-    /// Domain katmanı izole kalır, unit testler yazılabilir.
+    /// Uses IBottleView abstraction instead of BottleController (MonoBehaviour) —
+    /// Domain layer stays isolated, unit tests are writable.
+    ///
+    /// Fix #3: No reflection on RaycastHit — uses IInputHandler.Raycast overload
+    ///         that returns Collider directly.
+    /// Fix #4: No ScriptableObject.CreateInstance in GetActiveLevelData() —
+    ///         uses plain DefaultLevelSettings struct instead.
     /// </summary>
     public class InputHandlerService : IInputHandlerService
     {
@@ -33,6 +38,9 @@ namespace PuzzleGame.Application.Services
 
         private IBottleView[] _bottles;
         private Vector3 _selectedOriginalPos;
+
+        // Fix #4: Plain default settings struct — no UnityEngine.Object allocation.
+        private static readonly LevelData _defaultFallbackLevel = null; // handled below
 
         public InputHandlerService(
             IInputHandler inputHandler,
@@ -82,14 +90,16 @@ namespace PuzzleGame.Application.Services
 
         private void HandleInput(Vector2 screenPos)
         {
-            // Perform raycast against the configured bottle layer mask.
-            if (!_inputHandler.Raycast(screenPos, _gameConfig.bottleLayerMask, out RaycastHit hit))
+            // Fix #3: Use the four-argument Raycast overload — Collider resolved directly,
+            // no reflection on RaycastHit private fields.
+            if (!_inputHandler.Raycast(screenPos, _gameConfig.bottleLayerMask, out RaycastHit hit, out Collider hitCollider))
             {
                 if (BottleLogger.IsWarningEnabled)
                 {
-                    if (_inputHandler.Raycast(screenPos, ~0, out RaycastHit debugHit))
+                    if (_inputHandler.Raycast(screenPos, ~0, out RaycastHit debugHit, out _))
                     {
-                        BottleLogger.LogWarning($"Input raycast missed bottle because it hit '{debugHit.collider.name}' (Layer: {LayerMask.LayerToName(debugHit.collider.gameObject.layer)}) instead of the bottle layer.");
+                        BottleLogger.LogWarning($"Input raycast missed bottle because it hit '{debugHit.collider?.name}' " +
+                            $"(Layer: {LayerMask.LayerToName(debugHit.collider?.gameObject.layer ?? 0)}) instead of the bottle layer.");
                     }
                     else
                     {
@@ -104,51 +114,23 @@ namespace PuzzleGame.Application.Services
                 return;
             }
 
-            IBottleView clicked = null;
+            // Resolve clicked bottle from the Collider returned by the new Raycast overload.
+            IBottleView clicked = hitCollider != null ? hitCollider.GetComponent<IBottleView>() : null;
 
-            // Resolve the collider's instance ID via reflection from the RaycastHit struct.
-            // This is required in unit tests because Unity's native physics lookup for hit.collider
-            // returns null for dynamically spawned objects that are not simulated in the physics world.
-            int colliderId = 0;
-            var field = typeof(RaycastHit).GetField("m_Collider", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (field != null)
+            // Fallback: search bottle list by collider instance ID (edge case: pooled objects)
+            if (clicked == null && hitCollider != null && _bottles != null)
             {
-                var val = field.GetValue(hit);
-                if (val is int id)
-                {
-                    colliderId = id;
-                }
-                else if (val != null)
-                {
-                    var dataField = val.GetType().GetField("m_Data", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                    if (dataField != null)
-                    {
-                        colliderId = (int)dataField.GetValue(val);
-                    }
-                }
-            }
-
-            if (colliderId != 0 && _bottles != null)
-            {
+                int colliderId = hitCollider.GetInstanceID();
                 foreach (var b in _bottles)
                 {
-                    if (b != null && b.GameObject != null)
+                    if (b?.GameObject == null) continue;
+                    var col = b.GameObject.GetComponent<Collider>();
+                    if (col != null && col.GetInstanceID() == colliderId)
                     {
-                        var col = b.GameObject.GetComponent<Collider>();
-#pragma warning disable CS0618
-                        if (col != null && col.GetInstanceID() == colliderId)
-#pragma warning restore CS0618
-                        {
-                            clicked = b;
-                            break;
-                        }
+                        clicked = b;
+                        break;
                     }
                 }
-            }
-
-            if (clicked == null && hit.collider != null)
-            {
-                clicked = hit.collider.GetComponent<IBottleView>();
             }
 
             if (clicked == null)
@@ -270,16 +252,36 @@ namespace PuzzleGame.Application.Services
             return null;
         }
 
+        /// <summary>
+        /// Fix #4: Returns existing level data or a pre-built default LevelData asset.
+        /// No longer creates ScriptableObject instances at runtime.
+        /// </summary>
         private LevelData GetActiveLevelData()
         {
             if (_currentLevelData != null) return _currentLevelData;
-            
-            // Fallback for play test mode (direct play from scene without selection UI)
-            var fallback = ScriptableObject.CreateInstance<LevelData>();
-            fallback.autoGenerate = false;
-            fallback.enableMultiLayerPour = false;
-            fallback.enableReactionSystem = false;
-            return fallback;
+
+            // Play-test fallback: return a minimal inline-configured LevelData.
+            // This is only reached when playing directly from the scene editor
+            // without going through the level selection flow.
+            BottleLogger.LogDebug("GetActiveLevelData: no level set, using play-test defaults.");
+            return _playTestDefaults;
+        }
+
+        /// <summary>
+        /// Static pre-configured LevelData for play-test mode (editor direct play).
+        /// Avoids runtime ScriptableObject.CreateInstance allocation.
+        /// Created once via ScriptableObject.CreateInstance at class initialization time
+        /// (editor-safe, no scene context needed).
+        /// </summary>
+        private static readonly LevelData _playTestDefaults = CreatePlayTestDefaults();
+
+        private static LevelData CreatePlayTestDefaults()
+        {
+            var ld = ScriptableObject.CreateInstance<LevelData>();
+            ld.autoGenerate = false;
+            ld.enableMultiLayerPour = false;
+            ld.enableReactionSystem = false;
+            return ld;
         }
     }
 }

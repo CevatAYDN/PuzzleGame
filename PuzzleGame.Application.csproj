@@ -56,6 +56,7 @@
     <Compile Include="Assets\Scripts\Application\Services\TextureGenerator.cs" />
     <Compile Include="Assets\Scripts\Application\Services\ScriptableObjectLevelRepository.cs" />
     <Compile Include="Assets\Scripts\Application\Services\ParticlePrefabFactory.cs" />
+    <Compile Include="Assets\Scripts\Application\Interfaces\IPourService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\AudioClipId.cs" />
     <Compile Include="Assets\Scripts\Application\Services\PrimeTweenService.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\LevelConfig.cs" />
@@ -72,6 +73,7 @@
     <Compile Include="Assets\Scripts\Application\Interfaces\IGameHistoryManager.cs" />
     <Compile Include="Assets\Scripts\Application\Events\EventAggregator.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\LevelFeature.cs" />
+    <Compile Include="Assets\Scripts\Application\Interfaces\ISaveManager.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IInputHandlerService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\ITweenService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IAnimationService.cs" />

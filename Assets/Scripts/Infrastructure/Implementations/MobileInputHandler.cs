@@ -133,6 +133,16 @@ namespace PuzzleGame.Infrastructure.Implementations
             return Physics.Raycast(ray, out hit, 100f, mask);
         }
 
+        /// <inheritdoc/>
+        public bool Raycast(Vector2 screenPos, LayerMask mask, out RaycastHit hit, out Collider hitCollider)
+        {
+            hitCollider = null;
+            bool result = Raycast(screenPos, mask, out hit);
+            if (result) hitCollider = hit.collider;
+            return result;
+        }
+
+
         /// <summary>
         /// Reset all input state. Call on scene change.
         /// </summary>

@@ -1,7 +1,8 @@
-namespace PuzzleGame.Domain.Interfaces
+namespace PuzzleGame.Application.Interfaces
 {
     /// <summary>
-    /// Central manager interface to register and unregister updateable classes.
+    /// Central manager interface to register and unregister updateable objects.
+    /// Lives in Application layer — Unity lifecycle concern, not domain logic.
     /// </summary>
     public interface IUpdateManager
     {

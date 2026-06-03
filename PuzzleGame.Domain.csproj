@@ -69,6 +69,7 @@
     <Compile Include="Assets\Scripts\Domain\Interfaces\ILevelProgressService.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\ILevelGenerator.cs" />
     <Compile Include="Assets\Scripts\Domain\Services\LocalizationService.cs" />
+    <Compile Include="Assets\Scripts\Domain\Interfaces\ITranslationProvider.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Scripts\Domain\PuzzleGame.Domain.asmdef" />

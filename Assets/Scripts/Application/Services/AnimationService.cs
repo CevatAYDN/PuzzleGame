@@ -35,7 +35,8 @@ namespace PuzzleGame.Application.Services
 
         private readonly ParticleSystem _splashPrefab;
         private readonly ParticleSystem _bubblePrefab;
-        private readonly List<ITweenHandle> _activeTweens = new List<ITweenHandle>();
+        // Fix #12: HashSet instead of List — Remove() is O(1) instead of O(n).
+        private readonly HashSet<ITweenHandle> _activeTweens = new HashSet<ITweenHandle>();
         private readonly Stack<PourAnimationState> _pourStatePool = new Stack<PourAnimationState>();
 
         public bool IsAnimating => _activeTweenCount > 0;
@@ -57,8 +58,8 @@ namespace PuzzleGame.Application.Services
         internal void RegisterTween(ITweenHandle handle)
         {
             if (handle == null) return;
-            _activeTweens.Add(handle);
-            handle.OnComplete(() => _activeTweens.Remove(handle));
+            _activeTweens.Add(handle); // HashSet.Add is O(1)
+            handle.OnComplete(() => _activeTweens.Remove(handle)); // HashSet.Remove is O(1)
         }
 
         internal PourAnimationState RentPourState()
@@ -78,16 +79,10 @@ namespace PuzzleGame.Application.Services
 
         public void Dispose()
         {
-            for (int i = _activeTweens.Count - 1; i >= 0; i--)
+            foreach (var tween in _activeTweens)
             {
-                try
-                {
-                    _activeTweens[i]?.Kill();
-                }
-                catch (Exception ex)
-                {
-                    BottleLogger.LogDebug($"Error killing tween on dispose: {ex.Message}");
-                }
+                try { tween?.Kill(); }
+                catch (Exception ex) { BottleLogger.LogDebug($"Error killing tween on dispose: {ex.Message}"); }
             }
             _activeTweens.Clear();
 

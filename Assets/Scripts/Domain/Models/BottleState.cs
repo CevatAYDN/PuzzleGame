@@ -129,44 +129,39 @@ namespace PuzzleGame.Domain.Models
         /// <summary>
         /// Replaces the layer list atomically (used for undo / snapshot restore).
         /// Fires <see cref="OnLayersChanged"/> on success.
+        ///
+        /// Fix #15: IEnumerable is materialized to a List in a single pass —
+        /// previously enumerated twice (once for count, once to read values).
         /// </summary>
         /// <exception cref="ArgumentNullException">If newLayers is null.</exception>
         /// <exception cref="ArgumentException">If newLayers contains more than MaxLayers items.</exception>
         public void ReplaceLayers(IEnumerable<LiquidLayer> newLayers)
         {
             if (newLayers == null)
-            {
                 throw new ArgumentNullException(nameof(newLayers), "Layer sequence cannot be null.");
-            }
 
-            // Önce sayım — invalid ise hiçbir değişiklik yapma
-            int count = 0;
-            foreach (var _ in newLayers) count++;
-            if (count > MaxLayers)
-            {
-                throw new ArgumentException(
-                    $"Too many layers ({count} > {MaxLayers}).", nameof(newLayers));
-            }
-
-            // Geçici listede validate et
-            var temp = new List<LiquidLayer>(count);
+            // Fix #15: Materialize in one pass — avoids double enumeration of IEnumerable sources
+            // (e.g. LINQ pipelines that would be executed twice).
+            var temp = new List<LiquidLayer>(MaxLayers);
             float total = 0f;
             foreach (var layer in newLayers)
             {
                 temp.Add(layer);
                 total += layer.Amount;
+                if (temp.Count > MaxLayers)
+                    throw new ArgumentException(
+                        $"Too many layers (> {MaxLayers}).", nameof(newLayers));
             }
 
-            // Hepsi geçerli — atomik olarak state'i güncelle
+            // All valid — atomically update state.
             _layers.Clear();
             _layers.AddRange(temp);
             _totalFill = total;
 
-            // Observer pattern: değişiklik bildirimi
-            // BottleController gibi observer'lar bu event'i dinleyerek
-            // UpdateVisualsFromState() çağırır. "Tell, don't ask" prensibi.
+            // Observer pattern: notify listeners (e.g. BottleController.UpdateVisualsFromState).
             OnLayersChanged?.Invoke(this);
         }
+
 
         /// <summary>
         /// Layers değiştiğinde tetiklenen olay.

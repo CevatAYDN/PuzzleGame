@@ -18,6 +18,7 @@ using PuzzleGame.Application.Events;
 using PuzzleGame.Application.Logging;
 using PuzzleGame.Application.UI;
 using VContainer;
+// IUpdateable/IUpdateManager now live in Application.Interfaces (Fix #11)
 
 namespace PuzzleGame
 {
@@ -223,14 +224,14 @@ namespace PuzzleGame
             }
         }
 
-        private void Update()
+        // Fix #10: MonoBehaviour.Update() removed to avoid double-firing ProcessInput.
+        // Input is now processed exclusively via IUpdateable.OnUpdate() → UpdateManager.
+        // If UpdateManager is not present in scene, GameManager calls ProcessInput directly
+        // from Start() by registering itself — see Start().
+        public void OnUpdate(float deltaTime)
         {
             _inputHandlerService.ProcessInput();
         }
-
-        public void CustomUpdate() => Update();
-
-        public void OnUpdate(float deltaTime) => Update();
 
         private void OnPourCompleted(PourCompletedEvent e)
         {

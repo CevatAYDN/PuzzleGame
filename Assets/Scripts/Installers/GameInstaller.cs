@@ -43,7 +43,19 @@ namespace PuzzleGame.Installers
             builder.RegisterInstance(levelConfig);
             builder.RegisterInstance(audioConfig);
             builder.RegisterInstance(levelCatalog);
-            builder.RegisterInstance<Camera>(Camera.main);
+
+            // Fix #7: Lazy Camera.main — Configure() may run before the scene is fully ready.
+            // Using a factory ensures Camera.main is resolved at the time the first consumer
+            // requests it (after Start()), not during LifetimeScope.Configure().
+            builder.Register<Camera>(resolver =>
+            {
+                var cam = Camera.main;
+                if (cam == null)
+                    throw new System.InvalidOperationException(
+                        "Camera.main is null when resolving Camera dependency. " +
+                        "Ensure a Camera tagged 'MainCamera' exists in the scene before the LifetimeScope activates.");
+                return cam;
+            }, Lifetime.Singleton);
 
             // Infrastructure — no dependencies
             builder.Register<IRendererService, RendererService>(Lifetime.Singleton);

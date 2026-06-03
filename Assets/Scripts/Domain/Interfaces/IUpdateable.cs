@@ -1,8 +1,8 @@
-namespace PuzzleGame.Domain.Interfaces
+namespace PuzzleGame.Application.Interfaces
 {
     /// <summary>
     /// Contract for any class that needs to receive centralized frame-rate updates.
-    /// Helps eliminate MonoBehaviour Update overhead.
+    /// Lives in Application layer — Unity lifecycle concern, not domain logic.
     /// </summary>
     public interface IUpdateable
     {

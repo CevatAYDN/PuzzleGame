@@ -39,12 +39,27 @@ namespace PuzzleGame.Domain.Models
 
         public override int GetHashCode()
         {
-            int hash = 17;
-            hash = hash * 23 + R.GetHashCode();
-            hash = hash * 23 + G.GetHashCode();
-            hash = hash * 23 + B.GetHashCode();
-            hash = hash * 23 + A.GetHashCode();
-            return hash;
+            // Fix #16: Float GetHashCode is unstable when used with tolerance-based Equals().
+            // Two DomainColors that compare equal via Equals() (within epsilon) could produce
+            // different hash codes if their raw float bits differ, breaking Dictionary/HashSet invariants.
+            //
+            // Solution: round each channel to an epsilon-sized bucket before hashing.
+            // This guarantees: if Equals(a, b) == true → a.GetHashCode() == b.GetHashCode().
+            return HashCode.Combine(
+                RoundedHash(R),
+                RoundedHash(G),
+                RoundedHash(B),
+                RoundedHash(A));
+        }
+
+        /// <summary>
+        /// Rounds a float to the nearest epsilon bucket for hash-stable comparison.
+        /// </summary>
+        private static int RoundedHash(float v)
+        {
+            // Divide by epsilon, round to nearest int — values within epsilon map to the same bucket.
+            int bucket = (int)Math.Round(v / BottleConstants.DomainColorHashEpsilon);
+            return bucket;
         }
 
         public static bool operator ==(DomainColor left, DomainColor right) => left.Equals(right);
