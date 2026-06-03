@@ -1222,6 +1222,10 @@
       <HintPath>Library\ScriptAssemblies\Unity.RenderPipelines.Universal.Runtime.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="VContainer">
+      <HintPath>Library\ScriptAssemblies\VContainer.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEditor.UI">
       <HintPath>Library\ScriptAssemblies\UnityEditor.UI.dll</HintPath>
       <Private>False</Private>
@@ -1236,6 +1240,10 @@
     </Reference>
     <Reference Include="UnityEngine.TestRunner">
       <HintPath>Library\ScriptAssemblies\UnityEngine.TestRunner.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="VContainer">
+      <HintPath>Library\ScriptAssemblies\VContainer.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
