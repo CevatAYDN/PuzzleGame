@@ -44,7 +44,7 @@ namespace PuzzleGame.Domain
         public const float TransparencyAlphaEpsilon = 0.01f;
         /// <summary>Per-channel tolerance for DomainColor equality / hash.</summary>
         public const float DomainColorHashEpsilon = 0.001f;
-        /// <summary>Tolerance for LiquidColor.FromUnityColor conversion.</summary>
+        /// <summary>Tolerance for LiquidColor.FromDomainColor conversion.</summary>
         public const float LiquidColorMatchEpsilon = 0.1f;
 
         // ── Solver Limits ───────────────────────────────────────────────

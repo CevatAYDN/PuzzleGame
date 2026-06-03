@@ -1,6 +1,5 @@
 using System;
 using PuzzleGame.Domain;
-using UnityEngine;
 
 namespace PuzzleGame.Domain.Models
 {
@@ -36,7 +35,7 @@ namespace PuzzleGame.Domain.Models
 
         private static LiquidColor DetectColorType(DomainColor domainColor)
         {
-            return ((Color)domainColor).ToLiquidColor();
+            return LiquidColorExtensions.FromDomainColor(domainColor);
         }
 
         public LiquidLayer WithColor(DomainColor newColor) => new LiquidLayer(newColor, Amount, ColorType);
