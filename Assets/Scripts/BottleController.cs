@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
+using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Domain;
-using PuzzleGame.Domain.Models;
 using PuzzleGame.Domain.Interfaces;
+using PuzzleGame.Domain.Models;
 using PuzzleGame.Infrastructure.Interfaces;
 using PuzzleGame.Logging;
-using PuzzleGame.Application.Interfaces;
 using UnityEngine;
 
 namespace PuzzleGame
@@ -27,23 +27,21 @@ namespace PuzzleGame
         public IReadOnlyList<LiquidLayer> VisualLayers => _visualLayers;
         public float VisualTotalFill => _visualTotalFill;
         public float Height => _meshGenerator != null ? _meshGenerator.height : BottleConstants.DefaultBottleHeight;
-        public bool IsCapped { get; private set; }
+        public bool IsCapped => _corkController != null && _corkController.IsCapped;
         public Transform Transform => transform;
         public GameObject GameObject => gameObject;
 
         private readonly List<LiquidLayer> _visualLayers = new List<LiquidLayer>();
         private float _visualTotalFill = 0f;
 
-        private IRendererService  _rendererService;
-        private IBottleValidator  _validator;
+        private IRendererService _rendererService;
+        private IBottleValidator _validator;
         private IAnimationService _animationService;
-        private Renderer          _renderer;
-        private Wobble            _wobble;
+        private BottleVisualRenderer _visualRenderer;
+        private BottleCorkController _corkController;
         private BottleMeshGenerator _meshGenerator;
-        private MaterialPropertyBlock _propBlock;
-        private bool _isHighlighted;
-
-        private static readonly int FresnelIntensityID = Shader.PropertyToID("_FresnelIntensity");
+        private Renderer _renderer;
+        private Wobble _wobble;
 
         public void Initialize(IRendererService rendererService,
                                IBottleValidator  validator,
@@ -58,23 +56,21 @@ namespace PuzzleGame
             _rendererService = rendererService;
             _validator       = validator;
             _animationService = animationService;
+            _meshGenerator   = GetComponent<BottleMeshGenerator>();
             _renderer        = GetComponent<Renderer>();
             _wobble          = GetComponent<Wobble>();
-            _meshGenerator   = GetComponent<BottleMeshGenerator>();
 
-            if (corkObject == null)
-            {
-                var child = transform.Find("Cork");
-                if (child != null) corkObject = child.gameObject;
-                else corkObject = CreateProceduralCork();
-            }
+            _visualRenderer = new BottleVisualRenderer(
+                _renderer, _rendererService, visualConfig,
+                () => _visualLayers, () => _visualTotalFill);
 
-            if (corkObject != null)
-            {
-                corkObject.SetActive(false);
-            }
-            IsCapped = false;
-            _isHighlighted = false;
+            _corkController = new BottleCorkController(
+                transform, _animationService,
+                () => Height,
+                () => _meshGenerator != null ? _meshGenerator.neckRadius : BottleConstants.CorkRadius,
+                corkObject);
+            _corkController.EnsureCork();
+            corkObject = _corkController.CorkObject;
             SetSelectionHighlight(false);
 
             int maxLayers = visualConfig != null ? visualConfig.maxLayers : BottleConstants.DefaultLayerCapacity;
@@ -129,7 +125,6 @@ namespace PuzzleGame
             }
             catch (InvalidOperationException ex)
             {
-                // Validator said CanPour=true but the bottle is empty — invariant violation.
                 throw new InvalidOperationException(
                     $"Bottle '{name}' invariant violated: validator approved pour but bottle is empty.", ex);
             }
@@ -217,58 +212,28 @@ namespace PuzzleGame
 
         public void UpdateVisuals()
         {
-            if (_rendererService == null)
+            if (_visualRenderer == null)
             {
                 BottleLogger.LogWarning($"'{name}': UpdateVisuals called before Initialize.");
                 return;
             }
-
-            if (_renderer == null)
-            {
-                BottleLogger.LogWarning($"'{name}': Renderer is null, skipping visual update.");
-                return;
-            }
-
-            float sat = visualConfig != null ? visualConfig.saturationBoost : BottleConstants.DefaultSaturationBoost;
-            float bri = visualConfig != null ? visualConfig.brightnessBoost : BottleConstants.DefaultBrightnessBoost;
-            int liquidIndex = visualConfig != null ? visualConfig.liquidMaterialIndex : BottleConstants.DefaultLiquidMaterialIndex;
-            _rendererService.UpdateLiquid(_renderer, _visualLayers, _visualTotalFill, sat, bri, liquidIndex);
-
-            bool isEmpty = _visualLayers.Count == 0 || _visualTotalFill <= BottleConstants.LayerAmountEpsilon;
-            DomainColor baseColor = _visualLayers.Count > 0 ? _visualLayers[0].Color : new DomainColor(0, 0, 0, 0);
-            int glassIndex = visualConfig != null ? visualConfig.glassMaterialIndex : BottleConstants.DefaultGlassMaterialIndex;
-            _rendererService.UpdateGlass(_renderer, isEmpty, baseColor, glassIndex);
+            _visualRenderer.Update();
         }
 
         public void SetSelectionHighlight(bool active)
         {
-            if (_renderer == null) return;
-            if (_isHighlighted == active) return;
-            _isHighlighted = active;
-            if (_propBlock == null) _propBlock = new MaterialPropertyBlock();
-            int glassIndex = visualConfig != null ? visualConfig.glassMaterialIndex : BottleConstants.DefaultGlassMaterialIndex;
-            _renderer.GetPropertyBlock(_propBlock, glassIndex);
-            _propBlock.SetFloat(FresnelIntensityID,
-                active ? BottleConstants.HighlightActiveFresnel : BottleConstants.HighlightInactiveFresnel);
-            _renderer.SetPropertyBlock(_propBlock, glassIndex);
+            _visualRenderer?.SetSelectionHighlight(active);
         }
 
         public void AnimateCompletion()
         {
             if (IsCapped) return;
-            IsCapped = true;
-
-            if (corkObject != null)
-            {
-                corkObject.SetActive(true);
-                _animationService?.AnimateCorkDrop(
-                    corkObject.transform, Height, onComplete: null);
-            }
+            _corkController?.AnimateDrop();
 
             int liquidIndex = visualConfig != null ? visualConfig.liquidMaterialIndex : BottleConstants.DefaultLiquidMaterialIndex;
-            if (_renderer != null && _renderer.sharedMaterials.Length > liquidIndex)
+            if (_renderer != null && _renderer.sharedMaterials.Length > liquidIndex && _animationService != null)
             {
-                _animationService?.AnimateLiquidFlash(
+                _animationService.AnimateLiquidFlash(
                     _renderer, liquidIndex,
                     BottleConstants.CompletionFlashIntensity,
                     BottleConstants.CompletionFlashDuration,
@@ -281,115 +246,9 @@ namespace PuzzleGame
             _animationService?.AnimateSettleBounce(this, BottleConstants.SettleBounceDuration, onComplete: null);
         }
 
-        private GameObject CreateProceduralCork()
-        {
-            var cork = new GameObject("Cork");
-            cork.transform.SetParent(transform, false);
-            cork.transform.localPosition = new Vector3(0f, Height - BottleConstants.CorkYOffset, 0f);
-            cork.transform.localRotation = Quaternion.identity;
-            cork.transform.localScale = Vector3.zero;
-
-            var filter = cork.AddComponent<MeshFilter>();
-            var corkRenderer = cork.AddComponent<MeshRenderer>();
-
-            var mesh = new Mesh { name = "CorkMesh" };
-            int segments = BottleConstants.CorkSegments;
-            float r = _meshGenerator != null ? _meshGenerator.neckRadius : BottleConstants.CorkRadius;
-            float h = BottleConstants.CorkHeight;
-
-            var verts = new List<Vector3>();
-            var tris = new List<int>();
-
-            int bottomCenter = verts.Count;
-            verts.Add(new Vector3(0f, -h * 0.5f, 0f));
-
-            int bottomRing = verts.Count;
-            for (int i = 0; i < segments; i++)
-            {
-                float a = i * Mathf.PI * 2f / segments;
-                verts.Add(new Vector3(Mathf.Cos(a) * r, -h * 0.5f, Mathf.Sin(a) * r));
-            }
-
-            int topRing = verts.Count;
-            for (int i = 0; i < segments; i++)
-            {
-                float a = i * Mathf.PI * 2f / segments;
-                verts.Add(new Vector3(Mathf.Cos(a) * r, h * 0.5f, Mathf.Sin(a) * r));
-            }
-
-            int topCenter = verts.Count;
-            verts.Add(new Vector3(0f, h * 0.5f, 0f));
-
-            for (int i = 0; i < segments; i++)
-            {
-                int next = (i + 1) % segments;
-                tris.Add(bottomCenter); tris.Add(bottomRing + next); tris.Add(bottomRing + i);
-            }
-
-            for (int i = 0; i < segments; i++)
-            {
-                int next = (i + 1) % segments;
-                int bCurr = bottomRing + i;
-                int bNext = bottomRing + next;
-                int tCurr = topRing + i;
-                int tNext = topRing + next;
-                tris.Add(bCurr); tris.Add(tCurr); tris.Add(bNext);
-                tris.Add(bNext); tris.Add(tCurr); tris.Add(tNext);
-            }
-
-            for (int i = 0; i < segments; i++)
-            {
-                int next = (i + 1) % segments;
-                tris.Add(topCenter); tris.Add(topRing + i); tris.Add(topRing + next);
-            }
-
-            mesh.SetVertices(verts);
-            mesh.SetTriangles(tris, 0);
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-            filter.sharedMesh = mesh;
-
-            var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default");
-            var mat = new Material(shader);
-            Color woodColor = new Color(
-                BottleConstants.CorkWoodR,
-                BottleConstants.CorkWoodG,
-                BottleConstants.CorkWoodB);
-            mat.color = woodColor;
-            mat.SetColor("_BaseColor", woodColor);
-            corkRenderer.sharedMaterial = mat;
-
-            cork.SetActive(false);
-            return cork;
-        }
-
         private void OnDestroy()
         {
-            if (corkObject == null) return;
-
-            var filter = corkObject.GetComponent<MeshFilter>();
-            if (filter != null && filter.sharedMesh != null && filter.sharedMesh.name == "CorkMesh")
-            {
-                SafeDestroy(filter.sharedMesh);
-            }
-
-            var corkRenderer = corkObject.GetComponent<MeshRenderer>();
-            if (corkRenderer != null && corkRenderer.sharedMaterial != null)
-            {
-                SafeDestroy(corkRenderer.sharedMaterial);
-            }
-        }
-
-        private static void SafeDestroy(UnityEngine.Object obj)
-        {
-#if UNITY_EDITOR
-            if (!UnityEngine.Application.isPlaying)
-                DestroyImmediate(obj);
-            else
-                Destroy(obj);
-#else
-            Destroy(obj);
-#endif
+            _corkController?.DisposeResources();
         }
     }
 }
