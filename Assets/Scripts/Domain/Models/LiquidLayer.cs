@@ -17,8 +17,7 @@ namespace PuzzleGame.Domain.Models
 
         public bool IsEmpty =>
             Color.IsTransparent ||
-            Amount <= BottleConstants.LayerAmountEpsilon ||
-            ColorType == LiquidColor.None;
+            Amount <= BottleConstants.LayerAmountEpsilon;
 
         public LiquidLayer(DomainColor color, float amount) : this(color, amount, LiquidColor.None)
         {

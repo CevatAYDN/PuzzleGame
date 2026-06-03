@@ -29,6 +29,12 @@ namespace PuzzleGame.Application.Services
             // Validate bottle counts
             if (levelData.autoGenerate)
             {
+                if (levelData.bottleCount <= 0 || levelData.bottleCount > totalBottlesAvailable)
+                {
+                    BottleLogger.LogError($"Invalid bottle count: {levelData.bottleCount} for total bottles: {totalBottlesAvailable}");
+                    return false;
+                }
+
                 if (levelData.emptyBottleCount < 0 || levelData.emptyBottleCount >= totalBottlesAvailable)
                 {
                     BottleLogger.LogError($"Invalid empty bottle count: {levelData.emptyBottleCount} for total bottles: {totalBottlesAvailable}");

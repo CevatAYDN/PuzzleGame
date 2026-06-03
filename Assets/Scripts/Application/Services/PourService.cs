@@ -110,6 +110,15 @@ namespace PuzzleGame.Application.Services
 
         private bool TrySingleLayerPour(IBottleView source, IBottleView target, IBottleView[] activeBottles)
         {
+            if (source.State.IsEmpty)
+            {
+                EventAggregator.Publish(new PourRejectedEvent(
+                    GetBottleIndex(source),
+                    GetBottleIndex(target),
+                    "source_empty"));
+                return false;
+            }
+
             if (!_validator.CanPour(source.State, target.State))
             {
                 EventAggregator.Publish(new PourRejectedEvent(

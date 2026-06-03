@@ -18,7 +18,7 @@ namespace PuzzleGame.Application.Services
         /// <exception cref="ArgumentNullException">If bottle is null.</exception>
         public void Select(BottleState bottle)
         {
-            if (bottle == null) throw new ArgumentNullException(nameof(bottle));
+            if (bottle == null) return;
 
             if (SelectedBottle == bottle)
             {

@@ -81,6 +81,7 @@ namespace PuzzleGame.Tests.Fakes
     public class FakeTweenHandle : ITweenHandle
     {
         private Action _onComplete;
+        private bool _isCompleted;
 
         public void Chain(ITweenHandle other)
         {
@@ -93,6 +94,10 @@ namespace PuzzleGame.Tests.Fakes
         public ITweenHandle OnComplete(Action callback)
         {
             _onComplete = callback;
+            if (_isCompleted)
+            {
+                _onComplete?.Invoke();
+            }
             return this;
         }
 
@@ -111,6 +116,7 @@ namespace PuzzleGame.Tests.Fakes
 
         public void InvokeComplete()
         {
+            _isCompleted = true;
             _onComplete?.Invoke();
         }
     }

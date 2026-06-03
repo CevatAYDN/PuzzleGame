@@ -103,9 +103,10 @@ namespace PuzzleGame.Tests.Application.Services
         public void HandleInput_RaycastMiss_DeselectsIfSelected()
         {
             _stateMachine.TransitionTo(GameState.Playing);
-            var bottle = new BottleState(4);
-            bottle.AddLayer(new LiquidLayer(new DomainColor(1f, 0.2f, 0.2f), 1f));
-            _selectionService.Select(bottle);
+            var bottle = CreateBottleView();
+            bottle.State.AddLayer(new LiquidLayer(new DomainColor(1f, 0.2f, 0.2f), 1f));
+            _sut.SetBottles(new[] { bottle });
+            _selectionService.Select(bottle.State);
 
             _inputHandler.SimulateClick(Vector2.zero, raycastSuccess: false);
 
@@ -122,6 +123,7 @@ namespace PuzzleGame.Tests.Application.Services
         {
             _stateMachine.TransitionTo(GameState.Playing);
             var bottle = CreateBottleView();
+            bottle.State.AddLayer(new LiquidLayer(new DomainColor(1f, 0.2f, 0.2f), 1f));
             _sut.SetBottles(new IBottleView[] { bottle });
 
             SetupRaycastHit(bottle);
@@ -247,9 +249,49 @@ namespace PuzzleGame.Tests.Application.Services
         private void SetupRaycastHit(IBottleView bottle)
         {
             _inputHandler.SimulateClick(Vector2.zero, raycastSuccess: true);
-            _inputHandler.RaycastHitResult = new RaycastHit(); // Non-null collider needed
-            // We need the FakeInputHandler to return a collider with IBottleView
-            // For tests with direct bottle references, use a test GameObject with collider
+            
+            object boxedHit = new RaycastHit();
+            if (bottle != null && bottle.GameObject != null)
+            {
+                var collider = bottle.GameObject.GetComponent<Collider>();
+                if (collider == null)
+                {
+                    collider = bottle.GameObject.AddComponent<BoxCollider>();
+                }
+                
+                var field = typeof(RaycastHit).GetField("m_Collider", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (field != null)
+                {
+                    if (field.FieldType == typeof(int))
+                    {
+#pragma warning disable CS0618
+                        field.SetValue(boxedHit, collider.GetInstanceID());
+#pragma warning restore CS0618
+                    }
+                    else
+                    {
+                        var method = collider.GetType().GetMethod("GetEntityId");
+                        if (method != null)
+                        {
+                            var entityId = method.Invoke(collider, null);
+                            field.SetValue(boxedHit, entityId);
+                        }
+                        else
+                        {
+                            var entityId = System.Activator.CreateInstance(field.FieldType);
+                            var dataField = field.FieldType.GetField("m_Data", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                            if (dataField != null)
+                            {
+#pragma warning disable CS0618
+                                dataField.SetValue(entityId, collider.GetInstanceID());
+#pragma warning restore CS0618
+                            }
+                            field.SetValue(boxedHit, entityId);
+                        }
+                    }
+                }
+            }
+            _inputHandler.RaycastHitResult = (RaycastHit)boxedHit;
         }
     }
 }

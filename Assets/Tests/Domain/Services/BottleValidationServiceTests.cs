@@ -128,22 +128,22 @@ namespace PuzzleGame.Domain.Tests.Services
         }
 
         [Test]
-        public void CanPour_SourceIsNull_ReturnsFalse()
+        public void CanPour_SourceIsNull_ThrowsArgumentNullException()
         {
-            Assert.That(_validator.CanPour(null, _target), Is.False);
+            Assert.Throws<System.ArgumentNullException>(() => _validator.CanPour(null, _target));
         }
 
         [Test]
-        public void CanPour_TargetIsNull_ReturnsFalse()
+        public void CanPour_TargetIsNull_ThrowsArgumentNullException()
         {
             _source.AddLayer(Layer(UnityToDomain(Color.red)));
-            Assert.That(_validator.CanPour(_source, null), Is.False);
+            Assert.Throws<System.ArgumentNullException>(() => _validator.CanPour(_source, null));
         }
 
         [Test]
-        public void CanPour_BothNull_ReturnsFalse()
+        public void CanPour_BothNull_ThrowsArgumentNullException()
         {
-            Assert.That(_validator.CanPour(null, null), Is.False);
+            Assert.Throws<System.ArgumentNullException>(() => _validator.CanPour(null, null));
         }
 
         [Test]
@@ -204,9 +204,9 @@ namespace PuzzleGame.Domain.Tests.Services
         }
 
         [Test]
-        public void IsComplete_Null_ReturnsFalse()
+        public void IsComplete_Null_ThrowsArgumentNullException()
         {
-            Assert.That(_validator.IsComplete(null), Is.False);
+            Assert.Throws<System.ArgumentNullException>(() => _validator.IsComplete(null));
         }
     }
 }

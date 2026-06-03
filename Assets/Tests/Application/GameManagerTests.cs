@@ -97,17 +97,16 @@ namespace PuzzleGame.Tests.Application
 
         private static LevelData CreateLevelData(bool enableMultiLayer = false)
         {
-            return new LevelData
+            var data = UnityEngine.ScriptableObject.CreateInstance<LevelData>();
+            data.levelNumber = 1;
+            data.enableMultiLayerPour = enableMultiLayer;
+            data.multiLayerPourConfig = new PuzzleGame.Application.Configuration.FeatureSystem.MultiLayerPourData
             {
-                levelNumber = 1,
-                enableMultiLayerPour = enableMultiLayer,
-                multiLayerPourConfig = new PuzzleGame.Application.Configuration.FeatureSystem.MultiLayerPourData
-                {
-                    pourAllMatching = true,
-                    pourConsecutiveOnly = true,
-                    minConsecutiveForPour = 2
-                }
+                pourAllMatching = true,
+                pourConsecutiveOnly = true,
+                minConsecutiveForPour = 2
             };
+            return data;
         }
     }
 }

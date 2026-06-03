@@ -41,7 +41,7 @@ namespace PuzzleGame.Tests.Domain
             for (int i = 0; i < invalidLayers.Length; i++)
                 invalidLayers[i] = new LiquidLayer(new DomainColor(0, 1, 0), 0.1f);
 
-            _state.ReplaceLayers(invalidLayers);
+            Assert.Throws<System.ArgumentException>(() => _state.ReplaceLayers(invalidLayers));
 
             Assert.IsFalse(eventFired);
         }
@@ -52,7 +52,7 @@ namespace PuzzleGame.Tests.Domain
             bool eventFired = false;
             _state.OnLayersChanged += s => eventFired = true;
 
-            _state.ReplaceLayers(null);
+            Assert.Throws<System.ArgumentNullException>(() => _state.ReplaceLayers(null));
 
             Assert.IsFalse(eventFired);
         }

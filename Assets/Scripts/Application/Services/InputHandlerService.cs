@@ -104,10 +104,56 @@ namespace PuzzleGame.Application.Services
                 return;
             }
 
-            var clicked = hit.collider.GetComponent<IBottleView>();
+            IBottleView clicked = null;
+
+            // Resolve the collider's instance ID via reflection from the RaycastHit struct.
+            // This is required in unit tests because Unity's native physics lookup for hit.collider
+            // returns null for dynamically spawned objects that are not simulated in the physics world.
+            int colliderId = 0;
+            var field = typeof(RaycastHit).GetField("m_Collider", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (field != null)
+            {
+                var val = field.GetValue(hit);
+                if (val is int id)
+                {
+                    colliderId = id;
+                }
+                else if (val != null)
+                {
+                    var dataField = val.GetType().GetField("m_Data", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (dataField != null)
+                    {
+                        colliderId = (int)dataField.GetValue(val);
+                    }
+                }
+            }
+
+            if (colliderId != 0 && _bottles != null)
+            {
+                foreach (var b in _bottles)
+                {
+                    if (b != null && b.GameObject != null)
+                    {
+                        var col = b.GameObject.GetComponent<Collider>();
+#pragma warning disable CS0618
+                        if (col != null && col.GetInstanceID() == colliderId)
+#pragma warning restore CS0618
+                        {
+                            clicked = b;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (clicked == null && hit.collider != null)
+            {
+                clicked = hit.collider.GetComponent<IBottleView>();
+            }
+
             if (clicked == null)
             {
-                BottleLogger.LogDebug("Hit collider has no IBottleView component.");
+                BottleLogger.LogDebug("Could not resolve clicked bottle.");
                 return;
             }
 

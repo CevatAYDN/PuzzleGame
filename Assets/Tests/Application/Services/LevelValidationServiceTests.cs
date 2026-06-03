@@ -4,6 +4,7 @@ using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Domain;
 using PuzzleGame.Application.Logging;
+using UnityEngine;
 
 namespace PuzzleGame.Tests.Application.Services
 {
@@ -27,14 +28,12 @@ namespace PuzzleGame.Tests.Application.Services
         [Test]
         public void ValidateLevel_TooManyBottles_ReturnsFalse()
         {
-            var levelData = new LevelData
-            {
-                levelNumber = 1,
-                bottleCount = 20,
-                emptyBottleCount = 2,
-                maxLayersPerBottle = 4,
-                autoGenerate = true
-            };
+            var levelData = ScriptableObject.CreateInstance<LevelData>();
+            levelData.levelNumber = 1;
+            levelData.bottleCount = 20;
+            levelData.emptyBottleCount = 2;
+            levelData.maxLayersPerBottle = 4;
+            levelData.autoGenerate = true;
 
             Assert.That(_sut.ValidateLevel(levelData, 5), Is.False);
         }
@@ -42,14 +41,12 @@ namespace PuzzleGame.Tests.Application.Services
         [Test]
         public void ValidateLevel_ValidLevel_ReturnsTrue()
         {
-            var levelData = new LevelData
-            {
-                levelNumber = 1,
-                bottleCount = 5,
-                emptyBottleCount = 2,
-                maxLayersPerBottle = 4,
-                autoGenerate = true
-            };
+            var levelData = ScriptableObject.CreateInstance<LevelData>();
+            levelData.levelNumber = 1;
+            levelData.bottleCount = 5;
+            levelData.emptyBottleCount = 2;
+            levelData.maxLayersPerBottle = 4;
+            levelData.autoGenerate = true;
 
             Assert.That(_sut.ValidateLevel(levelData, 10), Is.True);
         }
@@ -59,15 +56,13 @@ namespace PuzzleGame.Tests.Application.Services
         {
             foreach (Difficulty diff in System.Enum.GetValues(typeof(Difficulty)))
             {
-                var levelData = new LevelData
-                {
-                    levelNumber = 1,
-                    bottleCount = 5,
-                    emptyBottleCount = 2,
-                    maxLayersPerBottle = 4,
-                    autoGenerate = true,
-                    difficulty = diff
-                };
+                var levelData = ScriptableObject.CreateInstance<LevelData>();
+                levelData.levelNumber = 1;
+                levelData.bottleCount = 5;
+                levelData.emptyBottleCount = 2;
+                levelData.maxLayersPerBottle = 4;
+                levelData.autoGenerate = true;
+                levelData.difficulty = diff;
 
                 // Should not throw regardless of difficulty
                 Assert.DoesNotThrow(() =>

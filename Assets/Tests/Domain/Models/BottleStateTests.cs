@@ -134,11 +134,10 @@ namespace PuzzleGame.Domain.Tests.Models
         }
 
         [Test]
-        public void PopTopLayer_FromEmpty_ReturnsNull()
+        public void PopTopLayer_FromEmpty_ThrowsInvalidOperationException()
         {
             var bottle = CreateSut();
-            var layer = bottle.PopTopLayer();
-            Assert.That(layer, Is.Null);
+            Assert.Throws<System.InvalidOperationException>(() => bottle.PopTopLayer());
         }
 
         [Test]
@@ -220,9 +219,9 @@ namespace PuzzleGame.Domain.Tests.Models
         }
 
         [Test]
-        public void MaxSupportedLayers_IsFour()
+        public void MaxSupportedLayers_IsEight()
         {
-            Assert.That(BottleState.MaxSupportedLayers, Is.EqualTo(4));
+            Assert.That(BottleState.MaxSupportedLayers, Is.EqualTo(8));
         }
 
         [Test]
@@ -282,7 +281,7 @@ namespace PuzzleGame.Domain.Tests.Models
                 Layer(Color.green, 0.25f),
             };
 
-            Assert.Throws<System.InvalidOperationException>(() => bottle.ReplaceLayers(newLayers));
+            Assert.Throws<System.ArgumentException>(() => bottle.ReplaceLayers(newLayers));
             Assert.That(bottle.IsEmpty, Is.True);
         }
     }

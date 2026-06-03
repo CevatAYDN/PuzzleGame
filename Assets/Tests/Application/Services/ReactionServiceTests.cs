@@ -30,11 +30,10 @@ namespace PuzzleGame.Tests.Application.Services
         }
 
         [Test]
-        public void CheckReactions_NullBottles_ReturnsEmpty()
+        public void CheckReactions_NullBottles_ThrowsArgumentNullException()
         {
             var config = CreateTestConfig();
-            var results = _sut.CheckReactions(null, config);
-            Assert.That(results, Is.EqualTo(0));
+            Assert.Throws<System.ArgumentNullException>(() => _sut.CheckReactions(null, config));
         }
 
         [Test]

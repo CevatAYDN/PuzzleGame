@@ -36,7 +36,7 @@ namespace PuzzleGame.Application.Events
 
             public bool Matches(Delegate d)
             {
-                return (Delegate)_delegate == d;
+                return _delegate.Equals(d);
             }
 
             public void Invoke(object eventArgs)

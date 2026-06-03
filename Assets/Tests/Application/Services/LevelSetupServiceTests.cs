@@ -160,16 +160,15 @@ namespace PuzzleGame.Tests.Application.Services
         private static LevelData CreateLevelData(bool autoGenerate = true,
             int bottleCount = 5, int emptyCount = 2, int maxLayers = 4)
         {
-            return new LevelData
-            {
-                levelNumber = 1,
-                autoGenerate = autoGenerate,
-                bottleCount = bottleCount,
-                emptyBottleCount = emptyCount,
-                maxLayersPerBottle = maxLayers,
-                randomSeed = 42,
-                difficulty = Difficulty.Easy
-            };
+            var data = ScriptableObject.CreateInstance<LevelData>();
+            data.levelNumber = 1;
+            data.autoGenerate = autoGenerate;
+            data.bottleCount = bottleCount;
+            data.emptyBottleCount = emptyCount;
+            data.maxLayersPerBottle = maxLayers;
+            data.randomSeed = 42;
+            data.difficulty = Difficulty.Easy;
+            return data;
         }
     }
 }
