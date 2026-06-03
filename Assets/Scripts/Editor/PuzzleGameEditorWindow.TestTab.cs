@@ -1,3 +1,5 @@
+using Application = UnityEngine.Application;
+using Debug = UnityEngine.Debug;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -11,8 +13,6 @@ using PuzzleGame.Application.Configuration.FeatureSystem;
 using PuzzleGame.Domain.Services;
 using PuzzleGame.Infrastructure;
 using PuzzleGame.Application.Services;
-using Debug = UnityEngine.Debug;
-using Application = UnityEngine.Application;
 
 namespace PuzzleGame.Editor
 {
@@ -26,7 +26,7 @@ namespace PuzzleGame.Editor
         private bool _infiniteMoves = false;
         private bool _skipIntro = false;
         private bool _debugMode = false;
-        
+
         // Analytics data structure
         [Serializable]
         public class AnalyticsEntry
@@ -161,7 +161,7 @@ namespace PuzzleGame.Editor
                 else
                 {
                     EditorGUILayout.HelpBox("Henüz analytics verisi yok veya dosya bulunamadı.\nOyun oynandıktan sonra burada görünecek.", MessageType.Info);
-                    
+
                     // Generate demo data
                     EditorGUILayout.Space(4);
                     if (GUILayout.Button("Generate Demo Analytics", GUILayout.Width(180)))
@@ -214,8 +214,8 @@ namespace PuzzleGame.Editor
 
                     if (GUILayout.Button("Reset Progress", GUILayout.Width(140)))
                     {
-                        if (EditorUtility.DisplayDialog("Reset Progress", 
-                            "Tüm ilerlemeyi sıfırlamak istediğinizden emin misiniz?", 
+                        if (EditorUtility.DisplayDialog("Reset Progress",
+                            "Tüm ilerlemeyi sıfırlamak istediğinizden emin misiniz?",
                             "Yes", "Cancel"))
                         {
                             ResetPlayerProgress();
@@ -304,7 +304,115 @@ namespace PuzzleGame.Editor
                             SimulatePlays(100);
                         }
                     }
+
+                    EditorGUILayout.Space(4);
+
+                    // Screenshot capture
+                    EditorGUILayout.LabelField("Screenshot:", EditorStyles.miniBoldLabel);
+                    DrawScreenshotSection();
                 }
+            }
+        }
+
+        private string _screenshotPath = "Assets/Screenshots/";
+        private string _screenshotName = "game_screenshot";
+        private int _screenshotScale = 1;
+        private bool _screenshotTransparent = false;
+
+        private void DrawScreenshotSection()
+        {
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.LabelField("Path:", GUILayout.Width(50));
+                    _screenshotPath = EditorGUILayout.TextField(_screenshotPath, GUILayout.Width(150));
+                }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.LabelField("Name:", GUILayout.Width(50));
+                    _screenshotName = EditorGUILayout.TextField(_screenshotName, GUILayout.Width(150));
+                }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.LabelField("Scale:", GUILayout.Width(50));
+                    _screenshotScale = EditorGUILayout.IntPopup(_screenshotScale, new string[] { "1x", "2x", "3x", "4x" }, new int[] { 1, 2, 3, 4 }, GUILayout.Width(80));
+                }
+
+                _screenshotTransparent = EditorGUILayout.ToggleLeft("Transparent Background", _screenshotTransparent);
+
+                EditorGUILayout.Space(4);
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("📷 Capture Screenshot", GUILayout.Width(160)))
+                    {
+                        CaptureScreenshot();
+                    }
+
+                    if (GUILayout.Button("Open Folder", GUILayout.Width(100)))
+                    {
+                        string fullPath = Path.Combine(UnityEngine.Application.dataPath, _screenshotPath.Replace("Assets/", ""));
+                        if (Directory.Exists(fullPath))
+                        {
+                            EditorUtility.RevealInFinder(fullPath);
+                        }
+                        else
+                        {
+                            SetStatus("Screenshot folder not found", MessageType.Warning);
+                        }
+                    }
+                }
+
+                EditorGUILayout.HelpBox(
+                    "Oyun ekranından screenshot almak için:\n" +
+                    "1. Play moduna geç\n" +
+                    "2. İstediğin ekranı hazırla\n" +
+                    "3. Editör'e dön ve 'Capture Screenshot' tıkla\n" +
+                    "Not: Oyun play modundayken çalışır!",
+                    MessageType.Info);
+            }
+        }
+
+        private void CaptureScreenshot()
+        {
+            try
+            {
+                // Ensure directory exists
+                string fullPath = Path.Combine(UnityEngine.Application.dataPath, _screenshotPath.Replace("Assets/", ""));
+                if (!Directory.Exists(fullPath))
+                {
+                    Directory.CreateDirectory(fullPath);
+                }
+
+                // Generate filename with timestamp
+                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string filename = $"{_screenshotName}_{timestamp}.png";
+                string filePath = Path.Combine(fullPath, filename);
+
+                // Capture screenshot with scale
+                ScreenCapture.CaptureScreenshot(filePath, _screenshotScale);
+
+                // Handle transparent background if needed
+                if (_screenshotTransparent)
+                {
+                    // For transparent, we'd need to use a different approach with RenderTexture
+                    // For now, warn user
+                    SetStatus("Transparent mode requires RenderTexture - using normal capture", MessageType.Warning);
+                }
+
+                AssetDatabase.Refresh();
+
+                SetStatus($"Screenshot saved: {filename}", MessageType.Info);
+
+                // Show in explorer
+                EditorUtility.RevealInFinder(filePath);
+            }
+            catch (Exception ex)
+            {
+                SetStatus($"Screenshot error: {ex.Message}", MessageType.Error);
             }
         }
 
@@ -397,7 +505,7 @@ namespace PuzzleGame.Editor
 
         private void LogBottleInfo()
         {
-            var bottles = FindObjectsByType<PuzzleGame.BottleController>(FindObjectsSortMode.None);
+            var bottles = FindObjectsByType<PuzzleGame.BottleController>();
             Debug.Log($"[DEBUG] Active bottles in scene: {bottles.Length}");
             foreach (var bottle in bottles)
             {
@@ -409,7 +517,7 @@ namespace PuzzleGame.Editor
         {
             var gameConfig = Resources.Load<GameConfig>("GameConfig");
             var levelConfig = Resources.Load<LevelConfig>("LevelConfig");
-            
+
             Debug.Log($"[DEBUG] GameConfig: {(gameConfig != null ? "Loaded" : "NULL")}");
             Debug.Log($"[DEBUG] LevelConfig: {(levelConfig != null ? "Loaded" : "NULL")}");
             if (levelConfig != null && levelConfig.palette != null)

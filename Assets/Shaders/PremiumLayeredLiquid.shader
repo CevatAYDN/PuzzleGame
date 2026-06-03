@@ -3,57 +3,63 @@ Shader "Custom/PremiumLayeredLiquid"
     Properties
     {
         [Header(Liquid Colors)]
-        _Color1 ("Color 1 Bottom", Color) = (0.2, 0.6, 1.0, 0.85)
-        _Color2 ("Color 2", Color) = (0.1, 0.5, 0.3, 0.85)
-        _Color3 ("Color 3", Color) = (0.8, 0.2, 0.3, 0.85)
-        _Color4 ("Color 4 Top", Color) = (0.9, 0.7, 0.1, 0.85)
+        _Color1("Color 1 Bottom", Color) = (0.15, 0.55, 0.95, 0.98)
+        _Color2("Color 2", Color) = (0.08, 0.65, 0.35, 0.98)
+        _Color3("Color 3", Color) = (0.95, 0.18, 0.28, 0.98)
+        _Color4("Color 4 Top", Color) = (0.98, 0.72, 0.05, 0.98)
 
         [Header(Fill Levels 0 to 1)]
-        _Fill1 ("Fill Level 1", Range(0.0, 1.0)) = 0.25
-        _Fill2 ("Fill Level 2", Range(0.0, 1.0)) = 0.50
-        _Fill3 ("Fill Level 3", Range(0.0, 1.0)) = 0.75
-        _Fill4 ("Fill Level 4", Range(0.0, 1.0)) = 1.0
+        _Fill1("Fill Level 1", Range(0.0, 1.0)) = 0.25
+        _Fill2("Fill Level 2", Range(0.0, 1.0)) = 0.50
+        _Fill3("Fill Level 3", Range(0.0, 1.0)) = 0.75
+        _Fill4("Fill Level 4", Range(0.0, 1.0)) = 1.0
 
         [Header(Bottle Properties)]
-        _BottleHeight ("Bottle Mesh Height (object space)", Float) = 2.0
-        _SurfaceHeight ("Surface Height", Range(0.0, 1.0)) = 1.0
+        _BottleHeight("Bottle Mesh Height (object space)", Float) = 2.0
+        _SurfaceHeight("Surface Height", Range(0.0, 1.0)) = 1.0
 
         [Header(Wobble Effect)]
-        [HideInInspector] _WobbleX ("Wobble X", Range(-1, 1)) = 0.0
-        [HideInInspector] _WobbleZ ("Wobble Z", Range(-1, 1)) = 0.0
-        _WobbleStrength ("Wobble Strength", Range(0.0, 0.3)) = 0.15
+        [HideInInspector] _WobbleX("Wobble X", Range(-1, 1)) = 0.0
+        [HideInInspector] _WobbleZ("Wobble Z", Range(-1, 1)) = 0.0
+        _WobbleStrength("Wobble Strength", Range(0.0, 0.3)) = 0.1
 
         [Header(Liquid Surface)]
-        _SurfaceSmoothness ("Surface Edge Smoothness", Range(0.0, 0.05)) = 0.01
-        _SurfaceRippleAmplitude ("Ripple Amplitude", Range(0.0, 0.1)) = 0.008
-        _SurfaceRippleFrequency ("Ripple Frequency", Range(0.0, 50.0)) = 20.0
-        _SurfaceRippleSpeed ("Ripple Speed", Range(0.0, 5.0)) = 1.5
+        _SurfaceSmoothness("Surface Edge Smoothness", Range(0.0, 0.05)) = 0.008
+        _SurfaceRippleAmplitude("Ripple Amplitude", Range(0.0, 0.1)) = 0.004
+        _SurfaceRippleFrequency("Ripple Frequency", Range(0.0, 50.0)) = 12.0
+        _SurfaceRippleSpeed("Ripple Speed", Range(0.0, 5.0)) = 0.8
 
         [Header(Foam Effect)]
-        _FoamColor ("Foam Color", Color) = (1.0, 1.0, 1.0, 1.0)
-        _FoamWidth ("Foam Width", Range(0.0, 0.1)) = 0.02
-        _FoamIntensity ("Foam Intensity", Range(0.0, 2.0)) = 0.8
+        _FoamColor("Foam Color", Color) = (1.0, 1.0, 1.0, 1.0)
+        _FoamWidth("Foam Width", Range(0.0, 0.1)) = 0.01
+        _FoamIntensity("Foam Intensity", Range(0.0, 2.0)) = 0.3
 
-        [Header(Rim Effect)]
-        _RimColor ("Rim Color", Color) = (1.0, 1.0, 1.0, 1.0)
-        _RimPower ("Rim Power", Range(0.0, 10.0)) = 3.0
-        _RimIntensity ("Rim Intensity", Range(0.0, 2.0)) = 0.5
+        [Header(Bubble Effect)]
+        _BubbleColor("Bubble Color", Color) = (1.0, 1.0, 1.0, 0.5)
+        _BubbleCount("Bubble Density", Range(0, 100)) = 10
+        _BubbleSize("Bubble Size", Range(0.001, 0.02)) = 0.003
+        _BubbleSpeed("Bubble Speed", Range(0.1, 2.0)) = 0.3
+
+        [Header(Surface Highlight)]
+        _HighlightColor("Highlight Color", Color) = (1.0, 1.0, 1.0, 1.0)
+        _HighlightIntensity("Highlight Intensity", Range(0.0, 3.0)) = 1.5
+        _HighlightWidth("Highlight Width", Range(0.0, 0.5)) = 0.15
 
         [Header(Specular and Sparkle)]
-        _SpecularColor ("Specular Color", Color) = (1.0, 1.0, 1.0, 1.0)
-        _SpecularIntensity ("Specular Intensity", Range(0.0, 3.0)) = 1.2
-        _SpecularSmoothness ("Specular Smoothness", Range(0.0, 1.0)) = 0.85
-        _SparkleIntensity ("Sparkle Intensity", Range(0.0, 2.0)) = 0.3
-        _SparkleSize ("Sparkle Size", Range(1.0, 32.0)) = 16.0
+        _SpecularColor("Specular Color", Color) = (1.0, 1.0, 1.0, 1.0)
+        _SpecularIntensity("Specular Intensity", Range(0.0, 3.0)) = 1.2
+        _SpecularSmoothness("Specular Smoothness", Range(0.0, 1.0)) = 0.95
+        _SparkleIntensity("Sparkle Intensity", Range(0.0, 2.0)) = 0.1
+        _SparkleSize("Sparkle Size", Range(1.0, 32.0)) = 12.0
 
         [Header(Optical Properties)]
-        _Transparency ("Transparency", Range(0.0, 1.0)) = 0.08
-        _EdgeDarken ("Edge Darken", Range(0.0, 1.0)) = 0.25
-        _EdgeWidth ("Edge Width", Range(0.0, 0.5)) = 0.18
+        _Transparency("Transparency", Range(0.0, 1.0)) = 0.02
+        _EdgeDarken("Edge Darken", Range(0.0, 1.0)) = 0.1
+        _EdgeWidth("Edge Width", Range(0.0, 0.5)) = 0.25
 
         [Header(Layer Boundary)]
-        _LayerBoundaryWidth ("Layer Boundary Width", Range(0.0, 0.05)) = 0.025
-        _LayerBoundaryDarken ("Layer Boundary Darken", Range(0.0, 1.0)) = 0.4
+        _LayerBoundaryWidth("Layer Boundary Width", Range(0.0, 0.05)) = 0.012
+        _LayerBoundaryDarken("Layer Boundary Darken", Range(0.0, 1.0)) = 0.15
     }
 
     SubShader
@@ -86,7 +92,6 @@ Shader "Custom/PremiumLayeredLiquid"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
                 float4 _Color1;
@@ -109,9 +114,13 @@ Shader "Custom/PremiumLayeredLiquid"
                 float4 _FoamColor;
                 float _FoamWidth;
                 float _FoamIntensity;
-                float4 _RimColor;
-                float _RimPower;
-                float _RimIntensity;
+                float4 _BubbleColor;
+                float _BubbleCount;
+                float _BubbleSize;
+                float _BubbleSpeed;
+                float4 _HighlightColor;
+                float _HighlightIntensity;
+                float _HighlightWidth;
                 float4 _SpecularColor;
                 float _SpecularIntensity;
                 float _SpecularSmoothness;
@@ -140,8 +149,6 @@ Shader "Custom/PremiumLayeredLiquid"
                 float3 positionOS : TEXCOORD3;
                 float wobbleY : TEXCOORD4;
             };
-
-
 
             Varyings vert(Attributes input)
             {
@@ -212,17 +219,39 @@ Shader "Custom/PremiumLayeredLiquid"
             {
                 float2 sparkleUV = positionWS.xz * _SparkleSize + time * 0.5;
                 float2 sparkleUV2 = positionWS.xy * _SparkleSize * 0.7 + time * 0.3;
-                
+
                 float sparkle1 = frac(sin(dot(sparkleUV, float2(12.9898, 78.233))) * 43758.5453);
                 float sparkle2 = frac(sin(dot(sparkleUV2, float2(4.898, 7.23))) * 23421.631);
-                
+
                 float sparkle = (sparkle1 + sparkle2) * 0.5;
                 sparkle = pow(sparkle, 20.0);
-                
+
                 float3 halfDir = normalize(normalWS + viewDirWS);
                 sparkle *= pow(max(dot(normalWS, halfDir), 0.0), 8.0);
-                
+
                 return sparkle;
+            }
+
+            float CalculateBubble(float3 positionOS, float time)
+            {
+                float bubbles = 0.0;
+
+                for (int i = 0; i < 8; i++)
+                {
+                    float2 random2 = float2(sin(float(i) * 127.1 + time * 0.1), cos(float(i) * 311.7 - time * 0.05));
+                    float2 bubblePos = random2 * 0.8;
+                    float bubbleY = fmod(positionOS.y + float(i) * 0.3 + time * _BubbleSpeed, 2.0) - 1.0;
+
+                    float2 bubbleUV = float2(positionOS.x - bubblePos.x, bubbleY - bubblePos.y);
+                    float bubbleDist = length(bubbleUV);
+
+                    float bubble = smoothstep(_BubbleSize, 0.0, bubbleDist);
+                    float bubbleBrightness = smoothstep(_BubbleSize * 0.2, _BubbleSize * 0.8, bubbleDist);
+
+                    bubbles += bubble * bubbleBrightness;
+                }
+
+                return bubbles;
             }
 
             half4 frag(Varyings input, half facing : VFACE) : SV_Target
@@ -244,7 +273,7 @@ Shader "Custom/PremiumLayeredLiquid"
 
                 float surfaceDist = _SurfaceHeight + surfaceRipple + wobbleAdjustment - normalizedY;
                 if (surfaceDist < -0.002) discard;
-                
+
                 float edgeSoftness = 0.002;
                 float surfaceAlpha = smoothstep(-edgeSoftness, edgeSoftness, surfaceDist);
 
@@ -255,8 +284,12 @@ Shader "Custom/PremiumLayeredLiquid"
                 float layerAlpha;
                 GetLayerColor(normalizedY, colors, fills, layerColor, layerAlpha);
 
+                // Simple foam
                 float foam = step(surfaceDist, 0.5) - step(surfaceDist, (0.5 - _FoamWidth));
                 float4 foamColored = foam * (_FoamColor * _FoamIntensity);
+
+                float bubbles = CalculateBubble(input.positionOS, time);
+                float4 bubbleColored = bubbles * _BubbleColor;
 
                 float boundaryFactor = 1.0;
                 [unroll]
@@ -275,11 +308,11 @@ Shader "Custom/PremiumLayeredLiquid"
                 float3 normalWS = normalize(input.normalWS);
 
                 float NdotV = max(0.0, dot(normalWS, viewDir));
-                float rim = pow(1.0 - NdotV, _RimPower) * _RimIntensity;
-                float3 rimColor = _RimColor.rgb * rim;
 
-                float edgeFactor = smoothstep(0.0, _EdgeWidth, NdotV);
-                float edgeDarken = lerp(1.0 - _EdgeDarken, 1.0, edgeFactor);
+                // Bright surface highlight
+                float surfaceProximity = 1.0 - saturate((_SurfaceHeight + surfaceRipple - normalizedY) / 0.03);
+                float surfaceHighlight = pow(surfaceProximity, 2.0) * _HighlightIntensity;
+                float3 surfaceHighlightColor = _HighlightColor.rgb * surfaceHighlight;
 
                 Light mainLight = GetMainLight();
                 float3 lightDir = normalize(mainLight.direction);
@@ -290,15 +323,12 @@ Shader "Custom/PremiumLayeredLiquid"
 
                 float sparkle = CalculateSparkle(input.positionWS, normalWS, viewDir, time) * _SparkleIntensity;
 
-                float surfaceProximity = 1.0 - saturate((_SurfaceHeight + surfaceRipple - normalizedY) / 0.03);
-                float surfaceHighlight = pow(surfaceProximity, 3.0) * 0.7;
-
-                float3 finalColor = layerColor.rgb * boundaryFactor * edgeDarken;
+                float3 finalColor = layerColor.rgb * boundaryFactor;
 
                 finalColor += specularColor;
-                finalColor += surfaceHighlight * mainLight.color;
-                finalColor += rimColor;
+                finalColor += surfaceHighlightColor;
                 finalColor += foamColored.rgb;
+                finalColor += bubbleColored.rgb;
                 finalColor += sparkle * mainLight.color;
 
                 float finalAlpha = layerColor.a * layerAlpha * (1.0 - _Transparency) * surfaceAlpha;
@@ -348,72 +378,5 @@ Shader "Custom/PremiumLayeredLiquid"
             }
             ENDHLSL
         }
-
-        Pass
-        {
-            Name "ShadowCaster"
-            Tags { "LightMode" = "ShadowCaster" }
-
-            ZWrite On
-            ZTest LEqual
-            ColorMask 0
-            Cull Back
-
-            HLSLPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
-            #pragma multi_compile_fragment _ _CASTING_PUNCTUAL_LIGHT_SHADOW
-
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
-
-            CBUFFER_START(UnityPerMaterial)
-                float _Fill1;
-                float _Fill2;
-                float _Fill3;
-                float _Fill4;
-                float _BottleHeight;
-                float _SurfaceHeight;
-                float _WobbleX;
-                float _WobbleZ;
-                float _WobbleStrength;
-            CBUFFER_END
-
-            struct Attributes
-            {
-                float4 positionOS : POSITION;
-                float3 normalOS : NORMAL;
-                float2 uv : TEXCOORD0;
-            };
-
-            struct Varyings
-            {
-                float4 positionCS : SV_POSITION;
-                float objectY : TEXCOORD0;
-                float wobbleY : TEXCOORD1;
-            };
-
-            Varyings vert(Attributes input)
-            {
-                Varyings output;
-                VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
-                output.positionCS = vertexInput.positionCS;
-                output.objectY = input.positionOS.y;
-                output.wobbleY = (input.positionOS.x * _WobbleX + input.positionOS.z * _WobbleZ) * _WobbleStrength;
-                return output;
-            }
-
-            half4 frag(Varyings input) : SV_Target
-            {
-                float bottleHeight = max(_BottleHeight, 0.001);
-                float normalizedY = saturate(input.objectY / bottleHeight);
-                float surfaceWobbled = _SurfaceHeight + input.wobbleY;
-                clip(surfaceWobbled - normalizedY);
-                return 0;
-            }
-            ENDHLSL
-        }
     }
-
-    FallBack "Universal Render Pipeline/Unlit"
 }

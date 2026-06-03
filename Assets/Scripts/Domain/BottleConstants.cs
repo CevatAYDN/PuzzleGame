@@ -91,8 +91,8 @@ namespace PuzzleGame.Domain
         public const float WinCheckDelaySeconds = 0.5f;
 
         // ── Visual Boost Defaults (overridable by config) ───────────────
-        public const float DefaultSaturationBoost = 1.35f;
-        public const float DefaultBrightnessBoost = 1.2f;
+        public const float DefaultSaturationBoost = 1.25f;
+        public const float DefaultBrightnessBoost = 1.15f;
 
         // ── Pour Impulse (overridable by config) ────────────────────────
         public const float DefaultPourImpulseStrength = 2.0f;

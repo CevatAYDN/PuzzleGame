@@ -2,28 +2,24 @@ Shader "Custom/PremiumBottleGlass"
 {
     Properties
     {
+        [Header(Glass Outline Style)]
+        _OutlineColor("Outline Color", Color) = (0.0, 0.4, 1.0, 1.0)
+        _OutlineWidth("Outline Width", Range(0.001, 0.02)) = 0.008
+        _InnerLineColor("Inner Line Color", Color) = (0.9, 0.95, 1.0, 1.0)
+        _InnerLineWidth("Inner Line Width", Range(0.0005, 0.01)) = 0.002
+
         [Header(Glass Appearance)]
-        _Color("Glass Tint Color", Color) = (0.95, 0.97, 1.0, 0.15)
-        _Smoothness("Smoothness", Range(0, 1)) = 0.98
-        _Thickness("Glass Thickness", Range(0.001, 0.1)) = 0.03
+        _Color("Glass Tint Color", Color) = (0.9, 0.95, 1.0, 0.2)
+        _GlassAlpha("Glass Alpha", Range(0.0, 1.0)) = 0.15
 
         [Header(Refraction)]
         _RefractionIntensity("Refraction Intensity", Range(0, 0.2)) = 0.08
-        _IndexOfRefraction("IOR", Range(1.0, 2.5)) = 1.52
+        _IndexOfRefraction("IOR", Range(1.0, 2.5)) = 1.5
 
-        [Header(Fresnel Rim)]
-        _FresnelPower("Fresnel Power", Range(0.5, 10)) = 4.0
-        _FresnelIntensity("Fresnel Intensity", Range(0, 5)) = 1.5
-        _FresnelColor("Fresnel Color", Color) = (1.0, 1.0, 1.0, 1.0)
-
-        [Header(Specular)]
+        [Header(Highlights)]
         _SpecularColor("Specular Color", Color) = (1.0, 1.0, 1.0, 1.0)
         _SpecularIntensity("Specular Intensity", Range(0, 5)) = 2.0
-        _SpecularSecondary("Secondary Specular", Range(0, 2)) = 0.5
-
-        [Header(Thickness Color)]
-        _ThicknessColor("Thickness Tint", Color) = (0.5, 0.7, 1.0, 1.0)
-        _ThicknessPower("Thickness Power", Range(0.5, 5)) = 2.0
+        _SpecularSmoothness("Specular Smoothness", Range(0, 1)) = 0.9
     }
 
     SubShader
@@ -41,6 +37,7 @@ Shader "Custom/PremiumBottleGlass"
         Blend SrcAlpha OneMinusSrcAlpha
         Cull Off
 
+        // Main Glass Pass
         Pass
         {
             Name "ForwardLit"
@@ -58,19 +55,17 @@ Shader "Custom/PremiumBottleGlass"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
+                float4 _OutlineColor;
+                float _OutlineWidth;
                 float4 _Color;
-                float _Smoothness;
-                float _Thickness;
+                float _GlassAlpha;
                 float _RefractionIntensity;
                 float _IndexOfRefraction;
-                float _FresnelPower;
-                float _FresnelIntensity;
-                float4 _FresnelColor;
                 float4 _SpecularColor;
                 float _SpecularIntensity;
-                float _SpecularSecondary;
-                float4 _ThicknessColor;
-                float _ThicknessPower;
+                float _SpecularSmoothness;
+                float4 _InnerLineColor;
+                float _InnerLineWidth;
             CBUFFER_END
 
             struct Attributes
@@ -87,6 +82,8 @@ Shader "Custom/PremiumBottleGlass"
                 float3 positionWS : TEXCOORD1;
                 float3 normalWS : TEXCOORD2;
                 float3 viewDirWS : TEXCOORD3;
+                float2 uv : TEXCOORD4;
+                float3 positionOS : TEXCOORD5;
             };
 
             Varyings vert(Attributes input)
@@ -100,84 +97,80 @@ Shader "Custom/PremiumBottleGlass"
                 output.normalWS = normalInput.normalWS;
 
                 output.viewDirWS = GetWorldSpaceViewDir(vertexInput.positionWS);
-
                 output.screenPosition = ComputeScreenPos(output.positionCS);
+                output.uv = input.uv;
+                output.positionOS = input.positionOS.xyz;
 
                 return output;
-            }
-
-            float CalculateFresnel(float3 normalWS, float3 viewDirWS)
-            {
-                float NdotV = max(0.0, dot(normalWS, viewDirWS));
-                return pow(1.0 - NdotV, _FresnelPower);
             }
 
             float3 CalculateSpecular(float3 normalWS, float3 viewDirWS, float3 lightDirWS, float lightIntensity)
             {
                 float3 halfDir = normalize(lightDirWS + viewDirWS);
                 float NdotH = max(0.0, dot(normalWS, halfDir));
-                
-                float specPower = exp2(10.0 * _Smoothness + 1.0);
+
+                float specPower = exp2(10.0 * _SpecularSmoothness + 1.0);
                 float spec = pow(NdotH, specPower);
                 float3 specular = spec * _SpecularColor.rgb * _SpecularIntensity * lightIntensity * (specPower + 2.0) / 8.0;
-                
-                float spec2 = pow(NdotH, specPower * 0.1);
-                float3 specular2 = spec2 * _SpecularColor.rgb * _SpecularSecondary * lightIntensity * 0.3;
-                
-                return specular + specular2;
+
+                return specular;
             }
 
             half4 frag(Varyings input, half facing : VFACE) : SV_Target
             {
                 float3 viewDirWS = normalize(input.viewDirWS);
                 float3 normalWS = normalize(input.normalWS);
-                
+
                 if (facing < 0)
                 {
                     normalWS = -normalWS;
                 }
 
                 float2 screenUV = input.screenPosition.xy / input.screenPosition.w;
-                
+
                 float3 refractedDir = refract(-viewDirWS, normalWS, 1.0 / _IndexOfRefraction);
                 float2 refractedUV = screenUV + refractedDir.xy * _RefractionIntensity;
-                
+
                 float4 backgroundColor = SAMPLE_TEXTURE2D(_CameraOpaqueTexture, sampler_CameraOpaqueTexture, refractedUV);
 
                 Light mainLight = GetMainLight();
                 float3 lightDir = normalize(mainLight.direction);
                 float lightIntensity = mainLight.distanceAttenuation * mainLight.shadowAttenuation;
 
-                float3 finalColor = _Color.rgb;
-                float finalAlpha = _Color.a;
+                float3 glassColor = _Color.rgb;
+                float glassAlpha = _GlassAlpha;
 
-                float fresnel = CalculateFresnel(normalWS, viewDirWS) * _FresnelIntensity;
-                float3 rimColor = _FresnelColor.rgb * fresnel;
+                // Inner white highlight line
+                float NdotV = dot(normalWS, viewDirWS);
+                float innerLine = smoothstep(_InnerLineWidth, 0.0, abs(NdotV - 0.7));
+                innerLine *= smoothstep(0.65, 0.75, NdotV);
+                float3 innerLineColor = _InnerLineColor.rgb * innerLine * 0.8;
 
-                float thickness = pow(1.0 - dot(normalWS, viewDirWS), _ThicknessPower);
-                float3 thicknessTint = _ThicknessColor.rgb * thickness * _ThicknessColor.a;
+                // Blue outline on edges
+                float outline = smoothstep(0.3 + _OutlineWidth, 0.3, NdotV);
+                float3 outlineColor = _OutlineColor.rgb * outline;
 
                 float3 specular = CalculateSpecular(normalWS, viewDirWS, lightDir, lightIntensity);
 
-                #if defined(_ADDITIONAL_LIGHTS)
-                    uint additionalLightsCount = GetAdditionalLightsCount();
-                    for (uint i = 0; i < additionalLightsCount; ++i)
-                    {
-                        Light light = GetAdditionalLight(i, input.positionWS);
-                        float3 addLightDir = normalize(light.direction);
-                        float addIntensity = light.distanceAttenuation * light.shadowAttenuation;
-                        specular += CalculateSpecular(normalWS, viewDirWS, addLightDir, addIntensity);
-                    }
-                #endif
+#if defined(_ADDITIONAL_LIGHTS)
+                uint additionalLightsCount = GetAdditionalLightsCount();
+                for (uint i = 0; i < additionalLightsCount; ++i)
+                {
+                    Light light = GetAdditionalLight(i, input.positionWS);
+                    float3 addLightDir = normalize(light.direction);
+                    float addIntensity = light.distanceAttenuation * light.shadowAttenuation;
+                    specular += CalculateSpecular(normalWS, viewDirWS, addLightDir, addIntensity);
+                }
+#endif
 
-                float3 glassColor = lerp(backgroundColor.rgb, finalColor, finalAlpha);
-                glassColor += thicknessTint;
-                glassColor += rimColor;
-                glassColor += specular;
+                float3 finalColor = lerp(backgroundColor.rgb, glassColor, glassAlpha);
+                finalColor += specular;
+                finalColor += innerLineColor;
+                finalColor += outlineColor;
 
-                finalAlpha = saturate(finalAlpha + fresnel * 0.3);
+                float finalAlpha = saturate(glassAlpha + outline);
 
-                return half4(glassColor, finalAlpha);
+                return half4(finalColor, finalAlpha);
             }
             ENDHLSL
         }

@@ -11,14 +11,14 @@ namespace PuzzleGame
     public class BottleMeshGenerator : MonoBehaviour
     {
         [Header("Bottle Shape")]
-        public float height = 2.4f;
-        public float bodyRadius = 0.35f;
-        public float neckRadius = 0.15f;
-        public float neckHeight = 0.4f;
-        public float capRadius = 0.17f;
-        public float capHeight = 0.1f;
+        public float height = 2.6f;
+        public float bodyRadius = 0.4f;
+        public float neckRadius = 0.12f;
+        public float neckHeight = 0.6f;
+        public float capRadius = 0.14f;
+        public float capHeight = 0.07f;
 
-        [Range(8, 64)] public int segments = 24;
+        [Range(8, 64)] public int segments = 32;
 
         [Header("Materials")]
         public Material glassMaterial;
@@ -98,7 +98,7 @@ namespace PuzzleGame
             {
                 float t = i / 4f;
                 float y = t * bodyH;
-                float bulge = Mathf.Sin(t * Mathf.PI) * safeBodyRadius * 0.08f;
+                float bulge = Mathf.Sin(t * Mathf.PI) * safeBodyRadius * 0.04f;
                 AddRing(y, safeBodyRadius + bulge);
             }
             AddRing(bodyH, safeBodyRadius);
