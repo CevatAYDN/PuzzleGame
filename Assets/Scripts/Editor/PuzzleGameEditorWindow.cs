@@ -1681,24 +1681,6 @@ namespace PuzzleGame.Editor
                         EditorGUI.indentLevel--;
                     }
                 }
-
-                EditorGUILayout.Space(4);
-
-                // Key and Lock
-                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
-                {
-                    level.enableKeyAndLock = EditorGUILayout.ToggleLeft(
-                        "Key & Lock (anahtar ve kilit)", level.enableKeyAndLock);
-                }
-
-                EditorGUILayout.Space(4);
-
-                // Breakable Bottles
-                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
-                {
-                    level.enableBreakableBottles = EditorGUILayout.ToggleLeft(
-                        "Breakable Bottles (kırılabilir şişe)", level.enableBreakableBottles);
-                }
             }
 
             if (EditorGUI.EndChangeCheck())

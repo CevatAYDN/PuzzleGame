@@ -83,25 +83,8 @@ namespace PuzzleGame.Domain.Models
         [Tooltip("Enable Chemical Reaction System")]
         public bool enableReactionSystem = false;
 
-        [Tooltip("Enable Key and Lock mechanics")]
-        public bool enableKeyAndLock = false;
-
-        [Tooltip("Enable Breakable Bottles")]
-        public bool enableBreakableBottles = false;
-
-        [Tooltip("Enable hard move limit (different from par stars)")]
-        public bool enableLimitedMoves = false;
-
-        [Tooltip("Enable bonus objective tracking")]
-        public bool enableBonusObjectives = false;
-
-        // Feature-specific configurations — optional, loaded at runtime by feature service.
         [HideInInspector] public MultiLayerPourData multiLayerPourConfig;
         [HideInInspector] public ReactionSystemData reactionConfig;
-        [HideInInspector] public KeyAndLockData keyAndLockConfig;
-        [HideInInspector] public BreakableBottleData breakableBottleConfig;
-        [HideInInspector] public LimitedMovesData limitedMovesConfig;
-        [HideInInspector] public BonusObjectivesData bonusObjectivesConfig;
 
         /// <summary>3 if moveCount &lt;= par, 2 if moveCount &lt;= good, else 1.</summary>
         public int CalculateStars(int moveCount)
