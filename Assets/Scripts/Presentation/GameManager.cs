@@ -167,6 +167,7 @@ namespace PuzzleGame
 
             _poolInitializer.InitializeForLevel(_currentLevel);
             InitHUD();
+            _updateManager?.Register(this);
         }
 
         private void InitAudio()
@@ -180,6 +181,8 @@ namespace PuzzleGame
 
         private void OnDestroy()
         {
+            _updateManager?.Unregister(this);
+
             if (_animationService is System.IDisposable disposable)
             {
                 disposable.Dispose();

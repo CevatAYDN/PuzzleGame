@@ -31,7 +31,12 @@ namespace PuzzleGame.Infrastructure.Implementations
                     ? MobileQualityLevelIndex
                     : 0,
                 true);
-            Shader.globalMaximumLOD = MobileShaderMaximumLOD;
+            
+            if (!UnityEngine.Application.isEditor)
+            {
+                Shader.globalMaximumLOD = MobileShaderMaximumLOD;
+            }
+            
             QualitySettings.shadows = ShadowQuality.Disable;
             QualitySettings.shadowDistance = 0f;
 
@@ -40,7 +45,11 @@ namespace PuzzleGame.Infrastructure.Implementations
 
         public void ApplyLowQualityMode()
         {
-            Shader.globalMaximumLOD = LowEndShaderMaximumLOD;
+            if (!UnityEngine.Application.isEditor)
+            {
+                Shader.globalMaximumLOD = LowEndShaderMaximumLOD;
+            }
+            
             QualitySettings.anisotropicFiltering = AnisotropicFiltering.Disable;
             QualitySettings.antiAliasing = 0;
             QualitySettings.vSyncCount = 0;
