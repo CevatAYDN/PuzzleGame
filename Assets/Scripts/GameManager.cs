@@ -25,6 +25,7 @@ namespace PuzzleGame
     /// <summary>
     /// GameManager — VContainer DI consumer only. Not a Composition Root.
     /// All services injected via VContainer.
+    /// Bottle pool initialization delegated to BottlePoolInitializer (SRP).
     /// </summary>
     public class GameManager : MonoBehaviour, IUpdateable
     {
@@ -60,16 +61,10 @@ namespace PuzzleGame
 
         private Camera _camera;
         private LevelData _currentLevel;
-        private IBottleView[] _bottles;
-        private BottleController[] _allBottlesPool;
+        private BottlePoolInitializer _poolInitializer;
 
         private static readonly WaitForSeconds WinCheckDelay =
             new WaitForSeconds(BottleConstants.WinCheckDelaySeconds);
-        private static readonly Color CamDefaultBgColor = new Color(
-            BottleConstants.CameraBackgroundR,
-            BottleConstants.CameraBackgroundG,
-            BottleConstants.CameraBackgroundB,
-            BottleConstants.CameraBackgroundA);
 
         private bool _isInitialized;
 
@@ -156,8 +151,10 @@ namespace PuzzleGame
                 _stateMachine.TransitionTo(GameState.Playing);
             }
 
-            CacheBottles();
-            SetupBottles();
+            _poolInitializer = new BottlePoolInitializer(
+                _levelSetupService, _rendererService, _validator, _animationService,
+                _inputHandlerService, _historyManager, _camera);
+            _poolInitializer.InitializeForLevel(_currentLevel);
             InitHUD();
         }
 
@@ -186,8 +183,6 @@ namespace PuzzleGame
                 _historyManager.OnMoveCountChanged -= OnMoveCountChanged;
             }
 
-            _bottles = null;
-            _allBottlesPool = null;
             _currentLevel = null;
         }
 
@@ -214,7 +209,7 @@ namespace PuzzleGame
                     alignment = TextAnchor.MiddleCenter,
                     wordWrap = true
                 };
-                GUI.Label(labelRect, "VContainer DI failed — GameInstaller (LifetimeScope) not found or not configured.\n\n" +
+                GUI.Label(labelRect, "VContainer DI failed — GameManager (LifetimeScope) not found or not configured.\n\n" +
                                      "Fix: Tools > PuzzleGame > Open Editor > Scene tab > 'Setup Current Scene (GameManager + DI)'", style);
             }
         }
@@ -227,90 +222,6 @@ namespace PuzzleGame
         public void CustomUpdate() => Update();
 
         public void OnUpdate(float deltaTime) => Update();
-
-        private class BottleNameComparer : IComparer<BottleController>
-        {
-            public int Compare(BottleController x, BottleController y)
-            {
-                if (x == null && y == null) return 0;
-                if (x == null) return -1;
-                if (y == null) return 1;
-                return string.CompareOrdinal(x.name, y.name);
-            }
-        }
-        private static readonly BottleNameComparer ComparerInstance = new BottleNameComparer();
-
-        private void CacheBottles()
-        {
-            var temp = FindObjectsByType<BottleController>(FindObjectsInactive.Include);
-            Array.Sort(temp, ComparerInstance);
-            _allBottlesPool = temp;
-
-            if (BottleLogger.IsInfoEnabled)
-            {
-                BottleLogger.LogInfo($"Found {_allBottlesPool.Length} bottles in master pool.");
-            }
-
-            if (_allBottlesPool.Length == 0)
-                BottleLogger.LogWarning("No BottleController found in scene.");
-        }
-
-        private void SetupBottles()
-        {
-            if (_allBottlesPool == null || _allBottlesPool.Length == 0)
-            {
-                BottleLogger.LogError("No bottles cached in master pool, cannot setup level.");
-                return;
-            }
-
-            int targetCount = _allBottlesPool.Length;
-            if (_currentLevel != null)
-            {
-                targetCount = _currentLevel.bottleCount;
-            }
-            targetCount = Mathf.Clamp(targetCount, BottleConstants.MinBottlesPerLevel, _allBottlesPool.Length);
-
-            for (int i = 0; i < _allBottlesPool.Length; i++)
-            {
-                if (_allBottlesPool[i] != null)
-                {
-                    _allBottlesPool[i].gameObject.SetActive(i < targetCount);
-                }
-            }
-
-            int activeCount = 0;
-            for (int i = 0; i < _allBottlesPool.Length; i++)
-            {
-                var b = _allBottlesPool[i];
-                if (b != null && b.gameObject.activeSelf)
-                {
-                    activeCount++;
-                }
-            }
-
-            _bottles = new IBottleView[activeCount];
-            int index = 0;
-            for (int i = 0; i < _allBottlesPool.Length; i++)
-            {
-                var b = _allBottlesPool[i];
-                if (b != null && b.gameObject.activeSelf)
-                {
-                    _bottles[index++] = b;
-                }
-            }
-
-            _historyManager.Initialize(_bottles);
-            _inputHandlerService.SetBottles(_bottles);
-            _inputHandlerService.SetLevelData(_currentLevel);
-
-            _levelSetupService.SetupBottles(_bottles, _currentLevel, _rendererService, _validator, _animationService);
-
-            if (_camera != null)
-            {
-                _camera.backgroundColor = CamDefaultBgColor;
-                _camera.clearFlags = CameraClearFlags.SolidColor;
-            }
-        }
 
         private void OnPourCompleted(PourCompletedEvent e)
         {
@@ -325,12 +236,13 @@ namespace PuzzleGame
 
         private void CheckWinCondition()
         {
-            if (_bottles == null || _bottles.Length == 0) return;
+            var bottles = _poolInitializer?.Bottles;
+            if (bottles == null || bottles.Length == 0) return;
 
             bool hasLiquid = false;
             bool allComplete = true;
 
-            foreach (var view in _bottles)
+            foreach (var view in bottles)
             {
                 if (view == null || view.IsEmpty) continue;
                 hasLiquid = true;
@@ -385,7 +297,7 @@ namespace PuzzleGame
 
             if (winPanel != null) winPanel.SetActive(false);
 
-            if (!_levelValidationService.ValidateLevel(_currentLevel, _bottles?.Length ?? 0))
+            if (!_levelValidationService.ValidateLevel(_currentLevel, _poolInitializer?.Bottles?.Length ?? 0))
             {
                 BottleLogger.LogError($"Level {e.LevelNumber} failed validation.");
                 _stateMachine.TransitionTo(GameState.Menu);
@@ -398,7 +310,7 @@ namespace PuzzleGame
 
             _historyManager.ResetAll();
 
-            SetupBottles();
+            _poolInitializer.InitializeForLevel(_currentLevel);
 
             _stateMachine.TransitionTo(GameState.Playing);
             _audioService.PlaySfx(AudioClipId.LevelStart);
