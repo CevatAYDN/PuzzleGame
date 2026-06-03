@@ -63,6 +63,7 @@ namespace PuzzleGame.Installers
             builder.Register<IPoolManager, PoolManager>(Lifetime.Singleton);
             builder.Register<IColorAdapter, ColorAdapter>(Lifetime.Singleton);
             builder.Register<IEventAggregator, EventAggregator>(Lifetime.Singleton);
+            builder.Register<IShaderOptimizer, ShaderOptimizer>(Lifetime.Singleton);
             builder.RegisterComponentOnNewGameObject<UpdateManager>(Lifetime.Singleton)
                 .UnderTransform((Transform)null); // DontDestroyOnLoad — root GameObject
 
