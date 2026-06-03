@@ -41,17 +41,19 @@ PuzzleGame/
 │
 ├── Application/               # Uygulama katmanı
 │   ├── Interfaces/            # Application sözleşmeleri
+│   ├── Configuration/         # ScriptableObject yapılandırma dosyaları
+│   ├── Events/                # EventAggregator tabanlı mesajlaşma
+│   ├── Logging/               # BottleLogger
 │   ├── Services/              # İş akışları (AnimationService, AudioService, InputHandlerService)
 │   └── UI/                    # UI bileşenleri
 │
 ├── Infrastructure/            # Altyapı katmanı
-│   ├── Implementations/       # Interface implementasyonları
-│   ├── Pool/                  # Object pooling sistemi
-│   └── Providers/             # Asset yönetim sağlayıcıları
+│   ├── Interfaces/            # Interface sözleşmeleri
+│   └── Implementations/       # Interface implementasyonları
 │
-├── Configuration/             # ScriptableObject yapılandırma dosyaları
-├── Events/                    # EventAggregator tabanlı mesajlaşma
-└── Installers/                # VContainer DI setup
+├── Installers/                # VContainer DI setup (GameInstaller)
+├── Editor/                    # Unity Editor araçları (PuzzleGameEditorWindow)
+└── Tests/                     # NUnit testleri + Fakes
 ```
 
 ### 🧱 SOLID Prensipleri Uygulaması
@@ -68,7 +70,7 @@ PuzzleGame/
 
 ### Gereksinimler
 
-- **Unity 2023.1+** (URP ile)
+- **Unity 6.0+** (URP 17.4 ile)
 - **.NET Framework 4.7.2+** veya **.NET 6+**
 - **Git** (version control için)
 
@@ -82,7 +84,7 @@ PuzzleGame/
 
 2. **Unity ile Aç:**
    - Unity Hub'da "Add" ile projeyi seç
-   - Unity 2023.1+ veya daha yeni bir sürüm kullan
+   - Unity 6.0+ veya daha yeni bir sürüm kullan
 
 3. **Paketleri Yükle:**
    - VContainer ve diğer bağımlılıklar `manifest.json`'da tanımlı
@@ -107,7 +109,7 @@ PuzzleGame/
 - **Application Tests:** `Assets/Tests/Application/` altında
 - **Infrastructure Tests:** `Assets/Tests/Infrastructure/` altında
 
-Test framework olarak **NUnit** ve **NSubstitute** kullanılmaktadır.
+Test framework olarak **NUnit** kullanılmaktadır. Mock ihtiyacı için elle yazılmış `Fake*` sınıfları kullanılır (`Assets/Tests/Fakes/`).
 
 ---
 
