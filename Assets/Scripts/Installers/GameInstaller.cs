@@ -1,6 +1,7 @@
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
+using PuzzleGame.Domain;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Services;
 using PuzzleGame.Domain.Models;
@@ -18,6 +19,10 @@ namespace PuzzleGame.Installers
     /// <summary>
     /// Composition Root: All dependencies are wired here.
     /// SOLID & DI principles applied.
+    ///
+    /// FAIL-LOUDLY: configuration loading and DI registration throw
+    /// instead of silently defaulting — the player should never see a
+    /// half-configured game due to a missing asset.
     /// </summary>
     public class GameInstaller : LifetimeScope
     {
@@ -30,50 +35,29 @@ namespace PuzzleGame.Installers
 
         protected override void Configure(IContainerBuilder builder)
         {
-            // Configs — load from Resources if not assigned
-            if (gameConfig == null) gameConfig = Resources.Load<GameConfig>("Data/GameConfig");
-            if (animationConfig == null) animationConfig = Resources.Load<AnimationConfig>("Data/AnimationConfig");
-            if (levelConfig == null) levelConfig = Resources.Load<LevelConfig>("Data/LevelConfig");
-            if (audioConfig == null) audioConfig = Resources.Load<AudioConfig>("Data/AudioConfig");
+            LoadOrThrowConfigs();
+            LoadOrThrowLevelCatalog();
 
-            if (gameConfig == null)
-            {
-                gameConfig = ScriptableObject.CreateInstance<GameConfig>();
-                gameConfig.name = "GameConfig (Default)";
-                BottleLogger.LogWarning("GameConfig not found — created default instance.");
-            }
-
+            // Configs as instances
             builder.RegisterInstance(gameConfig);
             builder.RegisterInstance(animationConfig);
             builder.RegisterInstance(levelConfig);
             builder.RegisterInstance(audioConfig);
-
-            // Level catalog
-            if (levelCatalog == null || levelCatalog.Length == 0)
-            {
-                levelCatalog = Resources.LoadAll<LevelData>("Levels");
-            }
-            if (levelCatalog == null || levelCatalog.Length == 0)
-            {
-                BottleLogger.LogWarning("No LevelData found — level selection will be empty.");
-                levelCatalog = System.Array.Empty<LevelData>();
-            }
             builder.RegisterInstance(levelCatalog);
             builder.RegisterInstance<Camera>(Camera.main);
 
             // Infrastructure — no dependencies
             builder.Register<IRendererService, RendererService>(Lifetime.Singleton);
+            builder.Register<IShaderOptimizer, ShaderOptimizer>(Lifetime.Singleton)
+                   .WithParameter(gameConfig.applyMobileShaderDefaults);
             builder.Register<PoolManager>(Lifetime.Singleton);
             builder.RegisterInstance<IUpdateManager>(UpdateManager.Instance);
 
-            // Tween service
-#if PRIME_TWEEN_INSTALLED
+            // Tween service — PrimeTween is the chosen impl. Coroutine fallback removed (orphan v2).
             builder.Register<ITweenService, PrimeTweenService>(Lifetime.Singleton);
-#else
-            builder.Register<ITweenService, CoroutineTweenService>(Lifetime.Singleton);
-#endif
 
-            // Input handler
+            // Input handler — MobileInputHandler is the chosen impl for touch devices.
+            // Both implementations are kept; selection happens at startup based on platform.
 #if UNITY_ANDROID || UNITY_IOS
             builder.Register<IInputHandler, MobileInputHandler>(Lifetime.Singleton);
 #else
@@ -92,7 +76,7 @@ namespace PuzzleGame.Installers
             builder.Register<ILocalizationService, LocalizationService>(Lifetime.Singleton)
                    .WithParameter(Domain.Models.SupportedLanguage.Turkish);
 
-            // Application services — depend on config/tween
+            // Application services
             builder.Register<IBottleSelectionService, BottleSelectionService>(Lifetime.Singleton);
             builder.Register<IAudioService, AudioService>(Lifetime.Singleton);
             builder.Register<IAnimationService, AnimationService>(Lifetime.Singleton);
@@ -106,6 +90,56 @@ namespace PuzzleGame.Installers
             builder.RegisterComponentInHierarchy<GameManager>();
 
             BottleLogger.LogInfo("GameInstaller configured — all services registered.");
+        }
+
+        private void LoadOrThrowConfigs()
+        {
+            if (gameConfig == null) gameConfig = Resources.Load<GameConfig>("Data/GameConfig");
+            if (gameConfig == null)
+            {
+                throw new System.InvalidOperationException(
+                    "GameConfig asset missing at Resources/Data/GameConfig. Cannot start without it.");
+            }
+
+            if (animationConfig == null) animationConfig = Resources.Load<AnimationConfig>("Data/AnimationConfig");
+            if (animationConfig == null)
+            {
+                throw new System.InvalidOperationException(
+                    "AnimationConfig asset missing at Resources/Data/AnimationConfig.");
+            }
+
+            if (levelConfig == null) levelConfig = Resources.Load<LevelConfig>("Data/LevelConfig");
+            if (levelConfig == null)
+            {
+                throw new System.InvalidOperationException(
+                    "LevelConfig asset missing at Resources/Data/LevelConfig.");
+            }
+
+            if (audioConfig == null) audioConfig = Resources.Load<AudioConfig>("Data/AudioConfig");
+            if (audioConfig == null)
+            {
+                throw new System.InvalidOperationException(
+                    "AudioConfig asset missing at Resources/Data/AudioConfig.");
+            }
+
+            // OnValidate the values the inspector might have corrupted
+            gameConfig.colorMatchTolerance = Mathf.Max(
+                BottleConstants.ColorMatchEpsilon, gameConfig.colorMatchTolerance);
+            gameConfig.maxLayersPerBottle = Mathf.Clamp(
+                gameConfig.maxLayersPerBottle, 1, BottleConstants.MaxLayers);
+        }
+
+        private void LoadOrThrowLevelCatalog()
+        {
+            if (levelCatalog != null && levelCatalog.Length > 0) return;
+
+            levelCatalog = Resources.LoadAll<LevelData>("Levels");
+            if (levelCatalog == null || levelCatalog.Length == 0)
+            {
+                throw new System.InvalidOperationException(
+                    "No LevelData assets found in Resources/Levels. Build a level catalog or " +
+                    "assign one in the GameInstaller inspector.");
+            }
         }
     }
 }

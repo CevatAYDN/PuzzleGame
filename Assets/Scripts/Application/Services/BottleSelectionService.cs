@@ -1,6 +1,6 @@
+using System;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Domain.Models;
-using System;
 
 namespace PuzzleGame.Application.Services
 {
@@ -15,18 +15,17 @@ namespace PuzzleGame.Application.Services
 
         public BottleState SelectedBottle { get; private set; }
 
+        /// <exception cref="ArgumentNullException">If bottle is null.</exception>
         public void Select(BottleState bottle)
         {
-            if (bottle == null) return;
+            if (bottle == null) throw new ArgumentNullException(nameof(bottle));
 
-            // Toggle: clicking the same bottle deselects it
             if (SelectedBottle == bottle)
             {
                 Deselect();
                 return;
             }
 
-            // Deselect previous before selecting new one
             if (SelectedBottle != null)
                 FireDeselect(SelectedBottle);
 

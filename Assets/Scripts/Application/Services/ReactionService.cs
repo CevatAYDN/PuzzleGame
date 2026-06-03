@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Domain.Models.FeatureSystem;
 using PuzzleGame.Events;
@@ -22,6 +20,7 @@ namespace PuzzleGame.Application.Services
         /// Check for reactions in all bottles after a pour.
         /// Returns list of bottles that had reactions.
         /// </summary>
+        /// <exception cref="ArgumentNullException">If bottles is null.</exception>
         List<ReactionResult> CheckReactions(IBottleView[] bottles, ReactionSystemData config);
     }
 
@@ -29,13 +28,13 @@ namespace PuzzleGame.Application.Services
     {
         public List<ReactionResult> CheckReactions(IBottleView[] bottles, ReactionSystemData config)
         {
+            if (bottles == null) throw new ArgumentNullException(nameof(bottles));
             var results = new List<ReactionResult>();
-            
-            if (bottles == null || config == null || !config.enableReactions)
-                return results;
-            
+            if (config == null || !config.enableReactions) return results;
+
             foreach (var bottle in bottles)
             {
+                if (bottle == null) continue;
                 var result = CheckBottleReactions(bottle, config);
                 if (result != null)
                 {
@@ -43,7 +42,7 @@ namespace PuzzleGame.Application.Services
                     ProcessReactionResult(bottle, result);
                 }
             }
-            
+
             return results;
         }
 
@@ -51,27 +50,31 @@ namespace PuzzleGame.Application.Services
         {
             var state = bottle.State;
             if (state.LayerCount < 2) return null;
-            
-            // Check consecutive layer pairs for reactions
+
             for (int i = 0; i < state.LayerCount - 1; i++)
             {
-                var layerA = state.GetLayerAt(i);
-                var layerB = state.GetLayerAt(i + 1);
-                
-                if (layerA == null || layerB == null) continue;
-                
-                // Use LiquidColor enum for exact matching (no tolerance issues!)
-                var colorTypeA = layerA.Value.ColorType;
-                var colorTypeB = layerB.Value.ColorType;
-                
-                // Skip if either color is None/unknown
+                LiquidLayer layerA;
+                LiquidLayer layerB;
+                try
+                {
+                    layerA = state.GetLayerAt(i);
+                    layerB = state.GetLayerAt(i + 1);
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    // Defensive: LayerCount changed mid-iteration (shouldn't happen but fail loud).
+                    throw new InvalidOperationException(
+                        $"ReactionService: bottle '{bottle.GameObject.name}' state mutated during reaction scan.");
+                }
+
+                var colorTypeA = layerA.ColorType;
+                var colorTypeB = layerB.ColorType;
+
                 if (colorTypeA == LiquidColor.None || colorTypeB == LiquidColor.None)
                     continue;
-                
-                // Find matching rule
+
                 foreach (var rule in config.reactionRules)
                 {
-                    // Check if colors match rule (order independent)
                     if (IsColorMatch(colorTypeA, colorTypeB, rule))
                     {
                         return new ReactionResult
@@ -83,13 +86,10 @@ namespace PuzzleGame.Application.Services
                     }
                 }
             }
-            
+
             return null;
         }
-        
-        /// <summary>
-        /// Check if two LiquidColors match a reaction rule (order independent).
-        /// </summary>
+
         private bool IsColorMatch(LiquidColor a, LiquidColor b, ReactionRule rule)
         {
             return (a == rule.colorA && b == rule.colorB) ||
@@ -103,11 +103,11 @@ namespace PuzzleGame.Application.Services
                 case ReactionRule.ReactionType.Explode:
                     ProcessExplosion(bottle, result);
                     break;
-                    
+
                 case ReactionRule.ReactionType.Transform:
                     ProcessTransform(bottle, result);
                     break;
-                    
+
                 case ReactionRule.ReactionType.Bubble:
                     ProcessBubble(bottle, result);
                     break;
@@ -117,35 +117,38 @@ namespace PuzzleGame.Application.Services
         private void ProcessExplosion(IBottleView bottle, ReactionResult result)
         {
             var position = bottle.Transform.position;
-            
-            // Publish explosion event for animations/effects
+
             EventAggregator.Publish(new BottleExplodedEvent(
                 result.BottleIndex,
                 position));
-            
-            // Clear bottle contents (create empty space)
+
             bottle.State.Clear();
-            
+
             BottleLogger.LogInfo($"[ReactionService] EXPLOSION at {bottle.GameObject.name}! Bottle emptied.");
         }
 
         private void ProcessTransform(IBottleView bottle, ReactionResult result)
         {
             var state = bottle.State;
-            
-            // Use LiquidColor enum directly - convert to DomainColor for LiquidLayer
+
             var resultColor = result.Rule.resultColor;
             var domainColor = (DomainColor)resultColor.ToDefaultColor();
 
-            // Convert the two layers to the new color
             int layerIndexA = result.AffectedLayers[0];
             int layerIndexB = result.AffectedLayers[1];
 
-            // Replace both layers with single layer of new color
-            state.ReplaceAtIndex(layerIndexA, new LiquidLayer(domainColor, 1f, resultColor));
-            state.RemoveAtIndex(layerIndexB);
+            try
+            {
+                state.ReplaceAtIndex(layerIndexA, new LiquidLayer(domainColor, 1f, resultColor));
+                state.RemoveAtIndex(layerIndexB);
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                throw new InvalidOperationException(
+                    $"ReactionService.ProcessTransform: layer index out of range for bottle '{bottle.GameObject.name}'.",
+                    ex);
+            }
 
-            // Publish reaction event (convert resultColor to Unity Color for event)
             EventAggregator.Publish(new ReactionTriggeredEvent(
                 result.BottleIndex,
                 ReactionRule.ReactionType.Transform,
@@ -157,7 +160,6 @@ namespace PuzzleGame.Application.Services
 
         private void ProcessBubble(IBottleView bottle, ReactionResult result)
         {
-            // Bubble effect - just visual, no gameplay change
             EventAggregator.Publish(new ReactionTriggeredEvent(
                 result.BottleIndex,
                 ReactionRule.ReactionType.Bubble,
@@ -176,10 +178,6 @@ namespace PuzzleGame.Application.Services
             return 0;
         }
     }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // HELPER CLASSES
-    // ═══════════════════════════════════════════════════════════════════════
 
     public class ReactionResult
     {
