@@ -65,11 +65,10 @@ namespace PuzzleGame.Domain.Tests.Models
             var bottle = CreateSut();
             var layer = Layer(Color.red);
 
-            bool added = bottle.AddLayer(layer);
+            bottle.AddLayer(layer);
 
-            Assert.That(added, Is.True);
             Assert.That(bottle.Layers.Count, Is.EqualTo(1));
-            Assert.That(PuzzleGame.Infrastructure.ColorAdapter.ToUnity(bottle.TopLayer!.Value.Color), Is.EqualTo(Color.red).Within(0.001f));
+            Assert.That(PuzzleGame.Infrastructure.ColorAdapter.ToUnity(bottle.TopLayer!.Color), Is.EqualTo(Color.red).Within(0.001f));
         }
 
         [Test]
@@ -97,9 +96,7 @@ namespace PuzzleGame.Domain.Tests.Models
             bottle.AddLayer(Layer(Color.red));
             bottle.AddLayer(Layer(Color.blue));
 
-            bool added = bottle.AddLayer(Layer(Color.green));
-
-            Assert.That(added, Is.False);
+            Assert.Throws<System.InvalidOperationException>(() => bottle.AddLayer(Layer(Color.green)));
             Assert.That(bottle.Layers.Count, Is.EqualTo(2));
         }
 
@@ -154,7 +151,7 @@ namespace PuzzleGame.Domain.Tests.Models
 
             var popped = bottle.PopTopLayer();
 
-            Assert.That(PuzzleGame.Infrastructure.ColorAdapter.ToUnity(popped!.Value.Color), Is.EqualTo(Color.blue).Within(0.001f));
+            Assert.That(PuzzleGame.Infrastructure.ColorAdapter.ToUnity(popped!.Color), Is.EqualTo(Color.blue).Within(0.001f));
             Assert.That(bottle.Layers.Count, Is.EqualTo(1));
             Assert.That(PuzzleGame.Infrastructure.ColorAdapter.ToUnity(bottle.Layers[0].Color), Is.EqualTo(Color.red).Within(0.001f));
         }
@@ -266,9 +263,8 @@ namespace PuzzleGame.Domain.Tests.Models
                 Layer(Color.yellow, 0.25f),
             };
 
-            bool result = bottle.ReplaceLayers(newLayers);
+            bottle.ReplaceLayers(newLayers);
 
-            Assert.That(result, Is.True);
             Assert.That(bottle.Layers.Count, Is.EqualTo(3));
             Assert.That(PuzzleGame.Infrastructure.ColorAdapter.ToUnity(bottle.Layers[0].Color), Is.EqualTo(Color.green).Within(0.001f));
             Assert.That(bottle.TotalFill, Is.EqualTo(0.75f).Within(0.001f));
@@ -285,9 +281,7 @@ namespace PuzzleGame.Domain.Tests.Models
                 Layer(Color.green, 0.25f),
             };
 
-            bool result = bottle.ReplaceLayers(newLayers);
-
-            Assert.That(result, Is.False);
+            Assert.Throws<System.InvalidOperationException>(() => bottle.ReplaceLayers(newLayers));
             Assert.That(bottle.IsEmpty, Is.True);
         }
     }
