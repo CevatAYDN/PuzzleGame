@@ -170,9 +170,10 @@ namespace PuzzleGame.Application.Services
 
             BottleLogger.LogInfo("Attempting pour.");
 
-            if (_pourService.TryPour(source, target, _currentLevelData))
+            int pourCount = _pourService.GetPourLayerCount(source, target, _currentLevelData);
+
+            if (_pourService.TryPour(source, target, _currentLevelData, _bottles))
             {
-                int pourCount = _pourService.GetPourLayerCount(source, target, _currentLevelData);
                 if (BottleLogger.IsInfoEnabled)
                     BottleLogger.LogInfo($"Pour succeeded ({pourCount} layers).");
 

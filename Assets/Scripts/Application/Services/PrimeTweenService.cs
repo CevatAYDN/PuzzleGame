@@ -69,7 +69,7 @@ namespace PuzzleGame.Application.Services
     internal class PrimeTweenHandle : ITweenHandle
     {
         internal readonly Tween _tween;
-        private readonly List<Action> _onCompleteCallbacks = new List<Action>();
+        private Action _onComplete;
 
         public PrimeTweenHandle(Tween tween) => _tween = tween;
 
@@ -78,12 +78,9 @@ namespace PuzzleGame.Application.Services
 
         public ITweenHandle OnComplete(Action callback)
         {
-            _onCompleteCallbacks.Add(callback);
-            _tween.OnComplete(() =>
-            {
-                for (int i = 0; i < _onCompleteCallbacks.Count; i++)
-                    _onCompleteCallbacks[i]?.Invoke();
-            });
+            if (callback == null) return this;
+            _onComplete += callback;
+            _tween.OnComplete(_onComplete);
             return this;
         }
 

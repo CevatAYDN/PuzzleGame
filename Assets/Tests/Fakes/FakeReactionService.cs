@@ -11,12 +11,12 @@ namespace PuzzleGame.Tests.Fakes
     /// </summary>
     public class FakeReactionService : IReactionService
     {
-        public List<ReactionResult> CheckReactionsResult { get; set; } = new List<ReactionResult>();
+        public int CheckReactionsResult { get; set; }
         public int CheckReactionsCallCount { get; private set; }
         public IBottleView[] LastBottles { get; private set; }
         public ReactionSystemData LastConfig { get; private set; }
 
-        public List<ReactionResult> CheckReactions(IBottleView[] bottles, ReactionSystemData config)
+        public int CheckReactions(IBottleView[] bottles, ReactionSystemData config)
         {
             CheckReactionsCallCount++;
             LastBottles = bottles;

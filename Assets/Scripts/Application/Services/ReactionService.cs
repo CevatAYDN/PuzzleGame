@@ -19,38 +19,38 @@ namespace PuzzleGame.Application.Services
     {
         /// <summary>
         /// Check for reactions in all bottles after a pour.
-        /// Returns list of bottles that had reactions.
+        /// Returns number of bottles that had reactions.
         /// </summary>
         /// <exception cref="ArgumentNullException">If bottles is null.</exception>
-        List<ReactionResult> CheckReactions(IBottleView[] bottles, ReactionSystemData config);
+        int CheckReactions(IBottleView[] bottles, ReactionSystemData config);
     }
 
     public class ReactionService : IReactionService
     {
-        public List<ReactionResult> CheckReactions(IBottleView[] bottles, ReactionSystemData config)
+        public int CheckReactions(IBottleView[] bottles, ReactionSystemData config)
         {
             if (bottles == null) throw new ArgumentNullException(nameof(bottles));
-            var results = new List<ReactionResult>();
-            if (config == null || !config.enableReactions) return results;
+            if (config == null || !config.enableReactions) return 0;
 
+            int count = 0;
             foreach (var bottle in bottles)
             {
                 if (bottle == null) continue;
-                var result = CheckBottleReactions(bottle, config);
-                if (result != null)
+                if (CheckBottleReactions(bottle, config, out ReactionResult result))
                 {
-                    results.Add(result);
+                    count++;
                     ProcessReactionResult(bottle, result);
                 }
             }
 
-            return results;
+            return count;
         }
 
-        private ReactionResult CheckBottleReactions(IBottleView bottle, ReactionSystemData config)
+        private bool CheckBottleReactions(IBottleView bottle, ReactionSystemData config, out ReactionResult result)
         {
+            result = default;
             var state = bottle.State;
-            if (state.LayerCount < 2) return null;
+            if (state.LayerCount < 2) return false;
 
             for (int i = 0; i < state.LayerCount - 1; i++)
             {
@@ -63,7 +63,6 @@ namespace PuzzleGame.Application.Services
                 }
                 catch (ArgumentOutOfRangeException)
                 {
-                    // Defensive: LayerCount changed mid-iteration (shouldn't happen but fail loud).
                     throw new InvalidOperationException(
                         $"ReactionService: bottle '{bottle.GameObject.name}' state mutated during reaction scan.");
                 }
@@ -78,17 +77,19 @@ namespace PuzzleGame.Application.Services
                 {
                     if (IsColorMatch(colorTypeA, colorTypeB, rule))
                     {
-                        return new ReactionResult
+                        result = new ReactionResult
                         {
                             BottleIndex = GetBottleIndex(bottle),
                             Rule = rule,
-                            AffectedLayers = new[] { i, i + 1 }
+                            AffectedLayerA = i,
+                            AffectedLayerB = i + 1
                         };
+                        return true;
                     }
                 }
             }
 
-            return null;
+            return false;
         }
 
         private bool IsColorMatch(LiquidColor a, LiquidColor b, ReactionRule rule)
@@ -135,8 +136,8 @@ namespace PuzzleGame.Application.Services
             var resultColor = result.Rule.resultColor;
             var domainColor = (DomainColor)resultColor.ToDefaultDomainColor();
 
-            int layerIndexA = result.AffectedLayers[0];
-            int layerIndexB = result.AffectedLayers[1];
+            int layerIndexA = result.AffectedLayerA;
+            int layerIndexB = result.AffectedLayerB;
 
             try
             {
@@ -180,10 +181,11 @@ namespace PuzzleGame.Application.Services
         }
     }
 
-    public class ReactionResult
+    public struct ReactionResult
     {
         public int BottleIndex { get; set; }
         public ReactionRule Rule { get; set; }
-        public int[] AffectedLayers { get; set; }
+        public int AffectedLayerA { get; set; }
+        public int AffectedLayerB { get; set; }
     }
 }

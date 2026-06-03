@@ -6,6 +6,7 @@ using PuzzleGame.Application.Configuration.FeatureSystem;
 using PuzzleGame.Application.Events;
 using PuzzleGame.Application.Logging;
 using PuzzleGame.Tests.Fakes;
+using PuzzleGame.Application.Interfaces;
 
 namespace PuzzleGame.Tests.Application.Services
 {
@@ -47,30 +48,33 @@ namespace PuzzleGame.Tests.Application.Services
         // ── Null / Edge cases ─────────────────────────────────────────────────
 
         [Test]
-        public void TryPour_NullSource_ReturnsFalse()
+        public void TryPour_NullSource_ThrowsArgumentNullException()
         {
             var target = CreateView(CreateBottle());
             var levelData = CreateLevelData(enableMultiLayer: false);
+            var activeBottles = new IBottleView[] { target };
 
-            Assert.That(_sut.TryPour(null, target, levelData), Is.False);
+            Assert.Throws<System.ArgumentNullException>(() => _sut.TryPour(null, target, levelData, activeBottles));
         }
 
         [Test]
-        public void TryPour_NullTarget_ReturnsFalse()
+        public void TryPour_NullTarget_ThrowsArgumentNullException()
         {
             var source = CreateView(CreateBottle());
             var levelData = CreateLevelData(enableMultiLayer: false);
+            var activeBottles = new IBottleView[] { source };
 
-            Assert.That(_sut.TryPour(source, null, levelData), Is.False);
+            Assert.Throws<System.ArgumentNullException>(() => _sut.TryPour(source, null, levelData, activeBottles));
         }
 
         [Test]
-        public void TryPour_NullLevelData_DoesNotThrow()
+        public void TryPour_NullLevelData_ThrowsArgumentNullException()
         {
             var source = CreateView(CreateBottle());
             var target = CreateView(CreateBottle());
+            var activeBottles = new IBottleView[] { source, target };
 
-            Assert.DoesNotThrow(() => _sut.TryPour(source, target, null));
+            Assert.Throws<System.ArgumentNullException>(() => _sut.TryPour(source, target, null, activeBottles));
         }
 
         // ── Single layer pour ─────────────────────────────────────────────────
@@ -85,7 +89,7 @@ namespace PuzzleGame.Tests.Application.Services
 
             _validator.CanPourResult = true;
 
-            bool result = _sut.TryPour(source, target, levelData);
+            bool result = _sut.TryPour(source, target, levelData, new IBottleView[] { source, target });
 
             Assert.That(result, Is.True);
             Assert.That(source.State.IsEmpty, Is.True);
@@ -105,7 +109,7 @@ namespace PuzzleGame.Tests.Application.Services
 
             _validator.CanPourResult = false;
 
-            bool result = _sut.TryPour(source, target, levelData);
+            bool result = _sut.TryPour(source, target, levelData, new IBottleView[] { source, target });
 
             Assert.That(result, Is.False);
             Assert.That(source.State.LayerCount, Is.EqualTo(1));
@@ -122,7 +126,7 @@ namespace PuzzleGame.Tests.Application.Services
 
             _validator.CanPourResult = true;
 
-            bool result = _sut.TryPour(source, target, levelData);
+            bool result = _sut.TryPour(source, target, levelData, new IBottleView[] { source, target });
 
             Assert.That(result, Is.False);
         }
@@ -140,7 +144,7 @@ namespace PuzzleGame.Tests.Application.Services
 
             _validator.CanPourResult = true;
 
-            bool result = _sut.TryPour(source, target, levelData);
+            bool result = _sut.TryPour(source, target, levelData, new IBottleView[] { source, target });
 
             Assert.That(result, Is.True);
             Assert.That(source.State.IsEmpty, Is.True);

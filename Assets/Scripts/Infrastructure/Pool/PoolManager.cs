@@ -14,9 +14,6 @@ namespace PuzzleGame.Infrastructure.Pool
     {
         private readonly Dictionary<string, INamedPool> _pools = new Dictionary<string, INamedPool>();
 
-        [System.Obsolete("Use dependency injection via VContainer instead of static instance.")]
-        public static PoolManager Instance { get; } = new PoolManager();
-
         public PoolManager() { }
 
         public void Dispose()

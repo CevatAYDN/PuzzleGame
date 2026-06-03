@@ -61,6 +61,7 @@ namespace PuzzleGame
         private Camera _camera;
         private LevelData _currentLevel;
         private BottlePoolInitializer _poolInitializer;
+        private IShaderOptimizer _shaderOptimizer;
 
         private static readonly WaitForSeconds WinCheckDelay =
             new WaitForSeconds(BottleConstants.WinCheckDelaySeconds);
@@ -85,7 +86,8 @@ namespace PuzzleGame
             ILevelSetupService levelSetupService,
             ILevelValidationService levelValidationService,
             IGameHistoryManager historyManager,
-            ILocalizationService localizationService)
+            ILocalizationService localizationService,
+            IShaderOptimizer shaderOptimizer)
         {
             if (validator == null)        throw new ArgumentNullException(nameof(validator));
             if (stateMachine == null)     throw new ArgumentNullException(nameof(stateMachine));
@@ -112,6 +114,7 @@ namespace PuzzleGame
             _levelSetupService = levelSetupService;
             _levelValidationService = levelValidationService;
             _historyManager = historyManager;
+            _shaderOptimizer = shaderOptimizer;
 
             _isInitialized = true;
         }
@@ -130,6 +133,7 @@ namespace PuzzleGame
 
             BottleLogger.LogInfo("GameManager Start — initializing game systems.");
 
+            _shaderOptimizer?.Initialize(gameConfig.applyMobileShaderDefaults);
             _camera = Camera.main;
             InitAudio();
 

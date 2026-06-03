@@ -53,7 +53,7 @@ namespace PuzzleGame.Tests.Application
             var sut = new PourService(_validator, _historyManager, reactionService: new FakeReactionService());
             _validator.CanPourResult = true;
 
-            bool result = sut.TryPour(source, target, levelData);
+            bool result = sut.TryPour(source, target, levelData, new IBottleView[] { source, target });
 
             Assert.That(result, Is.True);
             Assert.That(source.State.IsEmpty, Is.True);

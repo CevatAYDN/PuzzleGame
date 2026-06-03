@@ -30,7 +30,7 @@ namespace PuzzleGame.Application.Interfaces
         void SetSelectionHighlight(bool active);
         void AnimateCompletion();
         void UpdateVisualsFromState();
-        void SetVisualState(List<LiquidLayer> layers, float totalFill);
+        void SetVisualState(IReadOnlyList<LiquidLayer> layers, float totalFill);
         void SetVisualPourProgress(LayerSnapshot startLayers, float t, bool isSource, LiquidLayer pouredLayer);
         void PlaySettleBounce();
         void AddWobbleImpulse(Vector3 direction, float strength);

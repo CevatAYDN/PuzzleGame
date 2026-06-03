@@ -17,16 +17,18 @@ namespace PuzzleGame.Tests.Fakes
         public int TryPourCallCount { get; private set; }
         public int GetPourLayerCountCallCount { get; private set; }
 
+        public IBottleView[] LastActiveBottles { get; private set; }
         public IBottleView LastSource { get; private set; }
         public IBottleView LastTarget { get; private set; }
         public LevelData LastLevelData { get; private set; }
 
-        public bool TryPour(IBottleView source, IBottleView target, LevelData levelData)
+        public bool TryPour(IBottleView source, IBottleView target, LevelData levelData, IBottleView[] activeBottles)
         {
             TryPourCallCount++;
             LastSource = source;
             LastTarget = target;
             LastLevelData = levelData;
+            LastActiveBottles = activeBottles;
             return TryPourResult;
         }
 

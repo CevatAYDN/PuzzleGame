@@ -284,11 +284,11 @@ namespace PuzzleGame.Application.Services
             var t = _tween.TweenCustom(bottle, 0f, 1f, duration, (tweenable, progress) =>
             {
                 float wave = Mathf.Cos(progress * Mathf.PI * 3f) * 0.04f * (1f - progress);
-                bottle.SetVisualState(new List<LiquidLayer>(bottle.State.Layers), originalFill + wave);
+                bottle.SetVisualState(bottle.State.Layers, originalFill + wave);
             })
             .OnComplete(() =>
             {
-                bottle.SetVisualState(new List<LiquidLayer>(bottle.State.Layers), originalFill);
+                bottle.SetVisualState(bottle.State.Layers, originalFill);
                 DecrCount();
                 onComplete?.Invoke();
             });

@@ -47,8 +47,7 @@ namespace PuzzleGame.Installers
 
             // Infrastructure — no dependencies
             builder.Register<IRendererService, RendererService>(Lifetime.Singleton);
-            builder.Register<IShaderOptimizer, ShaderOptimizer>(Lifetime.Singleton)
-                   .WithParameter(gameConfig.applyMobileShaderDefaults);
+            builder.Register<IShaderOptimizer, ShaderOptimizer>(Lifetime.Singleton);
             builder.Register<PoolManager>(Lifetime.Singleton);
             builder.RegisterInstance<IUpdateManager>(UpdateManager.Instance);
 

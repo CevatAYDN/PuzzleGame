@@ -135,7 +135,7 @@ namespace PuzzleGame.Tests.Application.Services
             public void SetSelectionHighlight(bool active) { }
             public void AnimateCompletion() { }
             public void UpdateVisualsFromState() { }
-            public void SetVisualState(List<LiquidLayer> layers, float totalFill) { }
+            public void SetVisualState(IReadOnlyList<LiquidLayer> layers, float totalFill) { }
             public void SetVisualPourProgress(LayerSnapshot startLayers, float t, bool isSource, LiquidLayer pouredLayer) { }
             public void PlaySettleBounce() { }
             public void AddWobbleImpulse(Vector3 direction, float strength) { }

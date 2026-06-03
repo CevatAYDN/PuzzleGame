@@ -30,6 +30,9 @@ namespace PuzzleGame.Application.Services
         /// </summary>
         private static readonly string SecretKey = BuildSecretKey();
 
+        private static SaveData _cachedSaveData;
+        private static bool _cacheLoaded;
+
         private static string BuildSecretKey()
         {
             // Parçaları birleştirerek "türetilmiş" anahtar
@@ -186,6 +189,8 @@ namespace PuzzleGame.Application.Services
         {
             try
             {
+                _cachedSaveData = null;
+                _cacheLoaded = false;
                 if (File.Exists(FilePath)) File.Delete(FilePath);
                 if (File.Exists(TempPath)) File.Delete(TempPath);
                 Debug.Log("[GameSaveManager] All save data deleted.");
@@ -226,7 +231,17 @@ namespace PuzzleGame.Application.Services
 
         private static SaveData LoadVerified()
         {
-            if (!File.Exists(FilePath)) return null;
+            if (_cacheLoaded)
+            {
+                return _cachedSaveData;
+            }
+
+            if (!File.Exists(FilePath))
+            {
+                _cachedSaveData = null;
+                _cacheLoaded = true;
+                return null;
+            }
 
             try
             {
@@ -251,6 +266,8 @@ namespace PuzzleGame.Application.Services
                 // Payload decode
                 string payloadJson = Encoding.UTF8.GetString(Convert.FromBase64String(secure.payload));
                 var data = JsonUtility.FromJson<SaveData>(payloadJson);
+                _cachedSaveData = data;
+                _cacheLoaded = true;
                 return data;
             }
             catch (Exception ex)
@@ -286,6 +303,10 @@ namespace PuzzleGame.Application.Services
                 File.WriteAllText(TempPath, json, Encoding.UTF8);
                 if (File.Exists(FilePath)) File.Delete(FilePath);
                 File.Move(TempPath, FilePath);
+
+                // Update cache
+                _cachedSaveData = data;
+                _cacheLoaded = true;
 
                 Debug.Log($"[GameSaveManager] Saved ({data.levels.Count} levels, {FileSizeBytes} bytes).");
                 return true;

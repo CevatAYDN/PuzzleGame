@@ -49,15 +49,15 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.4.8f1\Editor\Data\Tools\BuildPipeline\Unity.SourceGenerators\Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Scripts\BottleVisualRenderer.cs" />
-    <Compile Include="Assets\Scripts\Wobble.cs" />
-    <Compile Include="Assets\Scripts\BottleController.cs" />
-    <Compile Include="Assets\Scripts\BottlePoolInitializer.cs" />
-    <Compile Include="Assets\Scripts\BottleCorkController.cs" />
-    <Compile Include="Assets\Scripts\GameManager.cs" />
+    <Compile Include="Assets\Scripts\Presentation\BottlePoolInitializer.cs" />
+    <Compile Include="Assets\Scripts\Presentation\BottleMeshGenerator.cs" />
+    <Compile Include="Assets\Scripts\Presentation\BottleVisualRenderer.cs" />
+    <Compile Include="Assets\Scripts\Presentation\BottleCorkController.cs" />
+    <Compile Include="Assets\Scripts\Presentation\URPConfigHelper.cs" />
+    <Compile Include="Assets\Scripts\Presentation\GameManager.cs" />
+    <Compile Include="Assets\Scripts\Presentation\Wobble.cs" />
+    <Compile Include="Assets\Scripts\Presentation\BottleController.cs" />
     <Compile Include="Assets\Scripts\Installers\GameInstaller.cs" />
-    <Compile Include="Assets\Scripts\URPConfigHelper.cs" />
-    <Compile Include="Assets\Scripts\BottleMeshGenerator.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Scripts\PuzzleGame.Composition.asmdef" />

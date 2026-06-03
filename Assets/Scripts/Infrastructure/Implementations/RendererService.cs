@@ -33,6 +33,7 @@ namespace PuzzleGame.Infrastructure.Implementations
 
         private readonly MaterialPropertyBlock _liquidBlock = new MaterialPropertyBlock();
         private readonly MaterialPropertyBlock _glassBlock  = new MaterialPropertyBlock();
+        private readonly List<LiquidLayer> _mergedLayers = new List<LiquidLayer>();
 
         public void UpdateLiquid(Renderer renderer, IReadOnlyList<LiquidLayer> layers, float totalFill,
                                  float saturationBoost, float brightnessBoost, int materialIndex = 1)
@@ -41,19 +42,19 @@ namespace PuzzleGame.Infrastructure.Implementations
             if (layers == null)   throw new ArgumentNullException(nameof(layers));
 
             // Visually merge consecutive layers of the same color to prevent boundary line glitches
-            var merged = new List<LiquidLayer>();
+            _mergedLayers.Clear();
             foreach (var layer in layers)
             {
                 if (layer.Amount <= BottleConstants.LayerAmountEpsilon) continue;
 
-                if (merged.Count > 0 && merged[merged.Count - 1].Color == layer.Color)
+                if (_mergedLayers.Count > 0 && _mergedLayers[_mergedLayers.Count - 1].Color == layer.Color)
                 {
-                    var prev = merged[merged.Count - 1];
-                    merged[merged.Count - 1] = new LiquidLayer(prev.Color, prev.Amount + layer.Amount);
+                    var prev = _mergedLayers[_mergedLayers.Count - 1];
+                    _mergedLayers[_mergedLayers.Count - 1] = new LiquidLayer(prev.Color, prev.Amount + layer.Amount);
                 }
                 else
                 {
-                    merged.Add(layer);
+                    _mergedLayers.Add(layer);
                 }
             }
 
@@ -65,9 +66,9 @@ namespace PuzzleGame.Infrastructure.Implementations
                 Color color = Color.clear;
                 float fill  = cumulative;
 
-                if (i < merged.Count)
+                if (i < _mergedLayers.Count)
                 {
-                    var layer = merged[i];
+                    var layer = _mergedLayers[i];
                     color      = AdjustColor(ColorAdapter.ToUnity(layer.Color), saturationBoost, brightnessBoost);
                     cumulative += layer.Amount;
                     fill       = cumulative;

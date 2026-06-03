@@ -70,7 +70,7 @@ namespace PuzzleGame.Application.Services
                 if (_bottles[i] == null || _bottles[i].State == null) continue;
                 try
                 {
-                    _bottles[i].State.ReplaceLayers(snapshot[i] ?? new List<LiquidLayer>());
+                    _bottles[i].State.ReplaceLayers((IEnumerable<LiquidLayer>)snapshot[i] ?? System.Array.Empty<LiquidLayer>());
                     _bottles[i].UpdateVisualsFromState();
                 }
                 catch (ArgumentException ex)

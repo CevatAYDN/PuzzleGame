@@ -18,7 +18,7 @@ namespace PuzzleGame.Application.Services
     /// </summary>
     public interface IPourService
     {
-        bool TryPour(IBottleView source, IBottleView target, LevelData levelData);
+        bool TryPour(IBottleView source, IBottleView target, LevelData levelData, IBottleView[] activeBottles);
         int GetPourLayerCount(IBottleView source, IBottleView target, LevelData levelData);
     }
 
@@ -41,7 +41,7 @@ namespace PuzzleGame.Application.Services
             _currentLevelData = levelData;
         }
 
-        public bool TryPour(IBottleView source, IBottleView target, LevelData levelData)
+        public bool TryPour(IBottleView source, IBottleView target, LevelData levelData, IBottleView[] activeBottles)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (target == null) throw new ArgumentNullException(nameof(target));
@@ -56,8 +56,8 @@ namespace PuzzleGame.Application.Services
                 enableMultiLayer));
 
             return enableMultiLayer
-                ? TryMultiLayerPour(source, target, levelData)
-                : TrySingleLayerPour(source, target);
+                ? TryMultiLayerPour(source, target, levelData, activeBottles)
+                : TrySingleLayerPour(source, target, activeBottles);
         }
 
         public int GetPourLayerCount(IBottleView source, IBottleView target, LevelData levelData)
@@ -108,7 +108,7 @@ namespace PuzzleGame.Application.Services
             return consecutiveCount;
         }
 
-        private bool TrySingleLayerPour(IBottleView source, IBottleView target)
+        private bool TrySingleLayerPour(IBottleView source, IBottleView target, IBottleView[] activeBottles)
         {
             if (!_validator.CanPour(source.State, target.State))
             {
@@ -140,11 +140,13 @@ namespace PuzzleGame.Application.Services
 
             EventAggregator.Publish(new PourCompletedEvent(source.State, target.State));
 
+            CheckForReactions(source, target, activeBottles);
+
             BottleLogger.LogInfo($"[PourService] Single layer pour: {source.GameObject.name} → {target.GameObject.name}");
             return true;
         }
 
-        private bool TryMultiLayerPour(IBottleView source, IBottleView target, LevelData levelData)
+        private bool TryMultiLayerPour(IBottleView source, IBottleView target, LevelData levelData, IBottleView[] activeBottles)
         {
             int pourCount = GetPourLayerCount(source, target, levelData);
 
@@ -211,7 +213,7 @@ namespace PuzzleGame.Application.Services
                     GetBottleIndex(target),
                     poured));
 
-                CheckForReactions(source, target);
+                CheckForReactions(source, target, activeBottles);
 
                 BottleLogger.LogInfo($"[PourService] Multi-layer pour: {poured} layers from {source.GameObject.name} → {target.GameObject.name}");
                 return true;
@@ -237,7 +239,7 @@ namespace PuzzleGame.Application.Services
                    UnityEngine.Mathf.Abs(a.A - b.A) < tolerance;
         }
 
-        private void CheckForReactions(IBottleView source, IBottleView target)
+        private void CheckForReactions(IBottleView source, IBottleView target, IBottleView[] activeBottles)
         {
             if (_currentLevelData == null || !_currentLevelData.enableReactionSystem)
                 return;
@@ -246,18 +248,13 @@ namespace PuzzleGame.Application.Services
                 return;
 
             if (_reactionService == null) return;
+            if (activeBottles == null || activeBottles.Length == 0) return;
 
-            var bottles = UnityEngine.Object.FindObjectsByType<UnityEngine.MonoBehaviour>()
-                .OfType<IBottleView>()
-                .ToArray();
+            int count = _reactionService.CheckReactions(activeBottles, _currentLevelData.reactionConfig);
 
-            if (bottles.Length == 0) return;
-
-            var results = _reactionService.CheckReactions(bottles, _currentLevelData.reactionConfig);
-
-            if (results.Count > 0)
+            if (count > 0)
             {
-                BottleLogger.LogInfo($"[PourService] {results.Count} reaction(s) detected!");
+                BottleLogger.LogInfo($"[PourService] {count} reaction(s) detected!");
             }
         }
     }

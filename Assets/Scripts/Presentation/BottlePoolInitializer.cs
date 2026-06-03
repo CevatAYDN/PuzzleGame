@@ -106,10 +106,12 @@ namespace PuzzleGame
             ConfigureCamera();
         }
 
+        private static readonly BottleNameComparer Comparer = new BottleNameComparer();
+
         private void CacheBottles()
         {
             var temp = UnityEngine.Object.FindObjectsByType<BottleController>(FindObjectsInactive.Include);
-            Array.Sort(temp, new BottleNameComparer());
+            Array.Sort(temp, Comparer);
             _allBottlesPool = temp;
 
             if (BottleLogger.IsInfoEnabled)

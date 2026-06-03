@@ -152,10 +152,17 @@ namespace PuzzleGame
             return true;
         }
 
-        public void SetVisualState(List<LiquidLayer> layers, float totalFill)
+        public void SetVisualState(IReadOnlyList<LiquidLayer> layers, float totalFill)
         {
             _visualLayers.Clear();
-            _visualLayers.AddRange(layers);
+            if (layers != null)
+            {
+                int count = layers.Count;
+                for (int i = 0; i < count; i++)
+                {
+                    _visualLayers.Add(layers[i]);
+                }
+            }
             _visualTotalFill = totalFill;
             UpdateVisuals();
         }
@@ -249,6 +256,11 @@ namespace PuzzleGame
         private void OnDestroy()
         {
             _corkController?.DisposeResources();
+            var lr = GetComponent<LineRenderer>();
+            if (lr != null && lr.sharedMaterial != null)
+            {
+                Destroy(lr.sharedMaterial);
+            }
         }
     }
 }

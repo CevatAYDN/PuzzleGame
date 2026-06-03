@@ -52,7 +52,6 @@
     <Compile Include="Assets\Scripts\Domain\Interfaces\IGameStateMachine.cs" />
     <Compile Include="Assets\Scripts\Domain\BottleConstants.cs" />
     <Compile Include="Assets\Scripts\Domain\Services\BottleValidationService.cs" />
-    <Compile Include="Assets\Scripts\Domain\Services\SimpleLevelGenerator.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\DomainColor.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\GameState.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\BottleState.cs" />

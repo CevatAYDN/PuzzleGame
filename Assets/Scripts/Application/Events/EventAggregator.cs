@@ -25,53 +25,23 @@ namespace PuzzleGame.Application.Events
 
         public class Subscription<T> : ISubscription
         {
-            private readonly WeakReference _target;
             private readonly Action<T> _delegate;
-            private readonly System.Reflection.MethodInfo _method;
-            private readonly bool _isStatic;
 
             public Subscription(Action<T> action)
             {
-                _method = action.Method;
-                if (action.Target != null)
-                {
-                    _target = new WeakReference(action.Target);
-                    _isStatic = false;
-                }
-                else
-                {
-                    _delegate = action;
-                    _isStatic = true;
-                }
+                _delegate = action ?? throw new ArgumentNullException(nameof(action));
             }
 
-            public bool IsAlive => _isStatic || (_target != null && _target.IsAlive);
+            public bool IsAlive => true;
 
             public bool Matches(Delegate d)
             {
-                if (d == null) return false;
-                if (_isStatic)
-                {
-                    return d.Target == null && d.Method == _method;
-                }
-                return _target != null && _target.Target == d.Target && d.Method == _method;
+                return (Delegate)_delegate == d;
             }
 
             public void Invoke(object eventArgs)
             {
-                if (_isStatic)
-                {
-                    _delegate((T)eventArgs);
-                }
-                else
-                {
-                    object target = _target?.Target;
-                    if (target != null)
-                    {
-                        var del = (Action<T>)Delegate.CreateDelegate(typeof(Action<T>), target, _method);
-                        del((T)eventArgs);
-                    }
-                }
+                _delegate((T)eventArgs);
             }
         }
 

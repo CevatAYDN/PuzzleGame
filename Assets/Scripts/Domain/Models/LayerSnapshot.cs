@@ -12,14 +12,22 @@ namespace PuzzleGame.Domain.Models
     public readonly struct LayerSnapshot
     {
         public readonly int Count;
-        private readonly LiquidLayer[] _layers;
+        private readonly LiquidLayer _l0;
+        private readonly LiquidLayer _l1;
+        private readonly LiquidLayer _l2;
+        private readonly LiquidLayer _l3;
+        private readonly LiquidLayer _l4;
+        private readonly LiquidLayer _l5;
+        private readonly LiquidLayer _l6;
+        private readonly LiquidLayer _l7;
 
         public LayerSnapshot(IReadOnlyList<LiquidLayer> layers)
         {
             if (layers == null)
             {
                 Count = 0;
-                _layers = Array.Empty<LiquidLayer>();
+                _l0 = default; _l1 = default; _l2 = default; _l3 = default;
+                _l4 = default; _l5 = default; _l6 = default; _l7 = default;
                 return;
             }
 
@@ -31,11 +39,14 @@ namespace PuzzleGame.Domain.Models
             }
 
             Count = count;
-            _layers = new LiquidLayer[count];
-            for (int i = 0; i < count; i++)
-            {
-                _layers[i] = layers[i];
-            }
+            _l0 = count > 0 ? layers[0] : default;
+            _l1 = count > 1 ? layers[1] : default;
+            _l2 = count > 2 ? layers[2] : default;
+            _l3 = count > 3 ? layers[3] : default;
+            _l4 = count > 4 ? layers[4] : default;
+            _l5 = count > 5 ? layers[5] : default;
+            _l6 = count > 6 ? layers[6] : default;
+            _l7 = count > 7 ? layers[7] : default;
         }
 
         /// <exception cref="IndexOutOfRangeException">If index &lt; 0 or &gt;= Count.</exception>
@@ -46,7 +57,18 @@ namespace PuzzleGame.Domain.Models
                 throw new IndexOutOfRangeException(
                     $"Index {index} is out of range (Count={Count}) for LayerSnapshot.");
             }
-            return _layers[index];
+            switch (index)
+            {
+                case 0: return _l0;
+                case 1: return _l1;
+                case 2: return _l2;
+                case 3: return _l3;
+                case 4: return _l4;
+                case 5: return _l5;
+                case 6: return _l6;
+                case 7: return _l7;
+                default: throw new IndexOutOfRangeException();
+            }
         }
     }
 }

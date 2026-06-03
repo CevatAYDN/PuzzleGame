@@ -69,7 +69,7 @@ namespace PuzzleGame.Tests.Fakes
             UpdateVisualsFromStateCallCount++;
         }
 
-        public void SetVisualState(List<LiquidLayer> layers, float totalFill) { }
+        public void SetVisualState(IReadOnlyList<LiquidLayer> layers, float totalFill) { }
         public void SetVisualPourProgress(LayerSnapshot startLayers, float t, bool isSource, LiquidLayer pouredLayer) { }
         public void PlaySettleBounce() { PlaySettleBounceCallCount++; }
         public void AddWobbleImpulse(Vector3 direction, float strength) { }

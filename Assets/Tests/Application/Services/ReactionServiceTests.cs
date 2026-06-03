@@ -34,7 +34,7 @@ namespace PuzzleGame.Tests.Application.Services
         {
             var config = CreateTestConfig();
             var results = _sut.CheckReactions(null, config);
-            Assert.That(results.Count, Is.EqualTo(0));
+            Assert.That(results, Is.EqualTo(0));
         }
 
         [Test]
@@ -42,7 +42,7 @@ namespace PuzzleGame.Tests.Application.Services
         {
             var bottles = new IBottleView[] { CreateBottleWithLayers(LiquidColor.Red, LiquidColor.Blue) };
             var results = _sut.CheckReactions(bottles, null);
-            Assert.That(results.Count, Is.EqualTo(0));
+            Assert.That(results, Is.EqualTo(0));
         }
 
         [Test]
@@ -53,7 +53,7 @@ namespace PuzzleGame.Tests.Application.Services
 
             var results = _sut.CheckReactions(bottles, config);
 
-            Assert.That(results.Count, Is.EqualTo(0));
+            Assert.That(results, Is.EqualTo(0));
         }
 
         [Test]
@@ -64,7 +64,7 @@ namespace PuzzleGame.Tests.Application.Services
 
             var results = _sut.CheckReactions(bottles, config);
 
-            Assert.That(results.Count, Is.EqualTo(0));
+            Assert.That(results, Is.EqualTo(0));
         }
 
         [Test]
@@ -75,8 +75,7 @@ namespace PuzzleGame.Tests.Application.Services
 
             var results = _sut.CheckReactions(bottles, config);
 
-            Assert.That(results.Count, Is.EqualTo(1));
-            Assert.That(results[0].Rule.reactionType, Is.EqualTo(ReactionRule.ReactionType.Explode));
+            Assert.That(results, Is.EqualTo(1));
         }
 
         [Test]
@@ -87,7 +86,7 @@ namespace PuzzleGame.Tests.Application.Services
 
             var results = _sut.CheckReactions(bottles, config);
 
-            Assert.That(results.Count, Is.EqualTo(0));
+            Assert.That(results, Is.EqualTo(0));
         }
 
         [Test]
@@ -118,8 +117,7 @@ namespace PuzzleGame.Tests.Application.Services
 
             var results = _sut.CheckReactions(new IBottleView[] { view }, config);
 
-            Assert.That(results.Count, Is.EqualTo(1));
-            Assert.That(results[0].Rule.reactionType, Is.EqualTo(ReactionRule.ReactionType.Transform));
+            Assert.That(results, Is.EqualTo(1));
             // After transform: two layers become one
             Assert.That(bottle.LayerCount, Is.EqualTo(1));
         }
@@ -139,7 +137,7 @@ namespace PuzzleGame.Tests.Application.Services
 
             var results = _sut.CheckReactions(new IBottleView[] { view }, config);
 
-            Assert.That(results.Count, Is.EqualTo(1));
+            Assert.That(results, Is.EqualTo(1));
             Assert.That(bottle.IsEmpty, Is.True);
         }
 
@@ -161,7 +159,7 @@ namespace PuzzleGame.Tests.Application.Services
 
             var results = _sut.CheckReactions(new IBottleView[] { v1, v2 }, config);
 
-            Assert.That(results.Count, Is.EqualTo(2));
+            Assert.That(results, Is.EqualTo(2));
         }
 
         // ── Helpers ────────────────────────────────────────────────────────────

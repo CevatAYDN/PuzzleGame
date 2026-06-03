@@ -16,14 +16,6 @@ namespace PuzzleGame.Infrastructure.Implementations
         private const int MobileShaderMaximumLOD = 200;
         private const int LowEndShaderMaximumLOD = 100;
 
-        private readonly MaterialPropertyBlock _propertyBlock = new MaterialPropertyBlock();
-        private readonly Dictionary<int, Color> _colorCache = new Dictionary<int, Color>();
-
-        private static readonly int FillLevelId = Shader.PropertyToID("_FillLevel");
-        private static readonly int LiquidColorId = Shader.PropertyToID("_LiquidColor");
-        private static readonly int WaveSpeedId = Shader.PropertyToID("_WaveSpeed");
-        private static readonly int WaveAmplitudeId = Shader.PropertyToID("_WaveAmplitude");
-
         public void Initialize(bool applyMobileDefaults)
         {
             if (!applyMobileDefaults)
@@ -42,34 +34,6 @@ namespace PuzzleGame.Infrastructure.Implementations
             QualitySettings.shadowDistance = 0f;
 
             Debug.Log("[ShaderOptimizer] Mobile GPU defaults applied.");
-        }
-
-        public void SetLiquidFill(Renderer renderer, float fillLevel, Color? color = null)
-        {
-            if (renderer == null) return;
-
-            _propertyBlock.Clear();
-            _propertyBlock.SetFloat(FillLevelId, fillLevel);
-
-            if (color.HasValue)
-                _propertyBlock.SetColor(LiquidColorId, color.Value);
-
-            renderer.SetPropertyBlock(_propertyBlock);
-        }
-
-        public void SetLiquidFills(Renderer[] renderers, float fillLevel, Color color)
-        {
-            if (renderers == null) return;
-
-            _propertyBlock.Clear();
-            _propertyBlock.SetFloat(FillLevelId, fillLevel);
-            _propertyBlock.SetColor(LiquidColorId, color);
-
-            foreach (var r in renderers)
-            {
-                if (r != null)
-                    r.SetPropertyBlock(_propertyBlock);
-            }
         }
 
         public void ApplyLowQualityMode()
@@ -96,8 +60,6 @@ namespace PuzzleGame.Infrastructure.Implementations
     public interface IShaderOptimizer
     {
         void Initialize(bool applyMobileDefaults);
-        void SetLiquidFill(Renderer renderer, float fillLevel, Color? color = null);
-        void SetLiquidFills(Renderer[] renderers, float fillLevel, Color color);
         void ApplyLowQualityMode();
         int GetRecommendedQualityLevel();
     }

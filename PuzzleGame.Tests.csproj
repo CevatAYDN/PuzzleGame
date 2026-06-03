@@ -75,7 +75,6 @@
     <Compile Include="Assets\Tests\Fakes\FakeHistoryManager.cs" />
     <Compile Include="Assets\Tests\Application\Services\ScriptableObjectLevelRepositoryTests.cs" />
     <Compile Include="Assets\Tests\Domain\Services\LevelGeneratorTests.cs" />
-    <Compile Include="Assets\Tests\Application\Services\PlayerPrefsLevelProgressServiceTests.cs" />
     <Compile Include="Assets\Tests\Events\EventAggregatorTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\LevelSetupServiceTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeAnimationService.cs" />
