@@ -65,7 +65,9 @@ namespace PuzzleGame.Installers
             builder.Register<IEventAggregator, EventAggregator>(Lifetime.Singleton);
             builder.Register<IShaderOptimizer, ShaderOptimizer>(Lifetime.Singleton);
             builder.RegisterComponentOnNewGameObject<UpdateManager>(Lifetime.Singleton)
-                .UnderTransform((Transform)null); // DontDestroyOnLoad — root GameObject
+                .UnderTransform((Transform)null)
+                .AsImplementedInterfaces()
+                .AsSelf(); // DontDestroyOnLoad — root GameObject
 
             // Tween service — PrimeTween is the chosen impl. Coroutine fallback removed (orphan v2).
             builder.Register<ITweenService, PrimeTweenService>(Lifetime.Singleton);
