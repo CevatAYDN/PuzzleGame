@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace PuzzleGame.Configuration
+namespace PuzzleGame.Application.Configuration
 {
     [CreateAssetMenu(fileName = "LevelConfig", menuName = "PuzzleGame/LevelConfig")]
     public class LevelConfig : ScriptableObject

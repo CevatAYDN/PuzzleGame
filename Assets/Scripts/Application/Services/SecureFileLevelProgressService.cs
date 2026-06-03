@@ -1,7 +1,7 @@
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Application.Interfaces;
-using PuzzleGame.Events;
-using PuzzleGame.Logging;
+using PuzzleGame.Application.Events;
+using PuzzleGame.Application.Logging;
 using UnityEngine;
 
 namespace PuzzleGame.Application.Services

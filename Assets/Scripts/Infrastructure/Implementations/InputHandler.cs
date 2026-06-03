@@ -1,5 +1,4 @@
 using PuzzleGame.Infrastructure.Interfaces;
-using PuzzleGame.Logging;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -21,7 +20,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             _camera = camera;
 
             if (_camera == null)
-                BottleLogger.LogError("InputHandler created with a null camera — Raycast will always fail.");
+                Debug.LogError("InputHandler created with a null camera — Raycast will always fail.");
         }
 
         // ── IInputHandler ────────────────────────────────────────────────────

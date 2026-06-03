@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using PuzzleGame.Application.Interfaces;
-using PuzzleGame.Configuration;
+using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Infrastructure.Pool;
-using PuzzleGame.Logging;
+using PuzzleGame.Application.Logging;
 using UnityEngine;
 using UnityEngine.Audio;
 

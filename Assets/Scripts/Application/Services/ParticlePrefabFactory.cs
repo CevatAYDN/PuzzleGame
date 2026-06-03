@@ -1,4 +1,4 @@
-using PuzzleGame.Logging;
+using PuzzleGame.Application.Logging;
 using UnityEngine;
 
 namespace PuzzleGame.Application.Services

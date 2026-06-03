@@ -68,7 +68,8 @@ namespace PuzzleGame.Domain.Tests.Models
             bottle.AddLayer(layer);
 
             Assert.That(bottle.Layers.Count, Is.EqualTo(1));
-            Assert.That(PuzzleGame.Infrastructure.ColorAdapter.ToUnity(bottle.TopLayer!.Color), Is.EqualTo(Color.red).Within(0.001f));
+            var topLayer = bottle.Layers[bottle.Layers.Count - 1];
+            Assert.That(PuzzleGame.Infrastructure.ColorAdapter.ToUnity(topLayer.Color), Is.EqualTo(Color.red).Within(0.001f));
         }
 
         [Test]

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace PuzzleGame.Configuration
+namespace PuzzleGame.Application.Configuration
 {
     [CreateAssetMenu(fileName = "AnimationConfig", menuName = "PuzzleGame/AnimationConfig")]
     public class AnimationConfig : ScriptableObject

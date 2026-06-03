@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace PuzzleGame.Configuration
+namespace PuzzleGame.Application.Configuration
 {
     [CreateAssetMenu(fileName = "WobbleConfig", menuName = "PuzzleGame/WobbleConfig")]
     public class WobbleConfig : ScriptableObject

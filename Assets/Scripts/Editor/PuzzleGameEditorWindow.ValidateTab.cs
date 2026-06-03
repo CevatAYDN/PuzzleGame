@@ -102,7 +102,7 @@ namespace PuzzleGame.Editor
             });
 
             // LevelConfig palette
-            var levelCfg = AssetDatabase.LoadAssetAtPath<Configuration.LevelConfig>(
+            var levelCfg = AssetDatabase.LoadAssetAtPath<Application.Configuration.LevelConfig>(
                 $"{DataAssetCreator.DataPath}/LevelConfig.asset");
             if (levelCfg != null)
             {

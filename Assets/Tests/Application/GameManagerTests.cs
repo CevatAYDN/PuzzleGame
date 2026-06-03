@@ -4,8 +4,8 @@ using PuzzleGame.Application.Services;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Configuration.FeatureSystem;
 using PuzzleGame.Domain.Models;
-using PuzzleGame.Events;
-using PuzzleGame.Logging;
+using PuzzleGame.Application.Events;
+using PuzzleGame.Application.Logging;
 using PuzzleGame.Tests.Fakes;
 
 namespace PuzzleGame.Tests.Application

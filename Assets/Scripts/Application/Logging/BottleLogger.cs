@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace PuzzleGame.Logging
+namespace PuzzleGame.Application.Logging
 {
     /// <summary>
     /// Thin wrapper around Unity's Debug logger.

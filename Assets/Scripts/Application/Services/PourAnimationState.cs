@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 using PuzzleGame.Application.Interfaces;
-using PuzzleGame.Configuration;
+using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Infrastructure.Pool;

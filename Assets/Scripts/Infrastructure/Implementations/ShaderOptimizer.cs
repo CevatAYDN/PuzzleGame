@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using PuzzleGame.Domain;
-using PuzzleGame.Logging;
 
 namespace PuzzleGame.Infrastructure.Implementations
 {
@@ -29,7 +28,7 @@ namespace PuzzleGame.Infrastructure.Implementations
         {
             if (!applyMobileDefaults)
             {
-                BottleLogger.LogInfo("[ShaderOptimizer] Mobile defaults skipped — user Quality Settings preserved.");
+                Debug.Log("[ShaderOptimizer] Mobile defaults skipped — user Quality Settings preserved.");
                 return;
             }
 
@@ -42,7 +41,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             QualitySettings.shadows = ShadowQuality.Disable;
             QualitySettings.shadowDistance = 0f;
 
-            BottleLogger.LogInfo("[ShaderOptimizer] Mobile GPU defaults applied.");
+            Debug.Log("[ShaderOptimizer] Mobile GPU defaults applied.");
         }
 
         public void SetLiquidFill(Renderer renderer, float fillLevel, Color? color = null)
@@ -80,7 +79,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             QualitySettings.antiAliasing = 0;
             QualitySettings.vSyncCount = 0;
 
-            BottleLogger.LogInfo("[ShaderOptimizer] Low-quality mode applied (thermal throttling).");
+            Debug.Log("[ShaderOptimizer] Low-quality mode applied (thermal throttling).");
         }
 
         public int GetRecommendedQualityLevel()

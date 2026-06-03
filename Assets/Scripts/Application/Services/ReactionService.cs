@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
 using PuzzleGame.Domain.Models;
+using PuzzleGame.Infrastructure;
 using PuzzleGame.Application.Configuration.FeatureSystem;
-using PuzzleGame.Events;
-using PuzzleGame.Logging;
+using PuzzleGame.Application.Events;
+using PuzzleGame.Application.Logging;
 using PuzzleGame.Application.Interfaces;
 
 namespace PuzzleGame.Application.Services
@@ -132,7 +133,7 @@ namespace PuzzleGame.Application.Services
             var state = bottle.State;
 
             var resultColor = result.Rule.resultColor;
-            var domainColor = (DomainColor)resultColor.ToDefaultColor();
+            var domainColor = (DomainColor)resultColor.ToDefaultDomainColor();
 
             int layerIndexA = result.AffectedLayers[0];
             int layerIndexB = result.AffectedLayers[1];
@@ -152,8 +153,8 @@ namespace PuzzleGame.Application.Services
             EventAggregator.Publish(new ReactionTriggeredEvent(
                 result.BottleIndex,
                 ReactionRule.ReactionType.Transform,
-                resultColor.ToDefaultColor(),
-                resultColor.ToDefaultColor()));
+                ColorAdapter.ToUnity(resultColor.ToDefaultDomainColor()),
+                ColorAdapter.ToUnity(resultColor.ToDefaultDomainColor())));
 
             BottleLogger.LogInfo($"[ReactionService] TRANSFORM at {bottle.GameObject.name}: colors combined into {resultColor}");
         }
@@ -163,8 +164,8 @@ namespace PuzzleGame.Application.Services
             EventAggregator.Publish(new ReactionTriggeredEvent(
                 result.BottleIndex,
                 ReactionRule.ReactionType.Bubble,
-                result.Rule.colorA.ToDefaultColor(),
-                result.Rule.colorB.ToDefaultColor()));
+                ColorAdapter.ToUnity(result.Rule.colorA.ToDefaultDomainColor()),
+                ColorAdapter.ToUnity(result.Rule.colorB.ToDefaultDomainColor())));
 
             BottleLogger.LogDebug($"[ReactionService] BUBBLE at {bottle.GameObject.name}.");
         }

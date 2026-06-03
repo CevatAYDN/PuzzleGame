@@ -1,7 +1,7 @@
 using UnityEngine;
 using PuzzleGame.Domain;
 
-namespace PuzzleGame.Configuration
+namespace PuzzleGame.Application.Configuration
 {
     [CreateAssetMenu(fileName = "BottleVisualConfig", menuName = "PuzzleGame/BottleVisualConfig")]
     public class BottleVisualConfig : ScriptableObject

@@ -52,14 +52,12 @@
     <Compile Include="Assets\Scripts\Infrastructure\Providers\IAssetProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\ColorAdapter.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\ShaderOptimizer.cs" />
-    <Compile Include="Assets\Scripts\Infrastructure\Implementations\PrimeTweenService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\UpdateManager.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Pool\GameObjectPool.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Pool\IGameObjectPool.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Interfaces\IInputHandler.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Providers\AddressablesAssetProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Pool\PoolManager.cs" />
-    <Compile Include="Assets\Scripts\Infrastructure\Interfaces\IUpdateManager.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\RendererService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Interfaces\IRendererService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\MobileInputHandler.cs" />
@@ -1201,6 +1199,10 @@
       <HintPath>Library\ScriptAssemblies\PrimeTween.Runtime.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Unity.InputSystem">
+      <HintPath>Library\ScriptAssemblies\Unity.InputSystem.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEditor.UI">
       <HintPath>Library\ScriptAssemblies\UnityEditor.UI.dll</HintPath>
       <Private>False</Private>
@@ -1212,7 +1214,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="PuzzleGame.Domain.csproj" />
-    <ProjectReference Include="PuzzleGame.Application.csproj" />
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <ItemGroup>

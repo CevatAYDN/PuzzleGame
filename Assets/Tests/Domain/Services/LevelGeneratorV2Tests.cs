@@ -2,6 +2,7 @@ using NUnit.Framework;
 using UnityEngine;
 using PuzzleGame.Domain.Services;
 using PuzzleGame.Domain.Models;
+using PuzzleGame.Domain;
 using PuzzleGame.Domain.Interfaces;
 
 namespace PuzzleGame.Tests.Domain.Services

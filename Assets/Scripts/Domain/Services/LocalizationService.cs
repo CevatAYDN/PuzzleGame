@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Domain.Interfaces;
-using PuzzleGame.Logging;
 
 namespace PuzzleGame.Domain.Services
 {
@@ -41,7 +40,6 @@ namespace PuzzleGame.Domain.Services
                 return fallback;
             }
 
-            BottleLogger.LogWarning($"Translation not found for key: {key}");
             return key; // Return key as fallback
         }
 
@@ -50,7 +48,6 @@ namespace PuzzleGame.Domain.Services
             if (_currentLanguage != language)
             {
                 _currentLanguage = language;
-                BottleLogger.LogInfo($"Language changed to: {language}");
             }
         }
 

@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
 using PuzzleGame.Application.Interfaces;
-using PuzzleGame.Configuration;
+using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Infrastructure;
 using PuzzleGame.Infrastructure.Pool;
 using UnityEngine;
-using PuzzleGame.Logging;
+using PuzzleGame.Application.Logging;
 
 namespace PuzzleGame.Application.Services
 {

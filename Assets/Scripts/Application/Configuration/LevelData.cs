@@ -6,15 +6,6 @@ using PuzzleGame.Application.Configuration.FeatureSystem;
 
 namespace PuzzleGame.Application.Configuration
 {
-    public enum Difficulty
-    {
-        Trivial,
-        Easy,
-        Medium,
-        Hard,
-        Expert
-    }
-
     /// <summary>
     /// Pre-built bottle state for non-auto-generated levels.
     /// </summary>

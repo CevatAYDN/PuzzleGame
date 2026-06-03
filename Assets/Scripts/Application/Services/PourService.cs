@@ -6,8 +6,8 @@ using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Configuration.FeatureSystem;
 using PuzzleGame.Domain.Interfaces;
-using PuzzleGame.Events;
-using PuzzleGame.Logging;
+using PuzzleGame.Application.Events;
+using PuzzleGame.Application.Logging;
 using PuzzleGame.Application.Interfaces;
 
 namespace PuzzleGame.Application.Services

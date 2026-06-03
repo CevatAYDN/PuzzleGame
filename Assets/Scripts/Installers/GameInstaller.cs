@@ -11,8 +11,8 @@ using PuzzleGame.Application.Services;
 using PuzzleGame.Infrastructure.Interfaces;
 using PuzzleGame.Infrastructure.Implementations;
 using PuzzleGame.Infrastructure.Pool;
-using PuzzleGame.Configuration;
-using PuzzleGame.Logging;
+using PuzzleGame.Application.Configuration;
+using PuzzleGame.Application.Logging;
 
 namespace PuzzleGame.Installers
 {

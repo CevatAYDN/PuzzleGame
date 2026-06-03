@@ -1,6 +1,6 @@
 using PuzzleGame.Domain.Models;
 
-namespace PuzzleGame.Events
+namespace PuzzleGame.Application.Events
 {
     public readonly struct GameStateChangedEvent
     {

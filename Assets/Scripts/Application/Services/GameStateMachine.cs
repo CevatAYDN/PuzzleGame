@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
-using PuzzleGame.Events;
+using PuzzleGame.Application.Events;
 
 namespace PuzzleGame.Application.Services
 {

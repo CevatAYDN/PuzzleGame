@@ -6,7 +6,9 @@
         "PuzzleGame.Application",
         "PuzzleGame.Infrastructure",
         "VContainer",
-        "PrimeTween.Runtime"
+        "PrimeTween.Runtime",
+        "Unity.TextMeshPro",
+        "Unity.RenderPipelines.Universal.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

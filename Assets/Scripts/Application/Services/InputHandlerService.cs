@@ -4,10 +4,10 @@ using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Infrastructure.Interfaces;
-using PuzzleGame.Events;
-using PuzzleGame.Logging;
+using PuzzleGame.Application.Events;
+using PuzzleGame.Application.Logging;
 using PuzzleGame.Application.Interfaces;
-using PuzzleGame.Configuration;
+using PuzzleGame.Application.Configuration;
 
 
 namespace PuzzleGame.Application.Services

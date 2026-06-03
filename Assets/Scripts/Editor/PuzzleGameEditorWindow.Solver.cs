@@ -16,7 +16,7 @@ namespace PuzzleGame.Editor
     {
         // ── Solver & Scene Helpers ──────────────────────────────────────────
 
-        private static List<List<LiquidLayer>> GetLevelAssignments(LevelData level, Configuration.LevelConfig levelConfig)
+        private static List<List<LiquidLayer>> GetLevelAssignments(LevelData level, Application.Configuration.LevelConfig levelConfig)
         {
             if (level == null) return new List<List<LiquidLayer>>();
             if (level.autoGenerate)
@@ -74,7 +74,7 @@ namespace PuzzleGame.Editor
             var levelData = AssetDatabase.LoadAssetAtPath<LevelData>(lvl.path);
             if (levelData == null) return;
 
-            var levelConfig = AssetDatabase.LoadAssetAtPath<Configuration.LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
+            var levelConfig = AssetDatabase.LoadAssetAtPath<Application.Configuration.LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
             var assignments = GetLevelAssignments(levelData, levelConfig);
             int maxLayers = levelData.autoGenerate ? levelData.maxLayersPerBottle : 4;
 
@@ -192,7 +192,7 @@ namespace PuzzleGame.Editor
 
         private void SolveAndVerifyAll()
         {
-            var levelConfig = AssetDatabase.LoadAssetAtPath<Configuration.LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
+            var levelConfig = AssetDatabase.LoadAssetAtPath<Application.Configuration.LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
             int total = _existingLevels.Count;
             int unsolvableCount = 0;
             int solvableCount = 0;
@@ -234,7 +234,7 @@ namespace PuzzleGame.Editor
 
         private void AutoReseedUnsolvableLevels()
         {
-            var levelConfig = AssetDatabase.LoadAssetAtPath<Configuration.LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
+            var levelConfig = AssetDatabase.LoadAssetAtPath<Application.Configuration.LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
             int reseededCount = 0;
 
             try
@@ -312,7 +312,7 @@ namespace PuzzleGame.Editor
 
         private void AutoOptimizeAllPars()
         {
-            var levelConfig = AssetDatabase.LoadAssetAtPath<Configuration.LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
+            var levelConfig = AssetDatabase.LoadAssetAtPath<Application.Configuration.LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
             int optimizedCount = 0;
 
             try
@@ -390,7 +390,7 @@ namespace PuzzleGame.Editor
             SceneBuilder.RemoveBottles();
 
             // 2. Load level Config
-            var levelConfig = AssetDatabase.LoadAssetAtPath<Configuration.LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
+            var levelConfig = AssetDatabase.LoadAssetAtPath<Application.Configuration.LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
             var assignments = GetLevelAssignments(level, levelConfig);
 
             // 3. Compute positions and instantiate bottles
@@ -472,7 +472,7 @@ namespace PuzzleGame.Editor
 
             level.emptyBottleCount = emptyCount;
 
-            var levelConfig = AssetDatabase.LoadAssetAtPath<Configuration.LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
+            var levelConfig = AssetDatabase.LoadAssetAtPath<Application.Configuration.LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
             var assignments = GetLevelAssignments(level, levelConfig);
             int maxLayers = level.bottles.Count > 0 && level.bottles[0].layers != null && level.bottles[0].layers.Count > 0
                 ? level.bottles.Select(b => b.layers?.Count ?? 0).Max()

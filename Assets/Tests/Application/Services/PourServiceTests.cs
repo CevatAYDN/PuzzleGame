@@ -1,9 +1,10 @@
 using NUnit.Framework;
 using PuzzleGame.Application.Services;
 using PuzzleGame.Domain.Models;
-using PuzzleGame.Domain.Models.FeatureSystem;
-using PuzzleGame.Events;
-using PuzzleGame.Logging;
+using PuzzleGame.Application.Configuration;
+using PuzzleGame.Application.Configuration.FeatureSystem;
+using PuzzleGame.Application.Events;
+using PuzzleGame.Application.Logging;
 using PuzzleGame.Tests.Fakes;
 
 namespace PuzzleGame.Tests.Application.Services

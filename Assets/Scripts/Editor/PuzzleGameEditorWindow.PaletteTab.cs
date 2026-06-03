@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using PuzzleGame.Domain.Models;
+using PuzzleGame.Domain;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Configuration.FeatureSystem;
 using PuzzleGame.Domain.Services;
@@ -34,7 +35,7 @@ namespace PuzzleGame.Editor
             {
                 EditorGUILayout.LabelField("Level Configuration", EditorStyles.miniBoldLabel);
 
-                var levelConfig = AssetDatabase.LoadAssetAtPath<Configuration.LevelConfig>(
+                var levelConfig = AssetDatabase.LoadAssetAtPath<Application.Configuration.LevelConfig>(
                     $"{DataAssetCreator.DataPath}/LevelConfig.asset");
 
                 if (levelConfig == null)

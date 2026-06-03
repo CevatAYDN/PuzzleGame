@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Domain.Interfaces;
 
 namespace PuzzleGame.Tests.Fakes

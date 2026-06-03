@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using PuzzleGame.Logging;
+using PuzzleGame.Application.Logging;
 
-namespace PuzzleGame.Events
+namespace PuzzleGame.Application.Events
 {
     /// <summary>
     /// Lightweight, type-safe publish/subscribe bus.

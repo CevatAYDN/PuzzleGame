@@ -1,5 +1,6 @@
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Services;
+using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
 

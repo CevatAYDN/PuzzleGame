@@ -1,10 +1,10 @@
 using NUnit.Framework;
 using UnityEngine;
 using PuzzleGame.Application.Services;
-using PuzzleGame.Configuration;
+using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Infrastructure.Pool;
-using PuzzleGame.Logging;
+using PuzzleGame.Application.Logging;
 using PuzzleGame.Tests.Fakes;
 
 namespace PuzzleGame.Tests.Application.Services

@@ -4,7 +4,7 @@ using UnityEngine;
 using PuzzleGame.Domain;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Interfaces;
-using PuzzleGame.Logging;
+using PuzzleGame.Application.Logging;
 
 namespace PuzzleGame.Application.Services
 {

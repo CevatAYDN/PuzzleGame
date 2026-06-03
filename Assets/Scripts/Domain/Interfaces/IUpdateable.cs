@@ -1,4 +1,4 @@
-namespace PuzzleGame.Application.Interfaces
+namespace PuzzleGame.Domain.Interfaces
 {
     /// <summary>
     /// Contract for any class that needs to receive centralized frame-rate updates.

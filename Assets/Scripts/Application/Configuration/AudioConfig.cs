@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Audio;
 
-namespace PuzzleGame.Configuration
+namespace PuzzleGame.Application.Configuration
 {
     /// <summary>
     /// All audio-related data lives here. Inspector-driven, no code changes for tuning.

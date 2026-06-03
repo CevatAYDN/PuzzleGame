@@ -6,7 +6,7 @@ using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
-using PuzzleGame.Events;
+using PuzzleGame.Application.Events;
 
 namespace PuzzleGame.Application.UI
 {

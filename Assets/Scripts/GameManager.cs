@@ -14,9 +14,9 @@ using PuzzleGame.Infrastructure.Interfaces;
 using PuzzleGame.Infrastructure.Implementations;
 using PuzzleGame.Infrastructure;
 using PuzzleGame.Infrastructure.Pool;
-using PuzzleGame.Events;
-using PuzzleGame.Logging;
-using PuzzleGame.Configuration;
+using PuzzleGame.Application.Events;
+using PuzzleGame.Application.Logging;
+using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.UI;
 using VContainer;
 

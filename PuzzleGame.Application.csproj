@@ -50,15 +50,20 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\Application\Services\GameHistoryManager.cs" />
+    <Compile Include="Assets\Scripts\Application\Events\FeatureEvents.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IBottleView.cs" />
     <Compile Include="Assets\Scripts\Application\Services\GameStateMachine.cs" />
     <Compile Include="Assets\Scripts\Application\Services\TextureGenerator.cs" />
     <Compile Include="Assets\Scripts\Application\Services\ScriptableObjectLevelRepository.cs" />
     <Compile Include="Assets\Scripts\Application\Services\ParticlePrefabFactory.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\AudioClipId.cs" />
+    <Compile Include="Assets\Scripts\Application\Services\PrimeTweenService.cs" />
+    <Compile Include="Assets\Scripts\Application\Configuration\LevelConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Services\InputHandlerService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\AudioService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\BottleSelectionService.cs" />
+    <Compile Include="Assets\Scripts\Application\Configuration\AnimationConfig.cs" />
+    <Compile Include="Assets\Scripts\Application\Services\PlayerPrefsLevelProgressService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\LevelValidationService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\ILevelValidationService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\GameSaveManager.cs" />
@@ -66,8 +71,8 @@
     <Compile Include="Assets\Scripts\Application\UI\LevelSelectUI.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IBottleSelectionService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IGameHistoryManager.cs" />
+    <Compile Include="Assets\Scripts\Application\Events\EventAggregator.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\LevelFeature.cs" />
-    <Compile Include="Assets\Scripts\Application\Interfaces\IUpdateable.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IInputHandlerService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\ITweenService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IAnimationService.cs" />
@@ -75,11 +80,18 @@
     <Compile Include="Assets\Scripts\Application\Interfaces\ILevelSetupService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\AnimationService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IAudioService.cs" />
+    <Compile Include="Assets\Scripts\Application\Configuration\BottleVisualConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Services\StreamRenderer.cs" />
+    <Compile Include="Assets\Scripts\Application\Events\LevelEvents.cs" />
     <Compile Include="Assets\Scripts\Application\Services\ParticleMaterialFactory.cs" />
+    <Compile Include="Assets\Scripts\Application\Configuration\AudioConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Services\PourService.cs" />
+    <Compile Include="Assets\Scripts\Application\Events\GameEvents.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\ILevelRepository.cs" />
     <Compile Include="Assets\Scripts\Application\Services\LevelSetupService.cs" />
+    <Compile Include="Assets\Scripts\Application\Configuration\GameConfig.cs" />
+    <Compile Include="Assets\Scripts\Application\Configuration\WobbleConfig.cs" />
+    <Compile Include="Assets\Scripts\Application\Logging\BottleLogger.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\LevelData.cs" />
     <Compile Include="Assets\Scripts\Application\Services\ReactionService.cs" />
   </ItemGroup>
@@ -1217,6 +1229,10 @@
     </Reference>
     <Reference Include="PrimeTween.Runtime">
       <HintPath>Library\ScriptAssemblies\PrimeTween.Runtime.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>Library\ScriptAssemblies\Unity.TextMeshPro.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEditor.UI">

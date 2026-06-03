@@ -1,5 +1,7 @@
 using UnityEngine;
 using PuzzleGame.Application.Interfaces;
+using PuzzleGame.Application.Configuration;
+using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Infrastructure.Implementations;
 
 namespace PuzzleGame
@@ -8,7 +10,7 @@ namespace PuzzleGame
     public class Wobble : MonoBehaviour, IUpdateable
     {
         [Header("Configuration")]
-        public Configuration.WobbleConfig config;
+        public Application.Configuration.WobbleConfig config;
 
         private Renderer _renderer;
         private MaterialPropertyBlock _propBlock;

@@ -1,7 +1,7 @@
 using NUnit.Framework;
-using PuzzleGame.Events;
+using PuzzleGame.Application.Events;
 using PuzzleGame.Domain.Models;
-using PuzzleGame.Logging;
+using PuzzleGame.Application.Logging;
 using UnityEngine;
 
 namespace PuzzleGame.Events.Tests

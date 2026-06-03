@@ -3,9 +3,9 @@
     "rootNamespace": "PuzzleGame.Infrastructure",
     "references": [
         "PuzzleGame.Domain",
-        "PuzzleGame.Application",
         "VContainer",
-        "PrimeTween.Runtime"
+        "PrimeTween.Runtime",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

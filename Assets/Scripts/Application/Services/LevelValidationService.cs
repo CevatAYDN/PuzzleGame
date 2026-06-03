@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using PuzzleGame.Application.Configuration;
-using PuzzleGame.Logging;
+using PuzzleGame.Application.Logging;
 
 using PuzzleGame.Application.Interfaces;
 

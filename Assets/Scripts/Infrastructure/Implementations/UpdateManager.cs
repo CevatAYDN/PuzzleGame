@@ -1,7 +1,5 @@
 using System.Collections.Generic;
-using PuzzleGame.Application.Interfaces;
-using PuzzleGame.Infrastructure.Interfaces;
-using PuzzleGame.Logging;
+using PuzzleGame.Domain.Interfaces;
 using UnityEngine;
 
 namespace PuzzleGame.Infrastructure.Implementations
@@ -107,7 +105,7 @@ namespace PuzzleGame.Infrastructure.Implementations
                     }
                     catch (System.Exception ex)
                     {
-                        BottleLogger.LogError($"UpdateManager: Error updating object {updateable.GetType().Name}: {ex}");
+                        Debug.LogError($"UpdateManager: Error updating object {updateable.GetType().Name}: {ex}");
                     }
                 }
                 else

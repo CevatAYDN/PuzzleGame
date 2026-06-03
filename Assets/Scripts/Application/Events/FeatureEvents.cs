@@ -1,7 +1,7 @@
 using UnityEngine;
 using PuzzleGame.Application.Configuration.FeatureSystem;
 
-namespace PuzzleGame.Events
+namespace PuzzleGame.Application.Events
 {
     // ═══════════════════════════════════════════════════════════════════════
     // MULTI-LAYER POUR EVENTS  (published by PourService)

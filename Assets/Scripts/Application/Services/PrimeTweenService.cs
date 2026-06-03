@@ -5,7 +5,7 @@ using PrimeTween;
 using UnityEngine;
 using PuzzleGame.Application.Interfaces;
 
-namespace PuzzleGame.Infrastructure.Implementations
+namespace PuzzleGame.Application.Services
 {
     /// <summary>
     /// PrimeTween-backed ITweenService implementation.

@@ -1,6 +1,4 @@
-using PuzzleGame.Application.Interfaces;
-
-namespace PuzzleGame.Infrastructure.Interfaces
+namespace PuzzleGame.Domain.Interfaces
 {
     /// <summary>
     /// Central manager interface to register and unregister updateable classes.

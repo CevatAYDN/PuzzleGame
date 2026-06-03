@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using PuzzleGame.Domain;
 using PuzzleGame.Domain.Models;
 
 namespace PuzzleGame.Domain.Interfaces

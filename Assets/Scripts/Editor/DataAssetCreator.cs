@@ -1,6 +1,6 @@
 using UnityEditor;
 using UnityEngine;
-using PuzzleGame.Configuration;
+using PuzzleGame.Application.Configuration;
 
 namespace PuzzleGame.Editor
 {

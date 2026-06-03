@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using PuzzleGame.Application.Interfaces;
+using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain;
 using PuzzleGame.Domain.Interfaces;
-using PuzzleGame.Logging;
+using PuzzleGame.Application.Logging;
+using PuzzleGame.Infrastructure.Interfaces;
 using UnityEngine;
 
 namespace PuzzleGame

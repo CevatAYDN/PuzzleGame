@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Services;
+using PuzzleGame.Application.Configuration.FeatureSystem;
 using PuzzleGame.Domain.Models;
-using PuzzleGame.Domain.Models.FeatureSystem;
 
 namespace PuzzleGame.Tests.Fakes
 {

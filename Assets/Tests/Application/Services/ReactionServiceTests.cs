@@ -2,9 +2,10 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using PuzzleGame.Application.Services;
 using PuzzleGame.Domain.Models;
-using PuzzleGame.Domain.Models.FeatureSystem;
-using PuzzleGame.Events;
-using PuzzleGame.Logging;
+using PuzzleGame.Application.Configuration;
+using PuzzleGame.Application.Configuration.FeatureSystem;
+using PuzzleGame.Application.Events;
+using PuzzleGame.Application.Logging;
 using PuzzleGame.Tests.Fakes;
 using PuzzleGame.Application.Interfaces;
 
@@ -170,8 +171,8 @@ namespace PuzzleGame.Tests.Application.Services
             var state = new BottleState(4);
             foreach (var c in colors)
             {
-                var unityColor = c.ToDefaultColor();
-                var domainColor = new DomainColor(unityColor.r, unityColor.g, unityColor.b, unityColor.a);
+                var domainColor = c.ToDefaultDomainColor();
+                var unityColor = PuzzleGame.Infrastructure.ColorAdapter.ToUnity(domainColor);
                 state.AddLayer(new LiquidLayer(domainColor, 1f, c));
             }
             var go = new UnityEngine.GameObject("TestBottle");

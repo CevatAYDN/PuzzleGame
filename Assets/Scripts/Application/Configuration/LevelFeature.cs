@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using PuzzleGame.Domain;
+using PuzzleGame.Domain.Models;
 
 namespace PuzzleGame.Application.Configuration.FeatureSystem
 {

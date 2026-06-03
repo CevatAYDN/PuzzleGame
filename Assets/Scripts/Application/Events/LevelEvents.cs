@@ -1,4 +1,4 @@
-namespace PuzzleGame.Events
+namespace PuzzleGame.Application.Events
 {
     /// <summary>Published when player selects a level from the level select UI.</summary>
     public readonly struct LevelSelectedEvent

@@ -1,7 +1,9 @@
 using NUnit.Framework;
 using PuzzleGame.Application.Services;
+using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Models;
-using PuzzleGame.Logging;
+using PuzzleGame.Domain;
+using PuzzleGame.Application.Logging;
 
 namespace PuzzleGame.Tests.Application.Services
 {

@@ -49,21 +49,10 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.4.8f1\Editor\Data\Tools\BuildPipeline\Unity.SourceGenerators\Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Scripts\Events\FeatureEvents.cs" />
-    <Compile Include="Assets\Scripts\Events\EventAggregator.cs" />
-    <Compile Include="Assets\Scripts\Events\LevelEvents.cs" />
-    <Compile Include="Assets\Scripts\Events\GameEvents.cs" />
-    <Compile Include="Assets\Scripts\Configuration\AudioConfig.cs" />
-    <Compile Include="Assets\Scripts\Configuration\AnimationConfig.cs" />
     <Compile Include="Assets\Scripts\BottleVisualRenderer.cs" />
-    <Compile Include="Assets\Scripts\Logging\BottleLogger.cs" />
-    <Compile Include="Assets\Scripts\Configuration\LevelConfig.cs" />
     <Compile Include="Assets\Scripts\Wobble.cs" />
-    <Compile Include="Assets\Scripts\Configuration\BottleVisualConfig.cs" />
     <Compile Include="Assets\Scripts\BottleController.cs" />
-    <Compile Include="Assets\Scripts\Configuration\WobbleConfig.cs" />
     <Compile Include="Assets\Scripts\BottlePoolInitializer.cs" />
-    <Compile Include="Assets\Scripts\Configuration\GameConfig.cs" />
     <Compile Include="Assets\Scripts\BottleCorkController.cs" />
     <Compile Include="Assets\Scripts\GameManager.cs" />
     <Compile Include="Assets\Scripts\Installers\GameInstaller.cs" />
@@ -1204,6 +1193,22 @@
     </Reference>
     <Reference Include="PrimeTween.Runtime">
       <HintPath>Library\ScriptAssemblies\PrimeTween.Runtime.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>Library\ScriptAssemblies\Unity.TextMeshPro.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.RenderPipelines.Universal.Runtime">
+      <HintPath>Library\ScriptAssemblies\Unity.RenderPipelines.Universal.Runtime.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>Library\ScriptAssemblies\Unity.TextMeshPro.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.RenderPipelines.Universal.Runtime">
+      <HintPath>Library\ScriptAssemblies\Unity.RenderPipelines.Universal.Runtime.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEditor.UI">

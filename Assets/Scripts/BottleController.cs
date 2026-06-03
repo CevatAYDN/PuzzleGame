@@ -5,7 +5,7 @@ using PuzzleGame.Domain;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Infrastructure.Interfaces;
-using PuzzleGame.Logging;
+using PuzzleGame.Application.Logging;
 using UnityEngine;
 
 namespace PuzzleGame
@@ -19,7 +19,7 @@ namespace PuzzleGame
         public Material liquidMaterial;
 
         [Header("Configuration")]
-        public Configuration.BottleVisualConfig visualConfig;
+        public Application.Configuration.BottleVisualConfig visualConfig;
 
         public GameObject corkObject;
 
