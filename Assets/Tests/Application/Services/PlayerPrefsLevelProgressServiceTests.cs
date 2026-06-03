@@ -1,6 +1,5 @@
 using NUnit.Framework;
 using PuzzleGame.Application.Services;
-using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Events;
 using UnityEngine;
 

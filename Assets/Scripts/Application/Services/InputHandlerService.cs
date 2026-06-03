@@ -7,7 +7,6 @@ using PuzzleGame.Infrastructure.Interfaces;
 using PuzzleGame.Application.Events;
 using PuzzleGame.Application.Logging;
 using PuzzleGame.Application.Interfaces;
-using PuzzleGame.Application.Configuration;
 
 
 namespace PuzzleGame.Application.Services

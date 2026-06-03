@@ -7,7 +7,6 @@ using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Services;
 using PuzzleGame.Infrastructure;
-using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Logging;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Application.Interfaces;
