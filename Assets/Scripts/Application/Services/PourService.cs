@@ -49,6 +49,11 @@ namespace PuzzleGame.Application.Services
 
             bool enableMultiLayer = levelData.enableMultiLayerPour;
 
+            EventAggregator.Publish(new PourStartedEvent(
+                GetBottleIndex(source),
+                GetBottleIndex(target),
+                enableMultiLayer));
+
             return enableMultiLayer
                 ? TryMultiLayerPour(source, target, levelData)
                 : TrySingleLayerPour(source, target);
@@ -105,7 +110,13 @@ namespace PuzzleGame.Application.Services
         private bool TrySingleLayerPour(IBottleView source, IBottleView target)
         {
             if (!_validator.CanPour(source.State, target.State))
+            {
+                EventAggregator.Publish(new PourRejectedEvent(
+                    GetBottleIndex(source),
+                    GetBottleIndex(target),
+                    "validator_rejected"));
                 return false;
+            }
 
             LiquidLayer layer = source.State.PopTopLayer();
 
@@ -139,6 +150,10 @@ namespace PuzzleGame.Application.Services
             if (pourCount == 0)
             {
                 BottleLogger.LogDebug("[PourService] Multi-layer pour: no valid pour found");
+                EventAggregator.Publish(new PourRejectedEvent(
+                    GetBottleIndex(source),
+                    GetBottleIndex(target),
+                    "no_matching_layers"));
                 return false;
             }
 
