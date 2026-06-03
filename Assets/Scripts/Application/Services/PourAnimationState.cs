@@ -40,6 +40,7 @@ namespace PuzzleGame.Application.Services
 
         // ── Stream / Particles ─────────────────────────────────────────────────
         public LineRenderer LineRenderer;
+        public IStreamRenderer StreamRenderer;
         public Color StreamColor;
         public ParticleSystem SplashPS;
         public ParticleSystem BubblePS;
@@ -137,7 +138,7 @@ namespace PuzzleGame.Application.Services
             var s = (PourAnimationState)target;
             s.Owner.UpdateVisualPourProgress(s.Source, s.Target,
                 s.SourceStart, s.TargetStart, s.PouredLayer, val);
-            StreamRenderer.Update(s.LineRenderer, s.Source, s.Target,
+            s.StreamRenderer.Update(s.LineRenderer, s.Source, s.Target,
                 s.SourceT, s.TargetT, val, s.Config);
 
             float currentFill = s.Target.VisualTotalFill;
@@ -170,6 +171,7 @@ namespace PuzzleGame.Application.Services
             SourceT = null;
             TargetT = null;
             LineRenderer = null;
+            StreamRenderer = null;
             SplashPS = null;
             BubblePS = null;
             TweenService = null;

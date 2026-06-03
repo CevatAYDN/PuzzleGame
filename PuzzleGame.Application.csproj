@@ -55,9 +55,7 @@
     <Compile Include="Assets\Scripts\Application\Interfaces\IEventAggregator.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IRendererService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\GameStateMachine.cs" />
-    <Compile Include="Assets\Scripts\Application\Services\TextureGenerator.cs" />
     <Compile Include="Assets\Scripts\Application\Services\ScriptableObjectLevelRepository.cs" />
-    <Compile Include="Assets\Scripts\Application\Services\ParticlePrefabFactory.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IGameObjectPool.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IPourService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\AudioClipId.cs" />
@@ -65,15 +63,16 @@
     <Compile Include="Assets\Scripts\Application\Interfaces\IPoolManager.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\LevelConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Services\InputHandlerService.cs" />
-    <Compile Include="Assets\Scripts\Application\Services\AudioService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\BottleSelectionService.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\AnimationConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Services\LevelValidationService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\ILevelValidationService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IColorAdapter.cs" />
     <Compile Include="Assets\Scripts\Application\Services\GameSaveManager.cs" />
+    <Compile Include="Assets\Scripts\Application\Interfaces\IParticleFactory.cs" />
     <Compile Include="Assets\Scripts\Application\Services\SecureFileLevelProgressService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IReactionService.cs" />
+    <Compile Include="Assets\Scripts\Application\Interfaces\IStreamRenderer.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IShaderOptimizer.cs" />
     <Compile Include="Assets\Scripts\Application\UI\LevelSelectUI.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IBottleSelectionService.cs" />
@@ -89,9 +88,7 @@
     <Compile Include="Assets\Scripts\Application\Services\AnimationService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IAudioService.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\BottleVisualConfig.cs" />
-    <Compile Include="Assets\Scripts\Application\Services\StreamRenderer.cs" />
     <Compile Include="Assets\Scripts\Application\Events\LevelEvents.cs" />
-    <Compile Include="Assets\Scripts\Application\Services\ParticleMaterialFactory.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\AudioConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IInputHandler.cs" />
     <Compile Include="Assets\Scripts\Application\Services\PourService.cs" />

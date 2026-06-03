@@ -24,7 +24,6 @@ namespace PuzzleGame.Application.Interfaces
         void Chain(ITweenHandle other);
         void Group(ITweenHandle other);
         ITweenHandle OnComplete(Action callback);
-        void SetCycles(int loops, LoopMode mode);
         void Kill();
         void Start();
     }
@@ -36,10 +35,5 @@ namespace PuzzleGame.Application.Interfaces
         OutBack,
         OutBounce,
         InOutQuad
-    }
-
-    public enum LoopMode
-    {
-        Restart, Yoyo, Incremental
     }
 }

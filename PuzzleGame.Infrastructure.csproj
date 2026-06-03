@@ -51,13 +51,16 @@
   <ItemGroup>
     <Compile Include="Assets\Scripts\Infrastructure\Providers\IAssetProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\ColorAdapter.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\AudioService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\ShaderOptimizer.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\CorkConstants.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\UpdateManager.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Pool\GameObjectPool.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\ParticleFactory.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Providers\AddressablesAssetProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Pool\PoolManager.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\RendererService.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\StreamRenderer.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\HardcodedTranslationProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\MobileInputHandler.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\InputHandler.cs" />

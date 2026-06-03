@@ -32,7 +32,6 @@ namespace PuzzleGame.Application.Interfaces
                         IBottleValidator validator,
                         IAnimationService animationService,
                         List<LiquidLayer> initialLayers);
-        bool TryPourTo(IBottleView target);
         void SetSelectionHighlight(bool active);
         void AnimateCompletion();
         void UpdateVisualsFromState();

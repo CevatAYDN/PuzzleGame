@@ -93,6 +93,8 @@ namespace PuzzleGame.Installers
             // Application services
             builder.Register<IBottleSelectionService, BottleSelectionService>(Lifetime.Singleton);
             builder.Register<IAudioService, AudioService>(Lifetime.Singleton);
+            builder.Register<IParticleFactory, ParticleFactory>(Lifetime.Singleton);
+            builder.Register<IStreamRenderer, StreamRenderer>(Lifetime.Singleton);
             builder.Register<IAnimationService, AnimationService>(Lifetime.Singleton);
             builder.Register<ILevelSetupService, LevelSetupService>(Lifetime.Singleton);
             builder.Register<ILevelValidationService, LevelValidationService>(Lifetime.Singleton);

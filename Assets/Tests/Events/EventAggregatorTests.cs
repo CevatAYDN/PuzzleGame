@@ -218,17 +218,6 @@ namespace PuzzleGame.Events.Tests
             Assert.That(received.Target, Is.EqualTo(target));
         }
 
-        [Test]
-        public void BottleSelectedEvent_CanBePublishedAndReceived()
-        {
-            BottleSelectedEvent received = default;
-            _eventAggregator.Subscribe<BottleSelectedEvent>(e => received = e);
-
-            var bottle = new BottleState(4);
-            _eventAggregator.Publish(new BottleSelectedEvent(bottle));
-
-            Assert.That(received.Bottle, Is.EqualTo(bottle));
-        }
 
         [Test]
         public void LevelCompletedEvent_CanBePublishedAndReceived()

@@ -7,35 +7,7 @@ namespace PuzzleGame.Application.Events
     // MULTI-LAYER POUR EVENTS  (published by PourService)
     // ═══════════════════════════════════════════════════════════════════════
 
-    public readonly struct MultiLayerPourStartedEvent
-    {
-        public int SourceBottleIndex { get; }
-        public int TargetBottleIndex { get; }
-        public int LayerCount { get; }
-        public Color PouringColor { get; }
 
-        public MultiLayerPourStartedEvent(int sourceIndex, int targetIndex, int layerCount, Color color)
-        {
-            SourceBottleIndex = sourceIndex;
-            TargetBottleIndex = targetIndex;
-            LayerCount = layerCount;
-            PouringColor = color;
-        }
-    }
-
-    public readonly struct MultiLayerPourCompletedEvent
-    {
-        public int SourceBottleIndex { get; }
-        public int TargetBottleIndex { get; }
-        public int LayersPoured { get; }
-
-        public MultiLayerPourCompletedEvent(int sourceIndex, int targetIndex, int layersPoured)
-        {
-            SourceBottleIndex = sourceIndex;
-            TargetBottleIndex = targetIndex;
-            LayersPoured = layersPoured;
-        }
-    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // REACTION SYSTEM EVENTS  (published by ReactionService)

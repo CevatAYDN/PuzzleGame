@@ -89,11 +89,6 @@ namespace PuzzleGame.Application.Services
             return this;
         }
 
-        public void SetCycles(int loops, LoopMode mode)
-        {
-            _tween.SetRemainingCycles(loops);
-        }
-
         public void Kill() => _tween.Stop();
         public void Start() { } // Already started by factory
     }
@@ -127,8 +122,6 @@ namespace PuzzleGame.Application.Services
             _onComplete += callback;
             return this;
         }
-
-        public void SetCycles(int loops, LoopMode mode) { }
 
         public void Kill() => _tween.Stop();
         public void Start() { }
@@ -167,11 +160,6 @@ namespace PuzzleGame.Application.Services
                 _sequence.OnComplete(() => _onComplete?.Invoke());
             }
             return this;
-        }
-
-        public void SetCycles(int loops, LoopMode mode)
-        {
-            _sequence.SetRemainingCycles(loops);
         }
 
         public void Kill() => _sequence.Stop();

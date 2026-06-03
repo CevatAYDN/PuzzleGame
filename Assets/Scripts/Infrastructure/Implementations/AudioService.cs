@@ -3,17 +3,17 @@ using System.Collections.Generic;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Interfaces;
-// IGameObjectPool now in PuzzleGame.Application.Interfaces
 using PuzzleGame.Application.Logging;
 using UnityEngine;
 using UnityEngine.Audio;
 
-namespace PuzzleGame.Application.Services
+namespace PuzzleGame.Infrastructure.Implementations
 {
     /// <summary>
     /// Audio service backed by two GameObjectPool<AudioSource> pools (sfx + music).
     /// SFX clips auto-return to pool after playback (via ITweenService delay).
     /// Music has its own persistent pool slot, stoppable via StopMusic.
+    /// Relocated to Infrastructure layer (Fix #1).
     /// </summary>
     public class AudioService : IAudioService
     {

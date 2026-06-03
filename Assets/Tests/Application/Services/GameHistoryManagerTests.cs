@@ -5,15 +5,15 @@ using PuzzleGame.Application.Services;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Domain.Interfaces;
-// IRendererService now in PuzzleGame.Application.Interfaces
+using PuzzleGame.Tests.Fakes;
 
 namespace PuzzleGame.Tests.Application.Services
 {
     public class GameHistoryManagerTests
     {
+        private FakeBottleView[] _bottles;
         private GameHistoryManager _sut;
         private int _callbackMoveCount;
-        private FakeBottleView[] _bottles;
 
         [SetUp]
         public void SetUp()
@@ -107,39 +107,6 @@ namespace PuzzleGame.Tests.Application.Services
             _sut.Undo();
 
             Assert.AreEqual(0, _sut.CurrentMoveCount);
-        }
-
-        private class FakeBottleView : IBottleView
-        {
-            public BottleState State { get; }
-            public bool IsEmpty => State.IsEmpty;
-            public bool IsCapped => false;
-            public int BottleIndex { get; set; }
-            public Transform Transform => null;
-            public GameObject GameObject => null;
-            public float Height => 2f;
-            public IReadOnlyList<LiquidLayer> VisualLayers => State.Layers;
-            public float VisualTotalFill => State.TotalFill;
-
-            public FakeBottleView(BottleState state)
-            {
-                State = state;
-            }
-
-            public void Initialize(IRendererService rendererService, IBottleValidator validator, IAnimationService animationService, List<LiquidLayer> initialLayers)
-            {
-                State.Clear();
-                foreach (var l in initialLayers) State.AddLayer(l);
-            }
-
-            public bool TryPourTo(IBottleView target) => false;
-            public void SetSelectionHighlight(bool active) { }
-            public void AnimateCompletion() { }
-            public void UpdateVisualsFromState() { }
-            public void SetVisualState(IReadOnlyList<LiquidLayer> layers, float totalFill) { }
-            public void SetVisualPourProgress(LayerSnapshot startLayers, float t, bool isSource, LiquidLayer pouredLayer) { }
-            public void PlaySettleBounce() { }
-            public void AddWobbleImpulse(Vector3 direction, float strength) { }
         }
     }
 }

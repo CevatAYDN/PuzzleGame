@@ -123,28 +123,29 @@ namespace PuzzleGame
 
         private void RestoreStateFromSerialized()
         {
-            // Fix #8: Direct instantiation here bypasses DI (and therefore GameConfig.colorMatchTolerance).
-            // This path is ONLY safe in editor/play-test mode where DI is not running.
-            // At runtime with VContainer, Initialize() is called by BottlePoolInitializer before
-            // any State access, so this fallback is never reached in production.
-            if (_rendererService == null) _rendererService = new PuzzleGame.Infrastructure.Implementations.RendererService();
-            if (_validator == null) _validator = new PuzzleGame.Domain.Services.BottleValidationService();
-            // Note: BottleValidationService() uses default colorTolerance (BottleConstants.ColorMatchEpsilon).
-            // This is acceptable for editor preview; production always uses the DI-injected instance.
+            // Decoupled instantiation via reflection to prevent direct concrete service dependencies
+            if (_rendererService == null)
+            {
+                _rendererService = TryCreateService<IRendererService>("PuzzleGame.Infrastructure.Implementations.RendererService, PuzzleGame.Infrastructure");
+            }
+            if (_validator == null)
+            {
+                _validator = TryCreateService<IBottleValidator>("PuzzleGame.Domain.Services.BottleValidationService, PuzzleGame.Domain");
+            }
             _meshGenerator = GetComponent<BottleMeshGenerator>();
             _renderer = GetComponent<Renderer>();
             _wobble = GetComponent<Wobble>();
-
+ 
             _visualRenderer = new BottleVisualRenderer(
                 _renderer, _rendererService, visualConfig,
                 () => _visualLayers, () => _visualTotalFill);
-
+ 
             _corkController = new BottleCorkController(
                 transform, _animationService,
                 () => Height,
                 () => _meshGenerator != null ? _meshGenerator.neckRadius : PuzzleGame.Infrastructure.CorkConstants.Radius,
                 corkObject);
-
+ 
             int maxLayers = visualConfig != null ? visualConfig.maxLayers : BottleConstants.DefaultLayerCapacity;
             _state = new BottleState(maxLayers);
             _visualLayers.Clear();
@@ -159,70 +160,27 @@ namespace PuzzleGame
             }
             _visualTotalFill = _state.TotalFill;
         }
-
+ 
+        private T TryCreateService<T>(string typeName) where T : class
+        {
+            try
+            {
+                var type = System.Type.GetType(typeName);
+                if (type != null)
+                {
+                    return System.Activator.CreateInstance(type) as T;
+                }
+            }
+            catch { }
+            return null;
+        }
+ 
         public bool IsEmpty => State?.IsEmpty ?? true;
         public bool IsFull()  => State?.IsFull  ?? false;
-
-        public bool HasSingleColorContent()
-        {
-            if (State == null || State.IsEmpty || State.Layers.Count == 0) return true;
-            var firstColor = State.Layers[0].Color;
-            for (int i = 1; i < State.Layers.Count; i++)
-                if (!_validator.ColorsMatch(State.Layers[i].Color, firstColor)) return false;
-            return true;
-        }
-
+ 
         public void AddWobbleImpulse(Vector3 direction, float strength)
         {
             _wobble?.AddImpulse(direction, strength);
-        }
-
-        public bool TryPourTo(IBottleView target)
-        {
-            if (target == null)
-            {
-                BottleLogger.LogWarning($"'{name}': TryPourTo called with null target.");
-                return false;
-            }
-
-            if (!_validator.CanPour(State, target.State))
-            {
-                BottleLogger.LogDebug($"'{name}' → '{target.GameObject.name}': pour rejected by validator.");
-                return false;
-            }
-
-            LiquidLayer layer;
-            try
-            {
-                layer = State.PopTopLayer();
-            }
-            catch (InvalidOperationException ex)
-            {
-                throw new InvalidOperationException(
-                    $"Bottle '{name}' invariant violated: validator approved pour but bottle is empty.", ex);
-            }
-
-            try
-            {
-                target.State.AddLayer(layer);
-            }
-            catch (InvalidOperationException ex)
-            {
-                State.AddLayer(layer);
-                throw new InvalidOperationException(
-                    $"Bottle '{name}' → '{target.GameObject.name}': AddLayer threw after validator approval. Rolled back.",
-                    ex);
-            }
-
-            float impulse = visualConfig != null
-                ? visualConfig.pourImpulseStrength
-                : BottleConstants.DefaultPourImpulseStrength;
-            Vector3 pourDirection = (target.Transform.position - transform.position).normalized;
-            _wobble?.AddImpulse(-pourDirection, impulse);
-            target.AddWobbleImpulse(pourDirection, impulse * BottleConstants.WobbleTargetMultiplier);
-
-            BottleLogger.LogInfo($"Poured {layer.Color} from '{name}' to '{target.GameObject.name}'.");
-            return true;
         }
 
         public void SetVisualState(IReadOnlyList<LiquidLayer> layers, float totalFill)

@@ -101,10 +101,6 @@ namespace PuzzleGame.Tests.Fakes
             return this;
         }
 
-        public void SetCycles(int loops, LoopMode mode)
-        {
-        }
-
         public void Kill()
         {
             _onComplete = null;

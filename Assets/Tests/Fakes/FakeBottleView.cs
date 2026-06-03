@@ -25,7 +25,6 @@ namespace PuzzleGame.Tests.Fakes
 
         // Call records
         public int InitializeCallCount { get; private set; }
-        public int TryPourToCallCount { get; private set; }
         public int SetSelectionHighlightCallCount { get; private set; }
         public int AnimateCompletionCallCount { get; private set; }
         public int UpdateVisualsFromStateCallCount { get; private set; }
@@ -47,12 +46,6 @@ namespace PuzzleGame.Tests.Fakes
                 foreach (var l in initialLayers)
                     State.AddLayer(l);
             }
-        }
-
-        public bool TryPourTo(IBottleView target)
-        {
-            TryPourToCallCount++;
-            return false;
         }
 
         public void SetSelectionHighlight(bool active)

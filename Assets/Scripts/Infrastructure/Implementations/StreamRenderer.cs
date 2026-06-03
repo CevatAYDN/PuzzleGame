@@ -1,19 +1,21 @@
 using PuzzleGame.Application.Interfaces;
 using UnityEngine;
 
-namespace PuzzleGame.Application.Services
+namespace PuzzleGame.Infrastructure.Implementations
 {
     /// <summary>
-    /// Pour stream'i için LineRenderer yönetimi.
-    /// Dış curve + iç straight line segmentlerini çizer.
+    /// LineRenderer manager for the pouring liquid stream.
+    /// Draws external curve (parabolic gravity drop) and internal straight vertical line segment.
+    /// Converted to an instance-based infrastructure service (removes static singleton state).
     /// </summary>
-    public static class StreamRenderer
+    public class StreamRenderer : IStreamRenderer
     {
-        public const int ExternalSegments = 12;
-        public const int InternalSegments = 6;
-        public const int TotalSegments = ExternalSegments + InternalSegments;
+        private const int ExternalSegments = 12;
+        private const int InternalSegments = 6;
+        
+        public int TotalSegments => ExternalSegments + InternalSegments;
 
-        public static LineRenderer EnsureLineRenderer(GameObject owner)
+        public LineRenderer EnsureLineRenderer(GameObject owner)
         {
             var lr = owner.GetComponent<LineRenderer>();
             if (lr == null)
@@ -28,7 +30,7 @@ namespace PuzzleGame.Application.Services
             return lr;
         }
 
-        public static void SetColor(LineRenderer lr, Color color)
+        public void SetColor(LineRenderer lr, Color color)
         {
             if (lr == null) return;
             lr.startColor = color;
@@ -40,8 +42,8 @@ namespace PuzzleGame.Application.Services
             }
         }
 
-        public static void Update(LineRenderer lr, IBottleView source, IBottleView target,
-                                  Transform sourceT, Transform targetT, float t, Configuration.AnimationConfig config)
+        public void Update(LineRenderer lr, IBottleView source, IBottleView target,
+                           Transform sourceT, Transform targetT, float t, PuzzleGame.Application.Configuration.AnimationConfig config)
         {
             if (lr == null) return;
 

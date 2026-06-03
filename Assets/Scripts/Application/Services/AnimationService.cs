@@ -32,6 +32,8 @@ namespace PuzzleGame.Application.Services
 
         private readonly IPoolManager _poolManager;
         private readonly IColorAdapter _colorAdapter;
+        private readonly IParticleFactory _particleFactory;
+        private readonly IStreamRenderer _streamRenderer;
 
         private readonly ParticleSystem _splashPrefab;
         private readonly ParticleSystem _bubblePrefab;
@@ -41,16 +43,18 @@ namespace PuzzleGame.Application.Services
 
         public bool IsAnimating => _activeTweenCount > 0;
 
-        public AnimationService(AnimationConfig config, ITweenService tween, IAudioService audioService, IPoolManager poolManager, IColorAdapter colorAdapter)
+        public AnimationService(AnimationConfig config, ITweenService tween, IAudioService audioService, IPoolManager poolManager, IColorAdapter colorAdapter, IParticleFactory particleFactory, IStreamRenderer streamRenderer)
         {
             _config = config;
             _tween = tween ?? throw new ArgumentNullException(nameof(tween));
             _audioService = audioService;
             _poolManager = poolManager;
             _colorAdapter = colorAdapter;
+            _particleFactory = particleFactory ?? throw new ArgumentNullException(nameof(particleFactory));
+            _streamRenderer = streamRenderer ?? throw new ArgumentNullException(nameof(streamRenderer));
 
-            _splashPrefab = ParticlePrefabFactory.CreateSplash();
-            _bubblePrefab = ParticlePrefabFactory.CreateBubble();
+            _splashPrefab = _particleFactory.CreateSplash();
+            _bubblePrefab = _particleFactory.CreateBubble();
 
             _splashPool = _poolManager.RegisterPool<ParticleSystem>("SplashPool", _splashPrefab, MaxPoolSize);
             _bubblePool = _poolManager.RegisterPool<ParticleSystem>("BubblePool", _bubblePrefab, MaxPoolSize);
@@ -182,14 +186,15 @@ namespace PuzzleGame.Application.Services
             state.TargetStart = new LayerSnapshot(target.VisualLayers);
             state.PouredLayer = target.State.TopLayer ?? new LiquidLayer(new DomainColor(0, 0, 0, 0), 0f);
 
-            state.LineRenderer = StreamRenderer.EnsureLineRenderer(source.GameObject);
+            state.LineRenderer = _streamRenderer.EnsureLineRenderer(source.GameObject);
             state.StreamColor = _colorAdapter.ToUnity(state.PouredLayer.Color);
-            StreamRenderer.SetColor(state.LineRenderer, state.StreamColor);
+            _streamRenderer.SetColor(state.LineRenderer, state.StreamColor);
             state.LineRenderer.enabled = false;
 
             state.Config = _config;
             state.TweenService = _tween;
             state.AudioService = _audioService;
+            state.StreamRenderer = _streamRenderer;
             state.SplashPool = _splashPool;
             state.BubblePool = _bubblePool;
             state.Owner = this;

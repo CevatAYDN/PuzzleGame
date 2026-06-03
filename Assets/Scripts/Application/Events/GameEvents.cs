@@ -27,24 +27,6 @@ namespace PuzzleGame.Application.Events
     }
 
     /// <summary>
-    /// Published immediately before any pour (single or multi) begins.
-    /// Emitted once per user-initiated pour attempt, regardless of outcome.
-    /// </summary>
-    public readonly struct PourStartedEvent
-    {
-        public int SourceBottleIndex { get; }
-        public int TargetBottleIndex { get; }
-        public bool IsMultiLayer { get; }
-
-        public PourStartedEvent(int sourceIndex, int targetIndex, bool isMultiLayer)
-        {
-            SourceBottleIndex = sourceIndex;
-            TargetBottleIndex = targetIndex;
-            IsMultiLayer = isMultiLayer;
-        }
-    }
-
-    /// <summary>
     /// Published when a pour attempt is rejected by validator or pour logic.
     /// Reason is a stable string code (e.g. "validator_rejected", "no_matching_layers").
     /// </summary>
@@ -59,26 +41,6 @@ namespace PuzzleGame.Application.Events
             SourceBottleIndex = sourceIndex;
             TargetBottleIndex = targetIndex;
             Reason = reason;
-        }
-    }
-
-    public readonly struct BottleSelectedEvent
-    {
-        public BottleState Bottle { get; }
-
-        public BottleSelectedEvent(BottleState bottle)
-        {
-            Bottle = bottle;
-        }
-    }
-
-    public readonly struct BottleDeselectedEvent
-    {
-        public BottleState Bottle { get; }
-
-        public BottleDeselectedEvent(BottleState bottle)
-        {
-            Bottle = bottle;
         }
     }
 
