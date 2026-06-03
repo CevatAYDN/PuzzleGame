@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using PuzzleGame.Domain.Models;
+using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Services;
 using PuzzleGame.Infrastructure;
 using PuzzleGame.Configuration;

@@ -2,6 +2,8 @@ using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using PuzzleGame.Application.Interfaces;
+using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Events;

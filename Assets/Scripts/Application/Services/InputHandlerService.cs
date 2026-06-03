@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
+using PuzzleGame.Application.Configuration;
 using PuzzleGame.Infrastructure.Interfaces;
 using PuzzleGame.Events;
 using PuzzleGame.Logging;

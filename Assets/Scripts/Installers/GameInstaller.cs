@@ -5,6 +5,7 @@ using PuzzleGame.Domain;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Services;
 using PuzzleGame.Domain.Models;
+using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Services;
 using PuzzleGame.Application.Animation;

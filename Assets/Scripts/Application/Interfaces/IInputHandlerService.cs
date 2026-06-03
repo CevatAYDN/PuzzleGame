@@ -1,4 +1,4 @@
-using PuzzleGame.Domain.Models;
+using PuzzleGame.Application.Configuration;
 
 namespace PuzzleGame.Application.Interfaces
 {

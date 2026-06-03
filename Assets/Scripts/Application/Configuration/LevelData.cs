@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using PuzzleGame.Domain;
 using UnityEngine;
-using PuzzleGame.Domain.Models.FeatureSystem;
+using PuzzleGame.Application.Configuration.FeatureSystem;
 
-namespace PuzzleGame.Domain.Models
+namespace PuzzleGame.Application.Configuration
 {
     public enum Difficulty
     {

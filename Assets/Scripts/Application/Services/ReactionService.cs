@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using PuzzleGame.Domain.Models;
-using PuzzleGame.Domain.Models.FeatureSystem;
+using PuzzleGame.Application.Configuration.FeatureSystem;
 using PuzzleGame.Events;
 using PuzzleGame.Logging;
 using PuzzleGame.Application.Interfaces;

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace PuzzleGame.Domain.Models.FeatureSystem
+namespace PuzzleGame.Application.Configuration.FeatureSystem
 {
     /// <summary>
     /// Modular feature system for level extensions.

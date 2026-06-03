@@ -1,11 +1,10 @@
 using System.Collections.Generic;
-using PuzzleGame.Domain.Models;
+using PuzzleGame.Application.Configuration;
 
-namespace PuzzleGame.Domain.Interfaces
+namespace PuzzleGame.Application.Interfaces
 {
     /// <summary>
     /// Level data provider. Implementations: ScriptableObject-levels, JSON, remote.
-    /// Domain layer — pure POCO.
     /// </summary>
     public interface ILevelRepository
     {

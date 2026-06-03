@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using PuzzleGame.Domain.Models;
+using PuzzleGame.Application.Configuration;
 using PuzzleGame.Logging;
 
 using PuzzleGame.Application.Interfaces;

@@ -1,5 +1,5 @@
 using UnityEngine;
-using PuzzleGame.Domain.Models.FeatureSystem;
+using PuzzleGame.Application.Configuration.FeatureSystem;
 
 namespace PuzzleGame.Events
 {

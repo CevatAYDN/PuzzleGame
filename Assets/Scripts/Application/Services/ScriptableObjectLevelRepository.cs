@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
-using PuzzleGame.Domain.Interfaces;
-using PuzzleGame.Domain.Models;
+using PuzzleGame.Application.Interfaces;
+using PuzzleGame.Application.Configuration;
 
 namespace PuzzleGame.Application.Services
 {

@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using PuzzleGame.Domain;
 using PuzzleGame.Domain.Models;
+using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Services;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Application.Services;
