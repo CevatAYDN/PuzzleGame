@@ -5,7 +5,9 @@
         "PuzzleGame.Domain",
         "PuzzleGame.Application",
         "PuzzleGame.Infrastructure",
-        "PuzzleGame.Composition"
+        "PuzzleGame.Composition",
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime"
     ],
     "includePlatforms": [
         "Editor"
