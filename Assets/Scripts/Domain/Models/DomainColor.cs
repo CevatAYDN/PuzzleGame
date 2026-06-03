@@ -1,15 +1,14 @@
 using System;
 using PuzzleGame.Domain;
-using UnityEngine;
 
 namespace PuzzleGame.Domain.Models
 {
     /// <summary>
     /// Pure C# renk temsilidir — UnityEngine bağımlılığı yoktur.
-    /// UnityColor dönüşümü için <c>ColorAdapter</c> (Infrastructure katmanında) kullanılır.
-    /// Implicit Color ↔ DomainColor dönüşümleri Unity ile sıkı bağı yaratır
-    /// (tüm testler UnityEngine'e bağımlı olur); yine de geriye dönük uyumluluk için
-    /// korunuyor. Yeni kod ColorAdapter.ToUnity / FromUnity kullanmalı.
+    /// <c>Color</c> ↔ <c>DomainColor</c> dönüşümü için
+    /// <c>ColorAdapter</c> (Infrastructure katmanında) kullanılmalıdır.
+    /// Bu tür Domain katmanında kalır; Infrastructure katmanı Domain'e bağımlıdır
+    /// (Dependency Inversion), tersi değil.
     /// </summary>
     public readonly struct DomainColor : IEquatable<DomainColor>
     {
@@ -50,17 +49,5 @@ namespace PuzzleGame.Domain.Models
 
         public static bool operator ==(DomainColor left, DomainColor right) => left.Equals(right);
         public static bool operator !=(DomainColor left, DomainColor right) => !left.Equals(right);
-
-        /// <summary>
-        /// Implicit conversion from Unity Color to DomainColor.
-        /// </summary>
-        public static implicit operator DomainColor(Color color) =>
-            new DomainColor(color.r, color.g, color.b, color.a);
-
-        /// <summary>
-        /// Implicit conversion from DomainColor to Unity Color.
-        /// </summary>
-        public static implicit operator Color(DomainColor domainColor) =>
-            new Color(domainColor.R, domainColor.G, domainColor.B, domainColor.A);
     }
 }
