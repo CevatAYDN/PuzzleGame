@@ -10,7 +10,11 @@ using PuzzleGame.Tests.Fakes;
 
 namespace PuzzleGame.Tests.Application
 {
-    public class GameManagerTests
+    /// <summary>
+    /// Tests for PourService logic.
+    /// Previously misnamed "GameManagerTests" — renamed to reflect actual content.
+    /// </summary>
+    public class PourServiceTests
     {
         private EventAggregator _eventAggregator;
         private FakeHistoryManager _historyManager;

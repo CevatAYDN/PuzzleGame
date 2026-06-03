@@ -7,16 +7,19 @@ using UnityEngine;
 namespace PuzzleGame.Application.Services
 {
     /// <summary>
-    /// Secure file-backed level progression service using GameSaveManager.
+    /// Secure file-backed level progression service using ISaveManager.
     /// Employs HMAC-SHA256 signature verification and atomic writing.
+    /// Fix Critical #1: Now uses injected ISaveManager instead of static GameSaveManager.
     /// </summary>
     public class SecureFileLevelProgressService : ILevelProgressService
     {
         private readonly IEventAggregator _eventAggregator;
+        private readonly ISaveManager _saveManager;
 
-        public SecureFileLevelProgressService(IEventAggregator eventAggregator)
+        public SecureFileLevelProgressService(IEventAggregator eventAggregator, ISaveManager saveManager)
         {
             _eventAggregator = eventAggregator ?? throw new System.ArgumentNullException(nameof(eventAggregator));
+            _saveManager = saveManager ?? throw new System.ArgumentNullException(nameof(saveManager));
         }
 
         public bool IsUnlocked(int levelNumber)
@@ -27,20 +30,20 @@ namespace PuzzleGame.Application.Services
 
         public int GetStars(int levelNumber)
         {
-            var level = GameSaveManager.LoadLevel(levelNumber);
-            return level != null ? level.Value.stars : 0;
+            var level = _saveManager.LoadLevel(levelNumber);
+            return level.HasValue ? level.Value.Stars : 0;
         }
 
         public int GetBestMoves(int levelNumber)
         {
-            var level = GameSaveManager.LoadLevel(levelNumber);
-            return level != null ? level.Value.moveCount : 0;
+            var level = _saveManager.LoadLevel(levelNumber);
+            return level.HasValue ? level.Value.MoveCount : 0;
         }
 
         public bool IsCompleted(int levelNumber)
         {
-            var level = GameSaveManager.LoadLevel(levelNumber);
-            return level != null ? level.Value.isCompleted : false;
+            var level = _saveManager.LoadLevel(levelNumber);
+            return level.HasValue && level.Value.IsCompleted;
         }
 
         public void RecordCompletion(int levelNumber, int moveCount, int stars)
@@ -56,19 +59,17 @@ namespace PuzzleGame.Application.Services
 
             if (!isBetter)
             {
-                BottleLogger.LogDebug($"Level {levelNumber} secure progress kept: existing {prevStars}★/{prevMoves} ≥ new {stars}★/{moveCount}");
+                BottleLogger.LogDebug($"Level {levelNumber} secure progress kept: existing {prevStars}\u2605/{prevMoves} \u2265 new {stars}\u2605/{moveCount}");
                 return;
             }
 
-            // Record completion securely. Passing an empty array of bottles since the level is completed.
-            GameSaveManager.Save(levelNumber, moveCount, System.Array.Empty<IBottleView>(), isCompleted: true, stars: stars);
-
-            _eventAggregator.Publish(new Events.LevelProgressChangedEvent(levelNumber, stars, moveCount));
+            _saveManager.Save(levelNumber, moveCount, System.Array.Empty<IBottleView>(), isCompleted: true, stars: stars);
+            _eventAggregator.Publish(new LevelProgressChangedEvent(levelNumber, stars, moveCount));
         }
 
         public void ResetAll()
         {
-            GameSaveManager.DeleteAll();
+            _saveManager.DeleteAll();
             BottleLogger.LogInfo("All level progress secure save files deleted.");
         }
     }

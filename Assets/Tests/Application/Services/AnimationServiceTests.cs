@@ -58,16 +58,19 @@ namespace PuzzleGame.Tests.Application.Services
         }
 
         [Test]
-        public void IsAnimating_TrueDuringTween()
+        public void IsAnimating_AnimateBottleLift_DoesNotThrow()
         {
-            // AnimateBottleLift starts a tween
+            // FakeTweenService completes synchronously, so IsAnimating may already
+            // be false by the time we check — the core contract is: no exception thrown,
+            // and onComplete is eventually called when the tween settles.
             var go = new GameObject("TestBottle");
             try
             {
-                _sut.AnimateBottleLift(go.transform, 1f, 0.4f);
-                // With FakeTweenService that completes immediately, IsAnimating may be false
-                // This test confirms it doesn't throw
-                Assert.Pass();
+                bool completed = false;
+                Assert.DoesNotThrow(() => _sut.AnimateBottleLift(go.transform, 1f, 0.4f, onComplete: () => completed = true),
+                    "AnimateBottleLift should not throw.");
+                // FakeTweenService immediately calls OnComplete, so completed == true.
+                Assert.That(completed, Is.True, "FakeTweenService should invoke onComplete synchronously.");
             }
             finally
             {

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using PuzzleGame.Application.Interfaces;
+using PuzzleGame.Application.Logging;
 using UnityEngine;
 
 namespace PuzzleGame.Infrastructure.Pool
@@ -57,7 +58,7 @@ namespace PuzzleGame.Infrastructure.Pool
         {
             if (!_pools.TryGetValue(name, out var entry))
             {
-                Debug.LogError($"[PoolManager] Pool '{name}' not registered.");
+                BottleLogger.LogError($"[PoolManager] Pool '{name}' not registered.");
                 return null;
             }
             return ((PoolEntry<T>)entry).Pool.Rent(parent);
@@ -70,7 +71,7 @@ namespace PuzzleGame.Infrastructure.Pool
         {
             if (!_pools.TryGetValue(name, out var entry))
             {
-                Debug.LogError($"[PoolManager] Pool '{name}' not registered.");
+                BottleLogger.LogError($"[PoolManager] Pool '{name}' not registered.");
                 return;
             }
             ((PoolEntry<T>)entry).Pool.Return(instance);
@@ -93,7 +94,7 @@ namespace PuzzleGame.Infrastructure.Pool
             foreach (var kvp in _pools)
             {
                 var e = kvp.Value;
-                Debug.Log($"[PoolManager] '{kvp.Key}': active={e.CountActive}, inactive={e.CountInactive}, total={e.CountAll}");
+                BottleLogger.LogInfo($"[PoolManager] '{kvp.Key}': active={e.CountActive}, inactive={e.CountInactive}, total={e.CountAll}");
             }
         }
 

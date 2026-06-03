@@ -58,6 +58,7 @@
     <Compile Include="Assets\Scripts\Infrastructure\Providers\AddressablesAssetProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Pool\PoolManager.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\RendererService.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\HardcodedTranslationProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\MobileInputHandler.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\InputHandler.cs" />
   </ItemGroup>

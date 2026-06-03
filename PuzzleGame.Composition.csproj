@@ -52,6 +52,7 @@
     <Compile Include="Assets\Scripts\Presentation\BottlePoolInitializer.cs" />
     <Compile Include="Assets\Scripts\Presentation\BottleMeshGenerator.cs" />
     <Compile Include="Assets\Scripts\Presentation\BottleVisualRenderer.cs" />
+    <Compile Include="Assets\Scripts\Presentation\UI\LevelSelectUI.cs" />
     <Compile Include="Assets\Scripts\Presentation\BottleCorkController.cs" />
     <Compile Include="Assets\Scripts\Presentation\URPConfigHelper.cs" />
     <Compile Include="Assets\Scripts\Presentation\GameManager.cs" />

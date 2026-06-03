@@ -2,6 +2,7 @@ using NUnit.Framework;
 using PuzzleGame.Application.Services;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Events;
+using PuzzleGame.Tests.Fakes;
 using UnityEngine;
 
 namespace PuzzleGame.Tests.Application.Services
@@ -15,7 +16,7 @@ namespace PuzzleGame.Tests.Application.Services
         public void Setup()
         {
             _eventAggregator = new EventAggregator();
-            _sut = new SecureFileLevelProgressService(_eventAggregator);
+            _sut = new SecureFileLevelProgressService(_eventAggregator, new FakeSaveManager());
             _sut.ResetAll();
         }
 

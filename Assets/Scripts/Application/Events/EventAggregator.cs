@@ -113,26 +113,38 @@ namespace PuzzleGame.Application.Events
 
         public void Publish<T>(T eventArgs)
         {
-            IEnumerable<ISubscription> snapshot;
+            // Fix Code Quality #7: Unity is single-threaded on the main thread.
+            // Instead of list.ToArray() (GC alloc per Publish), we copy into a pooled List,
+            // invoke outside the lock (to avoid re-entrant deadlock), then return the list.
+            var snapshot = GetTempList();
 
             lock (_lockObj)
             {
                 if (!_subscribers.TryGetValue(typeof(T), out var list) || list.Count == 0)
+                {
+                    ReturnTempList(snapshot);
                     return;
-
-                snapshot = list.ToArray(); // Thread-safe copy
+                }
+                snapshot.AddRange(list);
             }
 
-            foreach (var sub in snapshot)
+            try
             {
-                try
+                foreach (var sub in snapshot)
                 {
-                    sub.Invoke(eventArgs);
+                    try
+                    {
+                        sub.Invoke(eventArgs);
+                    }
+                    catch (Exception ex)
+                    {
+                        BottleLogger.LogError($"EventAggregator: Subscriber threw on {typeof(T).Name}: {ex}");
+                    }
                 }
-                catch (Exception ex)
-                {
-                    BottleLogger.LogError($"EventAggregator: Subscriber threw on {typeof(T).Name}: {ex}");
-                }
+            }
+            finally
+            {
+                ReturnTempList(snapshot);
             }
         }
 

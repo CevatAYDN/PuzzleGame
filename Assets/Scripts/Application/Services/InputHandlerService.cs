@@ -39,8 +39,6 @@ namespace PuzzleGame.Application.Services
         private IBottleView[] _bottles;
         private Vector3 _selectedOriginalPos;
 
-        // Fix #4: Plain default settings struct — no UnityEngine.Object allocation.
-        private static readonly LevelData _defaultFallbackLevel = null; // handled below
 
         public InputHandlerService(
             IInputHandler inputHandler,
@@ -120,12 +118,12 @@ namespace PuzzleGame.Application.Services
             // Fallback: search bottle list by collider instance ID (edge case: pooled objects)
             if (clicked == null && hitCollider != null && _bottles != null)
             {
-                int colliderId = hitCollider.GetInstanceID();
+                var colliderId = hitCollider.GetEntityId();
                 foreach (var b in _bottles)
                 {
                     if (b?.GameObject == null) continue;
                     var col = b.GameObject.GetComponent<Collider>();
-                    if (col != null && col.GetInstanceID() == colliderId)
+                    if (col != null && col.GetEntityId() == colliderId)
                     {
                         clicked = b;
                         break;

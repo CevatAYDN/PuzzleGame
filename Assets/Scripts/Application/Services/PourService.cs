@@ -46,11 +46,6 @@ namespace PuzzleGame.Application.Services
 
             bool enableMultiLayer = levelData.enableMultiLayerPour;
 
-            _eventAggregator.Publish(new PourStartedEvent(
-                GetBottleIndex(source),
-                GetBottleIndex(target),
-                enableMultiLayer));
-
             return enableMultiLayer
                 ? TryMultiLayerPour(source, target, levelData, activeBottles)
                 : TrySingleLayerPour(source, target, activeBottles);
@@ -83,7 +78,7 @@ namespace PuzzleGame.Application.Services
             {
                 var layerOpt = sourceState.GetLayerAt(sourceState.LayerCount - 1 - i);
 
-                if (IsColorMatch(layerOpt.Color, topColor))
+                if (_validator.ColorsMatch(layerOpt.Color, topColor))
                 {
                     consecutiveCount++;
                 }
@@ -158,21 +153,12 @@ namespace PuzzleGame.Application.Services
             if (pourCount == 0)
             {
                 BottleLogger.LogDebug("[PourService] Multi-layer pour: no valid pour found");
-                _eventAggregator.Publish(new PourRejectedEvent(
-                    GetBottleIndex(source),
-                    GetBottleIndex(target),
-                    "no_matching_layers"));
                 return false;
             }
 
             var topLayerOpt = source.State.TopLayer;
             var topColor = topLayerOpt?.Color ?? default;
 
-            _eventAggregator.Publish(new MultiLayerPourStartedEvent(
-                GetBottleIndex(source),
-                GetBottleIndex(target),
-                pourCount,
-                UnityEngine.Color.white));
 
             int poured = 0;
             var rolledBackLayers = new System.Collections.Generic.List<LiquidLayer>(pourCount);
@@ -213,11 +199,6 @@ namespace PuzzleGame.Application.Services
                 _historyManager.RecordUndoSnapshot();
                 _historyManager.IncrementMoveCount();
 
-                _eventAggregator.Publish(new MultiLayerPourCompletedEvent(
-                    GetBottleIndex(source),
-                    GetBottleIndex(target),
-                    poured));
-
                 CheckForReactions(source, target, activeBottles);
 
                 BottleLogger.LogInfo($"[PourService] Multi-layer pour: {poured} layers from {source.GameObject.name} → {target.GameObject.name}");
@@ -230,15 +211,8 @@ namespace PuzzleGame.Application.Services
         // Fix #14: Use BottleIndex property instead of parsing GameObject.name.
         private static int GetBottleIndex(IBottleView bottle) => bottle.BottleIndex;
 
-        // Fix #2: Use System.Math.Abs instead of UnityEngine.Mathf.Abs — pure C#, no Unity dependency.
-        private static bool IsColorMatch(DomainColor a, DomainColor b, float tolerance = BottleConstants.ColorMatchEpsilon)
-        {
-            return Math.Abs(a.R - b.R) < tolerance &&
-                   Math.Abs(a.G - b.G) < tolerance &&
-                   Math.Abs(a.B - b.B) < tolerance &&
-                   Math.Abs(a.A - b.A) < tolerance;
-        }
-
+        // Fix Code Quality #4: Delegate to _validator.ColorsMatch() — no duplicate logic.
+        // IsColorMatch private method removed.
         private void CheckForReactions(IBottleView source, IBottleView target, IBottleView[] activeBottles)
         {
             if (_currentLevelData == null || !_currentLevelData.enableReactionSystem)

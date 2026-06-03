@@ -82,14 +82,14 @@ namespace PuzzleGame.Editor
             EditorGUILayout.LabelField("Player Save Data", EditorStyles.boldLabel);
             EditorGUILayout.Space(4);
 
-            var exists = Application.Services.GameSaveManager.HasSaveData;
-            var size = Application.Services.GameSaveManager.FileSizeBytes;
-            var integ = exists ? Application.Services.GameSaveManager.VerifyIntegrity() : false;
+            var exists = Application.Services.GameSaveManager.EditorInstance.HasSaveData;
+            var size = Application.Services.GameSaveManager.EditorInstance.FileSizeBytes;
+            var integ = exists ? Application.Services.GameSaveManager.EditorInstance.VerifyIntegrity() : false;
 
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 EditorGUILayout.LabelField("Status", EditorStyles.miniBoldLabel);
-                EditorGUILayout.LabelField("File", Application.Services.GameSaveManager.SaveFilePath);
+                EditorGUILayout.LabelField("File", Application.Services.GameSaveManager.EditorInstance.SaveFilePath);
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
@@ -113,7 +113,7 @@ namespace PuzzleGame.Editor
 
                 if (exists && integ)
                 {
-                    var data = Application.Services.GameSaveManager.PeekVerified();
+                    var data = Application.Services.GameSaveManager.EditorInstance.PeekVerified();
                     EditorGUILayout.LabelField("Last Played Level", data.lastPlayedLevel.ToString());
                     EditorGUILayout.LabelField("Completed Levels",
                         data.levels.FindAll(l => l.isCompleted).Count + "/" + data.levels.Count);
@@ -136,24 +136,24 @@ namespace PuzzleGame.Editor
 
         private void RevealSaveFile()
         {
-            if (!Application.Services.GameSaveManager.HasSaveData)
+            if (!Application.Services.GameSaveManager.EditorInstance.HasSaveData)
             {
                 SetStatus("No save file to reveal.", MessageType.Warning);
                 return;
             }
-            EditorUtility.RevealInFinder(Application.Services.GameSaveManager.SaveFilePath);
+            EditorUtility.RevealInFinder(Application.Services.GameSaveManager.EditorInstance.SaveFilePath);
             SetStatus("Save file revealed.", MessageType.Info);
         }
 
         private void VerifySaveFile()
         {
-            if (!Application.Services.GameSaveManager.HasSaveData)
+            if (!Application.Services.GameSaveManager.EditorInstance.HasSaveData)
             {
                 SetStatus("No save file to verify.", MessageType.Warning);
                 return;
             }
 
-            bool ok = Application.Services.GameSaveManager.VerifyIntegrity();
+            bool ok = Application.Services.GameSaveManager.EditorInstance.VerifyIntegrity();
             SetStatus(ok
                 ? "Save integrity: OK (HMAC-SHA256 matches)."
                 : "Save integrity: FAILED — file tampered or corrupted!",
@@ -162,7 +162,7 @@ namespace PuzzleGame.Editor
 
         private void DeleteSaveFile()
         {
-            if (!Application.Services.GameSaveManager.HasSaveData)
+            if (!Application.Services.GameSaveManager.EditorInstance.HasSaveData)
             {
                 SetStatus("No save data to delete.", MessageType.Info);
                 return;
@@ -176,7 +176,7 @@ namespace PuzzleGame.Editor
                 return;
             }
 
-            Application.Services.GameSaveManager.DeleteAll();
+            Application.Services.GameSaveManager.EditorInstance.DeleteAll();
             SetStatus("Save data deleted.", MessageType.Info);
         }
 

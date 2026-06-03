@@ -11,7 +11,7 @@ using PuzzleGame.Application.Services;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Events;
 using PuzzleGame.Application.Logging;
-using PuzzleGame.Application.UI;
+using PuzzleGame.Presentation.UI;
 using VContainer;
 // IUpdateable/IUpdateManager now live in Application.Interfaces (Fix #11)
 

@@ -169,14 +169,8 @@ namespace PuzzleGame.Application.Services
             BottleLogger.LogDebug($"[ReactionService] BUBBLE at {bottle.GameObject.name}.");
         }
 
-        private int GetBottleIndex(IBottleView bottle)
-        {
-            var name = bottle.GameObject.name;
-            var parts = name.Split('_');
-            if (parts.Length > 1 && int.TryParse(parts[parts.Length - 1], out int index))
-                return index;
-            return 0;
-        }
+        // Fix Code Quality #5: Use IBottleView.BottleIndex instead of fragile GameObject.name parsing.
+        private static int GetBottleIndex(IBottleView bottle) => bottle.BottleIndex;
     }
 
     public struct ReactionResult

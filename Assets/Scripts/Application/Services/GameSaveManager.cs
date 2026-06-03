@@ -5,33 +5,31 @@ using System.Security.Cryptography;
 using System.Text;
 using PuzzleGame.Domain.Models;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
-
 using PuzzleGame.Application.Interfaces;
+using PuzzleGame.Application.Logging;
 
 namespace PuzzleGame.Application.Services
 {
     /// <summary>
-    /// Save dosyası şu şekilde diske yazılır (anti-tamper):
-    ///   - Level state'leri JSON'a serialize edilir → payload
+    /// HMAC-SHA256 anti-tamper save manager.
+    /// Converted from static class to injectable instance (Fix #1 — Critical).
+    /// Register via DI: builder.Register&lt;ISaveManager, GameSaveManager&gt;(Lifetime.Singleton)
+    ///
+    /// File format:
+    ///   - Level states serialized to JSON → payload
     ///   - payload + salt + secretKey → HMAC-SHA256 → signature
-    ///   - { version, salt, payload, signature } → encrypted JSON → dosya
-    /// Saldırgan payload'ı edit etse bile HMAC eşleşmediği için reddedilir.
+    ///   - { version, salt, payload, signature } → JSON → disk
     /// </summary>
-    public static class GameSaveManager
+    public class GameSaveManager : ISaveManager
     {
         private const string SaveFileName = "puzzlegame_save.json";
         private const int CurrentVersion = 1;
-        private const int MaxLevelsInMemory = 64; // aşırı büyüme koruması
+        private const int MaxLevelsInMemory = 64;
 
-        /// <summary>
-        /// Obfuscated gizli anahtar. Prod'da değiştirilmeli.
-        /// Birden fazla parçaya bölünmüş — string concat olarak bulunması zor.
-        /// </summary>
-        private static readonly string SecretKey = BuildSecretKey();
+        private readonly string SecretKey = BuildSecretKey();
 
-        private static SaveData _cachedSaveData;
-        private static bool _cacheLoaded;
+        private SaveData _cachedSaveData;
+        private bool _cacheLoaded;
 
         private static string BuildSecretKey()
         {
@@ -44,10 +42,10 @@ namespace PuzzleGame.Application.Services
             );
         }
 
-        private static string FilePath =>
+        private string FilePath =>
             Path.Combine(UnityEngine.Application.persistentDataPath, SaveFileName);
 
-        private static string TempPath => FilePath + ".tmp";
+        private string TempPath => FilePath + ".tmp";
 
         // ── Domain types ────────────────────────────────────────────────────
 
@@ -131,7 +129,7 @@ namespace PuzzleGame.Application.Services
         /// <summary>
         /// Level state'ini kaydeder. Atomic write kullanır (yarım kalmış dosya oluşmaz).
         /// </summary>
-        public static bool Save(int levelIndex, int moveCount,
+        public bool Save(int levelIndex, int moveCount,
             IBottleView[] bottles, bool isCompleted, int stars)
         {
             if (bottles == null) return false;
@@ -171,21 +169,29 @@ namespace PuzzleGame.Application.Services
         /// Belirtilen level'ın doğrulanmış kaydını döndürür.
         /// Dosya yoksa, signature yanlışsa, JSON bozuksa null döner.
         /// </summary>
-        public static LevelStateData? LoadLevel(int levelIndex)
+        public GameSaveData? LoadLevel(int levelIndex)
         {
             var data = LoadVerified();
             if (data == null) return null;
-
             int idx = data.levels.FindIndex(l => l.levelIndex == levelIndex);
-            return idx >= 0 ? data.levels[idx] : (LevelStateData?)null;
+            if (idx < 0) return null;
+            var raw = data.levels[idx];
+            return new GameSaveData
+            {
+                LevelIndex = raw.levelIndex,
+                MoveCount  = raw.moveCount,
+                IsCompleted = raw.isCompleted,
+                Stars = raw.stars,
+                SavedAtUnix = raw.savedAtUnix
+            };
         }
 
-        public static int LoadLastPlayedLevel()
+        public int LoadLastPlayedLevel()
         {
             return LoadVerified()?.lastPlayedLevel ?? 0;
         }
 
-        public static void DeleteAll()
+        public void DeleteAll()
         {
             try
             {
@@ -193,43 +199,45 @@ namespace PuzzleGame.Application.Services
                 _cacheLoaded = false;
                 if (File.Exists(FilePath)) File.Delete(FilePath);
                 if (File.Exists(TempPath)) File.Delete(TempPath);
-                Debug.Log("[GameSaveManager] All save data deleted.");
+                BottleLogger.LogInfo("[GameSaveManager] All save data deleted.");
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[GameSaveManager] Delete failed: {ex.Message}");
+                BottleLogger.LogError($"[GameSaveManager] Delete failed: {ex.Message}");
             }
         }
 
         // ── Editor / debug API ──────────────────────────────────────────────
 
-        public static bool HasSaveData => File.Exists(FilePath);
-        public static string SaveFilePath => FilePath;
-        public static int FileVersion => LoadVerified()?.version ?? 0;
+        public static GameSaveManager EditorInstance { get; } = new GameSaveManager();
 
-        public static SaveData PeekVerified()
+        public bool HasSaveData => File.Exists(FilePath);
+
+        public bool VerifyIntegrity() => LoadVerified() != null;
+
+        public long FileSizeBytes
+        {
+            get
+            {
+                try
+                {
+                    if (File.Exists(FilePath)) return new FileInfo(FilePath).Length;
+                }
+                catch { }
+                return 0;
+            }
+        }
+
+        public string SaveFilePath => FilePath;
+
+        public SaveData PeekVerified()
         {
             return LoadVerified();
         }
 
-        public static long FileSizeBytes
-        {
-            get
-            {
-                try { return File.Exists(FilePath) ? new FileInfo(FilePath).Length : 0; }
-                catch { return 0; }
-            }
-        }
-
-        public static bool VerifyIntegrity()
-        {
-            // LoadVerified zaten kontrol yapıyor, ama exposed da istiyoruz
-            return LoadVerified() != null;
-        }
-
         // ── Core: verify + write ────────────────────────────────────────────
 
-        private static SaveData LoadVerified()
+        private SaveData LoadVerified()
         {
             if (_cacheLoaded)
             {
@@ -252,14 +260,14 @@ namespace PuzzleGame.Application.Services
                 // Version check
                 if (secure.version != CurrentVersion)
                 {
-                    Debug.LogWarning($"[GameSaveManager] Save version mismatch (got {secure.version}, expected {CurrentVersion}). Discarding.");
+                    BottleLogger.LogWarning($"[GameSaveManager] Save version mismatch (got {secure.version}, expected {CurrentVersion}). Discarding.");
                     return null;
                 }
 
                 // Signature check
                 if (!VerifyHmac(secure.salt, secure.payload, secure.signature))
                 {
-                    Debug.LogWarning("[GameSaveManager] Save signature invalid — file tampered or corrupted.");
+                    BottleLogger.LogWarning("[GameSaveManager] Save signature invalid — file tampered or corrupted.");
                     return null;
                 }
 
@@ -272,12 +280,12 @@ namespace PuzzleGame.Application.Services
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[GameSaveManager] Load failed: {ex.Message}");
+                BottleLogger.LogError($"[GameSaveManager] Load failed: {ex.Message}");
                 return null;
             }
         }
 
-        private static bool WriteSecure(SaveData data)
+        private bool WriteSecure(SaveData data)
         {
             try
             {
@@ -308,12 +316,12 @@ namespace PuzzleGame.Application.Services
                 _cachedSaveData = data;
                 _cacheLoaded = true;
 
-                Debug.Log($"[GameSaveManager] Saved ({data.levels.Count} levels, {FileSizeBytes} bytes).");
+                BottleLogger.LogInfo($"[GameSaveManager] Saved ({data.levels.Count} levels).");
                 return true;
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[GameSaveManager] Save failed: {ex.Message}");
+                BottleLogger.LogError($"[GameSaveManager] Save failed: {ex.Message}");
                 try { if (File.Exists(TempPath)) File.Delete(TempPath); } catch { }
                 return false;
             }
@@ -321,7 +329,7 @@ namespace PuzzleGame.Application.Services
 
         // ── HMAC-SHA256 helpers ─────────────────────────────────────────────
 
-        private static string ComputeHmac(string salt, string payload)
+        private string ComputeHmac(string salt, string payload)
         {
             using (var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(SecretKey)))
             {
@@ -331,7 +339,7 @@ namespace PuzzleGame.Application.Services
             }
         }
 
-        private static bool VerifyHmac(string salt, string payload, string expectedHex)
+        private bool VerifyHmac(string salt, string payload, string expectedHex)
         {
             string actual = ComputeHmac(salt, payload);
             // Constant-time comparison — timing attack koruması
