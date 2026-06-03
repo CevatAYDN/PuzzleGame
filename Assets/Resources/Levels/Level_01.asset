@@ -38,7 +38,12 @@ MonoBehaviour:
     featureType: 0
     isEnabled: 0
     enableReactions: 1
-    reactionRules: []
+    reactionRules:
+    - colorA: 1
+      colorB: 2
+      resultColor: 3
+      reactionType: 1
+      effectPrefab: {fileID: 0}
   keyAndLockConfig:
     featureType: 0
     isEnabled: 0
