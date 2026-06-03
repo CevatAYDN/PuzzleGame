@@ -80,6 +80,40 @@ namespace PuzzleGame.Infrastructure.Implementations
 
             _liquidBlock.SetFloat(SurfaceHeightID, totalFill);
             renderer.SetPropertyBlock(_liquidBlock, materialIndex);
+
+#if UNITY_EDITOR
+            if (!UnityEngine.Application.isPlaying)
+            {
+                var mats = renderer.sharedMaterials;
+                if (materialIndex >= 0 && materialIndex < mats.Length)
+                {
+                    var mat = mats[materialIndex];
+                    if (mat != null)
+                    {
+                        cumulative = 0f;
+                        for (int i = 0; i < maxLayers; i++)
+                        {
+                            Color color = Color.clear;
+                            float fill  = cumulative;
+
+                            if (i < _mergedLayers.Count)
+                            {
+                                var layer = _mergedLayers[i];
+                                color      = AdjustColor(ColorAdapter.ToUnity(layer.Color), saturationBoost, brightnessBoost);
+                                cumulative += layer.Amount;
+                                fill       = cumulative;
+                            }
+
+                            mat.SetColor(ColorIDs[i], color);
+                            mat.SetFloat(FillIDs[i],  fill);
+                        }
+
+                        mat.SetFloat(SurfaceHeightID, totalFill);
+                        UnityEditor.EditorUtility.SetDirty(mat);
+                    }
+                }
+            }
+#endif
         }
 
         public void UpdateGlass(Renderer renderer, bool isEmpty, DomainColor baseColor, int materialIndex = 0)
@@ -108,6 +142,22 @@ namespace PuzzleGame.Infrastructure.Implementations
 
             _glassBlock.SetColor(GlassColorID, glassColor);
             renderer.SetPropertyBlock(_glassBlock, materialIndex);
+
+#if UNITY_EDITOR
+            if (!UnityEngine.Application.isPlaying)
+            {
+                var mats = renderer.sharedMaterials;
+                if (materialIndex >= 0 && materialIndex < mats.Length)
+                {
+                    var mat = mats[materialIndex];
+                    if (mat != null)
+                    {
+                        mat.SetColor(GlassColorID, glassColor);
+                        UnityEditor.EditorUtility.SetDirty(mat);
+                    }
+                }
+            }
+#endif
         }
 
         private static Color AdjustColor(Color c, float sat, float bright)

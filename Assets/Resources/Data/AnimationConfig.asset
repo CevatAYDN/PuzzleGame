@@ -9,9 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 706d449e41955a1408e94b984b030ce1, type: 3}
+  m_Script: {fileID: 11500000, guid: fea312a03e6dd1242b30b36d4c323b8a, type: 3}
   m_Name: AnimationConfig
-  m_EditorClassIdentifier: Assembly-CSharp::BottleShaders.Configuration.AnimationConfig
+  m_EditorClassIdentifier: PuzzleGame.Application::PuzzleGame.Application.Configuration.AnimationConfig
   liftHeight: 1
   liftDuration: 0.4
   pourDuration: 0.6

@@ -9,12 +9,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 22c1d6abe30ba374cb602a725ff8a478, type: 3}
+  m_Script: {fileID: 11500000, guid: 73dd53ef55201a5469e4076c968cf249, type: 3}
   m_Name: WobbleConfig
-  m_EditorClassIdentifier: Assembly-CSharp::PuzzleGame.Configuration.WobbleConfig
+  m_EditorClassIdentifier: PuzzleGame.Application::PuzzleGame.Application.Configuration.WobbleConfig
   maxWobble: 0.05
   wobbleSpeed: 6
   recoveryRate: 1.5
   movementMultiplier: 1
   rotationMultiplier: 0.15
   updateInterval: 0.05
+  liquidMaterialIndex: 1

@@ -9,9 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bce5a9e65922c9b4398e6f5b4927c4bb, type: 3}
+  m_Script: {fileID: 11500000, guid: c1b0ea7b4e5103e408e423dbb688b682, type: 3}
   m_Name: GameConfig
-  m_EditorClassIdentifier: Assembly-CSharp::BottleShaders.Configuration.GameConfig
+  m_EditorClassIdentifier: PuzzleGame.Application::PuzzleGame.Application.Configuration.GameConfig
   bottleLayerMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -19,3 +19,5 @@ MonoBehaviour:
   maxLayersPerBottle: 4
   saturationBoost: 1.35
   brightnessBoost: 1.2
+  applyMobileShaderDefaults: 1
+  solverMaxVisitedStates: 10000

@@ -523,6 +523,36 @@ namespace PuzzleGame.Editor
             Debug.Log("[SceneBuilder] Current scene set up with GameManager + DI. Ctrl+Z to undo.");
         }
 
+        [MenuItem("Tools/PuzzleGame/Fix URP Pipeline Settings")]
+        public static void FixURPPipeline()
+        {
+            var guids = AssetDatabase.FindAssets("t:UniversalRenderPipelineAsset PC_RPAsset");
+            if (guids.Length == 0)
+            {
+                guids = AssetDatabase.FindAssets("t:UniversalRenderPipelineAsset");
+            }
+            if (guids.Length > 0)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guids[0]);
+                var asset = AssetDatabase.LoadAssetAtPath<RenderPipelineAsset>(path);
+                GraphicsSettings.defaultRenderPipeline = asset;
+                
+                int originalQuality = QualitySettings.GetQualityLevel();
+                for (int i = 0; i < QualitySettings.names.Length; i++)
+                {
+                    QualitySettings.SetQualityLevel(i, false);
+                    QualitySettings.renderPipeline = asset;
+                }
+                QualitySettings.SetQualityLevel(originalQuality, false);
+
+                Debug.Log($"[SceneBuilder] Successfully assigned URP Asset to Graphics & Quality Settings: {path}");
+            }
+            else
+            {
+                Debug.LogError("[SceneBuilder] No UniversalRenderPipelineAsset found in project!");
+            }
+        }
+
         private static void CreateGameInstaller()
         {
             if (Object.FindAnyObjectByType<Installers.GameInstaller>() != null) return;

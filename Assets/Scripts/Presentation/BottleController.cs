@@ -50,7 +50,6 @@ namespace PuzzleGame
         {
             if (rendererService == null) throw new ArgumentNullException(nameof(rendererService));
             if (validator == null)       throw new ArgumentNullException(nameof(validator));
-            if (animationService == null) throw new ArgumentNullException(nameof(animationService));
             if (initialLayers == null)    throw new ArgumentNullException(nameof(initialLayers));
 
             _rendererService = rendererService;

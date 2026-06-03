@@ -152,12 +152,20 @@ namespace PuzzleGame
             else
             {
                 _stateMachine.TransitionTo(GameState.Playing);
+                if (_currentLevel == null && _levelRepository != null && _levelRepository.AllLevels != null && _levelRepository.AllLevels.Count > 0)
+                {
+                    _currentLevel = _levelRepository.AllLevels[0];
+                }
             }
 
             _poolInitializer = new BottlePoolInitializer(
                 _levelSetupService, _rendererService, _validator, _animationService,
                 _inputHandlerService, _historyManager, _camera);
-            _poolInitializer.InitializeForLevel(_currentLevel);
+
+            if (_currentLevel != null)
+            {
+                _poolInitializer.InitializeForLevel(_currentLevel);
+            }
             InitHUD();
         }
 

@@ -9,9 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7382889389a938a418c06ef22ec2a3c5, type: 3}
+  m_Script: {fileID: 11500000, guid: 5ffafd60d5597954888bd3ebc71f7d33, type: 3}
   m_Name: AudioConfig
-  m_EditorClassIdentifier: Assembly-CSharp::PuzzleGame.Configuration.AudioConfig
+  m_EditorClassIdentifier: PuzzleGame.Application::PuzzleGame.Application.Configuration.AudioConfig
   musicGroup: {fileID: 0}
   sfxGroup: {fileID: 0}
   masterVolume: 1
