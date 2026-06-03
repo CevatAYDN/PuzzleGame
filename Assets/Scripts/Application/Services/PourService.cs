@@ -173,7 +173,13 @@ namespace PuzzleGame.Application.Services
                 catch (InvalidOperationException)
                 {
                     // Source ran dry unexpectedly — rollback already-poured layers.
-                    break;
+                    // FIX: Complete rollback of all poured layers on early break
+                    for (int r = poured - 1; r >= 0; r--)
+                    {
+                        target.State.PopTopLayer();
+                        source.State.AddLayer(rolledBackLayers[r]);
+                    }
+                    return false;
                 }
 
                 try
@@ -185,8 +191,9 @@ namespace PuzzleGame.Application.Services
                 {
                     rolledBackLayers.Add(layer);
                     // Rollback any layers already poured to target this iteration.
-                    for (int r = rolledBackLayers.Count - 1; r >= 0; r--)
+                    for (int r = poured - 1; r >= 0; r--)
                     {
+                        target.State.PopTopLayer();
                         source.State.AddLayer(rolledBackLayers[r]);
                     }
                     throw new InvalidOperationException(

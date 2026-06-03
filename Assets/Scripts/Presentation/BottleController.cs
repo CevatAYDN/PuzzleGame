@@ -4,10 +4,12 @@ using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Domain;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
+using PuzzleGame.Domain.Services;
 using PuzzleGame.Application.Logging;
 using UnityEngine;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Infrastructure;
+using PuzzleGame.Infrastructure.Implementations;
 
 namespace PuzzleGame
 {
@@ -123,29 +125,31 @@ namespace PuzzleGame
 
         private void RestoreStateFromSerialized()
         {
-            // Decoupled instantiation via reflection to prevent direct concrete service dependencies
+            // FIX: Removed runtime reflection. Services should be injected via Initialize() or set via property.
+            // If not injected, create default implementations directly (non-DI fallback for Editor).
             if (_rendererService == null)
             {
-                _rendererService = TryCreateService<IRendererService>("PuzzleGame.Infrastructure.Implementations.RendererService, PuzzleGame.Infrastructure");
+                _rendererService = new RendererService();
             }
             if (_validator == null)
             {
-                _validator = TryCreateService<IBottleValidator>("PuzzleGame.Domain.Services.BottleValidationService, PuzzleGame.Domain");
+                _validator = new BottleValidationService();
             }
+
             _meshGenerator = GetComponent<BottleMeshGenerator>();
             _renderer = GetComponent<Renderer>();
             _wobble = GetComponent<Wobble>();
- 
+
             _visualRenderer = new BottleVisualRenderer(
                 _renderer, _rendererService, visualConfig,
                 () => _visualLayers, () => _visualTotalFill);
- 
+
             _corkController = new BottleCorkController(
                 transform, _animationService,
                 () => Height,
                 () => _meshGenerator != null ? _meshGenerator.neckRadius : PuzzleGame.Infrastructure.CorkConstants.Radius,
                 corkObject);
- 
+
             int maxLayers = visualConfig != null ? visualConfig.maxLayers : BottleConstants.DefaultLayerCapacity;
             _state = new BottleState(maxLayers);
             _visualLayers.Clear();
@@ -160,19 +164,16 @@ namespace PuzzleGame
             }
             _visualTotalFill = _state.TotalFill;
         }
- 
-        private T TryCreateService<T>(string typeName) where T : class
+
+        // Property-based injection for non-DI scenarios (Editor preview)
+        public IRendererService RendererService
         {
-            try
-            {
-                var type = System.Type.GetType(typeName);
-                if (type != null)
-                {
-                    return System.Activator.CreateInstance(type) as T;
-                }
-            }
-            catch { }
-            return null;
+            set => _rendererService = value;
+        }
+
+        public IBottleValidator BottleValidator
+        {
+            set => _validator = value;
         }
  
         public bool IsEmpty => State?.IsEmpty ?? true;
@@ -325,11 +326,26 @@ namespace PuzzleGame
         private void OnDestroy()
         {
             _corkController?.DisposeResources();
+
+            // FIX: Complete material disposal to prevent memory leaks
             var lr = GetComponent<LineRenderer>();
             if (lr != null && lr.sharedMaterial != null)
             {
                 Destroy(lr.sharedMaterial);
             }
+
+            // Dispose instantiated materials (not shared)
+            if (glassMaterial != null && !ReferenceEquals(glassMaterial, null))
+            {
+                Destroy(glassMaterial);
+            }
+            if (liquidMaterial != null && !ReferenceEquals(liquidMaterial, null))
+            {
+                Destroy(liquidMaterial);
+            }
+
+            // Dispose visual renderer resources (MaterialPropertyBlock is value type, no explicit dispose needed)
+            _visualRenderer = null;
         }
     }
 }
