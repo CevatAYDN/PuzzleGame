@@ -35,6 +35,16 @@ namespace PuzzleGame
         {
             _meshFilter = GetComponent<MeshFilter>();
             _meshRenderer = GetComponent<MeshRenderer>();
+            EnforceMoldShape();
+        }
+
+        private void EnforceMoldShape()
+        {
+            // Override shape parameters to generate a heavy-duty casting mold/crucible instead of a bottle
+            neckHeight = 0f;
+            capHeight = 0f;
+            neckRadius = bodyRadius * 1.05f;
+            capRadius = bodyRadius * 1.05f;
         }
 
         private void Start()
@@ -42,8 +52,7 @@ namespace PuzzleGame
             if (_meshFilter == null) _meshFilter = GetComponent<MeshFilter>();
             if (_meshRenderer == null) _meshRenderer = GetComponent<MeshRenderer>();
 
-            if (_meshFilter != null && (_meshFilter.sharedMesh == null || _meshFilter.sharedMesh.vertexCount == 0))
-                BuildMesh();
+            BuildMesh();
 
             if (_meshRenderer != null && (_meshRenderer.sharedMaterials == null || _meshRenderer.sharedMaterials.Length == 0))
                 ApplyMaterials();
@@ -51,6 +60,8 @@ namespace PuzzleGame
 
         public void BuildMesh()
         {
+            EnforceMoldShape();
+
             if (_meshFilter == null) _meshFilter = GetComponent<MeshFilter>();
             if (_meshRenderer == null) _meshRenderer = GetComponent<MeshRenderer>();
             if (_meshFilter == null || _meshRenderer == null) return;
@@ -93,30 +104,21 @@ namespace PuzzleGame
             norms.Add(Vector3.down);
             uvs.Add(new Vector2(0.5f, 0f));
 
-            AddRing(0f, safeBodyRadius);
-            for (int i = 1; i <= 3; i++)
-            {
-                float t = i / 4f;
-                float y = t * bodyH;
-                float bulge = Mathf.Sin(t * Mathf.PI) * safeBodyRadius * 0.04f;
-                AddRing(y, safeBodyRadius + bulge);
-            }
-            AddRing(bodyH, safeBodyRadius);
+            // Pure crucible shape: tapered cylinder from bottom to top with draft angle
+            float bottomRadius = safeBodyRadius * 0.8f;
+            float topRadius = safeBodyRadius * 1.05f;
 
-            for (int i = 1; i <= 3; i++)
+            int ringCount = 8;
+            for (int i = 0; i <= ringCount; i++)
             {
-                float t = i / 4f;
-                float y = bodyH + t * safeNeckHeight;
-                float r = Mathf.Lerp(safeBodyRadius, safeNeckRadius, t);
+                float t = (float)i / ringCount;
+                float y = t * safeHeight;
+                float r = Mathf.Lerp(bottomRadius, topRadius, t);
                 AddRing(y, r);
             }
 
-            AddRing(bodyH + safeNeckHeight, safeNeckRadius);
-            AddRing(bodyH + safeNeckHeight, safeCapRadius);
-            AddRing(bodyH + safeNeckHeight + safeCapHeight, safeCapRadius);
-
             int topCenter = verts.Count;
-            float topY = bodyH + safeNeckHeight + safeCapHeight;
+            float topY = safeHeight;
             verts.Add(new Vector3(0f, topY, 0f));
             norms.Add(Vector3.up);
             uvs.Add(new Vector2(0.5f, 1f));
@@ -164,17 +166,10 @@ namespace PuzzleGame
 
             _meshFilter.sharedMesh = mesh;
 
-#if UNITY_EDITOR
-            if (oldMesh != null && !UnityEngine.Application.isPlaying)
-            {
-                DestroyImmediate(oldMesh);
-            }
-#else
             if (oldMesh != null)
             {
-                Destroy(oldMesh);
+                SafeDestroy(oldMesh);
             }
-#endif
         }
 
         private void ApplyMaterials()
@@ -194,22 +189,36 @@ namespace PuzzleGame
             {
                 if (_meshFilter.sharedMesh.name == "Mold")
                 {
-#if UNITY_EDITOR
-                    if (!UnityEngine.Application.isPlaying)
-                        DestroyImmediate(_meshFilter.sharedMesh);
-                    else
-                        Destroy(_meshFilter.sharedMesh);
-#else
-                    Destroy(_meshFilter.sharedMesh);
-#endif
+                    SafeDestroy(_meshFilter.sharedMesh);
                 }
             }
+        }
+
+        private void SafeDestroy(UnityEngine.Object obj)
+        {
+            if (obj == null) return;
+#if UNITY_EDITOR
+            if (!UnityEngine.Application.isPlaying)
+            {
+                UnityEditor.EditorApplication.delayCall += () =>
+                {
+                    if (obj != null)
+                    {
+                        DestroyImmediate(obj);
+                    }
+                };
+                return;
+            }
+#endif
+            Destroy(obj);
         }
 
 #if UNITY_EDITOR
         private void OnValidate()
         {
             if (UnityEngine.Application.isPlaying || _isBuildingInProgress) return;
+
+            EnforceMoldShape();
 
             _isBuildingInProgress = true;
             EditorApplication.delayCall += () =>

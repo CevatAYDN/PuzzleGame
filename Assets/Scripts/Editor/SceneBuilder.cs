@@ -182,10 +182,10 @@ namespace PuzzleGame.Editor
             var meshGen = go.AddComponent<MoldMeshGenerator>();
             meshGen.height = MoldHeight;
             meshGen.bodyRadius = MoldRadius;
-            meshGen.neckRadius = 0.15f;
-            meshGen.neckHeight = 0.4f;
-            meshGen.capRadius = 0.17f;
-            meshGen.capHeight = 0.1f;
+            meshGen.neckRadius = MoldRadius * 1.05f;
+            meshGen.neckHeight = 0f;
+            meshGen.capRadius = MoldRadius * 1.05f;
+            meshGen.capHeight = 0f;
             meshGen.glassMaterial = glassMat;
             meshGen.OreMaterial = OreMat;
             meshGen.BuildMesh();

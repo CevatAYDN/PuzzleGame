@@ -131,7 +131,7 @@ namespace PuzzleGame
 #endif
         }
 
-        private void RestoreStateFromSerialized()
+        private void RestoreStateFromSerialized(bool isFromOnValidate = false)
         {
 #if UNITY_EDITOR
             if (!UnityEngine.Application.isPlaying)
@@ -169,7 +169,7 @@ namespace PuzzleGame
                 corkObject);
             
             // Fix: Cork is initialized properly during state restores to avoid desync
-            _corkController.EnsureCork();
+            _corkController.EnsureCork(isFromOnValidate);
             corkObject = _corkController.CorkObject;
 
             int maxLayers = visualConfig != null ? visualConfig.maxLayers : ForgeConstants.DefaultLayerCapacity;
@@ -353,7 +353,7 @@ namespace PuzzleGame
         private void OnValidate()
         {
             if (UnityEngine.Application.isPlaying) return;
-            RestoreStateFromSerialized();
+            RestoreStateFromSerialized(true);
             UpdateVisuals();
         }
 #endif

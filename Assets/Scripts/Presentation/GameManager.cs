@@ -138,8 +138,8 @@ namespace PuzzleGame
 
             // Lock target frame rate to device screen refresh rate for AAA mobile smoothness (Unity 6 API)
             double refreshRate = Screen.currentResolution.refreshRateRatio.value;
-            Application.targetFrameRate = refreshRate > 0 ? (int)Math.Round(refreshRate) : 60;
-            MoldLogger.LogInfo($"Target frame rate set to: {Application.targetFrameRate} FPS");
+            UnityEngine.Application.targetFrameRate = refreshRate > 0 ? (int)Math.Round(refreshRate) : 60;
+            MoldLogger.LogInfo($"Target frame rate set to: {UnityEngine.Application.targetFrameRate} FPS");
 
             _shaderOptimizer?.Initialize(gameConfig.applyMobileShaderDefaults);
             _camera = Camera.main;

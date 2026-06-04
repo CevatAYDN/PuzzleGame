@@ -41,19 +41,17 @@ namespace PuzzleGame
         /// Ensures a cork GameObject exists. If none is assigned, finds a child named "Cork" or creates a procedural one.
         /// Cork starts hidden (inactive). Resets capped state.
         /// </summary>
-        public void EnsureCork()
+        public void EnsureCork(bool isFromOnValidate = false)
         {
-            if (_corkObject == null)
+            var child = _MoldTransform.Find("Cork");
+            if (child != null)
             {
-                var child = _MoldTransform.Find("Cork");
-                if (child != null)
-                {
-                    _corkObject = child.gameObject;
-                }
-                else
-                {
-                    _corkObject = CreateProceduralCork();
-                }
+                _corkObject = child.gameObject;
+                UpdateCorkMeshAndMaterial(_corkObject);
+            }
+            else if (!isFromOnValidate)
+            {
+                _corkObject = CreateProceduralCork();
             }
 
             if (_corkObject != null)
@@ -109,8 +107,21 @@ namespace PuzzleGame
             cork.transform.localRotation = Quaternion.identity;
             cork.transform.localScale = Vector3.zero;
 
-            var filter = cork.AddComponent<MeshFilter>();
-            var corkRenderer = cork.AddComponent<MeshRenderer>();
+            UpdateCorkMeshAndMaterial(cork);
+
+            cork.SetActive(false);
+            return cork;
+        }
+
+        private void UpdateCorkMeshAndMaterial(GameObject cork)
+        {
+            if (cork == null) return;
+
+            var filter = cork.GetComponent<MeshFilter>();
+            if (filter == null) filter = cork.AddComponent<MeshFilter>();
+
+            var corkRenderer = cork.GetComponent<MeshRenderer>();
+            if (corkRenderer == null) corkRenderer = cork.AddComponent<MeshRenderer>();
 
             var mesh = new Mesh { name = "CorkMesh" };
             int segments = PuzzleGame.Infrastructure.CorkConstants.Segments;
@@ -167,7 +178,13 @@ namespace PuzzleGame
             mesh.SetTriangles(tris, 0);
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
+
+            Mesh oldMesh = filter.sharedMesh;
             filter.sharedMesh = mesh;
+            if (oldMesh != null && oldMesh.name == "CorkMesh")
+            {
+                SafeDestroy(oldMesh);
+            }
 
             var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default");
             var mat = new Material(shader);
@@ -177,22 +194,32 @@ namespace PuzzleGame
                 PuzzleGame.Infrastructure.CorkConstants.WoodB);
             mat.color = woodColor;
             mat.SetColor("_BaseColor", woodColor);
-            corkRenderer.sharedMaterial = mat;
 
-            cork.SetActive(false);
-            return cork;
+            Material oldMat = corkRenderer.sharedMaterial;
+            corkRenderer.sharedMaterial = mat;
+            if (oldMat != null)
+            {
+                SafeDestroy(oldMat);
+            }
         }
 
         private static void SafeDestroy(UnityEngine.Object obj)
         {
+            if (obj == null) return;
 #if UNITY_EDITOR
             if (!UnityEngine.Application.isPlaying)
-                UnityEngine.Object.DestroyImmediate(obj);
-            else
-                UnityEngine.Object.Destroy(obj);
-#else
-            UnityEngine.Object.Destroy(obj);
+            {
+                UnityEditor.EditorApplication.delayCall += () =>
+                {
+                    if (obj != null)
+                    {
+                        UnityEngine.Object.DestroyImmediate(obj);
+                    }
+                };
+                return;
+            }
 #endif
+            UnityEngine.Object.Destroy(obj);
         }
     }
 }
