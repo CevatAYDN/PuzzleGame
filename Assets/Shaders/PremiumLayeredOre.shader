@@ -1,8 +1,8 @@
-Shader "Custom/PremiumLayeredLiquid"
+Shader "Custom/PremiumLayeredOre"
 {
     Properties
     {
-        [Header(Liquid Colors)]
+        [Header(Ore Colors)]
         _Color1("Color 1 Bottom", Color) = (0.15, 0.55, 0.95, 0.98)
         _Color2("Color 2", Color) = (0.08, 0.65, 0.35, 0.98)
         _Color3("Color 3", Color) = (0.95, 0.18, 0.28, 0.98)
@@ -14,8 +14,19 @@ Shader "Custom/PremiumLayeredLiquid"
         _Fill3("Fill Level 3", Range(0.0, 1.0)) = 0.75
         _Fill4("Fill Level 4", Range(0.0, 1.0)) = 1.0
 
-        [Header(Bottle Properties)]
-        _BottleHeight("Bottle Mesh Height (object space)", Float) = 2.0
+        [Header(Magma Emission and Crust)]
+        [HDR] _EmissionColorMultiplier("Global Emission Tint", Color) = (1.0, 1.0, 1.0, 1.0)
+        _EmissionIntensity("Emission Intensity", Range(0.0, 10.0)) = 2.5
+        _CrustColor("Crust Color", Color) = (0.1, 0.05, 0.02, 1.0)
+        _CrustScale("Crust Scale", Range(1.0, 50.0)) = 15.0
+        _CrustThreshold("Crust Coverage", Range(0.0, 1.0)) = 0.4
+
+        [Header(Heat Distortion)]
+        _HeatDistortion("Distortion Amount", Range(0.0, 0.2)) = 0.05
+        _HeatSpeed("Distortion Speed", Range(0.0, 5.0)) = 1.5
+
+        [Header(Mold Properties)]
+        _BottleHeight("Mold Mesh Height (object space)", Float) = 2.0
         _SurfaceHeight("Surface Height", Range(0.0, 1.0)) = 1.0
 
         [Header(Wobble Effect)]
@@ -23,22 +34,11 @@ Shader "Custom/PremiumLayeredLiquid"
         [HideInInspector] _WobbleZ("Wobble Z", Range(-1, 1)) = 0.0
         _WobbleStrength("Wobble Strength", Range(0.0, 0.3)) = 0.1
 
-        [Header(Liquid Surface)]
+        [Header(Ore Surface)]
         _SurfaceSmoothness("Surface Edge Smoothness", Range(0.0, 0.05)) = 0.008
         _SurfaceRippleAmplitude("Ripple Amplitude", Range(0.0, 0.1)) = 0.004
         _SurfaceRippleFrequency("Ripple Frequency", Range(0.0, 50.0)) = 12.0
         _SurfaceRippleSpeed("Ripple Speed", Range(0.0, 5.0)) = 0.8
-
-        [Header(Foam Effect)]
-        _FoamColor("Foam Color", Color) = (1.0, 1.0, 1.0, 1.0)
-        _FoamWidth("Foam Width", Range(0.0, 0.1)) = 0.01
-        _FoamIntensity("Foam Intensity", Range(0.0, 2.0)) = 0.3
-
-        [Header(Bubble Effect)]
-        _BubbleColor("Bubble Color", Color) = (1.0, 1.0, 1.0, 0.5)
-        _BubbleCount("Bubble Density", Range(0, 100)) = 10
-        _BubbleSize("Bubble Size", Range(0.001, 0.02)) = 0.003
-        _BubbleSpeed("Bubble Speed", Range(0.1, 2.0)) = 0.3
 
         [Header(Surface Highlight)]
         _HighlightColor("Highlight Color", Color) = (1.0, 1.0, 1.0, 1.0)
@@ -102,6 +102,15 @@ Shader "Custom/PremiumLayeredLiquid"
                 float _Fill2;
                 float _Fill3;
                 float _Fill4;
+
+                float4 _EmissionColorMultiplier;
+                float _EmissionIntensity;
+                float4 _CrustColor;
+                float _CrustScale;
+                float _CrustThreshold;
+                float _HeatDistortion;
+                float _HeatSpeed;
+
                 float _BottleHeight;
                 float _SurfaceHeight;
                 float _WobbleX;
@@ -111,13 +120,7 @@ Shader "Custom/PremiumLayeredLiquid"
                 float _SurfaceRippleAmplitude;
                 float _SurfaceRippleFrequency;
                 float _SurfaceRippleSpeed;
-                float4 _FoamColor;
-                float _FoamWidth;
-                float _FoamIntensity;
-                float4 _BubbleColor;
-                float _BubbleCount;
-                float _BubbleSize;
-                float _BubbleSpeed;
+
                 float4 _HighlightColor;
                 float _HighlightIntensity;
                 float _HighlightWidth;
@@ -215,48 +218,24 @@ Shader "Custom/PremiumLayeredLiquid"
                 }
             }
 
-            float CalculateSparkle(float3 positionWS, float3 normalWS, float3 viewDirWS, float time)
+            // Pseudo-random noise for crust
+            float hash(float2 p)
             {
-                float2 sparkleUV = positionWS.xz * _SparkleSize + time * 0.5;
-                float2 sparkleUV2 = positionWS.xy * _SparkleSize * 0.7 + time * 0.3;
-
-                float sparkle1 = frac(sin(dot(sparkleUV, float2(12.9898, 78.233))) * 43758.5453);
-                float sparkle2 = frac(sin(dot(sparkleUV2, float2(4.898, 7.23))) * 23421.631);
-
-                float sparkle = (sparkle1 + sparkle2) * 0.5;
-                sparkle = pow(sparkle, 20.0);
-
-                float3 halfDir = normalize(normalWS + viewDirWS);
-                sparkle *= pow(max(dot(normalWS, halfDir), 0.0), 8.0);
-
-                return sparkle;
+                p = 50.0 * frac(p * 0.3183099 + float2(0.71, 0.113));
+                return -1.0 + 2.0 * frac(p.x * p.y * (p.x + p.y));
             }
 
-            float CalculateBubble(float3 positionOS, float time)
+            float noise(float2 p)
             {
-                float bubbles = 0.0;
-
-                for (int i = 0; i < 8; i++)
-                {
-                    float2 random2 = float2(sin(float(i) * 127.1 + time * 0.1), cos(float(i) * 311.7 - time * 0.05));
-                    float2 bubblePos = random2 * 0.8;
-                    float bubbleY = fmod(positionOS.y + float(i) * 0.3 + time * _BubbleSpeed, 2.0) - 1.0;
-
-                    float2 bubbleUV = float2(positionOS.x - bubblePos.x, bubbleY - bubblePos.y);
-                    float bubbleDist = length(bubbleUV);
-
-                    float bubble = smoothstep(_BubbleSize, 0.0, bubbleDist);
-                    float bubbleBrightness = smoothstep(_BubbleSize * 0.2, _BubbleSize * 0.8, bubbleDist);
-
-                    bubbles += bubble * bubbleBrightness;
-                }
-
-                return bubbles;
+                float2 i = floor(p);
+                float2 f = frac(p);
+                float2 u = f * f * (3.0 - 2.0 * f);
+                return lerp(lerp(hash(i + float2(0.0, 0.0)), hash(i + float2(1.0, 0.0)), u.x),
+                            lerp(hash(i + float2(0.0, 1.0)), hash(i + float2(1.0, 1.0)), u.x), u.y);
             }
 
             half4 frag(Varyings input, half facing : VFACE) : SV_Target
             {
-                // Calculate world up in object space to keep liquid horizontal as the bottle tilts
                 float3x3 worldToObject = (float3x3)GetWorldToObjectMatrix();
                 float3 upOS = normalize(mul(worldToObject, float3(0.0, 1.0, 0.0)));
 
@@ -266,7 +245,12 @@ Shader "Custom/PremiumLayeredLiquid"
                 float normalizedY = saturate(height / max(planeScale, 0.0001));
 
                 float time = _Time.y;
-                float surfaceRipple = CalculateRipple(input.positionWS, time);
+                
+                // Add heat distortion to position for noise and ripples
+                float distortion = noise(input.positionWS.xz * 10.0 + time * _HeatSpeed) * _HeatDistortion;
+                float3 distortedPosWS = input.positionWS + float3(distortion, 0, distortion);
+
+                float surfaceRipple = CalculateRipple(distortedPosWS, time);
 
                 float wobbleAdjustment = input.wobbleY;
                 float adjustedNormalizedY = normalizedY + wobbleAdjustment;
@@ -283,13 +267,6 @@ Shader "Custom/PremiumLayeredLiquid"
                 float4 layerColor;
                 float layerAlpha;
                 GetLayerColor(normalizedY, colors, fills, layerColor, layerAlpha);
-
-                // Simple foam
-                float foam = step(surfaceDist, 0.5) - step(surfaceDist, (0.5 - _FoamWidth));
-                float4 foamColored = foam * (_FoamColor * _FoamIntensity);
-
-                float bubbles = CalculateBubble(input.positionOS, time);
-                float4 bubbleColored = bubbles * _BubbleColor;
 
                 float boundaryFactor = 1.0;
                 [unroll]
@@ -311,8 +288,15 @@ Shader "Custom/PremiumLayeredLiquid"
 
                 // Bright surface highlight
                 float surfaceProximity = 1.0 - saturate((_SurfaceHeight + surfaceRipple - normalizedY) / 0.03);
-                float surfaceHighlight = pow(surfaceProximity, 2.0) * _HighlightIntensity;
-                float3 surfaceHighlightColor = _HighlightColor.rgb * surfaceHighlight;
+                
+                // Magma Emission
+                float3 emission = layerColor.rgb * _EmissionColorMultiplier.rgb * _EmissionIntensity;
+
+                // Crust Calculation
+                float n = noise(distortedPosWS.xz * _CrustScale + time * 0.2) * 0.5 + 0.5;
+                float crustFactor = smoothstep(_CrustThreshold - 0.1, _CrustThreshold + 0.1, n) * surfaceProximity;
+                
+                float3 crustColor = lerp(emission, _CrustColor.rgb, crustFactor);
 
                 Light mainLight = GetMainLight();
                 float3 lightDir = normalize(mainLight.direction);
@@ -321,30 +305,25 @@ Shader "Custom/PremiumLayeredLiquid"
                 float specular = pow(NdotH, _SpecularSmoothness * 256.0) * _SpecularIntensity;
                 float3 specularColor = specular * _SpecularColor.rgb * mainLight.color;
 
-                float sparkle = CalculateSparkle(input.positionWS, normalWS, viewDir, time) * _SparkleIntensity;
-
                 // Rim Light & Volume Shadow for cylindrical feel
                 float rim = 1.0 - NdotV;
                 float rimIntensity = smoothstep(0.6, 1.0, rim);
                 float3 rimColor = layerColor.rgb * rimIntensity * 2.0;
                 
                 float volumeShadow = smoothstep(0.3, 1.0, rim);
-                layerColor.rgb = lerp(layerColor.rgb, layerColor.rgb * 0.4, volumeShadow * 0.8);
+                crustColor = lerp(crustColor, crustColor * 0.4, volumeShadow * 0.8);
 
-                float3 finalColor = layerColor.rgb * boundaryFactor;
+                float3 finalColor = crustColor * boundaryFactor;
 
                 finalColor += specularColor;
-                finalColor += surfaceHighlightColor * 2.5; // Boost surface highlight
                 finalColor += rimColor;
-                finalColor += foamColored.rgb;
-                finalColor += bubbleColored.rgb;
-                finalColor += sparkle * mainLight.color;
 
                 float finalAlpha = layerColor.a * layerAlpha * (1.0 - _Transparency) * surfaceAlpha;
                 finalAlpha = saturate(finalAlpha);
 
                 float4 topColor = _Color4;
-                topColor.rgb += _HighlightColor.rgb * 0.5; // Make top surface brighter
+                topColor.rgb = lerp(topColor.rgb * _EmissionIntensity, _CrustColor.rgb, crustFactor);
+                
                 return facing > 0 ? half4(finalColor, finalAlpha) : half4(topColor.rgb, finalAlpha);
             }
             ENDHLSL

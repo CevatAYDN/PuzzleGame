@@ -39,7 +39,7 @@ namespace PuzzleGame.Application.Services
         public float ReturnDuration;
 
         // ── Stream / Particles ─────────────────────────────────────────────────
-        public LineRenderer LineRenderer;
+        public UnityEngine.VFX.VisualEffect Effect;
         public IStreamRenderer StreamRenderer;
         public Color StreamColor;
         public ParticleSystem SplashPS;
@@ -71,8 +71,7 @@ namespace PuzzleGame.Application.Services
         private void OnTiltComplete()
         {
             // Phase 2: Flow
-            LineRenderer.positionCount = StreamRenderer.TotalSegments;
-            LineRenderer.enabled = true;
+            if (Effect != null) Effect.Play();
 
             AudioService?.PlaySfx(AudioClipId.CastLoop);
 
@@ -94,7 +93,7 @@ namespace PuzzleGame.Application.Services
         private void OnFlowComplete()
         {
             // Phase 3: Return
-            LineRenderer.enabled = false;
+            if (Effect != null) Effect.Stop();
             if (SplashPS != null) { SplashPS.Stop(); Owner.DelayReturnToPool(SplashPS, SplashPool, 1.0f); }
             if (BubblePS != null) { BubblePS.Stop(); Owner.DelayReturnToPool(BubblePS, BubblePool, 1.5f); }
 
@@ -138,7 +137,7 @@ namespace PuzzleGame.Application.Services
             var s = (CastAnimationState)target;
             s.Owner.UpdateVisualCastProgress(s.Source, s.Target,
                 s.SourceStart, s.TargetStart, s.CastedLayer, val);
-            s.StreamRenderer.Update(s.LineRenderer, s.Source, s.Target,
+            s.StreamRenderer.Update(s.Effect, s.Source, s.Target,
                 s.SourceT, s.TargetT, val, s.Config);
 
             float currentFill = s.Target.VisualTotalFill;
@@ -170,7 +169,7 @@ namespace PuzzleGame.Application.Services
             Target = null;
             SourceT = null;
             TargetT = null;
-            LineRenderer = null;
+            Effect = null;
             StreamRenderer = null;
             SplashPS = null;
             BubblePS = null;

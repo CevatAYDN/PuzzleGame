@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0499b84328b8184e97e1f25b22d7d4c, type: 3}
+  m_Name: MoldVisualConfig
+  m_EditorClassIdentifier: PuzzleGame.Application::PuzzleGame.Application.Configuration.MoldVisualConfig
+  moldHeight: 2.4
+  maxLayers: 4
+  moldMaterialIndex: 0
+  oreMaterialIndex: 1
+  saturationBoost: 1.25
+  brightnessBoost: 1.15
+  moldEmptyColor: {r: 1, g: 1, b: 1, a: 0.18}
+  moldTintBase: 0.85
+  moldTintMultiplier: 0.15
+  moldTintAlpha: 0.25
+  wobbleBaseImpulse: 2
+  wobbleTargetMultiplier: 0.8
+  highlightActiveFresnel: 4
+  highlightInactiveFresnel: 1.5
+  completionFlashIntensity: 4
+  completionFlashDuration: 0.6
+  settleBounceDuration: 0.6
+  castImpulseStrength: 2
+  cameraBackgroundColor: {r: 0.08, g: 0.05, b: 0.16, a: 1}
+  winCheckDelaySeconds: 0.5

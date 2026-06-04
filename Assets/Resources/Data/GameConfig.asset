@@ -12,12 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1b0ea7b4e5103e408e423dbb688b682, type: 3}
   m_Name: GameConfig
   m_EditorClassIdentifier: PuzzleGame.Application::PuzzleGame.Application.Configuration.GameConfig
-  bottleLayerMask:
+  MoldLayerMask:
     serializedVersion: 2
     m_Bits: 4294967295
   colorMatchTolerance: 0.05
-  maxLayersPerBottle: 4
-  saturationBoost: 1.35
-  brightnessBoost: 1.2
+  maxLayersPerMold: 4
+  saturationBoost: 1.25
+  brightnessBoost: 1.15
   applyMobileShaderDefaults: 1
   solverMaxVisitedStates: 10000

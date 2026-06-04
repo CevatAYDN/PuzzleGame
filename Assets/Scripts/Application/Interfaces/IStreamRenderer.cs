@@ -1,17 +1,17 @@
 using UnityEngine;
+using UnityEngine.VFX;
 
 namespace PuzzleGame.Application.Interfaces
 {
     /// <summary>
-    /// Abstraction for LineRenderer-based stream rendering.
-    /// Converted from static StreamRenderer to instance class in Infrastructure.
+    /// Abstraction for VisualEffect-based stream rendering.
+    /// Converted from LineRenderer to VFX Graph for AAA Magma Flow.
     /// </summary>
     public interface IStreamRenderer
     {
-        int TotalSegments { get; }
-        LineRenderer EnsureLineRenderer(GameObject owner);
-        void SetColor(LineRenderer lr, Color color);
-        void Update(LineRenderer lr, IMoldView source, IMoldView target,
+        VisualEffect EnsureEffect(GameObject owner);
+        void SetColor(VisualEffect vfx, Color color);
+        void Update(VisualEffect vfx, IMoldView source, IMoldView target,
                     Transform sourceT, Transform targetT, float t, Configuration.AnimationConfig config);
     }
 }

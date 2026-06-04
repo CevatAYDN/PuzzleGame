@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: PuzzleGame.Application::PuzzleGame.Application.Configuration.AnimationConfig
   liftHeight: 1
   liftDuration: 0.4
-  pourDuration: 0.6
+  CastDuration: 0.6
   returnDuration: 0.4
   hoverAmplitude: 0.08
   hoverFrequency: 3.5

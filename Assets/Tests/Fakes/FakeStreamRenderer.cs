@@ -1,25 +1,24 @@
 using UnityEngine;
+using UnityEngine.VFX;
 using PuzzleGame.Application.Interfaces;
 
 namespace PuzzleGame.Tests.Fakes
 {
     public class FakeStreamRenderer : IStreamRenderer
     {
-        public int TotalSegments => 18;
-
-        public LineRenderer EnsureLineRenderer(GameObject owner)
+        public VisualEffect EnsureEffect(GameObject owner)
         {
-            var lr = owner.GetComponent<LineRenderer>();
-            if (lr == null)
+            var vfx = owner.GetComponent<VisualEffect>();
+            if (vfx == null)
             {
-                lr = owner.AddComponent<LineRenderer>();
+                vfx = owner.AddComponent<VisualEffect>();
             }
-            return lr;
+            return vfx;
         }
 
-        public void SetColor(LineRenderer lr, Color color) { }
+        public void SetColor(VisualEffect vfx, Color color) { }
 
-        public void Update(LineRenderer lr, IMoldView source, IMoldView target,
+        public void Update(VisualEffect vfx, IMoldView source, IMoldView target,
                            Transform sourceT, Transform targetT, float t, PuzzleGame.Application.Configuration.AnimationConfig config) { }
     }
 }

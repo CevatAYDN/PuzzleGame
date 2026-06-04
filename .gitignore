@@ -79,3 +79,7 @@ crashlytics-build.properties
 # Temporary test run artifacts and logs
 Temp_TestRun/
 unity_test*.log
+
+# Ignore Unity package samples
+/[Aa]ssets/[Ss]amples/
+/[Aa]ssets/[Ss]amples.meta

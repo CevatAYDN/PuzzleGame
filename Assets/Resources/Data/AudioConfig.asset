@@ -19,8 +19,8 @@ MonoBehaviour:
   sfxVolume: 0.8
   sfxPoolSize: 8
   musicPoolSize: 2
-  pourLoopClip: {fileID: 0}
-  pourEndClip: {fileID: 0}
+  CastLoopClip: {fileID: 0}
+  CastEndClip: {fileID: 0}
   errorClip: {fileID: 0}
   levelCompleteClip: {fileID: 0}
   levelStartClip: {fileID: 0}

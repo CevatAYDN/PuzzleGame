@@ -186,10 +186,10 @@ namespace PuzzleGame.Application.Services
             state.TargetStart = new LayerSnapshot(target.VisualLayers);
             state.CastedLayer = target.State.TopLayer ?? new OreLayer(new DomainColor(0, 0, 0, 0), 0f);
 
-            state.LineRenderer = _streamRenderer.EnsureLineRenderer(source.GameObject);
+            state.Effect = _streamRenderer.EnsureEffect(source.GameObject);
             state.StreamColor = _colorAdapter.ToUnity(state.CastedLayer.Color);
-            _streamRenderer.SetColor(state.LineRenderer, state.StreamColor);
-            state.LineRenderer.enabled = false;
+            _streamRenderer.SetColor(state.Effect, state.StreamColor);
+            if (state.Effect != null) state.Effect.Stop();
 
             state.Config = _config;
             state.TweenService = _tween;

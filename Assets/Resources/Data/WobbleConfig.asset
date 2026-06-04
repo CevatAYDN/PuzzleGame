@@ -18,4 +18,4 @@ MonoBehaviour:
   movementMultiplier: 1
   rotationMultiplier: 0.15
   updateInterval: 0.05
-  liquidMaterialIndex: 1
+  OreMaterialIndex: 1

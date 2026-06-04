@@ -14,24 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: PuzzleGame.Application::PuzzleGame.Application.Configuration.LevelData
   levelNumber: 1
   difficulty: 1
-  bottleCount: 5
-  emptyBottleCount: 2
+  MoldCount: 5
+  emptyMoldCount: 2
   colorCount: 4
-  maxLayersPerBottle: 4
+  maxLayersPerMold: 4
   randomSeed: 0
   autoGenerate: 1
-  bottles: []
+  Molds: []
   parMoves: 10
   goodMoves: 15
   previewImage: {fileID: 0}
-  enableMultiLayerPour: 1
+  enableMultiLayerCast: 1
   enableReactionSystem: 0
-  multiLayerPourConfig:
+  multiLayerCastConfig:
     featureType: 0
     isEnabled: 0
-    pourAllMatching: 1
-    pourConsecutiveOnly: 1
-    minConsecutiveForPour: 2
+    CastAllMatching: 1
+    CastConsecutiveOnly: 1
+    minConsecutiveForCast: 2
   reactionConfig:
     featureType: 0
     isEnabled: 0

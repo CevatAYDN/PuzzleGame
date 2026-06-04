@@ -1,86 +1,63 @@
 using PuzzleGame.Application.Interfaces;
 using UnityEngine;
+using UnityEngine.VFX;
 
 namespace PuzzleGame.Infrastructure.Implementations
 {
     /// <summary>
-    /// LineRenderer manager for the Casting Ore stream.
-    /// Draws external curve (parabolic gravity drop) and internal straight vertical line segment.
-    /// Converted to an instance-based infrastructure service (removes static singleton state).
+    /// VFX Graph manager for the Casting Ore stream.
+    /// Converted from LineRenderer to VisualEffect for AAA Magma Flow.
     /// </summary>
     public class StreamRenderer : IStreamRenderer
     {
-        private const int ExternalSegments = 12;
-        private const int InternalSegments = 6;
-        
-        public int TotalSegments => ExternalSegments + InternalSegments;
-
-        public LineRenderer EnsureLineRenderer(GameObject owner)
+        public VisualEffect EnsureEffect(GameObject owner)
         {
-            var lr = owner.GetComponent<LineRenderer>();
-            if (lr == null)
+            var vfx = owner.GetComponent<VisualEffect>();
+            if (vfx == null)
             {
-                lr = owner.AddComponent<LineRenderer>();
-                lr.useWorldSpace = true;
-                lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                lr.receiveShadows = false;
-                lr.numCapVertices = 8;
-                lr.numCornerVertices = 8;
-                var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default");
-                if (shader != null) lr.material = new Material(shader);
+                vfx = owner.AddComponent<VisualEffect>();
+                // Attempt to load the MagmaFlow VFX from Resources folder.
+                // The user is responsible for creating Assets/Resources/MagmaFlow.vfx
+                var asset = Resources.Load<VisualEffectAsset>("MagmaFlow");
+                if (asset != null)
+                {
+                    vfx.visualEffectAsset = asset;
+                }
+                else
+                {
+                    Debug.LogWarning("[StreamRenderer] MagmaFlow.vfx not found in Resources folder. Please create it.");
+                }
             }
-            return lr;
+            return vfx;
         }
 
-        public void SetColor(LineRenderer lr, Color color)
+        public void SetColor(VisualEffect vfx, Color color)
         {
-            if (lr == null) return;
-            lr.startColor = color;
-            lr.endColor = color;
-            if (lr.material != null)
+            if (vfx == null) return;
+            if (vfx.HasVector4("OreColor"))
             {
-                lr.material.color = color;
-                lr.material.SetColor("_BaseColor", color);
+                // Multiply color intensity or adjust HDR if necessary here
+                vfx.SetVector4("OreColor", color);
             }
         }
 
-        public void Update(LineRenderer lr, IMoldView source, IMoldView target,
+        public void Update(VisualEffect vfx, IMoldView source, IMoldView target,
                            Transform sourceT, Transform targetT, float t, PuzzleGame.Application.Configuration.AnimationConfig config)
         {
-            if (lr == null) return;
+            if (vfx == null) return;
 
-            lr.positionCount = TotalSegments;
-
-            // Bell curve stream width
-            float scaleFactor = Mathf.SmoothStep(0f, 1f, t < 0.1f ? t / 0.1f : (t > 0.9f ? (1f - t) / 0.1f : 1f));
-            float baseWidth = config != null ? config.streamWidth * scaleFactor : 0.08f * scaleFactor;
-            lr.startWidth = baseWidth;
-            lr.endWidth = baseWidth;
-
+            // Calculate start and end positions
             Vector3 sourceMouth = sourceT.TransformPoint(new Vector3(0f, source.Height, 0f));
-            Vector3 targetMouth = targetT.position + Vector3.up * target.Height;
             Vector3 landingPoint = targetT.position + Vector3.up * (target.Height * target.VisualTotalFill);
 
-            // External curve (parabolic gravity drop)
-            for (int i = 0; i < ExternalSegments; i++)
-            {
-                float segT = (float)i / (ExternalSegments - 1);
-                float distH = Vector3.Distance(
-                    new Vector3(sourceMouth.x, 0f, sourceMouth.z),
-                    new Vector3(targetMouth.x, 0f, targetMouth.z));
-                float gravityArc = Mathf.Sin(segT * Mathf.PI) * (0.05f + distH * 0.12f);
-                Vector3 pos = Vector3.Lerp(sourceMouth, targetMouth, segT);
-                pos.y -= gravityArc;
-                lr.SetPosition(i, pos);
-            }
+            if (vfx.HasVector3("StartPos")) vfx.SetVector3("StartPos", sourceMouth);
+            if (vfx.HasVector3("EndPos")) vfx.SetVector3("EndPos", landingPoint);
 
-            // Internal straight vertical line
-            for (int i = 0; i < InternalSegments; i++)
-            {
-                float segT = (float)i / (InternalSegments - 1);
-                Vector3 pos = Vector3.Lerp(targetMouth, landingPoint, segT);
-                lr.SetPosition(ExternalSegments + i, pos);
-            }
+            // Flow intensity is a bell curve based on time t (smooth fade in/out)
+            float scaleFactor = Mathf.SmoothStep(0f, 1f, t < 0.1f ? t / 0.1f : (t > 0.9f ? (1f - t) / 0.1f : 1f));
+            float baseIntensity = config != null ? config.streamWidth * scaleFactor : 1.0f * scaleFactor;
+            
+            if (vfx.HasFloat("FlowIntensity")) vfx.SetFloat("FlowIntensity", baseIntensity);
         }
     }
 }
