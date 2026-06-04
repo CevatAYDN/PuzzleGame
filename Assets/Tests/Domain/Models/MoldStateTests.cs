@@ -20,8 +20,8 @@ namespace PuzzleGame.Domain.Tests.Models
         [Test]
         public void Constructor_SetsMaxLayers()
         {
-            var Mold = CreateSut(5);
-            Assert.That(Mold.MaxLayers, Is.EqualTo(5));
+            var Mold = CreateSut(3);
+            Assert.That(Mold.MaxLayers, Is.EqualTo(3));
         }
 
         [Test]

@@ -238,6 +238,7 @@ namespace PuzzleGame.Tests.Application.Services
         {
             var state = new MoldState(4);
             var go = new GameObject("TestMold");
+            go.AddComponent<BoxCollider>();
             var view = new FakeMoldView(state)
             {
                 GameObject = go,
@@ -249,17 +250,21 @@ namespace PuzzleGame.Tests.Application.Services
 
         private void SetupRaycastHit(IMoldView Mold)
         {
-            _inputHandler.SimulateClick(Vector2.zero, raycastSuccess: true);
-            
-            object boxedHit = new RaycastHit();
+            Collider collider = null;
             if (Mold != null && Mold.GameObject != null)
             {
-                var collider = Mold.GameObject.GetComponent<Collider>();
+                collider = Mold.GameObject.GetComponent<Collider>();
                 if (collider == null)
                 {
                     collider = Mold.GameObject.AddComponent<BoxCollider>();
                 }
-                
+            }
+
+            _inputHandler.SimulateClick(Vector2.zero, raycastSuccess: true, collider: collider);
+            
+            object boxedHit = new RaycastHit();
+            if (collider != null)
+            {
                 var field = typeof(RaycastHit).GetField("m_Collider", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 if (field != null)
                 {

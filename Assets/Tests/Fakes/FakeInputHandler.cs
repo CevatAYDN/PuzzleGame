@@ -13,6 +13,7 @@ namespace PuzzleGame.Tests.Fakes
 
         public bool RaycastResult { get; set; } = true;
         public RaycastHit RaycastHitResult { get; set; }
+        public Collider RaycastColliderResult { get; set; }
 
         public int GetPointerDownCallCount { get; private set; }
         public int RaycastCallCount { get; private set; }
@@ -39,22 +40,24 @@ namespace PuzzleGame.Tests.Fakes
         public bool Raycast(Vector2 screenPos, LayerMask layerMask, out RaycastHit hit, out Collider hitCollider)
         {
             bool result = Raycast(screenPos, layerMask, out hit);
-            hitCollider = result && RaycastHitResult.collider != null ? RaycastHitResult.collider : null;
+            hitCollider = RaycastColliderResult != null ? RaycastColliderResult : (result && RaycastHitResult.collider != null ? RaycastHitResult.collider : null);
             return result;
         }
 
-        public void SimulateClick(Vector2 pos, bool raycastSuccess = true, RaycastHit hit = default)
+        public void SimulateClick(Vector2 pos, bool raycastSuccess = true, RaycastHit hit = default, Collider collider = null)
         {
             GetPointerDownResult = true;
             PointerPosition = pos;
             RaycastResult = raycastSuccess;
             RaycastHitResult = hit;
+            RaycastColliderResult = collider;
         }
 
         public void Reset()
         {
             GetPointerDownResult = false;
             RaycastResult = true;
+            RaycastColliderResult = null;
             GetPointerDownCallCount = 0;
             RaycastCallCount = 0;
         }

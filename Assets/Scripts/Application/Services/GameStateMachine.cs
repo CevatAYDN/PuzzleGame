@@ -60,7 +60,7 @@ namespace PuzzleGame.Application.Services
             if (_current == next) return false;
             if (_rules.TryGetValue((_current, next), out var guard))
                 return guard();
-            return false;
+            return true;
         }
 
         public bool TransitionTo(GameState next)
