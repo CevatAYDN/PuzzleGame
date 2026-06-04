@@ -9,7 +9,7 @@ namespace PuzzleGame.Application.Interfaces
         bool CanUndo { get; }
         event Action<int> OnMoveCountChanged;
 
-        void Initialize(IBottleView[] bottles);
+        void Initialize(IMoldView[] Molds);
         void RecordUndoSnapshot();
         void IncrementMoveCount();
         void Undo();

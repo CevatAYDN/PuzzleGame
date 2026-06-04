@@ -25,7 +25,7 @@ namespace PuzzleGame.Domain.Models
             A = Math.Max(0f, a);
         }
 
-        public bool IsTransparent => A <= BottleConstants.TransparencyAlphaEpsilon;
+        public bool IsTransparent => A <= ForgeConstants.TransparencyAlphaEpsilon;
 
         public override string ToString() => $"DomainColor(r={R:F3}, g={G:F3}, b={B:F3}, a={A:F3})";
 
@@ -58,7 +58,7 @@ namespace PuzzleGame.Domain.Models
         private static int RoundedHash(float v)
         {
             // Divide by epsilon, round to nearest int - values within epsilon map to the same bucket.
-            int bucket = (int)Math.Round(v / BottleConstants.ColorMatchEpsilon);
+            int bucket = (int)Math.Round(v / ForgeConstants.ColorMatchEpsilon);
             return bucket;
         }
 

@@ -13,20 +13,20 @@ namespace PuzzleGame.Domain.Services
     /// </summary>
     public class DifficultyBasedLevelGenerator : ILevelGenerator
     {
-        public List<List<LiquidLayer>> Generate(
-            int bottleCount,
+        public List<List<OreLayer>> Generate(
+            int MoldCount,
             int maxLayers,
-            int emptyBottleCount,
+            int emptyMoldCount,
             DomainColor[] colorPalette,
             Difficulty difficulty,
             int seed = 0)
         {
-            var result = new List<List<LiquidLayer>>(bottleCount);
-            for (int i = 0; i < bottleCount; i++)
-                result.Add(new List<LiquidLayer>());
+            var result = new List<List<OreLayer>>(MoldCount);
+            for (int i = 0; i < MoldCount; i++)
+                result.Add(new List<OreLayer>());
 
-            int empties = Math.Clamp(emptyBottleCount, 1, bottleCount - 1);
-            int filledCount = bottleCount - empties;
+            int empties = Math.Clamp(emptyMoldCount, 1, MoldCount - 1);
+            int filledCount = MoldCount - empties;
             int numColors = Math.Min(filledCount, colorPalette.Length);
 
             if (numColors < 1)
@@ -62,7 +62,7 @@ namespace PuzzleGame.Domain.Services
                 FisherYatesShuffle(allLayers, rng);
             }
 
-            // Distribute mixed layers to the filled bottles
+            // Distribute mixed layers to the filled Molds
             int layerIndex = 0;
             for (int i = 0; i < filledCount; i++)
             {
@@ -70,7 +70,7 @@ namespace PuzzleGame.Domain.Services
                 {
                     if (layerIndex < allLayers.Count)
                     {
-                        result[i].Add(new LiquidLayer(allLayers[layerIndex], amountPerLayer));
+                        result[i].Add(new OreLayer(allLayers[layerIndex], amountPerLayer));
                         layerIndex++;
                     }
                 }
@@ -86,24 +86,24 @@ namespace PuzzleGame.Domain.Services
         }
 
         private static void ApplyAdvancedDifficulty(
-            List<List<LiquidLayer>> assignments,
+            List<List<OreLayer>> assignments,
             float difficulty,
             Random rng)
         {
-            int affectedBottles = (int)(assignments.Count * difficulty);
+            int affectedMolds = (int)(assignments.Count * difficulty);
             
-            for (int i = 0; i < affectedBottles && i < assignments.Count; i++)
+            for (int i = 0; i < affectedMolds && i < assignments.Count; i++)
             {
-                var bottle = assignments[i];
-                if (bottle.Count >= 2)
+                var Mold = assignments[i];
+                if (Mold.Count >= 2)
                 {
-                    var top = bottle[bottle.Count - 1];
-                    var second = bottle[bottle.Count - 2];
+                    var top = Mold[Mold.Count - 1];
+                    var second = Mold[Mold.Count - 2];
                     
                     if (rng.NextDouble() > 0.5)
                     {
-                        bottle[bottle.Count - 1] = second;
-                        bottle[bottle.Count - 2] = top;
+                        Mold[Mold.Count - 1] = second;
+                        Mold[Mold.Count - 2] = top;
                     }
                 }
             }

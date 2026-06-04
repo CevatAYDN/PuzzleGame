@@ -32,46 +32,46 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void UpdateGlass_IsEmpty_AppliesGlassProperties()
         {
-            Assert.DoesNotThrow(() => _sut.UpdateGlass(_renderer, isEmpty: true, new DomainColor(0, 0, 0, 0)));
+            Assert.DoesNotThrow(() => _sut.UpdateGlass(_renderer, isEmpty: true, new DomainColor(0, 0, 0, 0), null));
             
             MaterialPropertyBlock block = new MaterialPropertyBlock();
             _renderer.GetPropertyBlock(block, 0);
             
             Color actual = block.GetColor("_Color");
-            Assert.AreEqual(BottleConstants.GlassEmptyR, actual.r, 0.01f);
+            Assert.AreEqual(1.0f, actual.r, 0.01f);
         }
 
         [Test]
         public void UpdateGlass_NotEmpty_AppliesTintedProperties()
         {
             var tint = new DomainColor(1f, 0f, 0f, 1f); // Red
-            Assert.DoesNotThrow(() => _sut.UpdateGlass(_renderer, isEmpty: false, tint));
+            Assert.DoesNotThrow(() => _sut.UpdateGlass(_renderer, isEmpty: false, tint, null));
             
             MaterialPropertyBlock block = new MaterialPropertyBlock();
             _renderer.GetPropertyBlock(block, 0);
             
             Color actual = block.GetColor("_Color");
-            Assert.AreEqual(BottleConstants.GlassTintAlpha, actual.a, 0.01f);
+            Assert.AreEqual(0.25f, actual.a, 0.01f);
         }
 
         [Test]
-        public void UpdateLiquid_ValidLayers_DoesNotThrow()
+        public void UpdateOre_ValidLayers_DoesNotThrow()
         {
-            var layers = new List<LiquidLayer>
+            var layers = new List<OreLayer>
             {
-                new LiquidLayer(new DomainColor(0.8f, 0f, 0f, 1f), 1f),
-                new LiquidLayer(new DomainColor(0.8f, 0f, 0f, 1f), 1f), // consecutive same color gets merged
-                new LiquidLayer(new DomainColor(0f, 0.8f, 0f, 1f), 1f)
+                new OreLayer(new DomainColor(0.8f, 0f, 0f, 1f), 1f),
+                new OreLayer(new DomainColor(0.8f, 0f, 0f, 1f), 1f), // consecutive same color gets merged
+                new OreLayer(new DomainColor(0f, 0.8f, 0f, 1f), 1f)
             };
 
-            Assert.DoesNotThrow(() => _sut.UpdateLiquid(_renderer, layers, 3f, 1.2f, 1.1f, 0));
+            Assert.DoesNotThrow(() => _sut.UpdateOre(_renderer, layers, 3f, null));
         }
 
         [Test]
-        public void UpdateLiquid_NullArguments_ThrowsException()
+        public void UpdateOre_NullArguments_ThrowsException()
         {
-            Assert.Throws<System.ArgumentNullException>(() => _sut.UpdateLiquid(null, new List<LiquidLayer>(), 1f, 1f, 1f));
-            Assert.Throws<System.ArgumentNullException>(() => _sut.UpdateLiquid(_renderer, null, 1f, 1f, 1f));
+            Assert.Throws<System.ArgumentNullException>(() => _sut.UpdateOre(null, new List<OreLayer>(), 1f, null));
+            Assert.Throws<System.ArgumentNullException>(() => _sut.UpdateOre(_renderer, null, 1f, null));
         }
     }
 }

@@ -5,5 +5,4 @@
   <Project Path="PuzzleGame.Editor.csproj" />
   <Project Path="PuzzleGame.Domain.csproj" />
   <Project Path="PuzzleGame.Composition.csproj" />
-  <Project Path="PrimeTween.Installer.csproj" />
 </Solution>

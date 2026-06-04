@@ -26,11 +26,11 @@ namespace PuzzleGame.Infrastructure.Providers
                 if (handle.Status == AsyncOperationStatus.Succeeded)
                 {
                     _initialized = true;
-                    BottleLogger.LogInfo("[AddressablesAssetProvider] Initialized.");
+                    MoldLogger.LogInfo("[AddressablesAssetProvider] Initialized.");
                 }
                 else
                 {
-                    BottleLogger.LogError("[AddressablesAssetProvider] Initialization failed.");
+                    MoldLogger.LogError("[AddressablesAssetProvider] Initialization failed.");
                 }
             };
         }
@@ -39,7 +39,7 @@ namespace PuzzleGame.Infrastructure.Providers
         {
             if (!_initialized)
             {
-                BottleLogger.LogWarning($"[AddressablesAssetProvider] Not initialized. Loading '{address}' synchronously as fallback.");
+                MoldLogger.LogWarning($"[AddressablesAssetProvider] Not initialized. Loading '{address}' synchronously as fallback.");
                 var asset = Resources.Load<T>(address);
                 onComplete?.Invoke(asset);
                 return;
@@ -52,7 +52,7 @@ namespace PuzzleGame.Infrastructure.Providers
                     onComplete?.Invoke(h.Result);
                 else
                 {
-                    BottleLogger.LogError($"[AddressablesAssetProvider] Failed to load '{address}'");
+                    MoldLogger.LogError($"[AddressablesAssetProvider] Failed to load '{address}'");
                     onComplete?.Invoke(null);
                 }
             };
@@ -68,7 +68,7 @@ namespace PuzzleGame.Infrastructure.Providers
         {
             if (!_initialized)
             {
-                BottleLogger.LogWarning($"[AddressablesAssetProvider] Not initialized. Instantiating '{address}' synchronously as fallback.");
+                MoldLogger.LogWarning($"[AddressablesAssetProvider] Not initialized. Instantiating '{address}' synchronously as fallback.");
                 var prefab = Resources.Load<GameObject>(address);
                 var go = UnityEngine.Object.Instantiate(prefab, parent);
                 onComplete?.Invoke(go);
@@ -82,7 +82,7 @@ namespace PuzzleGame.Infrastructure.Providers
                     onComplete?.Invoke(h.Result);
                 else
                 {
-                    BottleLogger.LogError($"[AddressablesAssetProvider] Failed to instantiate '{address}'");
+                    MoldLogger.LogError($"[AddressablesAssetProvider] Failed to instantiate '{address}'");
                     onComplete?.Invoke(null);
                 }
             };

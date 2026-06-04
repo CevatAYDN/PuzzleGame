@@ -19,12 +19,12 @@ namespace PuzzleGame.Tests.Fakes
         public int UndoCallCount { get; private set; }
         public int ResetAllCallCount { get; private set; }
         public int InitializeCallCount { get; private set; }
-        public IBottleView[] LastInitializedBottles { get; private set; }
+        public IMoldView[] LastInitializedMolds { get; private set; }
 
-        public void Initialize(IBottleView[] bottles)
+        public void Initialize(IMoldView[] Molds)
         {
             InitializeCallCount++;
-            LastInitializedBottles = bottles;
+            LastInitializedMolds = Molds;
         }
 
         public void RecordUndoSnapshot()

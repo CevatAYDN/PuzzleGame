@@ -19,7 +19,7 @@ namespace PuzzleGame.Tests.Fakes
 
         public void SetColor(LineRenderer lr, Color color) { }
 
-        public void Update(LineRenderer lr, IBottleView source, IBottleView target,
+        public void Update(LineRenderer lr, IMoldView source, IMoldView target,
                            Transform sourceT, Transform targetT, float t, PuzzleGame.Application.Configuration.AnimationConfig config) { }
     }
 }

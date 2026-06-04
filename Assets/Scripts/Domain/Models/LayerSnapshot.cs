@@ -5,23 +5,23 @@ using PuzzleGame.Domain;
 namespace PuzzleGame.Domain.Models
 {
     /// <summary>
-    /// Value-type snapshot of liquid layers (up to <see cref="BottleConstants.MaxLayers"/>).
+    /// Value-type snapshot of Ore layers (up to <see cref="ForgeConstants.MaxLayers"/>).
     /// Backing storage is a flat array — OCP-safe: capacity grows with the constant,
     /// not by adding more hardcoded slots.
     /// </summary>
     public readonly struct LayerSnapshot
     {
         public readonly int Count;
-        private readonly LiquidLayer _l0;
-        private readonly LiquidLayer _l1;
-        private readonly LiquidLayer _l2;
-        private readonly LiquidLayer _l3;
-        private readonly LiquidLayer _l4;
-        private readonly LiquidLayer _l5;
-        private readonly LiquidLayer _l6;
-        private readonly LiquidLayer _l7;
+        private readonly OreLayer _l0;
+        private readonly OreLayer _l1;
+        private readonly OreLayer _l2;
+        private readonly OreLayer _l3;
+        private readonly OreLayer _l4;
+        private readonly OreLayer _l5;
+        private readonly OreLayer _l6;
+        private readonly OreLayer _l7;
 
-        public LayerSnapshot(IReadOnlyList<LiquidLayer> layers)
+        public LayerSnapshot(IReadOnlyList<OreLayer> layers)
         {
             if (layers == null)
             {
@@ -32,10 +32,10 @@ namespace PuzzleGame.Domain.Models
             }
 
             int count = layers.Count;
-            if (count > BottleConstants.MaxLayers)
+            if (count > ForgeConstants.MaxLayers)
             {
                 throw new ArgumentException(
-                    $"LayerSnapshot supports max {BottleConstants.MaxLayers} layers, got {count}.");
+                    $"LayerSnapshot supports max {ForgeConstants.MaxLayers} layers, got {count}.");
             }
 
             Count = count;
@@ -50,7 +50,7 @@ namespace PuzzleGame.Domain.Models
         }
 
         /// <exception cref="IndexOutOfRangeException">If index &lt; 0 or &gt;= Count.</exception>
-        public LiquidLayer Get(int index)
+        public OreLayer Get(int index)
         {
             if (index < 0 || index >= Count)
             {

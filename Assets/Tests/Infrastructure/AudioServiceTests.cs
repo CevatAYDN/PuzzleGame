@@ -60,7 +60,7 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void PlayMusic_WithMissingClip_DoesNotThrow()
         {
-            Assert.DoesNotThrow(() => _sut.PlayMusic(AudioClipId.PourLoop));
+            Assert.DoesNotThrow(() => _sut.PlayMusic(AudioClipId.CastLoop));
         }
 
         [Test]

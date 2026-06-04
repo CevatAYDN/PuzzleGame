@@ -1,7 +1,7 @@
 namespace PuzzleGame.Infrastructure
 {
     /// <summary>
-    /// Cork (bottle cap) geometry constants for procedural mesh generation.
+    /// Cork (Mold cap) geometry constants for procedural mesh generation.
     /// Moved from Domain (rendering concern).
     /// </summary>
     public static class CorkConstants

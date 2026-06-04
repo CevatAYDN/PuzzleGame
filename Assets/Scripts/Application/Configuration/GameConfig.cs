@@ -7,22 +7,22 @@ namespace PuzzleGame.Application.Configuration
     public class GameConfig : ScriptableObject
     {
         [Header("Layer Mask")]
-        public LayerMask bottleLayerMask = ~0;
+        public LayerMask MoldLayerMask = ~0;
 
         [Header("Validation")]
         [Tooltip("Per-channel color match tolerance for the validator. Must be > 0. " +
-                 "Wired into BottleValidationService via VContainer.")]
+                 "Wired into MoldValidationService via VContainer.")]
         [Min(0.0001f)]
-        public float colorMatchTolerance = BottleConstants.ColorMatchEpsilon;
+        public float colorMatchTolerance = ForgeConstants.ColorMatchEpsilon;
 
-        [Header("Bottle Capacity")]
-        [Tooltip("Default maximum liquid layers per bottle. Must be in [1, BottleConstants.MaxLayers].")]
-        [Range(1, BottleConstants.MaxLayers)]
-        public int maxLayersPerBottle = BottleConstants.DefaultLayerCapacity;
+        [Header("Mold Capacity")]
+        [Tooltip("Default maximum Ore layers per Mold. Must be in [1, ForgeConstants.MaxLayers].")]
+        [Range(1, ForgeConstants.MaxLayers)]
+        public int maxLayersPerMold = ForgeConstants.DefaultLayerCapacity;
 
-        [Header("Visuals (compile-time defaults live in BottleConstants)")]
-        public float saturationBoost = BottleConstants.DefaultSaturationBoost;
-        public float brightnessBoost = BottleConstants.DefaultBrightnessBoost;
+        [Header("Visuals (defaults)")]
+        public float saturationBoost = 1.25f;
+        public float brightnessBoost = 1.15f;
 
         [Header("Mobile Shader Optimizer")]
         [Tooltip("When enabled, ShaderOptimizer.Initialize() forces mobile quality defaults " +
@@ -30,18 +30,18 @@ namespace PuzzleGame.Application.Configuration
         public bool applyMobileShaderDefaults = true;
 
         [Header("Level Solver")]
-        [Tooltip("BFS visit budget for the LiquidSortSolver. Beyond this it gives up gracefully.")]
+        [Tooltip("BFS visit budget for the OreSortSolver. Beyond this it gives up gracefully.")]
         [Min(100)]
-        public int solverMaxVisitedStates = BottleConstants.SolverMaxVisitedStates;
+        public int solverMaxVisitedStates = ForgeConstants.SolverMaxVisitedStates;
 
         private void OnValidate()
         {
             if (colorMatchTolerance <= 0f)
-                colorMatchTolerance = BottleConstants.ColorMatchEpsilon;
-            if (maxLayersPerBottle < 1)
-                maxLayersPerBottle = 1;
-            if (maxLayersPerBottle > BottleConstants.MaxLayers)
-                maxLayersPerBottle = BottleConstants.MaxLayers;
+                colorMatchTolerance = ForgeConstants.ColorMatchEpsilon;
+            if (maxLayersPerMold < 1)
+                maxLayersPerMold = 1;
+            if (maxLayersPerMold > ForgeConstants.MaxLayers)
+                maxLayersPerMold = ForgeConstants.MaxLayers;
         }
     }
 }

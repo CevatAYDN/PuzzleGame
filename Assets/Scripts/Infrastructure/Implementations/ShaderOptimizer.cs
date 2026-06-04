@@ -22,7 +22,7 @@ namespace PuzzleGame.Infrastructure.Implementations
         {
             if (!applyMobileDefaults)
             {
-                BottleLogger.LogInfo("[ShaderOptimizer] Mobile defaults skipped — user Quality Settings preserved.");
+                MoldLogger.LogInfo("[ShaderOptimizer] Mobile defaults skipped — user Quality Settings preserved.");
                 return;
             }
 
@@ -40,7 +40,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             QualitySettings.shadows = ShadowQuality.Disable;
             QualitySettings.shadowDistance = 0f;
 
-            BottleLogger.LogInfo("[ShaderOptimizer] Mobile GPU defaults applied.");
+            MoldLogger.LogInfo("[ShaderOptimizer] Mobile GPU defaults applied.");
         }
 
         public void ApplyLowQualityMode()
@@ -54,7 +54,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             QualitySettings.antiAliasing = 0;
             QualitySettings.vSyncCount = 0;
 
-            BottleLogger.LogInfo("[ShaderOptimizer] Low-quality mode applied (thermal throttling).");
+            MoldLogger.LogInfo("[ShaderOptimizer] Low-quality mode applied (thermal throttling).");
         }
 
         public int GetRecommendedQualityLevel()

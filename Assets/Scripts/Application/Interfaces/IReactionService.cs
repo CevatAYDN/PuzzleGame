@@ -4,16 +4,16 @@ using PuzzleGame.Application.Configuration.FeatureSystem;
 namespace PuzzleGame.Application.Interfaces
 {
     /// <summary>
-    /// Handles chemical reactions between colors after pours.
+    /// Handles chemical reactions between colors after Casts.
     /// Supports Explosion, Transform, and Bubble reaction types.
     /// </summary>
     public interface IReactionService
     {
         /// <summary>
-        /// Check for reactions in all bottles after a pour.
-        /// Returns number of bottles that had reactions.
+        /// Check for reactions in all Molds after a Cast.
+        /// Returns number of Molds that had reactions.
         /// </summary>
-        /// <exception cref="ArgumentNullException">If bottles is null.</exception>
-        int CheckReactions(IBottleView[] bottles, ReactionSystemData config);
+        /// <exception cref="ArgumentNullException">If Molds is null.</exception>
+        int CheckReactions(IMoldView[] Molds, ReactionSystemData config);
     }
 }

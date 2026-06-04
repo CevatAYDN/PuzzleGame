@@ -20,7 +20,7 @@ namespace PuzzleGame
     /// <summary>
     /// GameManager — VContainer DI consumer only. Not a Composition Root.
     /// All services injected via VContainer.
-    /// Bottle pool initialization delegated to BottlePoolInitializer (SRP).
+    /// Mold pool initialization delegated to MoldPoolInitializer (SRP).
     /// </summary>
     public class GameManager : MonoBehaviour, IUpdateable
     {
@@ -39,10 +39,10 @@ namespace PuzzleGame
         private LevelConfig levelConfig;
         private AudioConfig audioConfig;
 
-        private IBottleValidator _validator;
+        private IMoldValidator _validator;
         private IRendererService _rendererService;
         private IAnimationService _animationService;
-        private IBottleSelectionService _selectionService;
+        private IMoldSelectionService _selectionService;
         private IGameStateMachine _stateMachine;
         private IAudioService _audioService;
         private ILevelRepository _levelRepository;
@@ -56,7 +56,7 @@ namespace PuzzleGame
 
         private Camera _camera;
         private LevelData _currentLevel;
-        private BottlePoolInitializer _poolInitializer;
+        private MoldPoolInitializer _poolInitializer;
         private IShaderOptimizer _shaderOptimizer;
         private IEventAggregator _eventAggregator;
         private IUpdateManager _updateManager;
@@ -70,10 +70,10 @@ namespace PuzzleGame
             AnimationConfig animConfig,
             LevelConfig levelConfig,
             AudioConfig audioConfig,
-            IBottleValidator validator,
+            IMoldValidator validator,
             IRendererService rendererService,
             IAnimationService animationService,
-            IBottleSelectionService selectionService,
+            IMoldSelectionService selectionService,
             IGameStateMachine stateMachine,
             ILevelRepository levelRepository,
             ILevelProgressService levelProgress,
@@ -95,7 +95,7 @@ namespace PuzzleGame
             if (historyManager == null)   throw new ArgumentNullException(nameof(historyManager));
             if (inputHandlerService == null) throw new ArgumentNullException(nameof(inputHandlerService));
 
-            BottleLogger.LogInfo("GameManager.Construct called by VContainer DI.");
+            MoldLogger.LogInfo("GameManager.Construct called by VContainer DI.");
             this.gameConfig = gameConfig;
             this.animConfig = animConfig;
             this.levelConfig = levelConfig;
@@ -127,13 +127,13 @@ namespace PuzzleGame
             {
                 const string errorMsg = "VContainer DI failed — GameInstaller (LifetimeScope) not found or not configured.\n" +
                                          "Fix: Tools > PuzzleGame > Open Editor > Scene tab > 'Setup Current Scene (GameManager + DI)'";
-                BottleLogger.LogError(errorMsg);
+                MoldLogger.LogError(errorMsg);
                 if (diErrorPanel != null) diErrorPanel.SetActive(true);
                 enabled = false;
                 return;
             }
 
-            BottleLogger.LogInfo("GameManager Start — initializing game systems.");
+            MoldLogger.LogInfo("GameManager Start — initializing game systems.");
 
             _shaderOptimizer?.Initialize(gameConfig.applyMobileShaderDefaults);
             _camera = Camera.main;
@@ -141,7 +141,7 @@ namespace PuzzleGame
 
             SceneManager.sceneUnloaded += OnSceneUnloaded;
             _eventAggregator.Subscribe<LevelSelectedEvent>(OnLevelSelected);
-            _eventAggregator.Subscribe<PourCompletedEvent>(OnPourCompleted);
+            _eventAggregator.Subscribe<CastCompletedEvent>(OnCastCompleted);
 
             _historyManager.OnMoveCountChanged += OnMoveCountChanged;
 
@@ -154,14 +154,14 @@ namespace PuzzleGame
             else
             {
                 _stateMachine.TransitionTo(GameState.Playing);
-                bool hasSceneBottles = FindObjectsByType<BottleController>(FindObjectsInactive.Include).Length > 0;
-                if (!hasSceneBottles && _currentLevel == null && _levelRepository != null && _levelRepository.AllLevels != null && _levelRepository.AllLevels.Count > 0)
+                bool hasSceneMolds = FindObjectsByType<MoldController>(FindObjectsInactive.Include).Length > 0;
+                if (!hasSceneMolds && _currentLevel == null && _levelRepository != null && _levelRepository.AllLevels != null && _levelRepository.AllLevels.Count > 0)
                 {
                     _currentLevel = _levelRepository.AllLevels[0];
                 }
             }
 
-            _poolInitializer = new BottlePoolInitializer(
+            _poolInitializer = new MoldPoolInitializer(
                 _levelSetupService, _rendererService, _validator, _animationService,
                 _inputHandlerService, _historyManager, _updateManager, _camera);
 
@@ -174,7 +174,7 @@ namespace PuzzleGame
         {
             if (audioConfig == null)
             {
-                BottleLogger.LogWarning("AudioConfig is null — audio init skipped.");
+                MoldLogger.LogWarning("AudioConfig is null — audio init skipped.");
                 return;
             }
         }
@@ -190,7 +190,7 @@ namespace PuzzleGame
 
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
             _eventAggregator.Unsubscribe<LevelSelectedEvent>(OnLevelSelected);
-            _eventAggregator.Unsubscribe<PourCompletedEvent>(OnPourCompleted);
+            _eventAggregator.Unsubscribe<CastCompletedEvent>(OnCastCompleted);
 
             if (_historyManager != null)
             {
@@ -202,7 +202,7 @@ namespace PuzzleGame
 
         private void OnSceneUnloaded(Scene scene)
         {
-            BottleLogger.LogDebug("Scene unloaded — cleaning up subscriptions and particle pools.");
+            MoldLogger.LogDebug("Scene unloaded — cleaning up subscriptions and particle pools.");
             _eventAggregator.Clear();
             if (_animationService is System.IDisposable disposable)
             {
@@ -237,25 +237,25 @@ namespace PuzzleGame
             _inputHandlerService.ProcessInput();
         }
 
-        private void OnPourCompleted(PourCompletedEvent e)
+        private void OnCastCompleted(CastCompletedEvent e)
         {
-            _tweenService.Delay(BottleConstants.WinCheckDelaySeconds)
+            _tweenService.Delay(0.5f)
                 .OnComplete(CheckWinCondition)
                 .Start();
         }
 
         private void CheckWinCondition()
         {
-            var bottles = _poolInitializer?.Bottles;
-            if (bottles == null || bottles.Length == 0) return;
+            var Molds = _poolInitializer?.Molds;
+            if (Molds == null || Molds.Length == 0) return;
 
-            bool hasLiquid = false;
+            bool hasOre = false;
             bool allComplete = true;
 
-            foreach (var view in bottles)
+            foreach (var view in Molds)
             {
                 if (view == null || view.IsEmpty) continue;
-                hasLiquid = true;
+                hasOre = true;
 
                 bool isComplete = _validator.IsComplete(view.State);
                 if (isComplete && !view.IsCapped)
@@ -269,7 +269,7 @@ namespace PuzzleGame
                 }
             }
 
-            if (allComplete && hasLiquid)
+            if (allComplete && hasOre)
             {
                 _stateMachine.TransitionTo(GameState.LevelComplete);
 
@@ -297,19 +297,19 @@ namespace PuzzleGame
         public void OnLevelSelected(LevelSelectedEvent e)
         {
             _currentLevel = _levelRepository.GetByNumber(e.LevelNumber);
-            BottleLogger.LogInfo($"Level {e.LevelNumber} selected.");
+            MoldLogger.LogInfo($"Level {e.LevelNumber} selected.");
 
             if (_currentLevel == null)
             {
-                BottleLogger.LogError($"Level {e.LevelNumber} not found in repository.");
+                MoldLogger.LogError($"Level {e.LevelNumber} not found in repository.");
                 return;
             }
 
             if (winPanel != null) winPanel.SetActive(false);
 
-            if (!_levelValidationService.ValidateLevel(_currentLevel, _poolInitializer?.Bottles?.Length ?? 0))
+            if (!_levelValidationService.ValidateLevel(_currentLevel, _poolInitializer?.Molds?.Length ?? 0))
             {
-                BottleLogger.LogError($"Level {e.LevelNumber} failed validation.");
+                MoldLogger.LogError($"Level {e.LevelNumber} failed validation.");
                 _stateMachine.TransitionTo(GameState.Menu);
                 return;
             }

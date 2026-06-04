@@ -9,14 +9,14 @@ using UnityEngine;
 namespace PuzzleGame.Infrastructure.Implementations
 {
     /// <summary>
-    /// Writes liquid / glass material parameters via MaterialPropertyBlock.
-    /// Shader property slot count is governed by <see cref="BottleConstants.MaxLayers"/> —
+    /// Writes Ore / glass material parameters via MaterialPropertyBlock.
+    /// Shader property slot count is governed by <see cref="ForgeConstants.MaxLayers"/> —
     /// shaders must declare matching _Color1.._ColorN / _Fill1.._FillN properties.
     /// </summary>
     public class RendererService : IRendererService
     {
-        private static readonly int[] ColorIDs = BuildShaderPropertyIDs("_Color", BottleConstants.MaxLayers);
-        private static readonly int[] FillIDs  = BuildShaderPropertyIDs("_Fill",  BottleConstants.MaxLayers);
+        private static readonly int[] ColorIDs = BuildShaderPropertyIDs("_Color", ForgeConstants.MaxLayers);
+        private static readonly int[] FillIDs  = BuildShaderPropertyIDs("_Fill",  ForgeConstants.MaxLayers);
 
         private static int[] BuildShaderPropertyIDs(string prefix, int count)
         {
@@ -33,9 +33,9 @@ namespace PuzzleGame.Infrastructure.Implementations
 
         private readonly IColorAdapter _colorAdapter;
 
-        private readonly MaterialPropertyBlock _liquidBlock = new MaterialPropertyBlock();
+        private readonly MaterialPropertyBlock _OreBlock = new MaterialPropertyBlock();
         private readonly MaterialPropertyBlock _glassBlock  = new MaterialPropertyBlock();
-        private readonly List<LiquidLayer> _mergedLayers = new List<LiquidLayer>();
+        private readonly List<OreLayer> _mergedLayers = new List<OreLayer>();
 
         public RendererService() : this(new ColorAdapter()) { }
 
@@ -44,8 +44,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             _colorAdapter = colorAdapter ?? throw new ArgumentNullException(nameof(colorAdapter));
         }
 
-        public void UpdateLiquid(Renderer renderer, IReadOnlyList<LiquidLayer> layers, float totalFill,
-                                 float saturationBoost, float brightnessBoost, int materialIndex = 1)
+        public void UpdateOre(Renderer renderer, IReadOnlyList<OreLayer> layers, float totalFill, PuzzleGame.Application.Configuration.MoldVisualConfig config)
         {
             if (renderer == null) throw new ArgumentNullException(nameof(renderer));
             if (layers == null)   throw new ArgumentNullException(nameof(layers));
@@ -54,12 +53,12 @@ namespace PuzzleGame.Infrastructure.Implementations
             _mergedLayers.Clear();
             foreach (var layer in layers)
             {
-                if (layer.Amount <= BottleConstants.LayerAmountEpsilon) continue;
+                if (layer.Amount <= ForgeConstants.LayerAmountEpsilon) continue;
 
                 if (_mergedLayers.Count > 0 && _mergedLayers[_mergedLayers.Count - 1].Color == layer.Color)
                 {
                     var prev = _mergedLayers[_mergedLayers.Count - 1];
-                    _mergedLayers[_mergedLayers.Count - 1] = new LiquidLayer(prev.Color, prev.Amount + layer.Amount);
+                    _mergedLayers[_mergedLayers.Count - 1] = new OreLayer(prev.Color, prev.Amount + layer.Amount);
                 }
                 else
                 {
@@ -68,7 +67,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             }
 
             float cumulative = 0f;
-            int maxLayers = Mathf.Min(BottleConstants.MaxLayers, ColorIDs.Length);
+            int maxLayers = Mathf.Min(ForgeConstants.MaxLayers, ColorIDs.Length);
 
             for (int i = 0; i < maxLayers; i++)
             {
@@ -78,17 +77,20 @@ namespace PuzzleGame.Infrastructure.Implementations
                 if (i < _mergedLayers.Count)
                 {
                     var layer = _mergedLayers[i];
-                    color      = AdjustColor(_colorAdapter.ToUnity(layer.Color), saturationBoost, brightnessBoost);
+                    float sat = config != null ? config.saturationBoost : 1.25f;
+                    float bri = config != null ? config.brightnessBoost : 1.15f;
+                    color      = AdjustColor(_colorAdapter.ToUnity(layer.Color), sat, bri);
                     cumulative += layer.Amount;
                     fill       = cumulative;
                 }
 
-                _liquidBlock.SetColor(ColorIDs[i], color);
-                _liquidBlock.SetFloat(FillIDs[i],  fill);
+                _OreBlock.SetColor(ColorIDs[i], color);
+                _OreBlock.SetFloat(FillIDs[i],  fill);
             }
 
-            _liquidBlock.SetFloat(SurfaceHeightID, totalFill);
-            renderer.SetPropertyBlock(_liquidBlock, materialIndex);
+            _OreBlock.SetFloat(SurfaceHeightID, totalFill);
+            int materialIndex = config != null ? config.oreMaterialIndex : 1;
+            renderer.SetPropertyBlock(_OreBlock, materialIndex);
 
 #if UNITY_EDITOR
             if (!UnityEngine.Application.isPlaying)
@@ -108,7 +110,9 @@ namespace PuzzleGame.Infrastructure.Implementations
                             if (i < _mergedLayers.Count)
                             {
                                 var layer = _mergedLayers[i];
-                                color      = AdjustColor(_colorAdapter.ToUnity(layer.Color), saturationBoost, brightnessBoost);
+                                float sat = config != null ? config.saturationBoost : 1.25f;
+                                float bri = config != null ? config.brightnessBoost : 1.15f;
+                                color      = AdjustColor(_colorAdapter.ToUnity(layer.Color), sat, bri);
                                 cumulative += layer.Amount;
                                 fill       = cumulative;
                             }
@@ -125,7 +129,7 @@ namespace PuzzleGame.Infrastructure.Implementations
 #endif
         }
 
-        public void UpdateGlass(Renderer renderer, bool isEmpty, DomainColor baseColor, int materialIndex = 0)
+        public void UpdateGlass(Renderer renderer, bool isEmpty, DomainColor baseColor, PuzzleGame.Application.Configuration.MoldVisualConfig config)
         {
             if (renderer == null) throw new ArgumentNullException(nameof(renderer));
 
@@ -133,22 +137,22 @@ namespace PuzzleGame.Infrastructure.Implementations
 
             if (isEmpty)
             {
-                glassColor = new Color(
-                    BottleConstants.GlassEmptyR,
-                    BottleConstants.GlassEmptyG,
-                    BottleConstants.GlassEmptyB,
-                    BottleConstants.GlassEmptyA);
+                glassColor = config != null ? config.moldEmptyColor : new Color(1.0f, 1.0f, 1.0f, 0.18f);
             }
             else
             {
                 var uColor = _colorAdapter.ToUnity(baseColor);
+                float tintBase = config != null ? config.moldTintBase : 0.85f;
+                float tintMult = config != null ? config.moldTintMultiplier : 0.15f;
+                float tintAlpha = config != null ? config.moldTintAlpha : 0.25f;
                 glassColor = new Color(
-                    uColor.r * BottleConstants.GlassTintMultiplier + BottleConstants.GlassTintBase,
-                    uColor.g * BottleConstants.GlassTintMultiplier + BottleConstants.GlassTintBase,
-                    uColor.b * BottleConstants.GlassTintMultiplier + BottleConstants.GlassTintBase,
-                    BottleConstants.GlassTintAlpha);
+                    uColor.r * tintMult + tintBase,
+                    uColor.g * tintMult + tintBase,
+                    uColor.b * tintMult + tintBase,
+                    tintAlpha);
             }
 
+            int materialIndex = config != null ? config.moldMaterialIndex : 0;
             _glassBlock.SetColor(GlassColorID, glassColor);
             renderer.SetPropertyBlock(_glassBlock, materialIndex);
 

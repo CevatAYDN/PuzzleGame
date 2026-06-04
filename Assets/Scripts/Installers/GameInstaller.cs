@@ -82,7 +82,7 @@ namespace PuzzleGame.Installers
 
             // Domain services
             var colorTolerance = gameConfig.colorMatchTolerance;
-            builder.Register<IBottleValidator, BottleValidationService>(Lifetime.Singleton)
+            builder.Register<IMoldValidator, MoldValidationService>(Lifetime.Singleton)
                    .WithParameter(colorTolerance);
             builder.Register<IGameStateMachine, GameStateMachine>(Lifetime.Singleton);
             builder.Register<IGameHistoryManager, GameHistoryManager>(Lifetime.Singleton);
@@ -95,21 +95,21 @@ namespace PuzzleGame.Installers
             builder.Register<ISaveManager, GameSaveManager>(Lifetime.Singleton);
 
             // Application services
-            builder.Register<IBottleSelectionService, BottleSelectionService>(Lifetime.Singleton);
+            builder.Register<IMoldSelectionService, MoldSelectionService>(Lifetime.Singleton);
             builder.Register<IAudioService, AudioService>(Lifetime.Singleton);
             builder.Register<IParticleFactory, ParticleFactory>(Lifetime.Singleton);
             builder.Register<IStreamRenderer, StreamRenderer>(Lifetime.Singleton);
             builder.Register<IAnimationService, AnimationService>(Lifetime.Singleton);
             builder.Register<ILevelSetupService, LevelSetupService>(Lifetime.Singleton);
             builder.Register<ILevelValidationService, LevelValidationService>(Lifetime.Singleton);
-            builder.Register<IPourService, PourService>(Lifetime.Singleton);
+            builder.Register<ICastService, CastService>(Lifetime.Singleton);
             builder.Register<IReactionService, ReactionService>(Lifetime.Singleton);
             builder.Register<IInputHandlerService, InputHandlerService>(Lifetime.Singleton);
 
             // GameManager — inject via VContainer
             builder.RegisterComponentInHierarchy<GameManager>();
 
-            BottleLogger.LogInfo("GameInstaller configured — all services registered.");
+            MoldLogger.LogInfo("GameInstaller configured — all services registered.");
         }
 
         private void LoadOrThrowConfigs()
@@ -144,9 +144,9 @@ namespace PuzzleGame.Installers
 
             // OnValidate the values the inspector might have corrupted
             gameConfig.colorMatchTolerance = Mathf.Max(
-                BottleConstants.ColorMatchEpsilon, gameConfig.colorMatchTolerance);
-            gameConfig.maxLayersPerBottle = Mathf.Clamp(
-                gameConfig.maxLayersPerBottle, 1, BottleConstants.MaxLayers);
+                ForgeConstants.ColorMatchEpsilon, gameConfig.colorMatchTolerance);
+            gameConfig.maxLayersPerMold = Mathf.Clamp(
+                gameConfig.maxLayersPerMold, 1, ForgeConstants.MaxLayers);
         }
 
         private void LoadOrThrowLevelCatalog()

@@ -7,10 +7,10 @@ using PuzzleGame.Application.Configuration.FeatureSystem;
 namespace PuzzleGame.Application.Configuration
 {
     /// <summary>
-    /// Pre-built bottle state for non-auto-generated levels.
+    /// Pre-built Mold state for non-auto-generated levels.
     /// </summary>
     [Serializable]
-    public class LevelBottleData
+    public class LevelMoldData
     {
         public List<LevelLayerData> layers = new List<LevelLayerData>();
         public bool isEmpty;
@@ -25,7 +25,7 @@ namespace PuzzleGame.Application.Configuration
 
     /// <summary>
     /// Static level descriptor. Inspector-driven, supports both auto-generated
-    /// and pre-built bottle layouts. Star thresholds (par/good) drive reward UI.
+    /// and pre-built Mold layouts. Star thresholds (par/good) drive reward UI.
     /// 
     /// NOTE: extends <see cref="ScriptableObject"/> because Unity inspector
     /// authoring of static level data is the design workflow. Domain purity is
@@ -41,15 +41,15 @@ namespace PuzzleGame.Application.Configuration
         public Difficulty difficulty = Difficulty.Easy;
 
         [Header("Layout (auto-generate mode)")]
-        [Min(BottleConstants.MinBottlesPerLevel)] public int bottleCount = 5;
-        [Min(BottleConstants.MinEmptyBottles)] public int emptyBottleCount = 2;
-        [Min(BottleConstants.MinColorsPerLevel)] public int colorCount = 4;
-        [Range(1, BottleConstants.MaxLayers)] public int maxLayersPerBottle = BottleConstants.DefaultLayerCapacity;
+        [Min(ForgeConstants.MinMoldsPerLevel)] public int MoldCount = 5;
+        [Min(ForgeConstants.MinEmptyMolds)] public int emptyMoldCount = 2;
+        [Min(ForgeConstants.MinColorsPerLevel)] public int colorCount = 4;
+        [Range(1, ForgeConstants.MaxLayers)] public int maxLayersPerMold = ForgeConstants.DefaultLayerCapacity;
         [Min(0)] public int randomSeed = 0;
         public bool autoGenerate = true;
 
         [Header("Pre-built (if autoGenerate = false)")]
-        public List<LevelBottleData> bottles = new List<LevelBottleData>();
+        public List<LevelMoldData> Molds = new List<LevelMoldData>();
 
         [Header("Stars")]
         [Tooltip("3 stars if moves <= parMoves")]
@@ -68,13 +68,13 @@ namespace PuzzleGame.Application.Configuration
         // ═══════════════════════════════════════════════════════════════════
 
         [Header("Features (Experimental)")]
-        [Tooltip("Enable MultiLayerPour: pour all matching consecutive layers")]
-        public bool enableMultiLayerPour = true;
+        [Tooltip("Enable MultiLayerCast: Cast all matching consecutive layers")]
+        public bool enableMultiLayerCast = true;
 
         [Tooltip("Enable Chemical Reaction System")]
         public bool enableReactionSystem = false;
 
-        [HideInInspector] public MultiLayerPourData multiLayerPourConfig;
+        [HideInInspector] public MultiLayerCastData multiLayerCastConfig;
         [HideInInspector] public ReactionSystemData reactionConfig;
 
         /// <summary>3 if moveCount &lt;= par, 2 if moveCount &lt;= good, else 1.</summary>
@@ -91,12 +91,12 @@ namespace PuzzleGame.Application.Configuration
         private void OnValidate()
         {
             if (goodMoves < parMoves) goodMoves = parMoves;
-            if (emptyBottleCount < BottleConstants.MinEmptyBottles) emptyBottleCount = BottleConstants.MinEmptyBottles;
-            if (emptyBottleCount > bottleCount - 1) emptyBottleCount = Mathf.Max(1, bottleCount - 1);
-            if (colorCount > BottleConstants.MaxColorsPerLevel) colorCount = BottleConstants.MaxColorsPerLevel;
-            if (colorCount < BottleConstants.MinColorsPerLevel) colorCount = BottleConstants.MinColorsPerLevel;
-            if (maxLayersPerBottle < 1) maxLayersPerBottle = 1;
-            if (maxLayersPerBottle > BottleConstants.MaxLayers) maxLayersPerBottle = BottleConstants.MaxLayers;
+            if (emptyMoldCount < ForgeConstants.MinEmptyMolds) emptyMoldCount = ForgeConstants.MinEmptyMolds;
+            if (emptyMoldCount > MoldCount - 1) emptyMoldCount = Mathf.Max(1, MoldCount - 1);
+            if (colorCount > ForgeConstants.MaxColorsPerLevel) colorCount = ForgeConstants.MaxColorsPerLevel;
+            if (colorCount < ForgeConstants.MinColorsPerLevel) colorCount = ForgeConstants.MinColorsPerLevel;
+            if (maxLayersPerMold < 1) maxLayersPerMold = 1;
+            if (maxLayersPerMold > ForgeConstants.MaxLayers) maxLayersPerMold = ForgeConstants.MaxLayers;
         }
     }
 }

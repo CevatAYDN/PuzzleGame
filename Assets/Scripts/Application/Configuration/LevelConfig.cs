@@ -7,7 +7,7 @@ namespace PuzzleGame.Application.Configuration
     {
         [Header("Level Generation")]
         public bool autoGenerateLevel = true;
-        [Range(1, 6)] public int emptyBottleCount = 2;
+        [Range(1, 6)] public int emptyMoldCount = 2;
         public int randomSeed = 0;
 
         [Header("Color Palette")]

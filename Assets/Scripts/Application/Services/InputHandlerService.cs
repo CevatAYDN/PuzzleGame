@@ -13,7 +13,7 @@ namespace PuzzleGame.Application.Services
 {
     /// <summary>
     /// Handles all input-related logic for the game.
-    /// Uses IBottleView abstraction instead of BottleController (MonoBehaviour) —
+    /// Uses IMoldView abstraction instead of MoldController (MonoBehaviour) —
     /// Domain layer stays isolated, unit tests are writable.
     ///
     /// Fix #3: No reflection on RaycastHit — uses IInputHandler.Raycast overload
@@ -27,16 +27,16 @@ namespace PuzzleGame.Application.Services
         private readonly Camera _camera;
         private readonly IGameStateMachine _stateMachine;
         private readonly IAnimationService _animationService;
-        private readonly IBottleSelectionService _selectionService;
-        private readonly IBottleValidator _validator;
+        private readonly IMoldSelectionService _selectionService;
+        private readonly IMoldValidator _validator;
         private readonly GameConfig _gameConfig;
         private readonly AnimationConfig _animConfig;
         private readonly IAudioService _audioService;
         private readonly IGameHistoryManager _historyManager;
-        private readonly IPourService _pourService;
+        private readonly ICastService _CastService;
         private LevelData _currentLevelData;
 
-        private IBottleView[] _bottles;
+        private IMoldView[] _Molds;
         private Vector3 _selectedOriginalPos;
 
 
@@ -45,13 +45,13 @@ namespace PuzzleGame.Application.Services
             Camera camera,
             IGameStateMachine stateMachine,
             IAnimationService animationService,
-            IBottleSelectionService selectionService,
-            IBottleValidator validator,
+            IMoldSelectionService selectionService,
+            IMoldValidator validator,
             GameConfig gameConfig,
             AnimationConfig animConfig,
             IAudioService audioService,
             IGameHistoryManager historyManager,
-            IPourService pourService)
+            ICastService CastService)
         {
             _inputHandler = inputHandler ?? throw new ArgumentNullException(nameof(inputHandler));
             _camera = camera;
@@ -63,7 +63,7 @@ namespace PuzzleGame.Application.Services
             _animConfig = animConfig;
             _audioService = audioService;
             _historyManager = historyManager;
-            _pourService = pourService;
+            _CastService = CastService;
         }
 
         public void SetLevelData(LevelData levelData)
@@ -71,9 +71,9 @@ namespace PuzzleGame.Application.Services
             _currentLevelData = levelData;
         }
 
-        public void SetBottles(IBottleView[] bottles)
+        public void SetMolds(IMoldView[] Molds)
         {
-            _bottles = bottles;
+            _Molds = Molds;
         }
 
         public void ProcessInput()
@@ -90,36 +90,36 @@ namespace PuzzleGame.Application.Services
         {
             // Fix #3: Use the four-argument Raycast overload — Collider resolved directly,
             // no reflection on RaycastHit private fields.
-            if (!_inputHandler.Raycast(screenPos, _gameConfig.bottleLayerMask, out RaycastHit hit, out Collider hitCollider))
+            if (!_inputHandler.Raycast(screenPos, _gameConfig.MoldLayerMask, out RaycastHit hit, out Collider hitCollider))
             {
-                if (BottleLogger.IsWarningEnabled)
+                if (MoldLogger.IsWarningEnabled)
                 {
                     if (_inputHandler.Raycast(screenPos, ~0, out RaycastHit debugHit, out _))
                     {
-                        BottleLogger.LogWarning($"Input raycast missed bottle because it hit '{debugHit.collider?.name}' " +
-                            $"(Layer: {LayerMask.LayerToName(debugHit.collider?.gameObject.layer ?? 0)}) instead of the bottle layer.");
+                        MoldLogger.LogWarning($"Input raycast missed Mold because it hit '{debugHit.collider?.name}' " +
+                            $"(Layer: {LayerMask.LayerToName(debugHit.collider?.gameObject.layer ?? 0)}) instead of the Mold layer.");
                     }
                     else
                     {
-                        BottleLogger.LogWarning($"Input raycast missed everything at screen position {screenPos}.");
+                        MoldLogger.LogWarning($"Input raycast missed everything at screen position {screenPos}.");
                     }
                 }
-                if (_selectionService.SelectedBottle != null)
+                if (_selectionService.SelectedMold != null)
                 {
-                    LowerSelectedBottle();
+                    LowerSelectedMold();
                     _selectionService.Deselect();
                 }
                 return;
             }
 
-            // Resolve clicked bottle from the Collider returned by the new Raycast overload.
-            IBottleView clicked = hitCollider != null ? hitCollider.GetComponent<IBottleView>() : null;
+            // Resolve clicked Mold from the Collider returned by the new Raycast overload.
+            IMoldView clicked = hitCollider != null ? hitCollider.GetComponent<IMoldView>() : null;
 
-            // Fallback: search bottle list by collider instance ID (edge case: pooled objects)
-            if (clicked == null && hitCollider != null && _bottles != null)
+            // Fallback: search Mold list by collider instance ID (edge case: pooled objects)
+            if (clicked == null && hitCollider != null && _Molds != null)
             {
                 var colliderId = hitCollider.GetEntityId();
-                foreach (var b in _bottles)
+                foreach (var b in _Molds)
                 {
                     if (b?.GameObject == null) continue;
                     var col = b.GameObject.GetComponent<Collider>();
@@ -133,85 +133,85 @@ namespace PuzzleGame.Application.Services
 
             if (clicked == null)
             {
-                BottleLogger.LogDebug("Could not resolve clicked bottle.");
+                MoldLogger.LogDebug("Could not resolve clicked Mold.");
                 return;
             }
 
-            var selectedState = _selectionService.SelectedBottle;
+            var selectedState = _selectionService.SelectedMold;
 
             if (selectedState == null)
             {
-                TrySelectBottle(clicked);
+                TrySelectMold(clicked);
             }
             else if (clicked.State == selectedState)
             {
-                LowerSelectedBottle();
+                LowerSelectedMold();
                 _selectionService.Deselect();
             }
             else
             {
-                TryPour(FindBottleByState(selectedState), clicked);
+                TryCast(FindMoldByState(selectedState), clicked);
             }
         }
 
-        private void TrySelectBottle(IBottleView bottle)
+        private void TrySelectMold(IMoldView Mold)
         {
-            if (bottle.IsCapped)
+            if (Mold.IsCapped)
             {
-                BottleLogger.LogDebug("Cannot select completed/capped bottle.");
+                MoldLogger.LogDebug("Cannot select completed/capped Mold.");
                 return;
             }
 
-            if (bottle.IsEmpty)
+            if (Mold.IsEmpty)
             {
-                BottleLogger.LogDebug("Cannot select empty bottle.");
+                MoldLogger.LogDebug("Cannot select empty Mold.");
                 return;
             }
 
-            BottleLogger.LogInfo("Selected bottle.");
-            _selectedOriginalPos = bottle.Transform.position;
-            _selectionService.Select(bottle.State);
-            bottle.SetSelectionHighlight(true);
-            _animationService.AnimateBottleLift(
-                bottle.Transform,
+            MoldLogger.LogInfo("Selected Mold.");
+            _selectedOriginalPos = Mold.Transform.position;
+            _selectionService.Select(Mold.State);
+            Mold.SetSelectionHighlight(true);
+            _animationService.AnimateMoldLift(
+                Mold.Transform,
                 _animConfig.liftHeight, _animConfig.liftDuration,
-                keepHovering: () => _selectionService.SelectedBottle == bottle.State);
+                keepHovering: () => _selectionService.SelectedMold == Mold.State);
         }
 
-        private void TryPour(IBottleView source, IBottleView target)
+        private void TryCast(IMoldView source, IMoldView target)
         {
             if (source == null)
             {
-                BottleLogger.LogWarning("TryPour: source bottle not found.");
+                MoldLogger.LogWarning("TryCast: source Mold not found.");
                 _selectionService.Deselect();
                 return;
             }
 
-            if (_pourService == null)
+            if (_CastService == null)
             {
-                BottleLogger.LogError("TryPour: PourService is null — DI may have failed.");
+                MoldLogger.LogError("TryCast: CastService is null — DI may have failed.");
                 _selectionService.Deselect();
                 return;
             }
 
-            BottleLogger.LogInfo("Attempting pour.");
+            MoldLogger.LogInfo("Attempting Cast.");
 
             var activeLevelData = GetActiveLevelData();
-            int pourCount = _pourService.GetPourLayerCount(source, target, activeLevelData);
+            int CastCount = _CastService.GetCastLayerCount(source, target, activeLevelData);
 
-            if (_pourService.TryPour(source, target, activeLevelData, _bottles))
+            if (_CastService.TryCast(source, target, activeLevelData, _Molds))
             {
-                if (BottleLogger.IsInfoEnabled)
-                    BottleLogger.LogInfo($"Pour succeeded ({pourCount} layers).");
+                if (MoldLogger.IsInfoEnabled)
+                    MoldLogger.LogInfo($"Cast succeeded ({CastCount} layers).");
 
-                _animationService.AnimatePour(
+                _animationService.AnimateCast(
                     source,
                     target,
-                    _animConfig.pourDuration,
+                    _animConfig.CastDuration,
                     onComplete: () =>
                     {
                         source.SetSelectionHighlight(false);
-                        _animationService.AnimateBottleLower(
+                        _animationService.AnimateMoldLower(
                             source.Transform,
                             _selectedOriginalPos, _animConfig.liftDuration);
                     });
@@ -220,32 +220,32 @@ namespace PuzzleGame.Application.Services
             }
             else
             {
-                BottleLogger.LogDebug("Pour rejected.");
+                MoldLogger.LogDebug("Cast rejected.");
                 _audioService?.PlaySfx(AudioClipId.Error);
                 _animationService?.AnimateErrorShake(source.Transform, onComplete: () =>
                 {
-                    LowerSelectedBottle();
+                    LowerSelectedMold();
                     _selectionService.Deselect();
                 });
             }
         }
 
-        private void LowerSelectedBottle()
+        private void LowerSelectedMold()
         {
-            var selected = FindBottleByState(_selectionService.SelectedBottle);
+            var selected = FindMoldByState(_selectionService.SelectedMold);
             if (selected != null)
             {
                 selected.SetSelectionHighlight(false);
-                _animationService.AnimateBottleLower(
+                _animationService.AnimateMoldLower(
                     selected.Transform,
                     _selectedOriginalPos, _animConfig.liftDuration);
             }
         }
 
-        private IBottleView FindBottleByState(BottleState state)
+        private IMoldView FindMoldByState(MoldState state)
         {
-            if (state == null || _bottles == null) return null;
-            foreach (var b in _bottles)
+            if (state == null || _Molds == null) return null;
+            foreach (var b in _Molds)
                 if (b != null && b.State == state) return b;
             return null;
         }
@@ -271,11 +271,11 @@ namespace PuzzleGame.Application.Services
             {
                 _playTestDefaults = ScriptableObject.CreateInstance<LevelData>();
                 _playTestDefaults.autoGenerate = false;
-                _playTestDefaults.enableMultiLayerPour = false;
+                _playTestDefaults.enableMultiLayerCast = false;
                 _playTestDefaults.enableReactionSystem = false;
             }
 
-            BottleLogger.LogDebug("GetActiveLevelData: no level set, using play-test defaults.");
+            MoldLogger.LogDebug("GetActiveLevelData: no level set, using play-test defaults.");
             return _playTestDefaults;
         }
     }

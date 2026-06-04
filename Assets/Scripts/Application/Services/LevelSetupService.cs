@@ -12,7 +12,7 @@ namespace PuzzleGame.Application.Services
 {
     /// <summary>
     /// Handles level setup and initialization logic.
-    /// Uses IBottleView abstraction instead of BottleController (MonoBehaviour).
+    /// Uses IMoldView abstraction instead of MoldController (MonoBehaviour).
     /// Fix #1: DefaultPalette is now DomainColor[] — no UnityEngine.Color dependency.
     /// </summary>
     public class LevelSetupService : ILevelSetupService
@@ -42,17 +42,17 @@ namespace PuzzleGame.Application.Services
 
         private readonly IColorAdapter _colorAdapter;
 
-        public List<List<LiquidLayer>> GenerateLevelAssignments(IBottleView[] bottles, LevelData currentLevel)
+        public List<List<OreLayer>> GenerateLevelAssignments(IMoldView[] Molds, LevelData currentLevel)
         {
-            if (bottles == null || bottles.Length == 0)
-                return new List<List<LiquidLayer>>();
+            if (Molds == null || Molds.Length == 0)
+                return new List<List<OreLayer>>();
 
             if (currentLevel == null)
                 throw new ArgumentNullException(nameof(currentLevel),
                     "LevelSetupService.GenerateLevelAssignments: currentLevel cannot be null. This indicates a bug in the call chain.");
 
             bool autoGen = currentLevel.autoGenerate;
-            int empties = currentLevel.emptyBottleCount;
+            int empties = currentLevel.emptyMoldCount;
             int seed = currentLevel.randomSeed;
             Difficulty diff = currentLevel.difficulty;
 
@@ -66,29 +66,29 @@ namespace PuzzleGame.Application.Services
             if (currentLevel.autoGenerate)
             {
                 return _levelGenerator.Generate(
-                    bottles.Length,
-                    currentLevel.maxLayersPerBottle,
+                    Molds.Length,
+                    currentLevel.maxLayersPerMold,
                     empties,
                     pal,
                     diff,
                     seed);
             }
 
-            // Pre-built level: convert List<LevelBottleData> to List<List<LiquidLayer>>
-            var assignments = new List<List<LiquidLayer>>();
-            if (currentLevel.bottles != null)
+            // Pre-built level: convert List<LevelMoldData> to List<List<OreLayer>>
+            var assignments = new List<List<OreLayer>>();
+            if (currentLevel.Molds != null)
             {
-                for (int i = 0; i < currentLevel.bottles.Count; i++)
+                for (int i = 0; i < currentLevel.Molds.Count; i++)
                 {
-                    var bottleData = currentLevel.bottles[i];
-                    if (bottleData == null) continue;
+                    var MoldData = currentLevel.Molds[i];
+                    if (MoldData == null) continue;
 
-                    var layers = new List<LiquidLayer>();
-                    if (!bottleData.isEmpty)
+                    var layers = new List<OreLayer>();
+                    if (!MoldData.isEmpty)
                     {
-                        foreach (var layerData in bottleData.layers)
+                        foreach (var layerData in MoldData.layers)
                         {
-                            layers.Add(new LiquidLayer(_colorAdapter.FromUnity(layerData.color), layerData.amount));
+                            layers.Add(new OreLayer(_colorAdapter.FromUnity(layerData.color), layerData.amount));
                         }
                     }
                     assignments.Add(layers);
@@ -98,40 +98,40 @@ namespace PuzzleGame.Application.Services
             return assignments;
         }
 
-        public void SetupBottles(IBottleView[] bottles,
+        public void SetupMolds(IMoldView[] Molds,
                                  LevelData currentLevel,
                                  IRendererService rendererService,
-                                 IBottleValidator validator,
+                                 IMoldValidator validator,
                                  IAnimationService animationService)
         {
-            if (bottles.Length == 0) return;
+            if (Molds.Length == 0) return;
 
             if (currentLevel == null)
             {
-                // Play test mode: initialize bottles using their existing serialized/state layers!
-                for (int i = 0; i < bottles.Length; i++)
+                // Play test mode: initialize Molds using their existing serialized/state layers!
+                for (int i = 0; i < Molds.Length; i++)
                 {
-                    var bottle = bottles[i];
-                    var initial = new List<LiquidLayer>();
-                    if (bottle.State != null && bottle.State.Layers != null)
+                    var Mold = Molds[i];
+                    var initial = new List<OreLayer>();
+                    if (Mold.State != null && Mold.State.Layers != null)
                     {
-                        initial.AddRange(bottle.State.Layers);
+                        initial.AddRange(Mold.State.Layers);
                     }
-                    bottle.Initialize(rendererService, validator, animationService, initial);
+                    Mold.Initialize(rendererService, validator, animationService, initial);
                 }
                 return;
             }
 
-            var assignments = GenerateLevelAssignments(bottles, currentLevel);
+            var assignments = GenerateLevelAssignments(Molds, currentLevel);
 
-            for (int i = 0; i < bottles.Length; i++)
+            for (int i = 0; i < Molds.Length; i++)
             {
-                var bottle = bottles[i];
+                var Mold = Molds[i];
                 var initial = (assignments != null && i < assignments.Count)
                     ? assignments[i]
-                    : new List<LiquidLayer>();
+                    : new List<OreLayer>();
 
-                bottle.Initialize(rendererService, validator, animationService, initial);
+                Mold.Initialize(rendererService, validator, animationService, initial);
             }
         }
 

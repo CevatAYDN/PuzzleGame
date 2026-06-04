@@ -21,12 +21,12 @@ namespace PuzzleGame.Tests.Application.Services
         [SetUp]
         public void SetUp()
         {
-            BottleLogger.SetLevel(BottleLogger.Level.Error, false);
+            MoldLogger.SetLevel(MoldLogger.Level.Error, false);
 
             _config = ScriptableObject.CreateInstance<AnimationConfig>();
             _config.liftHeight = 1f;
             _config.liftDuration = 0.4f;
-            _config.pourDuration = 0.6f;
+            _config.CastDuration = 0.6f;
             _config.returnDuration = 0.4f;
             _config.shakeDuration = 0.25f;
             _config.shakeAngle = 8f;
@@ -58,17 +58,17 @@ namespace PuzzleGame.Tests.Application.Services
         }
 
         [Test]
-        public void IsAnimating_AnimateBottleLift_DoesNotThrow()
+        public void IsAnimating_AnimateMoldLift_DoesNotThrow()
         {
             // FakeTweenService completes synchronously, so IsAnimating may already
             // be false by the time we check — the core contract is: no exception thrown,
             // and onComplete is eventually called when the tween settles.
-            var go = new GameObject("TestBottle");
+            var go = new GameObject("TestMold");
             try
             {
                 bool completed = false;
-                Assert.DoesNotThrow(() => _sut.AnimateBottleLift(go.transform, 1f, 0.4f, onComplete: () => completed = true),
-                    "AnimateBottleLift should not throw.");
+                Assert.DoesNotThrow(() => _sut.AnimateMoldLift(go.transform, 1f, 0.4f, onComplete: () => completed = true),
+                    "AnimateMoldLift should not throw.");
                 // FakeTweenService immediately calls OnComplete, so completed == true.
                 Assert.That(completed, Is.True, "FakeTweenService should invoke onComplete synchronously.");
             }
@@ -95,16 +95,16 @@ namespace PuzzleGame.Tests.Application.Services
             Assert.DoesNotThrow(() => _sut.Dispose());
         }
 
-        // ── AnimateBottleLift ─────────────────────────────────────────────────
+        // ── AnimateMoldLift ─────────────────────────────────────────────────
 
         [Test]
-        public void AnimateBottleLift_StartsTween()
+        public void AnimateMoldLift_StartsTween()
         {
-            var go = new GameObject("TestBottle");
+            var go = new GameObject("TestMold");
             try
             {
                 bool completed = false;
-                _sut.AnimateBottleLift(go.transform, 1f, 0.4f, onComplete: () => completed = true);
+                _sut.AnimateMoldLift(go.transform, 1f, 0.4f, onComplete: () => completed = true);
                 Assert.That(completed, Is.True);
             }
             finally
@@ -118,7 +118,7 @@ namespace PuzzleGame.Tests.Application.Services
         [Test]
         public void AnimateErrorShake_InvokesOnComplete()
         {
-            var go = new GameObject("TestBottle");
+            var go = new GameObject("TestMold");
             try
             {
                 bool completed = false;
@@ -150,27 +150,27 @@ namespace PuzzleGame.Tests.Application.Services
             }
         }
 
-        // ── AnimateLiquidFlash ────────────────────────────────────────────────
+        // ── AnimateOreFlash ────────────────────────────────────────────────
 
         [Test]
-        public void AnimateLiquidFlash_NullRenderer_InvokesOnComplete()
+        public void AnimateOreFlash_NullRenderer_InvokesOnComplete()
         {
             bool completed = false;
-            _sut.AnimateLiquidFlash(null, 0, 1f, 0.5f, onComplete: () => completed = true);
+            _sut.AnimateOreFlash(null, 0, 1f, 0.5f, onComplete: () => completed = true);
             Assert.That(completed, Is.True);
         }
 
-        // ── AnimatePour ───────────────────────────────────────────────────────
+        // ── AnimateCast ───────────────────────────────────────────────────────
 
         [Test]
-        public void AnimatePour_ZeroDuration_FallsBackToMinimum()
+        public void AnimateCast_ZeroDuration_FallsBackToMinimum()
         {
-            var source = CreateTestBottle();
-            var target = CreateTestBottle();
+            var source = CreateTestMold();
+            var target = CreateTestMold();
             try
             {
                 Assert.DoesNotThrow(() =>
-                    _sut.AnimatePour(source, target, 0f));
+                    _sut.AnimateCast(source, target, 0f));
             }
             finally
             {
@@ -180,14 +180,14 @@ namespace PuzzleGame.Tests.Application.Services
         }
 
         [Test]
-        public void AnimatePour_InvokesOnComplete()
+        public void AnimateCast_InvokesOnComplete()
         {
-            var source = CreateTestBottle();
-            var target = CreateTestBottle();
+            var source = CreateTestMold();
+            var target = CreateTestMold();
             try
             {
                 bool completed = false;
-                _sut.AnimatePour(source, target, 0.6f, onComplete: () => completed = true);
+                _sut.AnimateCast(source, target, 0.6f, onComplete: () => completed = true);
                 Assert.That(completed, Is.True);
             }
             finally
@@ -199,12 +199,12 @@ namespace PuzzleGame.Tests.Application.Services
 
         // ── Helpers ───────────────────────────────────────────────────────────
 
-        private FakeBottleView CreateTestBottle()
+        private FakeMoldView CreateTestMold()
         {
-            var state = new BottleState(4);
-            state.AddLayer(new LiquidLayer(new DomainColor(1f, 0.2f, 0.2f), 1f));
-            var go = new GameObject("TestBottle");
-            return new FakeBottleView(state)
+            var state = new MoldState(4);
+            state.AddLayer(new OreLayer(new DomainColor(1f, 0.2f, 0.2f), 1f));
+            var go = new GameObject("TestMold");
+            return new FakeMoldView(state)
             {
                 GameObject = go,
                 Transform = go.transform,

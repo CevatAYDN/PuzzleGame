@@ -14,13 +14,13 @@ namespace PuzzleGame.Events.Tests
         public void SetUp()
         {
             _eventAggregator = new EventAggregator();
-            BottleLogger.SetLevel(BottleLogger.Level.Error, false);
+            MoldLogger.SetLevel(MoldLogger.Level.Error, false);
         }
 
         [TearDown]
         public void TearDown()
         {
-            BottleLogger.SetLevel(BottleLogger.Level.Error, false);
+            MoldLogger.SetLevel(MoldLogger.Level.Error, false);
             _eventAggregator?.Clear();
         }
 
@@ -205,14 +205,14 @@ namespace PuzzleGame.Events.Tests
         // ── Game events integration ─────────────────────────────────────────
 
         [Test]
-        public void PourCompletedEvent_CanBePublishedAndReceived()
+        public void CastCompletedEvent_CanBePublishedAndReceived()
         {
-            PourCompletedEvent received = default;
-            _eventAggregator.Subscribe<PourCompletedEvent>(e => received = e);
+            CastCompletedEvent received = default;
+            _eventAggregator.Subscribe<CastCompletedEvent>(e => received = e);
 
-            var source = new BottleState(4);
-            var target = new BottleState(4);
-            _eventAggregator.Publish(new PourCompletedEvent(source, target));
+            var source = new MoldState(4);
+            var target = new MoldState(4);
+            _eventAggregator.Publish(new CastCompletedEvent(source, target));
 
             Assert.That(received.Source, Is.EqualTo(source));
             Assert.That(received.Target, Is.EqualTo(target));

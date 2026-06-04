@@ -6,8 +6,8 @@ namespace PuzzleGame.Application.Interfaces
     public enum AudioClipId
     {
         None,
-        PourLoop,
-        PourEnd,
+        CastLoop,
+        CastEnd,
         Error,
         LevelComplete,
         LevelStart,

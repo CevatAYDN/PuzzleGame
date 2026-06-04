@@ -11,14 +11,14 @@ namespace PuzzleGame.Application.Configuration.FeatureSystem
     /// Each feature can be enabled/disabled per level with custom parameters.
     ///
     /// CURRENT FEATURES (wired with runtime service + event publishing):
-    ///   - MultiLayerPour  : PourService (Application/Services/PourService.cs)
+    ///   - MultiLayerCast  : CastService (Application/Services/CastService.cs)
     ///   - ReactionSystem  : ReactionService (Application/Services/ReactionService.cs)
     /// </summary>
     [Flags]
     public enum LevelFeatureType
     {
         None = 0,
-        MultiLayerPour = 1 << 0,      // Pour all matching consecutive layers at once
+        MultiLayerCast = 1 << 0,      // Cast all matching consecutive layers at once
         ReactionSystem = 1 << 1,      // Chemical reactions between colors
         All = ~0
     }
@@ -37,17 +37,17 @@ namespace PuzzleGame.Application.Configuration.FeatureSystem
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // MULTI-LAYER POUR FEATURE
+    // MULTI-LAYER Cast FEATURE
     // ═══════════════════════════════════════════════════════════════════════
 
     [Serializable]
-    public class MultiLayerPourData : LevelFeatureData
+    public class MultiLayerCastData : LevelFeatureData
     {
-        public bool pourAllMatching = true;        // Pour all consecutive same colors
-        public bool pourConsecutiveOnly = true;    // Only pour if 2+ consecutive
-        public int minConsecutiveForPour = 2;      // Minimum layers to pour together
+        public bool CastAllMatching = true;        // Cast all consecutive same colors
+        public bool CastConsecutiveOnly = true;    // Only Cast if 2+ consecutive
+        public int minConsecutiveForCast = 2;      // Minimum layers to Cast together
 
-        public override LevelFeatureType GetFeatureType() => LevelFeatureType.MultiLayerPour;
+        public override LevelFeatureType GetFeatureType() => LevelFeatureType.MultiLayerCast;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -58,13 +58,13 @@ namespace PuzzleGame.Application.Configuration.FeatureSystem
     public class ReactionRule
     {
         [Tooltip("First color that triggers reaction")]
-        public LiquidColor colorA = LiquidColor.Red;
+        public OreColor colorA = OreColor.Red;
 
         [Tooltip("Second color that triggers reaction")]
-        public LiquidColor colorB = LiquidColor.Blue;
+        public OreColor colorB = OreColor.Blue;
 
         [Tooltip("Result color after reaction (for Transform type)")]
-        public LiquidColor resultColor = LiquidColor.Green;
+        public OreColor resultColor = OreColor.Green;
 
         [Tooltip("Reaction type: 0=None, 1=Bubble, 2=Explode, 3=Transform")]
         public ReactionType reactionType = ReactionType.None;
@@ -76,7 +76,7 @@ namespace PuzzleGame.Application.Configuration.FeatureSystem
         {
             None,
             Bubble,      // Creates bubbles, harmless
-            Explode,     // Bottle explodes, level fails
+            Explode,     // Mold explodes, level fails
             Transform    // Colors transform to resultColor
         }
     }

@@ -19,10 +19,10 @@ namespace PuzzleGame
         private float _wobbleZ;
         private float _velocityX;
         private float _velocityZ;
-        private bool _hasLiquidMaterial;
+        private bool _hasOreMaterial;
         private bool _isWobbleActive = true;
         private float _timeSinceLastUpdate;
-        private int _liquidMatIndex = 1;
+        private int _OreMatIndex = 1;
 
         private static readonly int WobbleXProperty = Shader.PropertyToID("_WobbleX");
         private static readonly int WobbleZProperty = Shader.PropertyToID("_WobbleZ");
@@ -34,8 +34,8 @@ namespace PuzzleGame
         }
 
         /// <summary>
-        /// Sets the update manager reference. Called by BottlePoolInitializer after instantiation.
-        /// For scene-placed bottles, call this from the composition root.
+        /// Sets the update manager reference. Called by MoldPoolInitializer after instantiation.
+        /// For scene-placed Molds, call this from the composition root.
         /// </summary>
         public void SetUpdateManager(IUpdateManager updateManager)
         {
@@ -49,10 +49,10 @@ namespace PuzzleGame
 
         private void Start()
         {
-            _liquidMatIndex = config != null ? config.liquidMaterialIndex : 1;
+            _OreMatIndex = config != null ? config.OreMaterialIndex : 1;
             _previousPosition = transform.position;
             _previousRotation = transform.rotation.eulerAngles;
-            _hasLiquidMaterial = _renderer != null && _renderer.sharedMaterials != null && _renderer.sharedMaterials.Length > _liquidMatIndex;
+            _hasOreMaterial = _renderer != null && _renderer.sharedMaterials != null && _renderer.sharedMaterials.Length > _OreMatIndex;
         }
 
         public void OnUpdate(float deltaTime)
@@ -112,12 +112,12 @@ namespace PuzzleGame
                     float wobbleAmountZ = _wobbleZ * Mathf.Sin(time + Mathf.PI * 0.3f);
 
                     // Send to shader using MaterialPropertyBlock
-                    if (_hasLiquidMaterial)
+                    if (_hasOreMaterial)
                     {
-                        _renderer.GetPropertyBlock(_propBlock, _liquidMatIndex);
+                        _renderer.GetPropertyBlock(_propBlock, _OreMatIndex);
                         _propBlock.SetFloat(WobbleXProperty, wobbleAmountX);
                         _propBlock.SetFloat(WobbleZProperty, wobbleAmountZ);
-                        _renderer.SetPropertyBlock(_propBlock, _liquidMatIndex);
+                        _renderer.SetPropertyBlock(_propBlock, _OreMatIndex);
                     }
                 }
             }
@@ -129,12 +129,12 @@ namespace PuzzleGame
                 _velocityZ = 0f;
                 _timeSinceLastUpdate = 0f;
 
-                if (_hasLiquidMaterial)
+                if (_hasOreMaterial)
                 {
-                    _renderer.GetPropertyBlock(_propBlock, _liquidMatIndex);
+                    _renderer.GetPropertyBlock(_propBlock, _OreMatIndex);
                     _propBlock.SetFloat(WobbleXProperty, 0f);
                     _propBlock.SetFloat(WobbleZProperty, 0f);
-                    _renderer.SetPropertyBlock(_propBlock, _liquidMatIndex);
+                    _renderer.SetPropertyBlock(_propBlock, _OreMatIndex);
                 }
                 _isWobbleActive = false;
             }
@@ -147,19 +147,19 @@ namespace PuzzleGame
         private void OnDisable()
         {
             // Reset wobble when disabled using MaterialPropertyBlock to prevent material copy instantiation
-            if (_renderer != null && _hasLiquidMaterial)
+            if (_renderer != null && _hasOreMaterial)
             {
-                _renderer.GetPropertyBlock(_propBlock, _liquidMatIndex);
+                _renderer.GetPropertyBlock(_propBlock, _OreMatIndex);
                 _propBlock.SetFloat(WobbleXProperty, 0f);
                 _propBlock.SetFloat(WobbleZProperty, 0f);
-                _renderer.SetPropertyBlock(_propBlock, _liquidMatIndex);
+                _renderer.SetPropertyBlock(_propBlock, _OreMatIndex);
             }
 
             _updateManager?.Unregister(this);
         }
 
         /// <summary>
-        /// Adds an impulse to the wobble (for pouring effects)
+        /// Adds an impulse to the wobble (for Casting effects)
         /// </summary>
         public void AddImpulse(Vector3 direction, float strength)
         {

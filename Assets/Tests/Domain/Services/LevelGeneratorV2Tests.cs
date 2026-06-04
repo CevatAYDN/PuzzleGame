@@ -25,12 +25,12 @@ namespace PuzzleGame.Tests.Domain.Services
         }
 
         [Test]
-        public void Generate_WithValidInputs_ReturnsCorrectBottleCount()
+        public void Generate_WithValidInputs_ReturnsCorrectMoldCount()
         {
             var result = _generator.Generate(
-                bottleCount: 5,
+                MoldCount: 5,
                 maxLayers: 3,
-                emptyBottleCount: 1,
+                emptyMoldCount: 1,
                 colorPalette: _palette,
                 difficulty: Difficulty.Medium,
                 seed: 42);
@@ -77,22 +77,22 @@ namespace PuzzleGame.Tests.Domain.Services
         }
 
         [Test]
-        public void Generate_RespectsEmptyBottleCount()
+        public void Generate_RespectsEmptyMoldCount()
         {
-            int bottleCount = 5;
-            int emptyBottles = 2;
+            int MoldCount = 5;
+            int emptyMolds = 2;
             var result = _generator.Generate(
-                bottleCount, 3, emptyBottles, _palette, Difficulty.Medium, seed: 1);
+                MoldCount, 3, emptyMolds, _palette, Difficulty.Medium, seed: 1);
 
             int actualEmpty = 0;
-            foreach (var bottle in result)
-                if (bottle.Count == 0) actualEmpty++;
+            foreach (var Mold in result)
+                if (Mold.Count == 0) actualEmpty++;
 
-            Assert.GreaterOrEqual(actualEmpty, emptyBottles);
+            Assert.GreaterOrEqual(actualEmpty, emptyMolds);
         }
 
         [Test]
-        public void Generate_WithZeroMaxLayers_ReturnsEmptyBottles()
+        public void Generate_WithZeroMaxLayers_ReturnsEmptyMolds()
         {
             var result = _generator.Generate(3, 0, 1, _palette, Difficulty.Medium, seed: 1);
             Assert.AreEqual(3, result.Count);
@@ -106,9 +106,9 @@ namespace PuzzleGame.Tests.Domain.Services
 
             var result = _generator.Generate(5, maxLayers, 1, _palette, Difficulty.Medium, seed: 42);
 
-            foreach (var bottle in result)
+            foreach (var Mold in result)
             {
-                foreach (var layer in bottle)
+                foreach (var layer in Mold)
                 {
                     Assert.AreEqual(expectedAmount, layer.Amount, 0.001f);
                 }

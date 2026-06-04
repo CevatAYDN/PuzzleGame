@@ -58,7 +58,7 @@ namespace PuzzleGame.Infrastructure.Pool
         {
             if (!_pools.TryGetValue(name, out var entry))
             {
-                BottleLogger.LogError($"[PoolManager] Pool '{name}' not registered.");
+                MoldLogger.LogError($"[PoolManager] Pool '{name}' not registered.");
                 return null;
             }
             return ((PoolEntry<T>)entry).Pool.Rent(parent);
@@ -71,7 +71,7 @@ namespace PuzzleGame.Infrastructure.Pool
         {
             if (!_pools.TryGetValue(name, out var entry))
             {
-                BottleLogger.LogError($"[PoolManager] Pool '{name}' not registered.");
+                MoldLogger.LogError($"[PoolManager] Pool '{name}' not registered.");
                 return;
             }
             ((PoolEntry<T>)entry).Pool.Return(instance);
@@ -94,7 +94,7 @@ namespace PuzzleGame.Infrastructure.Pool
             foreach (var kvp in _pools)
             {
                 var e = kvp.Value;
-                BottleLogger.LogInfo($"[PoolManager] '{kvp.Key}': active={e.CountActive}, inactive={e.CountInactive}, total={e.CountAll}");
+                MoldLogger.LogInfo($"[PoolManager] '{kvp.Key}': active={e.CountActive}, inactive={e.CountInactive}, total={e.CountAll}");
             }
         }
 

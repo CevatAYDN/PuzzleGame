@@ -4,7 +4,7 @@ using PuzzleGame.Application.Configuration.FeatureSystem;
 namespace PuzzleGame.Application.Events
 {
     // ═══════════════════════════════════════════════════════════════════════
-    // MULTI-LAYER POUR EVENTS  (published by PourService)
+    // MULTI-LAYER Cast EVENTS  (published by CastService)
     // ═══════════════════════════════════════════════════════════════════════
 
 
@@ -15,28 +15,28 @@ namespace PuzzleGame.Application.Events
 
     public readonly struct ReactionTriggeredEvent
     {
-        public int BottleIndex { get; }
+        public int MoldIndex { get; }
         public ReactionRule.ReactionType ReactionType { get; }
         public Color ColorA { get; }
         public Color ColorB { get; }
 
-        public ReactionTriggeredEvent(int bottleIndex, ReactionRule.ReactionType type, Color colorA, Color colorB)
+        public ReactionTriggeredEvent(int moldIndex, ReactionRule.ReactionType type, Color colorA, Color colorB)
         {
-            BottleIndex = bottleIndex;
+            MoldIndex = moldIndex;
             ReactionType = type;
             ColorA = colorA;
             ColorB = colorB;
         }
     }
 
-    public readonly struct BottleExplodedEvent
+    public readonly struct MoldExplodedEvent
     {
-        public int BottleIndex { get; }
+        public int MoldIndex { get; }
         public Vector3 ExplosionPosition { get; }
 
-        public BottleExplodedEvent(int bottleIndex, Vector3 position)
+        public MoldExplodedEvent(int moldIndex, Vector3 position)
         {
-            BottleIndex = bottleIndex;
+            MoldIndex = moldIndex;
             ExplosionPosition = position;
         }
     }

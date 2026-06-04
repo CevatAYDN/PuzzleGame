@@ -11,72 +11,72 @@ namespace PuzzleGame.Application.Services
     /// </summary>
     public class LevelValidationService : ILevelValidationService
     {
-        public bool ValidateLevel(LevelData levelData, int totalBottlesAvailable)
+        public bool ValidateLevel(LevelData levelData, int totalMoldsAvailable)
         {
             if (levelData == null)
             {
-                BottleLogger.LogError("Level data is null");
+                MoldLogger.LogError("Level data is null");
                 return false;
             }
 
             // Validate basic properties
             if (levelData.levelNumber <= 0)
             {
-                BottleLogger.LogError($"Invalid level number: {levelData.levelNumber}");
+                MoldLogger.LogError($"Invalid level number: {levelData.levelNumber}");
                 return false;
             }
 
-            // Validate bottle counts
+            // Validate Mold counts
             if (levelData.autoGenerate)
             {
-                if (levelData.bottleCount <= 0 || levelData.bottleCount > totalBottlesAvailable)
+                if (levelData.MoldCount <= 0 || levelData.MoldCount > totalMoldsAvailable)
                 {
-                    BottleLogger.LogError($"Invalid bottle count: {levelData.bottleCount} for total bottles: {totalBottlesAvailable}");
+                    MoldLogger.LogError($"Invalid Mold count: {levelData.MoldCount} for total Molds: {totalMoldsAvailable}");
                     return false;
                 }
 
-                if (levelData.emptyBottleCount < 0 || levelData.emptyBottleCount >= totalBottlesAvailable)
+                if (levelData.emptyMoldCount < 0 || levelData.emptyMoldCount >= totalMoldsAvailable)
                 {
-                    BottleLogger.LogError($"Invalid empty bottle count: {levelData.emptyBottleCount} for total bottles: {totalBottlesAvailable}");
+                    MoldLogger.LogError($"Invalid empty Mold count: {levelData.emptyMoldCount} for total Molds: {totalMoldsAvailable}");
                     return false;
                 }
 
-                if (levelData.maxLayersPerBottle <= 0)
+                if (levelData.maxLayersPerMold <= 0)
                 {
-                    BottleLogger.LogError($"Invalid max layers per bottle: {levelData.maxLayersPerBottle}");
+                    MoldLogger.LogError($"Invalid max layers per Mold: {levelData.maxLayersPerMold}");
                     return false;
                 }
             }
             else
             {
                 // Validate predefined level data
-                if (levelData.bottles == null)
+                if (levelData.Molds == null)
                 {
-                    BottleLogger.LogError("Level bottles data is null for predefined level");
+                    MoldLogger.LogError("Level Molds data is null for predefined level");
                     return false;
                 }
 
-                if (levelData.bottles.Count > totalBottlesAvailable)
+                if (levelData.Molds.Count > totalMoldsAvailable)
                 {
-                    BottleLogger.LogError($"Too many bottles defined ({levelData.bottles.Count}) for available slots ({totalBottlesAvailable})");
+                    MoldLogger.LogError($"Too many Molds defined ({levelData.Molds.Count}) for available slots ({totalMoldsAvailable})");
                     return false;
                 }
 
-                // Validate each bottle in the predefined level
-                for (int i = 0; i < levelData.bottles.Count; i++)
+                // Validate each Mold in the predefined level
+                for (int i = 0; i < levelData.Molds.Count; i++)
                 {
-                    var bottleData = levelData.bottles[i];
-                    if (bottleData != null)
+                    var MoldData = levelData.Molds[i];
+                    if (MoldData != null)
                     {
                         // Validate layers if not empty
-                        if (!bottleData.isEmpty && bottleData.layers != null)
+                        if (!MoldData.isEmpty && MoldData.layers != null)
                         {
                             float totalAmount = 0f;
-                            foreach (var layer in bottleData.layers)
+                            foreach (var layer in MoldData.layers)
                             {
                                 if (layer.amount <= 0)
                                 {
-                                    BottleLogger.LogError($"Invalid layer amount: {layer.amount} in bottle {i}");
+                                    MoldLogger.LogError($"Invalid layer amount: {layer.amount} in Mold {i}");
                                     return false;
                                 }
                                 totalAmount += layer.amount;
@@ -85,7 +85,7 @@ namespace PuzzleGame.Application.Services
                             // Check if total amount exceeds 1.0 (full capacity)
                             if (totalAmount > 1.0f)
                             {
-                                BottleLogger.LogError($"Bottle {i} has total amount exceeding 1.0: {totalAmount}");
+                                MoldLogger.LogError($"Mold {i} has total amount exceeding 1.0: {totalAmount}");
                                 return false;
                             }
                         }

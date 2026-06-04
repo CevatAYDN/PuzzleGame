@@ -4,7 +4,7 @@ using UnityEngine;
 namespace PuzzleGame.Infrastructure.Implementations
 {
     /// <summary>
-    /// LineRenderer manager for the pouring liquid stream.
+    /// LineRenderer manager for the Casting Ore stream.
     /// Draws external curve (parabolic gravity drop) and internal straight vertical line segment.
     /// Converted to an instance-based infrastructure service (removes static singleton state).
     /// </summary>
@@ -44,7 +44,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             }
         }
 
-        public void Update(LineRenderer lr, IBottleView source, IBottleView target,
+        public void Update(LineRenderer lr, IMoldView source, IMoldView target,
                            Transform sourceT, Transform targetT, float t, PuzzleGame.Application.Configuration.AnimationConfig config)
         {
             if (lr == null) return;

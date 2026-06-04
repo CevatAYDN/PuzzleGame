@@ -13,13 +13,13 @@ namespace PuzzleGame.Tests.Fakes
     {
         public int CheckReactionsResult { get; set; }
         public int CheckReactionsCallCount { get; private set; }
-        public IBottleView[] LastBottles { get; private set; }
+        public IMoldView[] LastMolds { get; private set; }
         public ReactionSystemData LastConfig { get; private set; }
 
-        public int CheckReactions(IBottleView[] bottles, ReactionSystemData config)
+        public int CheckReactions(IMoldView[] Molds, ReactionSystemData config)
         {
             CheckReactionsCallCount++;
-            LastBottles = bottles;
+            LastMolds = Molds;
             LastConfig = config;
             return CheckReactionsResult;
         }

@@ -11,7 +11,7 @@ namespace PuzzleGame.Application.Interfaces
         int TotalSegments { get; }
         LineRenderer EnsureLineRenderer(GameObject owner);
         void SetColor(LineRenderer lr, Color color);
-        void Update(LineRenderer lr, IBottleView source, IBottleView target,
+        void Update(LineRenderer lr, IMoldView source, IMoldView target,
                     Transform sourceT, Transform targetT, float t, Configuration.AnimationConfig config);
     }
 }

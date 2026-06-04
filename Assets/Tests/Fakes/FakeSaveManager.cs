@@ -9,7 +9,7 @@ namespace PuzzleGame.Tests.Fakes
         
         public bool HasSaveData => _saves.Count > 0;
 
-        public bool Save(int levelIndex, int moveCount, IBottleView[] bottles, bool isCompleted, int stars)
+        public bool Save(int levelIndex, int moveCount, IMoldView[] Molds, bool isCompleted, int stars)
         {
             _saves[levelIndex] = new GameSaveData
             {

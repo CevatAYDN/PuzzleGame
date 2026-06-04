@@ -4,7 +4,7 @@ namespace PuzzleGame.Application.Interfaces
 {
     public interface IInputHandlerService
     {
-        void SetBottles(IBottleView[] bottles);
+        void SetMolds(IMoldView[] Molds);
         void SetLevelData(LevelData levelData);
         void ProcessInput();
     }

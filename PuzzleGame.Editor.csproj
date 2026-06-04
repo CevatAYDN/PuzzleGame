@@ -49,22 +49,22 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.4.8f1\Editor\Data\Tools\BuildPipeline\Unity.SourceGenerators\Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Scripts\Editor\PuzzleGameEditorWindow.PaletteTab.cs" />
-    <Compile Include="Assets\Scripts\Editor\PuzzleGameEditorWindow.LocalizationTab.cs" />
+    <Compile Include="Assets\Scripts\Editor\ForgeEditorWindow.Solver.cs" />
     <Compile Include="Assets\Scripts\Editor\ShaderVariantStripper.cs" />
-    <Compile Include="Assets\Scripts\Editor\PuzzleGameEditorWindow.SceneTab.cs" />
+    <Compile Include="Assets\Scripts\Editor\ForgeEditorWindow.DataTab.cs" />
     <Compile Include="Assets\Scripts\Editor\DataAssetCreator.cs" />
-    <Compile Include="Assets\Scripts\Editor\PuzzleGameEditorWindow.FeaturesTab.cs" />
-    <Compile Include="Assets\Scripts\Editor\PuzzleGameEditorWindow.cs" />
-    <Compile Include="Assets\Scripts\Editor\PuzzleGameEditorWindow.LevelUITab.cs" />
+    <Compile Include="Assets\Scripts\Editor\ForgeEditorWindow.LevelsTab.cs" />
     <Compile Include="Assets\Scripts\Editor\AddressablesInstaller.cs" />
-    <Compile Include="Assets\Scripts\Editor\PuzzleGameEditorWindow.LevelsTab.cs" />
-    <Compile Include="Assets\Scripts\Editor\PuzzleGameEditorWindow.TestTab.cs" />
-    <Compile Include="Assets\Scripts\Editor\PuzzleGameEditorWindow.ValidateTab.cs" />
-    <Compile Include="Assets\Scripts\Editor\PuzzleGameEditorWindow.Solver.cs" />
+    <Compile Include="Assets\Scripts\Editor\ForgeEditorWindow.ValidateTab.cs" />
+    <Compile Include="Assets\Scripts\Editor\ForgeEditorWindow.cs" />
+    <Compile Include="Assets\Scripts\Editor\ForgeEditorWindow.LocalizationTab.cs" />
+    <Compile Include="Assets\Scripts\Editor\ForgeEditorWindow.PaletteTab.cs" />
+    <Compile Include="Assets\Scripts\Editor\ForgeEditorWindow.SceneTab.cs" />
+    <Compile Include="Assets\Scripts\Editor\ForgeEditorWindow.TestTab.cs" />
     <Compile Include="Assets\Scripts\Editor\SceneBuilder.cs" />
     <Compile Include="Assets\Scripts\Editor\LevelDataBatchCreator.cs" />
-    <Compile Include="Assets\Scripts\Editor\PuzzleGameEditorWindow.DataTab.cs" />
+    <Compile Include="Assets\Scripts\Editor\ForgeEditorWindow.LevelUITab.cs" />
+    <Compile Include="Assets\Scripts\Editor\ForgeEditorWindow.FeaturesTab.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Scripts\Editor\PuzzleGame.Editor.asmdef" />

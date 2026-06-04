@@ -17,41 +17,41 @@ namespace PuzzleGame.Tests.Application.Services
         private FakeInputHandler _inputHandler;
         private FakeGameStateMachine _stateMachine;
         private FakeAnimationService _animationService;
-        private FakeBottleSelectionService _selectionService;
-        private FakeBottleValidator _validator;
+        private FakeMoldSelectionService _selectionService;
+        private FakeMoldValidator _validator;
         private FakeAudioService _audioService;
         private FakeHistoryManager _historyManager;
-        private FakePourService _pourService;
+        private FakeCastService _CastService;
         private GameConfig _gameConfig;
         private AnimationConfig _animConfig;
 
         [SetUp]
         public void SetUp()
         {
-            BottleLogger.SetLevel(BottleLogger.Level.Error, false);
+            MoldLogger.SetLevel(MoldLogger.Level.Error, false);
             _eventAggregator = new EventAggregator();
 
             _inputHandler = new FakeInputHandler();
             _stateMachine = new FakeGameStateMachine();
             _animationService = new FakeAnimationService();
-            _selectionService = new FakeBottleSelectionService();
-            _validator = new FakeBottleValidator();
+            _selectionService = new FakeMoldSelectionService();
+            _validator = new FakeMoldValidator();
             _audioService = new FakeAudioService();
             _historyManager = new FakeHistoryManager();
-            _pourService = new FakePourService();
+            _CastService = new FakeCastService();
 
             _gameConfig = ScriptableObject.CreateInstance<GameConfig>();
-            _gameConfig.bottleLayerMask = 1 << 8;
+            _gameConfig.MoldLayerMask = 1 << 8;
             _animConfig = ScriptableObject.CreateInstance<AnimationConfig>();
             _animConfig.liftHeight = 1f;
             _animConfig.liftDuration = 0.4f;
-            _animConfig.pourDuration = 0.6f;
+            _animConfig.CastDuration = 0.6f;
 
             _sut = new InputHandlerService(
                 _inputHandler, Camera.main, _stateMachine,
                 _animationService, _selectionService, _validator,
                 _gameConfig, _animConfig, _audioService,
-                _historyManager, _pourService);
+                _historyManager, _CastService);
         }
 
         [TearDown]
@@ -104,106 +104,106 @@ namespace PuzzleGame.Tests.Application.Services
         public void HandleInput_RaycastMiss_DeselectsIfSelected()
         {
             _stateMachine.TransitionTo(GameState.Playing);
-            var bottle = CreateBottleView();
-            bottle.State.AddLayer(new LiquidLayer(new DomainColor(1f, 0.2f, 0.2f), 1f));
-            _sut.SetBottles(new[] { bottle });
-            _selectionService.Select(bottle.State);
+            var Mold = CreateMoldView();
+            Mold.State.AddLayer(new OreLayer(new DomainColor(1f, 0.2f, 0.2f), 1f));
+            _sut.SetMolds(new[] { Mold });
+            _selectionService.Select(Mold.State);
 
             _inputHandler.SimulateClick(Vector2.zero, raycastSuccess: false);
 
             _sut.ProcessInput();
 
-            Assert.That(_selectionService.SelectedBottle, Is.Null);
-            Assert.That(_animationService.AnimateBottleLowerCallCount, Is.EqualTo(1));
+            Assert.That(_selectionService.SelectedMold, Is.Null);
+            Assert.That(_animationService.AnimateMoldLowerCallCount, Is.EqualTo(1));
         }
 
-        // ── Bottle selection ──────────────────────────────────────────────────
+        // ── Mold selection ──────────────────────────────────────────────────
 
         [Test]
-        public void HandleInput_NoSelection_SelectsBottle()
+        public void HandleInput_NoSelection_SelectsMold()
         {
             _stateMachine.TransitionTo(GameState.Playing);
-            var bottle = CreateBottleView();
-            bottle.State.AddLayer(new LiquidLayer(new DomainColor(1f, 0.2f, 0.2f), 1f));
-            _sut.SetBottles(new IBottleView[] { bottle });
+            var Mold = CreateMoldView();
+            Mold.State.AddLayer(new OreLayer(new DomainColor(1f, 0.2f, 0.2f), 1f));
+            _sut.SetMolds(new IMoldView[] { Mold });
 
-            SetupRaycastHit(bottle);
+            SetupRaycastHit(Mold);
 
             _sut.ProcessInput();
 
-            Assert.That(_selectionService.SelectedBottle, Is.EqualTo(bottle.State));
-            Assert.That(_animationService.AnimateBottleLiftCallCount, Is.EqualTo(1));
+            Assert.That(_selectionService.SelectedMold, Is.EqualTo(Mold.State));
+            Assert.That(_animationService.AnimateMoldLiftCallCount, Is.EqualTo(1));
         }
 
         [Test]
-        public void HandleInput_SelectedCappedBottle_LogsAndSkips()
+        public void HandleInput_SelectedCappedMold_LogsAndSkips()
         {
             _stateMachine.TransitionTo(GameState.Playing);
-            var bottle = CreateBottleView();
-            bottle.IsCapped = true;
-            _sut.SetBottles(new IBottleView[] { bottle });
+            var Mold = CreateMoldView();
+            Mold.IsCapped = true;
+            _sut.SetMolds(new IMoldView[] { Mold });
 
-            SetupRaycastHit(bottle);
+            SetupRaycastHit(Mold);
 
             _sut.ProcessInput();
 
-            Assert.That(_selectionService.SelectedBottle, Is.Null);
+            Assert.That(_selectionService.SelectedMold, Is.Null);
         }
 
         [Test]
-        public void HandleInput_SelectedEmptyBottle_LogsAndSkips()
+        public void HandleInput_SelectedEmptyMold_LogsAndSkips()
         {
             _stateMachine.TransitionTo(GameState.Playing);
-            var bottle = CreateBottleView(); // Already empty
-            _sut.SetBottles(new IBottleView[] { bottle });
+            var Mold = CreateMoldView(); // Already empty
+            _sut.SetMolds(new IMoldView[] { Mold });
 
-            SetupRaycastHit(bottle);
+            SetupRaycastHit(Mold);
 
             _sut.ProcessInput();
 
-            Assert.That(_selectionService.SelectedBottle, Is.Null);
+            Assert.That(_selectionService.SelectedMold, Is.Null);
         }
 
-        // ── Pour ──────────────────────────────────────────────────────────────
+        // ── Cast ──────────────────────────────────────────────────────────────
 
         [Test]
-        public void HandleInput_SecondBottle_AttemptsPour()
+        public void HandleInput_SecondMold_AttemptsCast()
         {
             _stateMachine.TransitionTo(GameState.Playing);
-            var sourceBottle = CreateBottleView();
-            sourceBottle.State.AddLayer(new LiquidLayer(new DomainColor(1f, 0.2f, 0.2f), 1f));
-            var targetBottle = CreateBottleView();
-            _sut.SetBottles(new IBottleView[] { sourceBottle, targetBottle });
+            var sourceMold = CreateMoldView();
+            sourceMold.State.AddLayer(new OreLayer(new DomainColor(1f, 0.2f, 0.2f), 1f));
+            var targetMold = CreateMoldView();
+            _sut.SetMolds(new IMoldView[] { sourceMold, targetMold });
 
             // First click: select source
-            SetupRaycastHit(sourceBottle);
+            SetupRaycastHit(sourceMold);
             _sut.ProcessInput();
-            Assert.That(_selectionService.SelectedBottle, Is.EqualTo(sourceBottle.State));
+            Assert.That(_selectionService.SelectedMold, Is.EqualTo(sourceMold.State));
 
-            // Second click: pour to target
-            SetupRaycastHit(targetBottle);
-            _pourService.TryPourResult = true;
+            // Second click: Cast to target
+            SetupRaycastHit(targetMold);
+            _CastService.TryCastResult = true;
             _sut.ProcessInput();
 
-            Assert.That(_pourService.TryPourCallCount, Is.EqualTo(1));
-            Assert.That(_animationService.AnimatePourCallCount, Is.EqualTo(1));
-            Assert.That(_selectionService.SelectedBottle, Is.Null);
+            Assert.That(_CastService.TryCastCallCount, Is.EqualTo(1));
+            Assert.That(_animationService.AnimateCastCallCount, Is.EqualTo(1));
+            Assert.That(_selectionService.SelectedMold, Is.Null);
         }
 
         [Test]
-        public void HandleInput_PourFails_PlaysErrorShake()
+        public void HandleInput_CastFails_PlaysErrorShake()
         {
             _stateMachine.TransitionTo(GameState.Playing);
-            var sourceBottle = CreateBottleView();
-            sourceBottle.State.AddLayer(new LiquidLayer(new DomainColor(1f, 0.2f, 0.2f), 1f));
-            var targetBottle = CreateBottleView();
-            _sut.SetBottles(new IBottleView[] { sourceBottle, targetBottle });
+            var sourceMold = CreateMoldView();
+            sourceMold.State.AddLayer(new OreLayer(new DomainColor(1f, 0.2f, 0.2f), 1f));
+            var targetMold = CreateMoldView();
+            _sut.SetMolds(new IMoldView[] { sourceMold, targetMold });
 
-            SetupRaycastHit(sourceBottle);
+            SetupRaycastHit(sourceMold);
             _sut.ProcessInput();
 
-            SetupRaycastHit(targetBottle);
-            _pourService.TryPourResult = false;
+            SetupRaycastHit(targetMold);
+            _CastService.TryCastResult = false;
             _sut.ProcessInput();
 
             Assert.That(_animationService.AnimateErrorShakeCallCount, Is.EqualTo(1));
@@ -214,31 +214,31 @@ namespace PuzzleGame.Tests.Application.Services
         // ── Self-click (deselect) ─────────────────────────────────────────────
 
         [Test]
-        public void HandleInput_ClickSameBottle_Deselects()
+        public void HandleInput_ClickSameMold_Deselects()
         {
             _stateMachine.TransitionTo(GameState.Playing);
-            var bottle = CreateBottleView();
-            bottle.State.AddLayer(new LiquidLayer(new DomainColor(1f, 0.2f, 0.2f), 1f));
-            _sut.SetBottles(new IBottleView[] { bottle });
+            var Mold = CreateMoldView();
+            Mold.State.AddLayer(new OreLayer(new DomainColor(1f, 0.2f, 0.2f), 1f));
+            _sut.SetMolds(new IMoldView[] { Mold });
 
-            SetupRaycastHit(bottle);
+            SetupRaycastHit(Mold);
             _sut.ProcessInput();
-            Assert.That(_selectionService.SelectedBottle, Is.Not.Null);
+            Assert.That(_selectionService.SelectedMold, Is.Not.Null);
 
-            SetupRaycastHit(bottle);
+            SetupRaycastHit(Mold);
             _sut.ProcessInput();
 
-            Assert.That(_selectionService.SelectedBottle, Is.Null);
-            Assert.That(_animationService.AnimateBottleLowerCallCount, Is.EqualTo(1));
+            Assert.That(_selectionService.SelectedMold, Is.Null);
+            Assert.That(_animationService.AnimateMoldLowerCallCount, Is.EqualTo(1));
         }
 
         // ── Helpers ────────────────────────────────────────────────────────────
 
-        private FakeBottleView CreateBottleView()
+        private FakeMoldView CreateMoldView()
         {
-            var state = new BottleState(4);
-            var go = new GameObject("TestBottle");
-            var view = new FakeBottleView(state)
+            var state = new MoldState(4);
+            var go = new GameObject("TestMold");
+            var view = new FakeMoldView(state)
             {
                 GameObject = go,
                 Transform = go.transform,
@@ -247,17 +247,17 @@ namespace PuzzleGame.Tests.Application.Services
             return view;
         }
 
-        private void SetupRaycastHit(IBottleView bottle)
+        private void SetupRaycastHit(IMoldView Mold)
         {
             _inputHandler.SimulateClick(Vector2.zero, raycastSuccess: true);
             
             object boxedHit = new RaycastHit();
-            if (bottle != null && bottle.GameObject != null)
+            if (Mold != null && Mold.GameObject != null)
             {
-                var collider = bottle.GameObject.GetComponent<Collider>();
+                var collider = Mold.GameObject.GetComponent<Collider>();
                 if (collider == null)
                 {
-                    collider = bottle.GameObject.AddComponent<BoxCollider>();
+                    collider = Mold.GameObject.AddComponent<BoxCollider>();
                 }
                 
                 var field = typeof(RaycastHit).GetField("m_Collider", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);

@@ -50,21 +50,21 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\Domain\Interfaces\IGameStateMachine.cs" />
-    <Compile Include="Assets\Scripts\Domain\BottleConstants.cs" />
-    <Compile Include="Assets\Scripts\Domain\Services\BottleValidationService.cs" />
+    <Compile Include="Assets\Scripts\Domain\Models\MoldState.cs" />
+    <Compile Include="Assets\Scripts\Domain\Services\MoldValidationService.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\DomainColor.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\GameState.cs" />
-    <Compile Include="Assets\Scripts\Domain\Models\BottleState.cs" />
+    <Compile Include="Assets\Scripts\Domain\Models\OreColor.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\LocalizationEntry.cs" />
+    <Compile Include="Assets\Scripts\Domain\Services\OreSortSolver.cs" />
+    <Compile Include="Assets\Scripts\Domain\Interfaces\IMoldValidator.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\IUpdateManager.cs" />
-    <Compile Include="Assets\Scripts\Domain\Models\LiquidLayer.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\ILocalizationService.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\LayerSnapshot.cs" />
     <Compile Include="Assets\Scripts\Domain\Services\DifficultyBasedLevelGenerator.cs" />
-    <Compile Include="Assets\Scripts\Domain\Models\LiquidColor.cs" />
     <Compile Include="Assets\Scripts\Domain\Difficulty.cs" />
-    <Compile Include="Assets\Scripts\Domain\Services\LiquidSortSolver.cs" />
-    <Compile Include="Assets\Scripts\Domain\Interfaces\IBottleValidator.cs" />
+    <Compile Include="Assets\Scripts\Domain\ForgeConstants.cs" />
+    <Compile Include="Assets\Scripts\Domain\Models\OreLayer.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\IUpdateable.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\ILevelProgressService.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\ILevelGenerator.cs" />

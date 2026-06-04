@@ -25,7 +25,7 @@ namespace PuzzleGame.Tests.Domain.Models
         [Test]
         public void Equals_ColorWithinEpsilon_ReturnsTrue()
         {
-            float eps = BottleConstants.ColorMatchEpsilon / 2f;
+            float eps = ForgeConstants.ColorMatchEpsilon / 2f;
             var a = new DomainColor(0.5f, 0.3f, 0.8f, 1f);
             var b = new DomainColor(0.5f + eps, 0.3f, 0.8f, 1f);
             Assert.IsTrue(a.Equals(b), "Colors within epsilon should be considered equal.");
@@ -34,7 +34,7 @@ namespace PuzzleGame.Tests.Domain.Models
         [Test]
         public void Equals_ColorOutsideEpsilon_ReturnsFalse()
         {
-            float aboveEps = BottleConstants.ColorMatchEpsilon * 2f;
+            float aboveEps = ForgeConstants.ColorMatchEpsilon * 2f;
             var a = new DomainColor(0.5f, 0.3f, 0.8f, 1f);
             var b = new DomainColor(0.5f + aboveEps, 0.3f, 0.8f, 1f);
             Assert.IsFalse(a.Equals(b), "Colors outside epsilon should not be equal.");
@@ -55,7 +55,7 @@ namespace PuzzleGame.Tests.Domain.Models
         public void GetHashCode_ColorsWithinEpsilon_SameHash()
         {
             // If Equals() returns true, GetHashCode() MUST return the same value (contract).
-            float eps = BottleConstants.ColorMatchEpsilon / 2f;
+            float eps = ForgeConstants.ColorMatchEpsilon / 2f;
             var a = new DomainColor(0.5f, 0.3f, 0.8f, 1f);
             var b = new DomainColor(0.5f + eps, 0.3f, 0.8f, 1f);
             Assert.IsTrue(a.Equals(b), "Precondition: a.Equals(b) must hold for this test.");

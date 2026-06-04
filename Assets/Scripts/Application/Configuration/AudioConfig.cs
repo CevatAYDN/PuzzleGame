@@ -23,8 +23,8 @@ namespace PuzzleGame.Application.Configuration
         [Min(1)] public int musicPoolSize = 2;
 
         [Header("Clips")]
-        public AudioClip pourLoopClip;
-        public AudioClip pourEndClip;
+        public AudioClip CastLoopClip;
+        public AudioClip CastEndClip;
         public AudioClip errorClip;
         public AudioClip levelCompleteClip;
         public AudioClip levelStartClip;

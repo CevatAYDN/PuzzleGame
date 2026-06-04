@@ -50,7 +50,7 @@ namespace PuzzleGame.Application.Services
         // ── Domain types ────────────────────────────────────────────────────
 
         [Serializable]
-        public struct BottleSaveData
+        public struct MoldSaveData
         {
             public float[] colorR;
             public float[] colorG;
@@ -58,10 +58,10 @@ namespace PuzzleGame.Application.Services
             public float[] colorA;
             public float[] amounts;
 
-            public static BottleSaveData FromLayers(IReadOnlyList<LiquidLayer> layers)
+            public static MoldSaveData FromLayers(IReadOnlyList<OreLayer> layers)
             {
                 int count = layers?.Count ?? 0;
-                var data = new BottleSaveData
+                var data = new MoldSaveData
                 {
                     colorR = new float[count],
                     colorG = new float[count],
@@ -81,15 +81,15 @@ namespace PuzzleGame.Application.Services
                 return data;
             }
 
-            public LiquidLayer[] ToLayers()
+            public OreLayer[] ToLayers()
             {
                 int count = colorR?.Length ?? 0;
-                var layers = new LiquidLayer[count];
+                var layers = new OreLayer[count];
                 for (int i = 0; i < count; i++)
                 {
                     var color = new DomainColor(
                         colorR[i], colorG[i], colorB[i], colorA[i]);
-                    layers[i] = new LiquidLayer(color, amounts[i]);
+                    layers[i] = new OreLayer(color, amounts[i]);
                 }
                 return layers;
             }
@@ -103,7 +103,7 @@ namespace PuzzleGame.Application.Services
             public bool isCompleted;
             public int stars;
             public long savedAtUnix;
-            public BottleSaveData[] bottles;
+            public MoldSaveData[] Molds;
         }
 
         [Serializable]
@@ -130,9 +130,9 @@ namespace PuzzleGame.Application.Services
         /// Level state'ini kaydeder. Atomic write kullanır (yarım kalmış dosya oluşmaz).
         /// </summary>
         public bool Save(int levelIndex, int moveCount,
-            IBottleView[] bottles, bool isCompleted, int stars)
+            IMoldView[] Molds, bool isCompleted, int stars)
         {
-            if (bottles == null) return false;
+            if (Molds == null) return false;
 
             var data = LoadVerified() ?? new SaveData { version = CurrentVersion };
             data.lastPlayedLevel = levelIndex;
@@ -145,12 +145,12 @@ namespace PuzzleGame.Application.Services
                 isCompleted = isCompleted,
                 stars = stars,
                 savedAtUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                bottles = new BottleSaveData[bottles.Length],
+                Molds = new MoldSaveData[Molds.Length],
             };
-            for (int i = 0; i < bottles.Length; i++)
+            for (int i = 0; i < Molds.Length; i++)
             {
-                if (bottles[i] != null)
-                    levelData.bottles[i] = BottleSaveData.FromLayers(bottles[i].VisualLayers);
+                if (Molds[i] != null)
+                    levelData.Molds[i] = MoldSaveData.FromLayers(Molds[i].VisualLayers);
             }
 
             int existing = data.levels.FindIndex(l => l.levelIndex == levelIndex);
@@ -199,11 +199,11 @@ namespace PuzzleGame.Application.Services
                 _cacheLoaded = false;
                 if (File.Exists(FilePath)) File.Delete(FilePath);
                 if (File.Exists(TempPath)) File.Delete(TempPath);
-                BottleLogger.LogInfo("[GameSaveManager] All save data deleted.");
+                MoldLogger.LogInfo("[GameSaveManager] All save data deleted.");
             }
             catch (Exception ex)
             {
-                BottleLogger.LogError($"[GameSaveManager] Delete failed: {ex.Message}");
+                MoldLogger.LogError($"[GameSaveManager] Delete failed: {ex.Message}");
             }
         }
 
@@ -260,14 +260,14 @@ namespace PuzzleGame.Application.Services
                 // Version check
                 if (secure.version != CurrentVersion)
                 {
-                    BottleLogger.LogWarning($"[GameSaveManager] Save version mismatch (got {secure.version}, expected {CurrentVersion}). Discarding.");
+                    MoldLogger.LogWarning($"[GameSaveManager] Save version mismatch (got {secure.version}, expected {CurrentVersion}). Discarding.");
                     return null;
                 }
 
                 // Signature check
                 if (!VerifyHmac(secure.salt, secure.payload, secure.signature))
                 {
-                    BottleLogger.LogWarning("[GameSaveManager] Save signature invalid — file tampered or corrupted.");
+                    MoldLogger.LogWarning("[GameSaveManager] Save signature invalid — file tampered or corrupted.");
                     return null;
                 }
 
@@ -280,7 +280,7 @@ namespace PuzzleGame.Application.Services
             }
             catch (Exception ex)
             {
-                BottleLogger.LogError($"[GameSaveManager] Load failed: {ex.Message}");
+                MoldLogger.LogError($"[GameSaveManager] Load failed: {ex.Message}");
                 return null;
             }
         }
@@ -316,12 +316,12 @@ namespace PuzzleGame.Application.Services
                 _cachedSaveData = data;
                 _cacheLoaded = true;
 
-                BottleLogger.LogInfo($"[GameSaveManager] Saved ({data.levels.Count} levels).");
+                MoldLogger.LogInfo($"[GameSaveManager] Saved ({data.levels.Count} levels).");
                 return true;
             }
             catch (Exception ex)
             {
-                BottleLogger.LogError($"[GameSaveManager] Save failed: {ex.Message}");
+                MoldLogger.LogError($"[GameSaveManager] Save failed: {ex.Message}");
                 try { if (File.Exists(TempPath)) File.Delete(TempPath); } catch { }
                 return false;
             }

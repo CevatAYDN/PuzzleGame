@@ -39,7 +39,7 @@ namespace PuzzleGame.Application.Services
         private readonly ParticleSystem _bubblePrefab;
         // Fix #12: HashSet instead of List — Remove() is O(1) instead of O(n).
         private readonly HashSet<ITweenHandle> _activeTweens = new HashSet<ITweenHandle>();
-        private readonly Stack<PourAnimationState> _pourStatePool = new Stack<PourAnimationState>();
+        private readonly Stack<CastAnimationState> _CastStatePool = new Stack<CastAnimationState>();
 
         public bool IsAnimating => _activeTweenCount > 0;
 
@@ -67,19 +67,19 @@ namespace PuzzleGame.Application.Services
             handle.OnComplete(() => _activeTweens.Remove(handle)); // HashSet.Remove is O(1)
         }
 
-        internal PourAnimationState RentPourState()
+        internal CastAnimationState RentCastState()
         {
-            if (_pourStatePool.Count > 0)
+            if (_CastStatePool.Count > 0)
             {
-                return _pourStatePool.Pop();
+                return _CastStatePool.Pop();
             }
-            return new PourAnimationState();
+            return new CastAnimationState();
         }
 
-        internal void ReturnPourState(PourAnimationState state)
+        internal void ReturnCastState(CastAnimationState state)
         {
             state.Clear();
-            _pourStatePool.Push(state);
+            _CastStatePool.Push(state);
         }
 
         public void Dispose()
@@ -87,7 +87,7 @@ namespace PuzzleGame.Application.Services
             foreach (var tween in _activeTweens)
             {
                 try { tween?.Kill(); }
-                catch (Exception ex) { BottleLogger.LogDebug($"Error killing tween on dispose: {ex.Message}"); }
+                catch (Exception ex) { MoldLogger.LogDebug($"Error killing tween on dispose: {ex.Message}"); }
             }
             _activeTweens.Clear();
 
@@ -109,14 +109,14 @@ namespace PuzzleGame.Application.Services
         //  Public API
         // ──────────────────────────────────────────────
 
-        public void AnimateBottleLift(Transform bottle,
+        public void AnimateMoldLift(Transform Mold,
                                        float height, float duration,
                                        Func<bool> keepHovering = null,
                                        Action onComplete = null)
         {
-            Vector3 target = bottle.position + Vector3.up * height;
+            Vector3 target = Mold.position + Vector3.up * height;
             IncrCount();
-            var t = _tween.TweenPosition(bottle, target, duration, EaseType.OutBack)
+            var t = _tween.TweenPosition(Mold, target, duration, EaseType.OutBack)
                 .OnComplete(() =>
                 {
                     DecrCount();
@@ -132,12 +132,12 @@ namespace PuzzleGame.Application.Services
             }
         }
 
-        public void AnimateBottleLower(Transform bottle,
+        public void AnimateMoldLower(Transform Mold,
                                        Vector3 originalPos, float duration,
                                        Action onComplete = null)
         {
             IncrCount();
-            var t = _tween.TweenPosition(bottle, originalPos, duration, EaseType.InOutSine)
+            var t = _tween.TweenPosition(Mold, originalPos, duration, EaseType.InOutSine)
                 .OnComplete(() =>
                 {
                     DecrCount();
@@ -146,16 +146,16 @@ namespace PuzzleGame.Application.Services
             RegisterTween(t);
         }
 
-        public void AnimatePour(IBottleView source, IBottleView target,
+        public void AnimateCast(IMoldView source, IMoldView target,
                                 float duration, Action onComplete = null)
         {
             if (duration <= 0f)
             {
-                BottleLogger.LogWarning("AnimatePour called with duration <= 0f. Falling back to 0.001f.");
+                MoldLogger.LogWarning("AnimateCast called with duration <= 0f. Falling back to 0.001f.");
                 duration = 0.001f;
             }
 
-            PourAnimationState state = RentPourState();
+            CastAnimationState state = RentCastState();
             state.Source = source;
             state.Target = target;
             state.SourceT = source.Transform;
@@ -184,10 +184,10 @@ namespace PuzzleGame.Application.Services
 
             state.SourceStart = new LayerSnapshot(source.VisualLayers);
             state.TargetStart = new LayerSnapshot(target.VisualLayers);
-            state.PouredLayer = target.State.TopLayer ?? new LiquidLayer(new DomainColor(0, 0, 0, 0), 0f);
+            state.CastedLayer = target.State.TopLayer ?? new OreLayer(new DomainColor(0, 0, 0, 0), 0f);
 
             state.LineRenderer = _streamRenderer.EnsureLineRenderer(source.GameObject);
-            state.StreamColor = _colorAdapter.ToUnity(state.PouredLayer.Color);
+            state.StreamColor = _colorAdapter.ToUnity(state.CastedLayer.Color);
             _streamRenderer.SetColor(state.LineRenderer, state.StreamColor);
             state.LineRenderer.enabled = false;
 
@@ -202,32 +202,32 @@ namespace PuzzleGame.Application.Services
 
             IncrCount();
 
-            var tilt = _tween.TweenCustom(state, 0f, 1f, state.TiltDuration, PourAnimationState.TiltUpdate);
+            var tilt = _tween.TweenCustom(state, 0f, 1f, state.TiltDuration, CastAnimationState.TiltUpdate);
             RegisterTween(tilt);
             tilt.OnComplete(state.OnTiltCompleteCached);
         }
 
-        public void AnimateErrorShake(Transform bottle, Action onComplete = null)
+        public void AnimateErrorShake(Transform Mold, Action onComplete = null)
         {
             float duration = _config != null ? _config.shakeDuration : 0.25f;
             float angle = _config != null ? _config.shakeAngle : 8f;
-            Vector3 startRot = bottle.rotation.eulerAngles;
+            Vector3 startRot = Mold.rotation.eulerAngles;
 
             IncrCount();
-            var t = _tween.TweenShakeRotation(bottle, duration, Vector3.forward * angle, 4)
+            var t = _tween.TweenShakeRotation(Mold, duration, Vector3.forward * angle, 4)
                 .OnComplete(() =>
                 {
-                    bottle.rotation = Quaternion.Euler(startRot);
+                    Mold.rotation = Quaternion.Euler(startRot);
                     DecrCount();
                     onComplete?.Invoke();
                 });
             RegisterTween(t);
         }
 
-        public void AnimateCorkDrop(Transform cork, float bottleHeight, Action onComplete = null)
+        public void AnimateCorkDrop(Transform cork, float MoldHeight, Action onComplete = null)
         {
-            Vector3 startPos = new Vector3(0f, bottleHeight + 0.3f, 0f);
-            Vector3 endPos = new Vector3(0f, bottleHeight - 0.05f, 0f);
+            Vector3 startPos = new Vector3(0f, MoldHeight + 0.3f, 0f);
+            Vector3 endPos = new Vector3(0f, MoldHeight - 0.05f, 0f);
             const float duration = 0.5f;
 
             cork.localPosition = startPos;
@@ -250,7 +250,7 @@ namespace PuzzleGame.Application.Services
             });
         }
 
-        public void AnimateLiquidFlash(Renderer renderer, int materialSlot,
+        public void AnimateOreFlash(Renderer renderer, int materialSlot,
                                        float peakIntensity, float duration,
                                        Action onComplete = null)
         {
@@ -278,19 +278,19 @@ namespace PuzzleGame.Application.Services
             });
         }
 
-        public void AnimateSettleBounce(IBottleView bottle, float duration,
+        public void AnimateSettleBounce(IMoldView Mold, float duration,
                                         Action onComplete = null)
         {
-            float originalFill = bottle.VisualTotalFill;
+            float originalFill = Mold.VisualTotalFill;
             IncrCount();
-            var t = _tween.TweenCustom(bottle, 0f, 1f, duration, (tweenable, progress) =>
+            var t = _tween.TweenCustom(Mold, 0f, 1f, duration, (tweenable, progress) =>
             {
                 float wave = Mathf.Cos(progress * Mathf.PI * 3f) * 0.04f * (1f - progress);
-                bottle.SetVisualState(bottle.State.Layers, originalFill + wave);
+                Mold.SetVisualState(Mold.State.Layers, originalFill + wave);
             })
             .OnComplete(() =>
             {
-                bottle.SetVisualState(bottle.State.Layers, originalFill);
+                Mold.SetVisualState(Mold.State.Layers, originalFill);
                 DecrCount();
                 onComplete?.Invoke();
             });
@@ -313,13 +313,13 @@ namespace PuzzleGame.Application.Services
             renderer.SetPropertyBlock(propBlock, materialSlot);
         }
 
-        internal void UpdateVisualPourProgress(IBottleView source, IBottleView target,
+        internal void UpdateVisualCastProgress(IMoldView source, IMoldView target,
                                                LayerSnapshot sourceStart, LayerSnapshot targetStart,
-                                               LiquidLayer pouredLayer, float t)
+                                               OreLayer CastedLayer, float t)
         {
             t = Mathf.Clamp01(t);
-            source.SetVisualPourProgress(sourceStart, t, true, pouredLayer);
-            target.SetVisualPourProgress(targetStart, t, false, pouredLayer);
+            source.SetVisualCastProgress(sourceStart, t, true, CastedLayer);
+            target.SetVisualCastProgress(targetStart, t, false, CastedLayer);
         }
 
         internal void DelayReturnToPool(ParticleSystem ps, IGameObjectPool<ParticleSystem> pool, float delay)

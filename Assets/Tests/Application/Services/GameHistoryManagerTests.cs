@@ -11,7 +11,7 @@ namespace PuzzleGame.Tests.Application.Services
 {
     public class GameHistoryManagerTests
     {
-        private FakeBottleView[] _bottles;
+        private FakeMoldView[] _Molds;
         private GameHistoryManager _sut;
         private int _callbackMoveCount;
 
@@ -22,13 +22,13 @@ namespace PuzzleGame.Tests.Application.Services
             _callbackMoveCount = -1;
             _sut.OnMoveCountChanged += mc => _callbackMoveCount = mc;
 
-            // Setup a couple of fake bottles
-            _bottles = new FakeBottleView[]
+            // Setup a couple of fake Molds
+            _Molds = new FakeMoldView[]
             {
-                new FakeBottleView(new BottleState(4)),
-                new FakeBottleView(new BottleState(4))
+                new FakeMoldView(new MoldState(4)),
+                new FakeMoldView(new MoldState(4))
             };
-            _sut.Initialize(_bottles);
+            _sut.Initialize(_Molds);
         }
 
         [Test]
@@ -77,24 +77,24 @@ namespace PuzzleGame.Tests.Application.Services
         [Test]
         public void RecordUndoSnapshot_AllowsUndoAndRestoresState()
         {
-            // Initial state: Bottle 0 has color pink (R=1), Bottle 1 is empty
+            // Initial state: Mold 0 has color pink (R=1), Mold 1 is empty
             var colorPink = new DomainColor(1f, 0f, 0f, 1f);
-            _bottles[0].State.AddLayer(new LiquidLayer(colorPink, 0.25f));
+            _Molds[0].State.AddLayer(new OreLayer(colorPink, 0.25f));
 
             _sut.RecordUndoSnapshot();
             _sut.IncrementMoveCount();
 
             // Change state
-            _bottles[0].State.Clear();
-            _bottles[1].State.AddLayer(new LiquidLayer(colorPink, 0.25f));
+            _Molds[0].State.Clear();
+            _Molds[1].State.AddLayer(new OreLayer(colorPink, 0.25f));
 
             Assert.IsTrue(_sut.CanUndo);
 
             _sut.Undo();
 
-            // Should restore Bottle 0's pink layer and clear Bottle 1
-            Assert.IsFalse(_bottles[0].State.IsEmpty);
-            Assert.IsTrue(_bottles[1].State.IsEmpty);
+            // Should restore Mold 0's pink layer and clear Mold 1
+            Assert.IsFalse(_Molds[0].State.IsEmpty);
+            Assert.IsTrue(_Molds[1].State.IsEmpty);
             Assert.AreEqual(0, _sut.CurrentMoveCount);
         }
 

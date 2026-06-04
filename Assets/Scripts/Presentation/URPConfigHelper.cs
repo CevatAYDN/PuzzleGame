@@ -5,7 +5,7 @@ using UnityEngine.Rendering.Universal;
 namespace PuzzleGame
 {
     /// <summary>
-    /// Helper to verify URP settings for mobile glass/liquid shaders.
+    /// Helper to verify URP settings for mobile glass/Ore shaders.
     /// Read-only inspector — shows current pipeline config at a glance.
     /// </summary>
     [ExecuteInEditMode]

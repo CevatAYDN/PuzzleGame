@@ -14,12 +14,12 @@ namespace PuzzleGame.Application.Events
         }
     }
 
-    public readonly struct PourCompletedEvent
+    public readonly struct CastCompletedEvent
     {
-        public BottleState Source { get; }
-        public BottleState Target { get; }
+        public MoldState Source { get; }
+        public MoldState Target { get; }
 
-        public PourCompletedEvent(BottleState source, BottleState target)
+        public CastCompletedEvent(MoldState source, MoldState target)
         {
             Source = source;
             Target = target;
@@ -27,19 +27,19 @@ namespace PuzzleGame.Application.Events
     }
 
     /// <summary>
-    /// Published when a pour attempt is rejected by validator or pour logic.
+    /// Published when a Cast attempt is rejected by validator or Cast logic.
     /// Reason is a stable string code (e.g. "validator_rejected", "no_matching_layers").
     /// </summary>
-    public readonly struct PourRejectedEvent
+    public readonly struct CastRejectedEvent
     {
-        public int SourceBottleIndex { get; }
-        public int TargetBottleIndex { get; }
+        public int SourceMoldIndex { get; }
+        public int TargetMoldIndex { get; }
         public string Reason { get; }
 
-        public PourRejectedEvent(int sourceIndex, int targetIndex, string reason)
+        public CastRejectedEvent(int sourceIndex, int targetIndex, string reason)
         {
-            SourceBottleIndex = sourceIndex;
-            TargetBottleIndex = targetIndex;
+            SourceMoldIndex = sourceIndex;
+            TargetMoldIndex = targetIndex;
             Reason = reason;
         }
     }
@@ -54,7 +54,7 @@ namespace PuzzleGame.Application.Events
         }
     }
 
-    // S15 FIX: UndoPrePourEvent kaldırıldı.
+    // S15 FIX: UndoPreCastEvent kaldırıldı.
     // Döküm öncesi undo snapshot kaydı artık InputHandlerService callback üzerinden
     // doğrudan GameHistoryManagementService'e yapılıyor (decoupled, type-safe).
 }

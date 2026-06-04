@@ -13,62 +13,62 @@ namespace PuzzleGame.Tests.Fakes
         public bool IsAnimating { get; set; }
 
         // Call records
-        public int AnimateBottleLiftCallCount { get; private set; }
-        public int AnimateBottleLowerCallCount { get; private set; }
-        public int AnimatePourCallCount { get; private set; }
+        public int AnimateMoldLiftCallCount { get; private set; }
+        public int AnimateMoldLowerCallCount { get; private set; }
+        public int AnimateCastCallCount { get; private set; }
         public int AnimateErrorShakeCallCount { get; private set; }
         public int AnimateCorkDropCallCount { get; private set; }
-        public int AnimateLiquidFlashCallCount { get; private set; }
+        public int AnimateOreFlashCallCount { get; private set; }
         public int AnimateSettleBounceCallCount { get; private set; }
 
-        public IBottleView LastPourSource { get; private set; }
-        public IBottleView LastPourTarget { get; private set; }
+        public IMoldView LastCastSource { get; private set; }
+        public IMoldView LastCastTarget { get; private set; }
         public Transform LastShakeTransform { get; private set; }
 
-        public void AnimateBottleLift(Transform bottle, float height, float duration,
+        public void AnimateMoldLift(Transform Mold, float height, float duration,
             Func<bool> keepHovering = null, Action onComplete = null)
         {
-            AnimateBottleLiftCallCount++;
+            AnimateMoldLiftCallCount++;
             onComplete?.Invoke();
         }
 
-        public void AnimateBottleLower(Transform bottle, Vector3 originalPos, float duration,
+        public void AnimateMoldLower(Transform Mold, Vector3 originalPos, float duration,
             Action onComplete = null)
         {
-            AnimateBottleLowerCallCount++;
+            AnimateMoldLowerCallCount++;
             onComplete?.Invoke();
         }
 
-        public void AnimatePour(IBottleView source, IBottleView target, float duration,
+        public void AnimateCast(IMoldView source, IMoldView target, float duration,
             Action onComplete = null)
         {
-            AnimatePourCallCount++;
-            LastPourSource = source;
-            LastPourTarget = target;
+            AnimateCastCallCount++;
+            LastCastSource = source;
+            LastCastTarget = target;
             onComplete?.Invoke();
         }
 
-        public void AnimateErrorShake(Transform bottle, Action onComplete = null)
+        public void AnimateErrorShake(Transform Mold, Action onComplete = null)
         {
             AnimateErrorShakeCallCount++;
-            LastShakeTransform = bottle;
+            LastShakeTransform = Mold;
             onComplete?.Invoke();
         }
 
-        public void AnimateCorkDrop(Transform cork, float bottleHeight, Action onComplete = null)
+        public void AnimateCorkDrop(Transform cork, float MoldHeight, Action onComplete = null)
         {
             AnimateCorkDropCallCount++;
             onComplete?.Invoke();
         }
 
-        public void AnimateLiquidFlash(Renderer renderer, int materialSlot,
+        public void AnimateOreFlash(Renderer renderer, int materialSlot,
             float peakIntensity, float duration, Action onComplete = null)
         {
-            AnimateLiquidFlashCallCount++;
+            AnimateOreFlashCallCount++;
             onComplete?.Invoke();
         }
 
-        public void AnimateSettleBounce(IBottleView bottle, float duration,
+        public void AnimateSettleBounce(IMoldView Mold, float duration,
             Action onComplete = null)
         {
             AnimateSettleBounceCallCount++;

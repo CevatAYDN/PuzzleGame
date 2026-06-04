@@ -59,18 +59,18 @@ namespace PuzzleGame.Application.Services
 
             if (!isBetter)
             {
-                BottleLogger.LogDebug($"Level {levelNumber} secure progress kept: existing {prevStars}\u2605/{prevMoves} \u2265 new {stars}\u2605/{moveCount}");
+                MoldLogger.LogDebug($"Level {levelNumber} secure progress kept: existing {prevStars}\u2605/{prevMoves} \u2265 new {stars}\u2605/{moveCount}");
                 return;
             }
 
-            _saveManager.Save(levelNumber, moveCount, System.Array.Empty<IBottleView>(), isCompleted: true, stars: stars);
+            _saveManager.Save(levelNumber, moveCount, System.Array.Empty<IMoldView>(), isCompleted: true, stars: stars);
             _eventAggregator.Publish(new LevelProgressChangedEvent(levelNumber, stars, moveCount));
         }
 
         public void ResetAll()
         {
             _saveManager.DeleteAll();
-            BottleLogger.LogInfo("All level progress secure save files deleted.");
+            MoldLogger.LogInfo("All level progress secure save files deleted.");
         }
     }
 }

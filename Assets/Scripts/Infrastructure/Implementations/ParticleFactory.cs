@@ -25,7 +25,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             var loaded = Resources.Load<ParticleSystem>(SplashPrefabResourcePath);
             if (loaded != null) return loaded;
 
-            BottleLogger.LogWarning($"Splash particle prefab not found at Resources/{SplashPrefabResourcePath}. Creating fallback at runtime.");
+            MoldLogger.LogWarning($"Splash particle prefab not found at Resources/{SplashPrefabResourcePath}. Creating fallback at runtime.");
 
             var go = new GameObject("SplashParticle_Prefab", typeof(ParticleSystem));
             go.SetActive(false);
@@ -70,7 +70,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             var loaded = Resources.Load<ParticleSystem>(BubblePrefabResourcePath);
             if (loaded != null) return loaded;
 
-            BottleLogger.LogWarning($"Bubble particle prefab not found at Resources/{BubblePrefabResourcePath}. Creating fallback at runtime.");
+            MoldLogger.LogWarning($"Bubble particle prefab not found at Resources/{BubblePrefabResourcePath}. Creating fallback at runtime.");
 
             var go = new GameObject("BubbleParticle_Prefab", typeof(ParticleSystem));
             go.SetActive(false);

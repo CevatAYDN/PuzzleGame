@@ -21,7 +21,7 @@ namespace PuzzleGame.Application.Configuration
         public float updateInterval = 0.05f;
 
         [Header("Material Indices")]
-        [Tooltip("Submesh index for the liquid material on the MeshRenderer")]
-        public int liquidMaterialIndex = 1;
+        [Tooltip("Submesh index for the Ore material on the MeshRenderer")]
+        public int OreMaterialIndex = 1;
     }
 }

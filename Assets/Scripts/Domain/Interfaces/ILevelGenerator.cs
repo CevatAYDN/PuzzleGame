@@ -6,10 +6,10 @@ namespace PuzzleGame.Domain.Interfaces
 {
     public interface ILevelGenerator
     {
-        List<List<LiquidLayer>> Generate(
-            int bottleCount,
+        List<List<OreLayer>> Generate(
+            int MoldCount,
             int maxLayers,
-            int emptyBottleCount,
+            int emptyMoldCount,
             DomainColor[] colorPalette,
             Difficulty difficulty,
             int seed = 0);

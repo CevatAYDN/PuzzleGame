@@ -42,8 +42,8 @@ namespace PuzzleGame.Tests.Application.Services
         [Test]
         public void HasSaveData_AfterSave_ReturnsTrue()
         {
-            var bottles = new IBottleView[] { CreateBottle() };
-            _sut.Save(1, 5, bottles, isCompleted: false, stars: 0);
+            var Molds = new IMoldView[] { CreateMold() };
+            _sut.Save(1, 5, Molds, isCompleted: false, stars: 0);
 
             Assert.IsTrue(_sut.HasSaveData, "Save file should exist after save.");
         }
@@ -53,8 +53,8 @@ namespace PuzzleGame.Tests.Application.Services
         [Test]
         public void SaveAndLoad_SingleLevel_RoundTripsCorrectly()
         {
-            var bottles = new IBottleView[] { CreateBottle() };
-            bool saved = _sut.Save(levelIndex: 3, moveCount: 10, bottles, isCompleted: true, stars: 2);
+            var Molds = new IMoldView[] { CreateMold() };
+            bool saved = _sut.Save(levelIndex: 3, moveCount: 10, Molds, isCompleted: true, stars: 2);
 
             Assert.IsTrue(saved, "Save should return true on success.");
 
@@ -75,9 +75,9 @@ namespace PuzzleGame.Tests.Application.Services
         [Test]
         public void Save_Overwrites_ExistingEntry()
         {
-            var bottles = new IBottleView[] { CreateBottle() };
-            _sut.Save(1, 5, bottles, isCompleted: false, stars: 0);
-            _sut.Save(1, 12, bottles, isCompleted: true,  stars: 3);
+            var Molds = new IMoldView[] { CreateMold() };
+            _sut.Save(1, 5, Molds, isCompleted: false, stars: 0);
+            _sut.Save(1, 12, Molds, isCompleted: true,  stars: 3);
 
             var loaded = _sut.LoadLevel(1);
             Assert.IsNotNull(loaded);
@@ -86,10 +86,10 @@ namespace PuzzleGame.Tests.Application.Services
         }
 
         [Test]
-        public void Save_NullBottles_ReturnsFalse()
+        public void Save_NullMolds_ReturnsFalse()
         {
-            bool result = _sut.Save(1, 5, bottles: null, isCompleted: false, stars: 0);
-            Assert.IsFalse(result, "Save with null bottles should fail gracefully.");
+            bool result = _sut.Save(1, 5, Molds: null, isCompleted: false, stars: 0);
+            Assert.IsFalse(result, "Save with null Molds should fail gracefully.");
         }
 
         // ─── LoadLastPlayedLevel ────────────────────────────────────────────────
@@ -97,8 +97,8 @@ namespace PuzzleGame.Tests.Application.Services
         [Test]
         public void LoadLastPlayedLevel_AfterSave_ReturnsCorrectLevel()
         {
-            var bottles = new IBottleView[] { CreateBottle() };
-            _sut.Save(7, 3, bottles, isCompleted: false, stars: 0);
+            var Molds = new IMoldView[] { CreateMold() };
+            _sut.Save(7, 3, Molds, isCompleted: false, stars: 0);
 
             Assert.AreEqual(7, _sut.LoadLastPlayedLevel());
         }
@@ -114,8 +114,8 @@ namespace PuzzleGame.Tests.Application.Services
         [Test]
         public void DeleteAll_ClearsAllData()
         {
-            var bottles = new IBottleView[] { CreateBottle() };
-            _sut.Save(1, 5, bottles, isCompleted: true, stars: 3);
+            var Molds = new IMoldView[] { CreateMold() };
+            _sut.Save(1, 5, Molds, isCompleted: true, stars: 3);
 
             _sut.DeleteAll();
 
@@ -128,8 +128,8 @@ namespace PuzzleGame.Tests.Application.Services
         [Test]
         public void VerifyIntegrity_WithValidSave_ReturnsTrue()
         {
-            var bottles = new IBottleView[] { CreateBottle() };
-            _sut.Save(1, 1, bottles, isCompleted: false, stars: 0);
+            var Molds = new IMoldView[] { CreateMold() };
+            _sut.Save(1, 1, Molds, isCompleted: false, stars: 0);
 
             Assert.IsTrue(_sut.VerifyIntegrity(), "Integrity check should pass on unmodified save.");
         }
@@ -142,11 +142,11 @@ namespace PuzzleGame.Tests.Application.Services
 
         // ─── Helpers ────────────────────────────────────────────────────────────
 
-        private static IBottleView CreateBottle()
+        private static IMoldView CreateMold()
         {
-            var state = new BottleState(4);
-            state.AddLayer(new LiquidLayer(new DomainColor(1f, 0f, 0f, 1f), 0.25f));
-            return new FakeBottleView(state);
+            var state = new MoldState(4);
+            state.AddLayer(new OreLayer(new DomainColor(1f, 0f, 0f, 1f), 0.25f));
+            return new FakeMoldView(state);
         }
     }
 }

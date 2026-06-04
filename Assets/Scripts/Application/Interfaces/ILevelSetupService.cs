@@ -8,11 +8,11 @@ namespace PuzzleGame.Application.Interfaces
 {
     public interface ILevelSetupService
     {
-        List<List<LiquidLayer>> GenerateLevelAssignments(IBottleView[] bottles, LevelData currentLevel);
-        void SetupBottles(IBottleView[] bottles,
+        List<List<OreLayer>> GenerateLevelAssignments(IMoldView[] Molds, LevelData currentLevel);
+        void SetupMolds(IMoldView[] Molds,
                            LevelData currentLevel,
                            IRendererService rendererService,
-                           IBottleValidator validator,
+                           IMoldValidator validator,
                            IAnimationService animationService);
     }
 }

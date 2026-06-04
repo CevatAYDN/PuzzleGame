@@ -10,9 +10,9 @@ namespace PuzzleGame.Application.Events
     /// Instance-based — inject via IEventAggregator for testability.
     ///
     /// Usage:
-    ///   _eventAggregator.Subscribe&lt;PourCompletedEvent&gt;(OnPourCompleted);
-    ///   _eventAggregator.Publish(new PourCompletedEvent(source, target));
-    ///   _eventAggregator.Unsubscribe&lt;PourCompletedEvent&gt;(OnPourCompleted);
+    ///   _eventAggregator.Subscribe&lt;CastCompletedEvent&gt;(OnCastCompleted);
+    ///   _eventAggregator.Publish(new CastCompletedEvent(source, target));
+    ///   _eventAggregator.Unsubscribe&lt;CastCompletedEvent&gt;(OnCastCompleted);
     /// </summary>
     public class EventAggregator : IEventAggregator
     {
@@ -139,7 +139,7 @@ namespace PuzzleGame.Application.Events
                     }
                     catch (Exception ex)
                     {
-                        BottleLogger.LogError($"EventAggregator: Subscriber threw on {typeof(T).Name}: {ex}");
+                        MoldLogger.LogError($"EventAggregator: Subscriber threw on {typeof(T).Name}: {ex}");
                         if (firstException == null)
                         {
                             firstException = ex;

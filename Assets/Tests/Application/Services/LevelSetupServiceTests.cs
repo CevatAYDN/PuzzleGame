@@ -23,10 +23,10 @@ namespace PuzzleGame.Tests.Application.Services
         [SetUp]
         public void SetUp()
         {
-            BottleLogger.SetLevel(BottleLogger.Level.Error, false);
+            MoldLogger.SetLevel(MoldLogger.Level.Error, false);
 
             _gameConfig = ScriptableObject.CreateInstance<GameConfig>();
-            _gameConfig.maxLayersPerBottle = 4;
+            _gameConfig.maxLayersPerMold = 4;
 
             _levelConfig = ScriptableObject.CreateInstance<LevelConfig>();
             _levelConfig.palette = new Color[]
@@ -49,7 +49,7 @@ namespace PuzzleGame.Tests.Application.Services
         // ── Null / Edge cases ─────────────────────────────────────────────────
 
         [Test]
-        public void GenerateLevelAssignments_NullBottles_ReturnsEmpty()
+        public void GenerateLevelAssignments_NullMolds_ReturnsEmpty()
         {
             var levelData = CreateLevelData();
             var result = _sut.GenerateLevelAssignments(null, levelData);
@@ -57,20 +57,20 @@ namespace PuzzleGame.Tests.Application.Services
         }
 
         [Test]
-        public void GenerateLevelAssignments_EmptyBottles_ReturnsEmpty()
+        public void GenerateLevelAssignments_EmptyMolds_ReturnsEmpty()
         {
             var levelData = CreateLevelData();
-            var result = _sut.GenerateLevelAssignments(Array.Empty<IBottleView>(), levelData);
+            var result = _sut.GenerateLevelAssignments(Array.Empty<IMoldView>(), levelData);
             Assert.That(result.Count, Is.EqualTo(0));
         }
 
         [Test]
         public void GenerateLevelAssignments_NullLevelData_ThrowsArgumentNullException()
         {
-            var bottles = new IBottleView[] { CreateBottleView() };
+            var Molds = new IMoldView[] { CreateMoldView() };
 
             Assert.Throws<ArgumentNullException>(() =>
-                _sut.GenerateLevelAssignments(bottles, null));
+                _sut.GenerateLevelAssignments(Molds, null));
         }
 
         // ── Auto-generate ─────────────────────────────────────────────────────
@@ -78,17 +78,17 @@ namespace PuzzleGame.Tests.Application.Services
         [Test]
         public void GenerateLevelAssignments_AutoGenerate_DelegatesToGenerator()
         {
-            var levelData = CreateLevelData(autoGenerate: true, bottleCount: 5, emptyCount: 2);
-            var bottles = CreateBottleViews(5);
+            var levelData = CreateLevelData(autoGenerate: true, MoldCount: 5, emptyCount: 2);
+            var Molds = CreateMoldViews(5);
 
             _levelGenerator.SetSimpleAssignment(5, 2);
 
-            var result = _sut.GenerateLevelAssignments(bottles, levelData);
+            var result = _sut.GenerateLevelAssignments(Molds, levelData);
 
             Assert.That(_levelGenerator.GenerateCallCount, Is.EqualTo(1));
-            Assert.That(_levelGenerator.LastBottleCount, Is.EqualTo(5));
+            Assert.That(_levelGenerator.LastMoldCount, Is.EqualTo(5));
             Assert.That(_levelGenerator.LastMaxLayers, Is.EqualTo(4));
-            Assert.That(_levelGenerator.LastEmptyBottleCount, Is.EqualTo(2));
+            Assert.That(_levelGenerator.LastEmptyMoldCount, Is.EqualTo(2));
             Assert.That(result.Count, Is.EqualTo(5));
         }
 
@@ -97,10 +97,10 @@ namespace PuzzleGame.Tests.Application.Services
         [Test]
         public void GenerateLevelAssignments_PreBuiltLevel_ConvertsCorrectly()
         {
-            var levelData = CreateLevelData(autoGenerate: false, bottleCount: 2);
-            levelData.bottles = new List<LevelBottleData>
+            var levelData = CreateLevelData(autoGenerate: false, MoldCount: 2);
+            levelData.Molds = new List<LevelMoldData>
             {
-                new LevelBottleData
+                new LevelMoldData
                 {
                     isEmpty = false,
                     layers = new List<LevelLayerData>
@@ -108,65 +108,65 @@ namespace PuzzleGame.Tests.Application.Services
                         new LevelLayerData { color = Color.red, amount = 1f }
                     }
                 },
-                new LevelBottleData
+                new LevelMoldData
                 {
                     isEmpty = true,
                     layers = new List<LevelLayerData>()
                 }
             };
 
-            var bottles = CreateBottleViews(2);
-            var result = _sut.GenerateLevelAssignments(bottles, levelData);
+            var Molds = CreateMoldViews(2);
+            var result = _sut.GenerateLevelAssignments(Molds, levelData);
 
             Assert.That(result.Count, Is.EqualTo(2));
             Assert.That(result[0].Count, Is.EqualTo(1)); // One layer
             Assert.That(result[1].Count, Is.EqualTo(0)); // Empty
         }
 
-        // ── SetupBottles integration ──────────────────────────────────────────
+        // ── SetupMolds integration ──────────────────────────────────────────
 
         [Test]
-        public void SetupBottles_CallsInitializeOnEachBottle()
+        public void SetupMolds_CallsInitializeOnEachMold()
         {
-            var levelData = CreateLevelData(autoGenerate: true, bottleCount: 3, emptyCount: 1);
-            var bottles = CreateBottleViews(3);
+            var levelData = CreateLevelData(autoGenerate: true, MoldCount: 3, emptyCount: 1);
+            var Molds = CreateMoldViews(3);
             _levelGenerator.SetSimpleAssignment(3, 1);
 
-            _sut.SetupBottles(bottles, levelData, null, null, null);
+            _sut.SetupMolds(Molds, levelData, null, null, null);
 
-            foreach (var bottle in bottles)
+            foreach (var Mold in Molds)
             {
-                // FakeBottleView.Initialize was called
-                Assert.That(((FakeBottleView)bottle).InitializeCallCount, Is.EqualTo(1));
+                // FakeMoldView.Initialize was called
+                Assert.That(((FakeMoldView)Mold).InitializeCallCount, Is.EqualTo(1));
             }
         }
 
         // ── Helpers ────────────────────────────────────────────────────────────
 
-        private static FakeBottleView CreateBottleView()
+        private static FakeMoldView CreateMoldView()
         {
-            var state = new BottleState(4);
-            var go = new GameObject("TestBottle");
-            return new FakeBottleView(state) { GameObject = go, Transform = go.transform };
+            var state = new MoldState(4);
+            var go = new GameObject("TestMold");
+            return new FakeMoldView(state) { GameObject = go, Transform = go.transform };
         }
 
-        private static IBottleView[] CreateBottleViews(int count)
+        private static IMoldView[] CreateMoldViews(int count)
         {
-            var views = new IBottleView[count];
+            var views = new IMoldView[count];
             for (int i = 0; i < count; i++)
-                views[i] = CreateBottleView();
+                views[i] = CreateMoldView();
             return views;
         }
 
         private static LevelData CreateLevelData(bool autoGenerate = true,
-            int bottleCount = 5, int emptyCount = 2, int maxLayers = 4)
+            int MoldCount = 5, int emptyCount = 2, int maxLayers = 4)
         {
             var data = ScriptableObject.CreateInstance<LevelData>();
             data.levelNumber = 1;
             data.autoGenerate = autoGenerate;
-            data.bottleCount = bottleCount;
-            data.emptyBottleCount = emptyCount;
-            data.maxLayersPerBottle = maxLayers;
+            data.MoldCount = MoldCount;
+            data.emptyMoldCount = emptyCount;
+            data.maxLayersPerMold = maxLayers;
             data.randomSeed = 42;
             data.difficulty = Difficulty.Easy;
             return data;

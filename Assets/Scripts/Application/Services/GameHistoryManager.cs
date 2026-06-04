@@ -9,8 +9,8 @@ namespace PuzzleGame.Application.Services
 {
     public class GameHistoryManager : IGameHistoryManager
     {
-        private readonly Stack<List<LiquidLayer>[]> _history = new Stack<List<LiquidLayer>[]>();
-        private IBottleView[] _bottles;
+        private readonly Stack<List<OreLayer>[]> _history = new Stack<List<OreLayer>[]>();
+        private IMoldView[] _Molds;
         private int _moveCount;
 
         public int CurrentMoveCount => _moveCount;
@@ -18,70 +18,70 @@ namespace PuzzleGame.Application.Services
 
         public event Action<int> OnMoveCountChanged;
 
-        public void Initialize(IBottleView[] bottles)
+        public void Initialize(IMoldView[] Molds)
         {
-            if (bottles == null) throw new ArgumentNullException(nameof(bottles));
-            _bottles = bottles;
+            if (Molds == null) throw new ArgumentNullException(nameof(Molds));
+            _Molds = Molds;
             ResetAll();
         }
 
         public void RecordUndoSnapshot()
         {
-            if (_bottles == null)
+            if (_Molds == null)
             {
-                BottleLogger.LogWarning("RecordUndoSnapshot called before Initialize.");
+                MoldLogger.LogWarning("RecordUndoSnapshot called before Initialize.");
                 return;
             }
 
-            var snapshot = new List<LiquidLayer>[_bottles.Length];
-            for (int i = 0; i < _bottles.Length; i++)
+            var snapshot = new List<OreLayer>[_Molds.Length];
+            for (int i = 0; i < _Molds.Length; i++)
             {
-                var state = _bottles[i]?.State;
+                var state = _Molds[i]?.State;
                 if (state == null) continue;
-                snapshot[i] = new List<LiquidLayer>(state.Layers);
+                snapshot[i] = new List<OreLayer>(state.Layers);
             }
             _history.Push(snapshot);
-            BottleLogger.LogDebug($"Undo snapshot recorded. Stack size: {_history.Count}");
+            MoldLogger.LogDebug($"Undo snapshot recorded. Stack size: {_history.Count}");
         }
 
         public void IncrementMoveCount()
         {
             _moveCount++;
             OnMoveCountChanged?.Invoke(_moveCount);
-            BottleLogger.LogInfo($"Move incremented: {_moveCount}");
+            MoldLogger.LogInfo($"Move incremented: {_moveCount}");
         }
 
         public void Undo()
         {
             if (!CanUndo)
             {
-                BottleLogger.LogDebug("Undo requested but history is empty.");
+                MoldLogger.LogDebug("Undo requested but history is empty.");
                 return;
             }
-            if (_bottles == null) throw new InvalidOperationException(
+            if (_Molds == null) throw new InvalidOperationException(
                 "GameHistoryManager.Undo called before Initialize.");
 
             var snapshot = _history.Pop();
             if (snapshot == null) return;
 
-            for (int i = 0; i < snapshot.Length && i < _bottles.Length; i++)
+            for (int i = 0; i < snapshot.Length && i < _Molds.Length; i++)
             {
-                if (_bottles[i] == null || _bottles[i].State == null) continue;
+                if (_Molds[i] == null || _Molds[i].State == null) continue;
                 try
                 {
-                    _bottles[i].State.ReplaceLayers((IEnumerable<LiquidLayer>)snapshot[i] ?? System.Array.Empty<LiquidLayer>());
-                    _bottles[i].UpdateVisualsFromState();
+                    _Molds[i].State.ReplaceLayers((IEnumerable<OreLayer>)snapshot[i] ?? System.Array.Empty<OreLayer>());
+                    _Molds[i].UpdateVisualsFromState();
                 }
                 catch (ArgumentException ex)
                 {
                     throw new InvalidOperationException(
-                        $"Undo failed for bottle {i}: snapshot is invalid (layer count > MaxLayers).", ex);
+                        $"Undo failed for Mold {i}: snapshot is invalid (layer count > MaxLayers).", ex);
                 }
             }
 
             _moveCount = Math.Max(0, _moveCount - 1);
             OnMoveCountChanged?.Invoke(_moveCount);
-            BottleLogger.LogInfo($"Undo performed. Current moves: {_moveCount}");
+            MoldLogger.LogInfo($"Undo performed. Current moves: {_moveCount}");
         }
 
         public void ResetAll()
@@ -89,7 +89,7 @@ namespace PuzzleGame.Application.Services
             _history.Clear();
             _moveCount = 0;
             OnMoveCountChanged?.Invoke(_moveCount);
-            BottleLogger.LogInfo("History and move count reset.");
+            MoldLogger.LogInfo("History and move count reset.");
         }
     }
 }

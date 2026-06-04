@@ -30,7 +30,7 @@ namespace PuzzleGame.Editor
             public bool camera;
             public bool postProcessing;
             public bool cauldron;
-            public bool bottles;
+            public bool Molds;
             public bool gameManager;
             public bool newScene;
         }
@@ -39,46 +39,46 @@ namespace PuzzleGame.Editor
         {
             lighting = true, ground = true, camera = true,
             postProcessing = true, cauldron = true,
-            bottles = true, gameManager = true, newScene = true
+            Molds = true, gameManager = true, newScene = true
         };
 
         public static readonly BuildOptions Minimal = new BuildOptions
         {
             lighting = false, ground = false, camera = true,
             postProcessing = false, cauldron = false,
-            bottles = true, gameManager = true, newScene = true
+            Molds = true, gameManager = true, newScene = true
         };
 
-        // ── Bottle config (Quick Add ve preset için) ────────────────────────
+        // ── Mold config (Quick Add ve preset için) ────────────────────────
 
-        public enum BottleLayout { Line, Grid, Circle, Manual }
+        public enum MoldLayout { Line, Grid, Circle, Manual }
         public enum ShaderVariant { Standard, Premium }
 
-        public struct BottleConfig
+        public struct MoldConfig
         {
             public Vector3 position;
             public Color[] colors; // boş = boş şişe
-            public List<LiquidLayer> initialLayers;
+            public List<OreLayer> initialLayers;
             public ShaderVariant shader;
             public string namePrefix;
 
-            public static BottleConfig Empty(Vector3 pos, ShaderVariant shader = ShaderVariant.Standard) =>
-                new BottleConfig { position = pos, colors = System.Array.Empty<Color>(), initialLayers = null, shader = shader, namePrefix = "Bottle" };
+            public static MoldConfig Empty(Vector3 pos, ShaderVariant shader = ShaderVariant.Standard) =>
+                new MoldConfig { position = pos, colors = System.Array.Empty<Color>(), initialLayers = null, shader = shader, namePrefix = "Mold" };
 
-            public static BottleConfig WithColors(Vector3 pos, Color[] colors,
-                ShaderVariant shader = ShaderVariant.Standard, string prefix = "Bottle") =>
-                new BottleConfig { position = pos, colors = colors, initialLayers = null, shader = shader, namePrefix = prefix };
+            public static MoldConfig WithColors(Vector3 pos, Color[] colors,
+                ShaderVariant shader = ShaderVariant.Standard, string prefix = "Mold") =>
+                new MoldConfig { position = pos, colors = colors, initialLayers = null, shader = shader, namePrefix = prefix };
 
-            public static BottleConfig WithLayers(Vector3 pos, List<LiquidLayer> layers,
-                ShaderVariant shader = ShaderVariant.Standard, string prefix = "Bottle") =>
-                new BottleConfig { position = pos, colors = null, initialLayers = layers, shader = shader, namePrefix = prefix };
+            public static MoldConfig WithLayers(Vector3 pos, List<OreLayer> layers,
+                ShaderVariant shader = ShaderVariant.Standard, string prefix = "Mold") =>
+                new MoldConfig { position = pos, colors = null, initialLayers = layers, shader = shader, namePrefix = prefix };
         }
 
         private const float GroundScale   = 8f;
-        private const float BottleHeight  = 2.4f;
-        private const float BottleRadius  = 0.35f;
+        private const float MoldHeight  = 2.4f;
+        private const float MoldRadius  = 0.35f;
         private const float FogDensity    = 0.015f;
-        private const float BottleSpacing = 1.3f;
+        private const float MoldSpacing = 1.3f;
 
         private static readonly Color AmbientColor   = new Color(0.12f, 0.10f, 0.20f);
         private static readonly Color FogColor       = new Color(0.08f, 0.05f, 0.15f);
@@ -123,51 +123,51 @@ namespace PuzzleGame.Editor
             if (opts.postProcessing) SetupPostProcessing();
             if (opts.cauldron)   CreateCauldron();
             if (opts.gameManager) CreateGameManager();
-            if (opts.bottles)    CreateDefaultBottleSet();
+            if (opts.Molds)    CreateDefaultMoldSet();
 
             Undo.CollapseUndoOperations(undoGroup);
             EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
             Debug.Log("[SceneBuilder] Scene build complete. Ctrl+Z to undo.");
         }
 
-        // ── Bottle set helpers ────────────────────────────────────────────────
+        // ── Mold set helpers ────────────────────────────────────────────────
 
-        public static void CreateDefaultBottleSet()
+        public static void CreateDefaultMoldSet()
         {
             int count = 20; // classic 4×5 grid
-            var positions = ComputePositions(BottleLayout.Grid, count, Vector3.zero);
+            var positions = ComputePositions(MoldLayout.Grid, count, Vector3.zero);
             Color[][] contents = GenerateMixedContents(count);
             for (int i = 0; i < count; i++)
-                CreateBottle(BottleConfig.WithColors(positions[i], contents[i], ShaderVariant.Premium, $"Bottle_{i:D2}"));
+                CreateMold(MoldConfig.WithColors(positions[i], contents[i], ShaderVariant.Premium, $"Mold_{i:D2}"));
         }
 
-        public static GameObject CreateBottle(BottleConfig cfg)
+        public static GameObject CreateMold(MoldConfig cfg)
         {
             var renderer = new RendererService();
-            var validator = new BottleValidationService();
+            var validator = new MoldValidationService();
 
             string uniqueName = GetUniqueName(cfg.namePrefix);
             var go = new GameObject(uniqueName) { transform = { position = cfg.position } };
 
             var col = go.AddComponent<CapsuleCollider>();
             col.radius = 0.4f;
-            col.height = BottleHeight;
-            col.center = new Vector3(0f, BottleHeight * 0.5f, 0f);
+            col.height = MoldHeight;
+            col.center = new Vector3(0f, MoldHeight * 0.5f, 0f);
 
             go.AddComponent<MeshFilter>();
             var mr = go.AddComponent<MeshRenderer>();
 
             // Shader seçimi
             string glassName = cfg.shader == ShaderVariant.Premium
-                ? "PremiumBottleGlass" : "Custom/BottleGlass";
-            string liquidName = cfg.shader == ShaderVariant.Premium
-                ? "PremiumLayeredLiquid" : "Custom/LayeredLiquid";
+                ? "PremiumMoldGlass" : "Custom/MoldGlass";
+            string OreName = cfg.shader == ShaderVariant.Premium
+                ? "PremiumLayeredOre" : "Custom/LayeredOre";
 
             var glassShader  = FindShader(glassName) ?? Shader.Find("Universal Render Pipeline/Lit");
-            var liquidShader = FindShader(liquidName) ?? Shader.Find("Universal Render Pipeline/Unlit");
+            var OreShader = FindShader(OreName) ?? Shader.Find("Universal Render Pipeline/Unlit");
 
             var glassMat  = new Material(glassShader)  { name = $"{uniqueName}_Glass"  };
-            var liquidMat = new Material(liquidShader) { name = $"{uniqueName}_Liquid" };
+            var OreMat = new Material(OreShader) { name = $"{uniqueName}_Ore" };
 
             if (cfg.shader == ShaderVariant.Premium)
                 ApplyPremiumGlassProperties(glassMat);
@@ -175,26 +175,26 @@ namespace PuzzleGame.Editor
                 ApplyStandardGlassProperties(glassMat);
 
             if (cfg.shader == ShaderVariant.Premium)
-                ApplyPremiumLiquidProperties(liquidMat);
+                ApplyPremiumOreProperties(OreMat);
             else
-                ApplyStandardLiquidProperties(liquidMat);
+                ApplyStandardOreProperties(OreMat);
 
-            var meshGen = go.AddComponent<BottleMeshGenerator>();
-            meshGen.height = BottleHeight;
-            meshGen.bodyRadius = BottleRadius;
+            var meshGen = go.AddComponent<MoldMeshGenerator>();
+            meshGen.height = MoldHeight;
+            meshGen.bodyRadius = MoldRadius;
             meshGen.neckRadius = 0.15f;
             meshGen.neckHeight = 0.4f;
             meshGen.capRadius = 0.17f;
             meshGen.capHeight = 0.1f;
             meshGen.glassMaterial = glassMat;
-            meshGen.liquidMaterial = liquidMat;
+            meshGen.OreMaterial = OreMat;
             meshGen.BuildMesh();
 
-            mr.sharedMaterials = new[] { glassMat, liquidMat };
+            mr.sharedMaterials = new[] { glassMat, OreMat };
 
-            var ctrl = go.AddComponent<BottleController>();
+            var ctrl = go.AddComponent<MoldController>();
             ctrl.glassMaterial = glassMat;
-            ctrl.liquidMaterial = liquidMat;
+            ctrl.OreMaterial = OreMat;
 
             var initial = (cfg.initialLayers != null)
                 ? cfg.initialLayers
@@ -206,33 +206,33 @@ namespace PuzzleGame.Editor
             return go;
         }
 
-        public static void RemoveBottles()
+        public static void RemoveMolds()
         {
-            var bottles = Object.FindObjectsByType<BottleController>(FindObjectsInactive.Include);
-            foreach (var b in bottles)
+            var Molds = Object.FindObjectsByType<MoldController>(FindObjectsInactive.Include);
+            foreach (var b in Molds)
             {
                 Undo.DestroyObjectImmediate(b.gameObject);
             }
         }
 
-        public static int CountBottles() =>
-            Object.FindObjectsByType<BottleController>(FindObjectsInactive.Include).Length;
+        public static int CountMolds() =>
+            Object.FindObjectsByType<MoldController>(FindObjectsInactive.Include).Length;
 
         // ── Position layouts ────────────────────────────────────────────────
 
-        public static Vector3[] ComputePositions(BottleLayout layout, int count, Vector3 center)
+        public static Vector3[] ComputePositions(MoldLayout layout, int count, Vector3 center)
         {
             if (count <= 0) return System.Array.Empty<Vector3>();
             var arr = new Vector3[count];
 
             switch (layout)
             {
-                case BottleLayout.Line:
+                case MoldLayout.Line:
                     for (int i = 0; i < count; i++)
-                        arr[i] = center + new Vector3((i - (count - 1) * 0.5f) * BottleSpacing, 0f, 0f);
+                        arr[i] = center + new Vector3((i - (count - 1) * 0.5f) * MoldSpacing, 0f, 0f);
                     break;
 
-                case BottleLayout.Grid:
+                case MoldLayout.Grid:
                     int cols = Mathf.CeilToInt(Mathf.Sqrt(count));
                     int rows = Mathf.CeilToInt(count / (float)cols);
                     for (int i = 0; i < count; i++)
@@ -240,14 +240,14 @@ namespace PuzzleGame.Editor
                         int r = i / cols;
                         int c = i % cols;
                         arr[i] = center + new Vector3(
-                            (c - (cols - 1) * 0.5f) * BottleSpacing,
+                            (c - (cols - 1) * 0.5f) * MoldSpacing,
                             0f,
-                            (r - (rows - 1) * 0.5f) * BottleSpacing);
+                            (r - (rows - 1) * 0.5f) * MoldSpacing);
                     }
                     break;
 
-                case BottleLayout.Circle:
-                    float radius = count * BottleSpacing * 0.35f;
+                case MoldLayout.Circle:
+                    float radius = count * MoldSpacing * 0.35f;
                     for (int i = 0; i < count; i++)
                     {
                         float angle = (i / (float)count) * Mathf.PI * 2f;
@@ -258,7 +258,7 @@ namespace PuzzleGame.Editor
                     }
                     break;
 
-                case BottleLayout.Manual:
+                case MoldLayout.Manual:
                     // Hepsi aynı pozisyon — kullanıcı sahneye ekledikten sonra taşır
                     for (int i = 0; i < count; i++)
                         arr[i] = center;
@@ -267,16 +267,16 @@ namespace PuzzleGame.Editor
             return arr;
         }
 
-        // ── Bottle content generators ───────────────────────────────────────
+        // ── Mold content generators ───────────────────────────────────────
 
         /// <summary>
         /// Default 20 şişe için karışık layer seti.
         /// Sıralı palet, her 5. şişe boş.
         /// </summary>
-        public static Color[][] GenerateMixedContents(int bottleCount)
+        public static Color[][] GenerateMixedContents(int MoldCount)
         {
-            var result = new Color[bottleCount][];
-            for (int i = 0; i < bottleCount; i++)
+            var result = new Color[MoldCount][];
+            for (int i = 0; i < MoldCount; i++)
             {
                 if ((i + 1) % 5 == 0) // her 5. boş
                 {
@@ -500,7 +500,7 @@ namespace PuzzleGame.Editor
                 camera = true,
                 postProcessing = true,
                 cauldron = false,
-                bottles = false,
+                Molds = false,
                 gameManager = true,
                 newScene = false
             };
@@ -623,7 +623,7 @@ namespace PuzzleGame.Editor
             mat.SetFloat("_SpecularSecondary", 0.5f);
         }
 
-        private static void ApplyStandardLiquidProperties(Material mat)
+        private static void ApplyStandardOreProperties(Material mat)
         {
             mat.SetFloat("_Transparency", 0.08f);
             mat.SetFloat("_EdgeDarken", 0.25f);
@@ -634,7 +634,7 @@ namespace PuzzleGame.Editor
             mat.SetFloat("_LayerBoundaryDarken", 0.4f);
         }
 
-        private static void ApplyPremiumLiquidProperties(Material mat)
+        private static void ApplyPremiumOreProperties(Material mat)
         {
             mat.SetFloat("_Transparency", 0.12f);
             mat.SetFloat("_EdgeDarken", 0.35f);
@@ -662,16 +662,16 @@ namespace PuzzleGame.Editor
             return mat;
         }
 
-        private static List<LiquidLayer> BuildLayers(Color[] colors)
+        private static List<OreLayer> BuildLayers(Color[] colors)
         {
-            var layers = new List<LiquidLayer>();
+            var layers = new List<OreLayer>();
             float[] heights = { 0.25f, 0.50f, 0.75f, 1.0f };
             for (int i = 0; i < colors.Length && i < 4; i++)
             {
                 if (colors[i].a > 0.01f)
                 {
                     float amount = i == 0 ? heights[0] : heights[i] - heights[i - 1];
-                    layers.Add(new LiquidLayer(ColorAdapter.FromUnityStatic(colors[i]), amount));
+                    layers.Add(new OreLayer(ColorAdapter.FromUnityStatic(colors[i]), amount));
                 }
             }
             return layers;

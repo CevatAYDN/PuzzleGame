@@ -15,7 +15,7 @@ namespace PuzzleGame.Tests.Application.Services
         [SetUp]
         public void SetUp()
         {
-            BottleLogger.SetLevel(BottleLogger.Level.Error, false);
+            MoldLogger.SetLevel(MoldLogger.Level.Error, false);
             _sut = new LevelValidationService();
         }
 
@@ -26,13 +26,13 @@ namespace PuzzleGame.Tests.Application.Services
         }
 
         [Test]
-        public void ValidateLevel_TooManyBottles_ReturnsFalse()
+        public void ValidateLevel_TooManyMolds_ReturnsFalse()
         {
             var levelData = ScriptableObject.CreateInstance<LevelData>();
             levelData.levelNumber = 1;
-            levelData.bottleCount = 20;
-            levelData.emptyBottleCount = 2;
-            levelData.maxLayersPerBottle = 4;
+            levelData.MoldCount = 20;
+            levelData.emptyMoldCount = 2;
+            levelData.maxLayersPerMold = 4;
             levelData.autoGenerate = true;
 
             Assert.That(_sut.ValidateLevel(levelData, 5), Is.False);
@@ -43,9 +43,9 @@ namespace PuzzleGame.Tests.Application.Services
         {
             var levelData = ScriptableObject.CreateInstance<LevelData>();
             levelData.levelNumber = 1;
-            levelData.bottleCount = 5;
-            levelData.emptyBottleCount = 2;
-            levelData.maxLayersPerBottle = 4;
+            levelData.MoldCount = 5;
+            levelData.emptyMoldCount = 2;
+            levelData.maxLayersPerMold = 4;
             levelData.autoGenerate = true;
 
             Assert.That(_sut.ValidateLevel(levelData, 10), Is.True);
@@ -58,9 +58,9 @@ namespace PuzzleGame.Tests.Application.Services
             {
                 var levelData = ScriptableObject.CreateInstance<LevelData>();
                 levelData.levelNumber = 1;
-                levelData.bottleCount = 5;
-                levelData.emptyBottleCount = 2;
-                levelData.maxLayersPerBottle = 4;
+                levelData.MoldCount = 5;
+                levelData.emptyMoldCount = 2;
+                levelData.maxLayersPerMold = 4;
                 levelData.autoGenerate = true;
                 levelData.difficulty = diff;
 

@@ -10,25 +10,25 @@ namespace PuzzleGame.Tests.Fakes
     /// </summary>
     public class FakeLevelGenerator : ILevelGenerator
     {
-        public List<List<LiquidLayer>> GenerateResult { get; set; }
-            = new List<List<LiquidLayer>>();
+        public List<List<OreLayer>> GenerateResult { get; set; }
+            = new List<List<OreLayer>>();
 
         public int GenerateCallCount { get; private set; }
-        public int LastBottleCount { get; private set; }
+        public int LastMoldCount { get; private set; }
         public int LastMaxLayers { get; private set; }
-        public int LastEmptyBottleCount { get; private set; }
+        public int LastEmptyMoldCount { get; private set; }
         public DomainColor[] LastPalette { get; private set; }
         public Difficulty LastDifficulty { get; private set; }
         public int LastSeed { get; private set; }
 
-        public List<List<LiquidLayer>> Generate(int bottleCount, int maxLayers,
-            int emptyBottleCount, DomainColor[] colorPalette,
+        public List<List<OreLayer>> Generate(int MoldCount, int maxLayers,
+            int emptyMoldCount, DomainColor[] colorPalette,
             Difficulty difficulty, int seed)
         {
             GenerateCallCount++;
-            LastBottleCount = bottleCount;
+            LastMoldCount = MoldCount;
             LastMaxLayers = maxLayers;
-            LastEmptyBottleCount = emptyBottleCount;
+            LastEmptyMoldCount = emptyMoldCount;
             LastPalette = colorPalette;
             LastDifficulty = difficulty;
             LastSeed = seed;
@@ -38,20 +38,20 @@ namespace PuzzleGame.Tests.Fakes
         /// <summary>
         /// Helper: creates a simple valid assignment for testing.
         /// </summary>
-        public void SetSimpleAssignment(int bottleCount, int emptyBottleCount)
+        public void SetSimpleAssignment(int MoldCount, int emptyMoldCount)
         {
-            GenerateResult = new List<List<LiquidLayer>>();
-            for (int i = 0; i < bottleCount - emptyBottleCount; i++)
+            GenerateResult = new List<List<OreLayer>>();
+            for (int i = 0; i < MoldCount - emptyMoldCount; i++)
             {
                 var color = new DomainColor(0.2f + i * 0.1f, 0.5f, 0.8f);
-                GenerateResult.Add(new List<LiquidLayer>
+                GenerateResult.Add(new List<OreLayer>
                 {
-                    new LiquidLayer(color, 1f)
+                    new OreLayer(color, 1f)
                 });
             }
-            for (int i = 0; i < emptyBottleCount; i++)
+            for (int i = 0; i < emptyMoldCount; i++)
             {
-                GenerateResult.Add(new List<LiquidLayer>());
+                GenerateResult.Add(new List<OreLayer>());
             }
         }
     }

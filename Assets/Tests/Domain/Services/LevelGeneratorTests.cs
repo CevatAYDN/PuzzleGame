@@ -17,7 +17,7 @@ namespace PuzzleGame.Domain.Tests.Services
         };
 
         [Test]
-        public void Generate_ProducesCorrectBottleCount()
+        public void Generate_ProducesCorrectMoldCount()
         {
             var result = _generator.Generate(5, 4, 1, _palette, Difficulty.Medium, seed: 42);
             Assert.That(result.Count, Is.EqualTo(5));
@@ -26,12 +26,12 @@ namespace PuzzleGame.Domain.Tests.Services
         [Test]
         public void Generate_TotalLayers_EqualsNumColorsTimesMaxLayers()
         {
-            int bottleCount = 5;
+            int MoldCount = 5;
             int maxLayers = 4;
-            int emptyBottles = 1;
+            int emptyMolds = 1;
             int numColors = _palette.Length; // 3
 
-            var result = _generator.Generate(bottleCount, maxLayers, emptyBottles, _palette, Difficulty.Medium, seed: 42);
+            var result = _generator.Generate(MoldCount, maxLayers, emptyMolds, _palette, Difficulty.Medium, seed: 42);
 
             int total = 0;
             foreach (var layers in result) total += layers.Count;
@@ -40,7 +40,7 @@ namespace PuzzleGame.Domain.Tests.Services
         }
 
         [Test]
-        public void Generate_EmptyBottles_AreNotPopulated()
+        public void Generate_EmptyMolds_AreNotPopulated()
         {
             var result = _generator.Generate(5, 4, 2, _palette, Difficulty.Medium, seed: 42);
             int emptyCount = 0;
@@ -68,11 +68,11 @@ namespace PuzzleGame.Domain.Tests.Services
         }
 
         [Test]
-        public void Generate_EachBottle_HasSingleColor()
+        public void Generate_EachMold_HasSingleColor()
         {
-            // Shuffled bottles should contain mixed colors
+            // Shuffled Molds should contain mixed colors
             var result = _generator.Generate(3, 4, 0, _palette, Difficulty.Medium, seed: 42);
-            bool hasMixedBottle = false;
+            bool hasMixedMold = false;
             foreach (var layers in result)
             {
                 if (layers.Count < 2) continue;
@@ -81,12 +81,12 @@ namespace PuzzleGame.Domain.Tests.Services
                 {
                     if (!layers[i].Color.Equals(first))
                     {
-                        hasMixedBottle = true;
+                        hasMixedMold = true;
                         break;
                     }
                 }
             }
-            Assert.That(hasMixedBottle, Is.True, "Shuffled bottles should contain mixed colors");
+            Assert.That(hasMixedMold, Is.True, "Shuffled Molds should contain mixed colors");
         }
 
         [Test]
@@ -99,7 +99,7 @@ namespace PuzzleGame.Domain.Tests.Services
                 Assert.That(a[i].Count, Is.EqualTo(b[i].Count));
                 for (int j = 0; j < a[i].Count; j++)
                 {
-                    Assert.That(a[i][j].Color.Equals(b[i][j].Color), Is.True, $"Mismatch at bottle {i} layer {j}");
+                    Assert.That(a[i][j].Color.Equals(b[i][j].Color), Is.True, $"Mismatch at Mold {i} layer {j}");
                 }
             }
         }

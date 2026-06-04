@@ -9,9 +9,9 @@ using PuzzleGame.Application.Interfaces;
 namespace PuzzleGame.Application.Services
 {
     /// <summary>
-    /// Handles chemical reactions between colors after pours.
+    /// Handles chemical reactions between colors after Casts.
     /// Supports:
-    /// - Explosion: Bottle disappears, creating empty space
+    /// - Explosion: Mold disappears, creating empty space
     /// - Transform: Colors convert to new color
     /// </summary>
     public class ReactionService : IReactionService
@@ -25,35 +25,35 @@ namespace PuzzleGame.Application.Services
             _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
         }
 
-        public int CheckReactions(IBottleView[] bottles, ReactionSystemData config)
+        public int CheckReactions(IMoldView[] Molds, ReactionSystemData config)
         {
-            if (bottles == null) throw new ArgumentNullException(nameof(bottles));
+            if (Molds == null) throw new ArgumentNullException(nameof(Molds));
             if (config == null || !config.enableReactions) return 0;
 
             int count = 0;
-            foreach (var bottle in bottles)
+            foreach (var Mold in Molds)
             {
-                if (bottle == null) continue;
-                if (CheckBottleReactions(bottle, config, out ReactionResult result))
+                if (Mold == null) continue;
+                if (CheckMoldReactions(Mold, config, out ReactionResult result))
                 {
                     count++;
-                    ProcessReactionResult(bottle, result);
+                    ProcessReactionResult(Mold, result);
                 }
             }
 
             return count;
         }
 
-        private bool CheckBottleReactions(IBottleView bottle, ReactionSystemData config, out ReactionResult result)
+        private bool CheckMoldReactions(IMoldView Mold, ReactionSystemData config, out ReactionResult result)
         {
             result = default;
-            var state = bottle.State;
+            var state = Mold.State;
             if (state.LayerCount < 2) return false;
 
             for (int i = 0; i < state.LayerCount - 1; i++)
             {
-                LiquidLayer layerA;
-                LiquidLayer layerB;
+                OreLayer layerA;
+                OreLayer layerB;
                 try
                 {
                     layerA = state.GetLayerAt(i);
@@ -62,13 +62,13 @@ namespace PuzzleGame.Application.Services
                 catch (ArgumentOutOfRangeException)
                 {
                     throw new InvalidOperationException(
-                        $"ReactionService: bottle '{bottle.GameObject.name}' state mutated during reaction scan.");
+                        $"ReactionService: Mold '{Mold.GameObject.name}' state mutated during reaction scan.");
                 }
 
                 var colorTypeA = layerA.ColorType;
                 var colorTypeB = layerB.ColorType;
 
-                if (colorTypeA == LiquidColor.None || colorTypeB == LiquidColor.None)
+                if (colorTypeA == OreColor.None || colorTypeB == OreColor.None)
                     continue;
 
                 foreach (var rule in config.reactionRules)
@@ -77,7 +77,7 @@ namespace PuzzleGame.Application.Services
                     {
                         result = new ReactionResult
                         {
-                            BottleIndex = GetBottleIndex(bottle),
+                            MoldIndex = GetMoldIndex(Mold),
                             Rule = rule,
                             AffectedLayerA = i,
                             AffectedLayerB = i + 1
@@ -90,46 +90,46 @@ namespace PuzzleGame.Application.Services
             return false;
         }
 
-        private bool IsColorMatch(LiquidColor a, LiquidColor b, ReactionRule rule)
+        private bool IsColorMatch(OreColor a, OreColor b, ReactionRule rule)
         {
             return (a == rule.colorA && b == rule.colorB) ||
                    (a == rule.colorB && b == rule.colorA);
         }
 
-        private void ProcessReactionResult(IBottleView bottle, ReactionResult result)
+        private void ProcessReactionResult(IMoldView Mold, ReactionResult result)
         {
             switch (result.Rule.reactionType)
             {
                 case ReactionRule.ReactionType.Explode:
-                    ProcessExplosion(bottle, result);
+                    ProcessExplosion(Mold, result);
                     break;
 
                 case ReactionRule.ReactionType.Transform:
-                    ProcessTransform(bottle, result);
+                    ProcessTransform(Mold, result);
                     break;
 
                 case ReactionRule.ReactionType.Bubble:
-                    ProcessBubble(bottle, result);
+                    ProcessBubble(Mold, result);
                     break;
             }
         }
 
-        private void ProcessExplosion(IBottleView bottle, ReactionResult result)
+        private void ProcessExplosion(IMoldView Mold, ReactionResult result)
         {
-            var position = bottle.Transform.position;
+            var position = Mold.Transform.position;
 
-            _eventAggregator.Publish(new BottleExplodedEvent(
-                result.BottleIndex,
+            _eventAggregator.Publish(new MoldExplodedEvent(
+                result.MoldIndex,
                 position));
 
-            bottle.State.Clear();
+            Mold.State.Clear();
 
-            BottleLogger.LogInfo($"[ReactionService] EXPLOSION at {bottle.GameObject.name}! Bottle emptied.");
+            MoldLogger.LogInfo($"[ReactionService] EXPLOSION at {Mold.GameObject.name}! Mold emptied.");
         }
 
-        private void ProcessTransform(IBottleView bottle, ReactionResult result)
+        private void ProcessTransform(IMoldView Mold, ReactionResult result)
         {
-            var state = bottle.State;
+            var state = Mold.State;
 
             var resultColor = result.Rule.resultColor;
             var domainColor = (DomainColor)resultColor.ToDefaultDomainColor();
@@ -139,43 +139,43 @@ namespace PuzzleGame.Application.Services
 
             try
             {
-                state.ReplaceAtIndex(layerIndexA, new LiquidLayer(domainColor, 1f, resultColor));
+                state.ReplaceAtIndex(layerIndexA, new OreLayer(domainColor, 1f, resultColor));
                 state.RemoveAtIndex(layerIndexB);
             }
             catch (ArgumentOutOfRangeException ex)
             {
                 throw new InvalidOperationException(
-                    $"ReactionService.ProcessTransform: layer index out of range for bottle '{bottle.GameObject.name}'.",
+                    $"ReactionService.ProcessTransform: layer index out of range for Mold '{Mold.GameObject.name}'.",
                     ex);
             }
 
             _eventAggregator.Publish(new ReactionTriggeredEvent(
-                result.BottleIndex,
+                result.MoldIndex,
                 ReactionRule.ReactionType.Transform,
                 _colorAdapter.ToUnity(resultColor.ToDefaultDomainColor()),
                 _colorAdapter.ToUnity(resultColor.ToDefaultDomainColor())));
 
-            BottleLogger.LogInfo($"[ReactionService] TRANSFORM at {bottle.GameObject.name}: colors combined into {resultColor}");
+            MoldLogger.LogInfo($"[ReactionService] TRANSFORM at {Mold.GameObject.name}: colors combined into {resultColor}");
         }
 
-        private void ProcessBubble(IBottleView bottle, ReactionResult result)
+        private void ProcessBubble(IMoldView Mold, ReactionResult result)
         {
             _eventAggregator.Publish(new ReactionTriggeredEvent(
-                result.BottleIndex,
+                result.MoldIndex,
                 ReactionRule.ReactionType.Bubble,
                 _colorAdapter.ToUnity(result.Rule.colorA.ToDefaultDomainColor()),
                 _colorAdapter.ToUnity(result.Rule.colorB.ToDefaultDomainColor())));
 
-            BottleLogger.LogDebug($"[ReactionService] BUBBLE at {bottle.GameObject.name}.");
+            MoldLogger.LogDebug($"[ReactionService] BUBBLE at {Mold.GameObject.name}.");
         }
 
-        // Fix Code Quality #5: Use IBottleView.BottleIndex instead of fragile GameObject.name parsing.
-        private static int GetBottleIndex(IBottleView bottle) => bottle.BottleIndex;
+        // Fix Code Quality #5: Use IMoldView.MoldIndex instead of fragile GameObject.name parsing.
+        private static int GetMoldIndex(IMoldView Mold) => Mold.MoldIndex;
     }
 
     public struct ReactionResult
     {
-        public int BottleIndex { get; set; }
+        public int MoldIndex { get; set; }
         public ReactionRule Rule { get; set; }
         public int AffectedLayerA { get; set; }
         public int AffectedLayerB { get; set; }

@@ -73,9 +73,9 @@ namespace PuzzleGame.Editor
             var results = new AssetResult[]
             {
                 Ensure<GameConfig>("GameConfig", c => {
-                    c.bottleLayerMask = ~0;
+                    c.MoldLayerMask = ~0;
                     c.colorMatchTolerance = 0.05f;
-                    c.maxLayersPerBottle = 4;
+                    c.maxLayersPerMold = 4;
                     c.saturationBoost = 1.35f;
                     c.brightnessBoost = 1.2f;
                 }, overridePerAsset("GameConfig")),
@@ -83,7 +83,7 @@ namespace PuzzleGame.Editor
                 Ensure<AnimationConfig>("AnimationConfig", a => {
                     a.liftHeight = 1.0f;
                     a.liftDuration = 0.4f;
-                    a.pourDuration = 0.6f;
+                    a.CastDuration = 0.6f;
                     a.returnDuration = 0.4f;
                     a.hoverAmplitude = 0.08f;
                     a.hoverFrequency = 3.5f;
@@ -95,12 +95,12 @@ namespace PuzzleGame.Editor
                     a.returnPhasePortion = 0.25f;
                 }, overridePerAsset("AnimationConfig")),
 
-                Ensure<BottleVisualConfig>("BottleVisualConfig", b => {
+                Ensure<MoldVisualConfig>("MoldVisualConfig", b => {
                     b.saturationBoost = 1.35f;
                     b.brightnessBoost = 1.2f;
                     b.maxLayers = 4;
-                    b.pourImpulseStrength = 2.0f;
-                }, overridePerAsset("BottleVisualConfig")),
+                    b.castImpulseStrength = 2.0f;
+                }, overridePerAsset("MoldVisualConfig")),
 
                 Ensure<WobbleConfig>("WobbleConfig", w => {
                     w.maxWobble = 0.05f;
@@ -113,7 +113,7 @@ namespace PuzzleGame.Editor
 
                 Ensure<LevelConfig>("LevelConfig", l => {
                     l.autoGenerateLevel = true;
-                    l.emptyBottleCount = 2;
+                    l.emptyMoldCount = 2;
                     l.randomSeed = 0;
                     l.palette = new Color[]
                     {
@@ -159,7 +159,7 @@ namespace PuzzleGame.Editor
             {
                 ["GameConfig"]         = Exists<GameConfig>("GameConfig"),
                 ["AnimationConfig"]    = Exists<AnimationConfig>("AnimationConfig"),
-                ["BottleVisualConfig"] = Exists<BottleVisualConfig>("BottleVisualConfig"),
+                ["MoldVisualConfig"] = Exists<MoldVisualConfig>("MoldVisualConfig"),
                 ["WobbleConfig"]       = Exists<WobbleConfig>("WobbleConfig"),
                 ["LevelConfig"]        = Exists<LevelConfig>("LevelConfig"),
                 ["AudioConfig"]        = Exists<AudioConfig>("AudioConfig"),

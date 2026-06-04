@@ -68,8 +68,8 @@ namespace PuzzleGame.Infrastructure.Implementations
 
             _clipMap = new Dictionary<AudioClipId, AudioClip>
             {
-                { AudioClipId.PourLoop,       config.pourLoopClip },
-                { AudioClipId.PourEnd,        config.pourEndClip },
+                { AudioClipId.CastLoop,       config.CastLoopClip },
+                { AudioClipId.CastEnd,        config.CastEndClip },
                 { AudioClipId.Error,          config.errorClip },
                 { AudioClipId.LevelComplete,  config.levelCompleteClip },
                 { AudioClipId.LevelStart,     config.levelStartClip },
@@ -84,7 +84,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             if (_isMuted && id != AudioClipId.UiClick) return;
             if (!_clipMap.TryGetValue(id, out var clip) || clip == null)
             {
-                BottleLogger.LogDebug($"AudioService.PlaySfx: no clip for {id}");
+                MoldLogger.LogDebug($"AudioService.PlaySfx: no clip for {id}");
                 return;
             }
 
@@ -95,7 +95,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             }
             catch (Exception e)
             {
-                BottleLogger.LogWarning($"AudioService.PlaySfx: pool exhausted ({e.Message})");
+                MoldLogger.LogWarning($"AudioService.PlaySfx: pool exhausted ({e.Message})");
                 return;
             }
 
@@ -119,7 +119,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             if (_disposed) return;
             if (!_clipMap.TryGetValue(id, out var clip) || clip == null)
             {
-                BottleLogger.LogDebug($"AudioService.PlayMusic: no clip for {id}");
+                MoldLogger.LogDebug($"AudioService.PlayMusic: no clip for {id}");
                 return;
             }
 

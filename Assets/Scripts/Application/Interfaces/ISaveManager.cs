@@ -9,7 +9,7 @@ namespace PuzzleGame.Application.Interfaces
     /// </summary>
     public interface ISaveManager
     {
-        bool Save(int levelIndex, int moveCount, IBottleView[] bottles, bool isCompleted, int stars);
+        bool Save(int levelIndex, int moveCount, IMoldView[] Molds, bool isCompleted, int stars);
         GameSaveData? LoadLevel(int levelIndex);
         int LoadLastPlayedLevel();
         void DeleteAll();
