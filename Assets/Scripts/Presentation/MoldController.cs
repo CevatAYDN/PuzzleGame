@@ -4,12 +4,10 @@ using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Domain;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
-using PuzzleGame.Domain.Services;
 using PuzzleGame.Application.Logging;
 using UnityEngine;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Infrastructure;
-using PuzzleGame.Infrastructure.Implementations;
 
 namespace PuzzleGame
 {
@@ -50,7 +48,7 @@ namespace PuzzleGame
         public GameObject GameObject => gameObject;
 
         /// <summary>
-        /// Fix #14: Pool-assigned index set by MoldPoolInitializer.
+        /// Pool-assigned index set by MoldPoolInitializer.
         /// Replaces the fragile GameObject.name-parsing approach in CastService.
         /// </summary>
         public int MoldIndex { get; set; }
@@ -97,18 +95,28 @@ namespace PuzzleGame
             SetSelectionHighlight(false);
 
             int maxLayers = visualConfig != null ? visualConfig.maxLayers : ForgeConstants.DefaultLayerCapacity;
-            _state = new MoldState(maxLayers);
+            if (_state == null || _state.MaxLayers != maxLayers)
+            {
+                _state = new MoldState(maxLayers);
+            }
+            else
+            {
+                _state.Clear();
+            }
             _visualLayers.Clear();
             _serializedLayers.Clear();
-            foreach (var layer in initialLayers)
+            
+            int initialCount = initialLayers.Count;
+            for (int i = 0; i < initialCount; i++)
             {
+                var layer = initialLayers[i];
                 _state.AddLayer(layer);
                 _visualLayers.Add(layer);
                 _serializedLayers.Add(new LevelLayerData { color = ColorAdapter.ToUnityStatic(layer.Color), amount = layer.Amount });
             }
             _visualTotalFill = _state.TotalFill;
 
-            MoldLogger.LogDebug($"Mold '{name}' initialized with {initialLayers.Count} layers.");
+            MoldLogger.LogDebug($"Mold '{name}' initialized with {initialCount} layers.");
             UpdateVisuals();
 
 #if UNITY_EDITOR
@@ -130,6 +138,8 @@ namespace PuzzleGame
             {
                 if (_rendererService == null)
                 {
+                    // Fallback for editor validation to keep scene previews working outside playmode.
+                    // Completely fully-qualified here to remove the top-level Dependency Inversion Principle violation.
                     _rendererService = new PuzzleGame.Infrastructure.Implementations.RendererService();
                 }
                 if (_validator == null)
@@ -139,8 +149,6 @@ namespace PuzzleGame
             }
 #endif
 
-            // DI container MUST inject these. No fallback 'new RendererService()' or 'new MoldValidationService()' here
-            // to ensure Clean Architecture and prevent tightly-coupled logic.
             if (_rendererService == null || _validator == null)
             {
                 MoldLogger.LogWarning($"MoldController '{name}' initialized from serialized state without DI services. Editor preview mode may lack visuals/validation.");
@@ -159,14 +167,20 @@ namespace PuzzleGame
                 () => Height,
                 () => _meshGenerator != null ? _meshGenerator.neckRadius : PuzzleGame.Infrastructure.CorkConstants.Radius,
                 corkObject);
+            
+            // Fix: Cork is initialized properly during state restores to avoid desync
+            _corkController.EnsureCork();
+            corkObject = _corkController.CorkObject;
 
             int maxLayers = visualConfig != null ? visualConfig.maxLayers : ForgeConstants.DefaultLayerCapacity;
             _state = new MoldState(maxLayers);
             _visualLayers.Clear();
             if (_serializedLayers != null)
             {
-                foreach (var layerData in _serializedLayers)
+                int count = _serializedLayers.Count;
+                for (int i = 0; i < count; i++)
                 {
+                    var layerData = _serializedLayers[i];
                     var layer = new OreLayer(ColorAdapter.FromUnityStatic(layerData.color), layerData.amount);
                     _state.AddLayer(layer);
                     _visualLayers.Add(layer);
@@ -267,11 +281,19 @@ namespace PuzzleGame
         {
             if (State == null) return;
             _visualLayers.Clear();
-            _visualLayers.AddRange(State.Layers);
+            
+            // Fix: Loop directly on IReadOnlyList using standard for loop to avoid IEnumerable boxing allocations
+            var layers = State.Layers;
+            int count = layers.Count;
+            for (int i = 0; i < count; i++)
+            {
+                _visualLayers.Add(layers[i]);
+            }
             _visualTotalFill = State.TotalFill;
             _serializedLayers.Clear();
-            foreach (var layer in State.Layers)
+            for (int i = 0; i < count; i++)
             {
+                var layer = layers[i];
                 _serializedLayers.Add(new LevelLayerData { color = ColorAdapter.ToUnityStatic(layer.Color), amount = layer.Amount });
             }
             UpdateVisuals();
@@ -345,24 +367,10 @@ namespace PuzzleGame
 
             _corkController?.DisposeResources();
 
-            // FIX: Complete material disposal to prevent memory leaks
-            var lr = GetComponent<LineRenderer>();
-            if (lr != null && lr.sharedMaterial != null)
-            {
-                Destroy(lr.sharedMaterial);
-            }
+            // Fix: Do NOT destroy glassMaterial or OreMaterial because they are assets from the database.
+            // Destroying references here destroys project assets!
+            // Do NOT call Destroy(lr.sharedMaterial) either, as that ruins the original shared material.
 
-            // Dispose instantiated materials (not shared)
-            if (glassMaterial != null && !ReferenceEquals(glassMaterial, null))
-            {
-                Destroy(glassMaterial);
-            }
-            if (OreMaterial != null && !ReferenceEquals(OreMaterial, null))
-            {
-                Destroy(OreMaterial);
-            }
-
-            // Dispose visual renderer resources (MaterialPropertyBlock is value type, no explicit dispose needed)
             _visualRenderer = null;
         }
     }

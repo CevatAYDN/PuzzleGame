@@ -97,6 +97,7 @@ namespace PuzzleGame
                 var b = _allMoldsPool[i];
                 if (b != null && b.gameObject.activeSelf)
                 {
+                    b.MoldIndex = index;
                     _Molds[index++] = b;
                 }
             }

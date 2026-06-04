@@ -39,7 +39,15 @@ namespace PuzzleGame
         /// </summary>
         public void SetUpdateManager(IUpdateManager updateManager)
         {
+            if (_updateManager != null)
+            {
+                _updateManager.Unregister(this);
+            }
             _updateManager = updateManager;
+            if (enabled && gameObject.activeInHierarchy)
+            {
+                _updateManager?.Register(this);
+            }
         }
 
         private void OnEnable()
@@ -52,7 +60,17 @@ namespace PuzzleGame
             _OreMatIndex = config != null ? config.OreMaterialIndex : 1;
             _previousPosition = transform.position;
             _previousRotation = transform.rotation.eulerAngles;
-            _hasOreMaterial = _renderer != null && _renderer.sharedMaterials != null && _renderer.sharedMaterials.Length > _OreMatIndex;
+            _hasOreMaterial = false; // Resolved dynamically via HasOreMaterial() to prevent start-order race conditions
+        }
+
+        private bool HasOreMaterial()
+        {
+            if (!_hasOreMaterial && _renderer != null)
+            {
+                var sharedMats = _renderer.sharedMaterials;
+                _hasOreMaterial = sharedMats != null && sharedMats.Length > _OreMatIndex;
+            }
+            return _hasOreMaterial;
         }
 
         public void OnUpdate(float deltaTime)
@@ -112,7 +130,7 @@ namespace PuzzleGame
                     float wobbleAmountZ = _wobbleZ * Mathf.Sin(time + Mathf.PI * 0.3f);
 
                     // Send to shader using MaterialPropertyBlock
-                    if (_hasOreMaterial)
+                    if (HasOreMaterial())
                     {
                         _renderer.GetPropertyBlock(_propBlock, _OreMatIndex);
                         _propBlock.SetFloat(WobbleXProperty, wobbleAmountX);
@@ -129,7 +147,7 @@ namespace PuzzleGame
                 _velocityZ = 0f;
                 _timeSinceLastUpdate = 0f;
 
-                if (_hasOreMaterial)
+                if (HasOreMaterial())
                 {
                     _renderer.GetPropertyBlock(_propBlock, _OreMatIndex);
                     _propBlock.SetFloat(WobbleXProperty, 0f);
@@ -147,7 +165,7 @@ namespace PuzzleGame
         private void OnDisable()
         {
             // Reset wobble when disabled using MaterialPropertyBlock to prevent material copy instantiation
-            if (_renderer != null && _hasOreMaterial)
+            if (_renderer != null && HasOreMaterial())
             {
                 _renderer.GetPropertyBlock(_propBlock, _OreMatIndex);
                 _propBlock.SetFloat(WobbleXProperty, 0f);

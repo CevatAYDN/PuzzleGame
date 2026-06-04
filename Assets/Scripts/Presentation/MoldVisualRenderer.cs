@@ -4,7 +4,6 @@ using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain;
 using PuzzleGame.Domain.Models;
-// IRendererService now in PuzzleGame.Application.Interfaces
 using UnityEngine;
 
 namespace PuzzleGame
@@ -22,7 +21,7 @@ namespace PuzzleGame
         private readonly Func<List<OreLayer>> _visualLayersProvider;
         private readonly Func<float> _visualTotalFillProvider;
         private MaterialPropertyBlock _propBlock;
-        private bool _isHighlighted;
+        private bool? _isHighlighted = null; // Fix: Nullable to ensure initial SetSelectionHighlight(false) is applied
 
         private static readonly int FresnelIntensityID = Shader.PropertyToID("_FresnelIntensity");
 
@@ -64,8 +63,9 @@ namespace PuzzleGame
         public void SetSelectionHighlight(bool active)
         {
             if (_renderer == null) return;
-            if (_isHighlighted == active) return;
+            if (_isHighlighted.HasValue && _isHighlighted.Value == active) return;
             _isHighlighted = active;
+            
             if (_propBlock == null) _propBlock = new MaterialPropertyBlock();
             int glassIndex = _visualConfig != null ? _visualConfig.moldMaterialIndex : 0;
             _renderer.GetPropertyBlock(_propBlock, glassIndex);
