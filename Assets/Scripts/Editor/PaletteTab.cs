@@ -2,28 +2,32 @@ using UnityEditor;
 using UnityEngine;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Domain;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Configuration.FeatureSystem;
-using PuzzleGame.Domain.Services;
-using PuzzleGame.Infrastructure;
-using PuzzleGame.Application.Services;
 
 namespace PuzzleGame.Editor
 {
-    public partial class ForgeEditorWindow
+    public class PaletteTab : IEditorTab
     {
-        // ── Palette tab ────────────────────────────────────────────────────
+        public string TabName => "Palette";
+        private ForgeEditorWindow _window;
+
         private LevelData _selectedLevelForEdit;
         private Vector2 _paletteScroll;
-        private Color[] _editingPalette;
         private const int MaxPaletteColors = 16;
 
-        // ── PALETTE TAB ───────────────────────────────────────────────────
+        public void OnEnable(ForgeEditorWindow window)
+        {
+            _window = window;
+        }
 
-        private void DrawPaletteTab()
+        public void OnDisable()
+        {
+        }
+
+        public void OnGUI()
         {
             EditorGUILayout.LabelField("Color Palette Management", EditorStyles.boldLabel);
             EditorGUILayout.Space(4);
@@ -35,7 +39,7 @@ namespace PuzzleGame.Editor
             {
                 EditorGUILayout.LabelField("Level Configuration", EditorStyles.miniBoldLabel);
 
-                var levelConfig = AssetDatabase.LoadAssetAtPath<Application.Configuration.LevelConfig>(
+                var levelConfig = AssetDatabase.LoadAssetAtPath<LevelConfig>(
                     $"{DataAssetCreator.DataPath}/LevelConfig.asset");
 
                 if (levelConfig == null)
@@ -46,7 +50,6 @@ namespace PuzzleGame.Editor
                 {
                     EditorGUILayout.LabelField($"Current Palette: {levelConfig.palette?.Length ?? 0} colors");
 
-                    // Display and edit palette
                     if (levelConfig.palette == null || levelConfig.palette.Length == 0)
                     {
                         EditorGUILayout.HelpBox("Palette is empty. Add colors below.", MessageType.Info);
@@ -92,7 +95,7 @@ namespace PuzzleGame.Editor
                         {
                             EditorUtility.SetDirty(levelConfig);
                             AssetDatabase.SaveAssets();
-                            SetStatus($"Palette saved: {levelConfig.palette.Length} colors.", MessageType.Info);
+                            _window.SetStatus($"Palette saved: {levelConfig.palette.Length} colors.", MessageType.Info);
                         }
 
                         GUI.backgroundColor = new Color(0.2f, 0.5f, 0.9f);
@@ -110,7 +113,7 @@ namespace PuzzleGame.Editor
                             };
                             EditorUtility.SetDirty(levelConfig);
                             AssetDatabase.SaveAssets();
-                            SetStatus("Palette reset to defaults.", MessageType.Info);
+                            _window.SetStatus("Palette reset to defaults.", MessageType.Info);
                         }
                         GUI.backgroundColor = Color.white;
                     }
@@ -140,6 +143,10 @@ namespace PuzzleGame.Editor
             EditorGUILayout.EndScrollView();
         }
 
+        public void OnSceneGUI(SceneView sceneView)
+        {
+        }
+
         private void DrawLevelEditor(LevelData level)
         {
             EditorGUI.BeginChangeCheck();
@@ -148,7 +155,6 @@ namespace PuzzleGame.Editor
                 EditorGUILayout.LabelField($"Editing: Level {level.levelNumber:D2}", EditorStyles.miniBoldLabel);
                 EditorGUILayout.Space(4);
 
-                // Basic properties
                 level.difficulty = (Difficulty)EditorGUILayout.EnumPopup("Difficulty", level.difficulty);
                 level.MoldCount = EditorGUILayout.IntField("Mold Count", level.MoldCount);
                 level.emptyMoldCount = EditorGUILayout.IntField("Empty Molds", level.emptyMoldCount);
@@ -158,24 +164,18 @@ namespace PuzzleGame.Editor
 
                 EditorGUILayout.Space(6);
 
-                // Star thresholds
                 level.parMoves = EditorGUILayout.IntField("Par (3★)", level.parMoves);
                 level.goodMoves = EditorGUILayout.IntField("Good (2★)", level.goodMoves);
 
                 EditorGUILayout.Space(6);
 
-                // Auto-generate toggle
                 level.autoGenerate = EditorGUILayout.ToggleLeft("Auto-Generate", level.autoGenerate);
 
                 EditorGUILayout.Space(10);
 
-                // ═══════════════════════════════════════════════════════════
-                // MODULAR FEATURES SETTINGS
-                // ═══════════════════════════════════════════════════════════
                 EditorGUILayout.LabelField("══════════ Features ═══════════", EditorStyles.miniBoldLabel);
                 EditorGUILayout.Space(4);
 
-                // Multi-Layer Cast
                 using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                 {
                     level.enableMultiLayerCast = EditorGUILayout.ToggleLeft(
@@ -199,7 +199,6 @@ namespace PuzzleGame.Editor
 
                 EditorGUILayout.Space(4);
 
-                // Reaction System
                 using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                 {
                     level.enableReactionSystem = EditorGUILayout.ToggleLeft(
@@ -217,7 +216,6 @@ namespace PuzzleGame.Editor
                         EditorGUILayout.Space(4);
                         EditorGUILayout.LabelField("Reaction Kuralları:", EditorStyles.miniBoldLabel);
 
-                        // Display and edit reaction rules
                         if (level.reactionConfig.reactionRules == null)
                             level.reactionConfig.reactionRules = new System.Collections.Generic.List<ReactionRule>();
 
@@ -275,15 +273,14 @@ namespace PuzzleGame.Editor
 
             EditorGUILayout.Space(8);
 
-            // Action buttons
             using (new EditorGUILayout.HorizontalScope())
             {
                 if (GUILayout.Button("Save Changes", GUILayout.Height(26)))
                 {
                     EditorUtility.SetDirty(level);
                     AssetDatabase.SaveAssets();
-                    SetStatus($"Level {level.levelNumber:D2} saved.", MessageType.Info);
-                    RefreshLevelList();
+                    _window.SetStatus($"Level {level.levelNumber:D2} saved.", MessageType.Info);
+                    _window.RefreshLevelList();
                 }
 
                 GUI.backgroundColor = new Color(0.9f, 0.5f, 0.5f);
@@ -298,8 +295,8 @@ namespace PuzzleGame.Editor
                         {
                             AssetDatabase.Refresh();
                             _selectedLevelForEdit = null;
-                            SetStatus("Level deleted.", MessageType.Info);
-                            RefreshLevelList();
+                            _window.SetStatus("Level deleted.", MessageType.Info);
+                            _window.RefreshLevelList();
                         }
                     }
                 }
@@ -340,8 +337,8 @@ namespace PuzzleGame.Editor
                             }
                         }
                         AssetDatabase.Refresh();
-                        SetStatus($"Deleted {deleted} levels.", MessageType.Info);
-                        RefreshLevelList();
+                        _window.SetStatus($"Deleted {deleted} levels.", MessageType.Info);
+                        _window.RefreshLevelList();
                     }
                 }
                 GUI.backgroundColor = Color.white;

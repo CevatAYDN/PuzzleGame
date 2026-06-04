@@ -11,11 +11,13 @@ namespace PuzzleGame.Editor
     /// <summary>
     /// Pouring Lab — in-editor pouring simulation sandbox.
     /// Finds runtime MoldController instances and provides state inspection
-    /// plus VFX config tweaking. Pour execution is handled via GameManager
-    /// (the only MonoBehaviour entry point to DI-resolved services).
+    /// plus VFX config tweaking.
     /// </summary>
-    public partial class ForgeEditorWindow
+    public class PouringLabTab : IEditorTab
     {
+        public string TabName => "Pouring Lab";
+        private ForgeEditorWindow _window;
+
         // ── Pouring Lab State ──────────────────────────────────────────────────
         private int _labSourceIndex = 0;
         private int _labTargetIndex = 1;
@@ -34,7 +36,20 @@ namespace PuzzleGame.Editor
 
         private const string LabEmptyOption = "-- None --";
 
-        private void DrawPouringLabTab()
+        public void OnEnable(ForgeEditorWindow window)
+        {
+            _window = window;
+        }
+
+        public void OnDisable()
+        {
+        }
+
+        public void OnSceneGUI(SceneView sceneView)
+        {
+        }
+
+        public void OnGUI()
         {
             EditorGUILayout.LabelField("Pouring Lab", EditorStyles.boldLabel);
             EditorGUILayout.Space(4);
@@ -68,7 +83,7 @@ namespace PuzzleGame.Editor
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 EditorGUILayout.LabelField("Mold Selection", EditorStyles.miniBoldLabel);
-                float halfW = (position.width - 8f) * 0.5f;
+                float halfW = (EditorGUIUtility.currentViewWidth - 8f) * 0.5f;
 
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField("Source:", GUILayout.Width(50f));
@@ -173,7 +188,7 @@ namespace PuzzleGame.Editor
 
         private void RefreshLabMolds()
         {
-            var controllers = FindObjectsByType<MoldController>(FindObjectsInactive.Include);
+            var controllers = UnityEngine.Object.FindObjectsByType<MoldController>(FindObjectsInactive.Include);
             _labMolds = controllers.Cast<IMoldView>().ToArray();
             _labMoldNames = _labMolds.Select((m, i) => $"[{i}] {m.GameObject.name}").ToArray();
 

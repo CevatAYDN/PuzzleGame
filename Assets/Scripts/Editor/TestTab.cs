@@ -1,8 +1,5 @@
-using Application = UnityEngine.Application;
-using Debug = UnityEngine.Debug;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Profiling;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,9 +13,11 @@ using PuzzleGame.Application.Services;
 
 namespace PuzzleGame.Editor
 {
-    public partial class ForgeEditorWindow
+    public class TestTab : IEditorTab
     {
-        // ── Test tab ───────────────────────────────────────────────────────
+        public string TabName => "Test";
+        private ForgeEditorWindow _window;
+
         private Vector2 _testScroll;
         private string _analyticsPath = "Assets/Resources/analytics.json";
         private List<AnalyticsEntry> _analyticsData = new List<AnalyticsEntry>();
@@ -27,7 +26,11 @@ namespace PuzzleGame.Editor
         private bool _skipIntro = false;
         private bool _debugMode = false;
 
-        // Analytics data structure
+        private string _screenshotPath = "Assets/Screenshots/";
+        private string _screenshotName = "game_screenshot";
+        private int _screenshotScale = 1;
+        private bool _screenshotTransparent = false;
+
         [Serializable]
         public class AnalyticsEntry
         {
@@ -39,9 +42,20 @@ namespace PuzzleGame.Editor
             public float completionRate;
         }
 
-        // ── TEST TAB ───────────────────────────────────────────────────────
+        public void OnEnable(ForgeEditorWindow window)
+        {
+            _window = window;
+        }
 
-        private void DrawTestTab()
+        public void OnDisable()
+        {
+        }
+
+        public void OnSceneGUI(SceneView sceneView)
+        {
+        }
+
+        public void OnGUI()
         {
             EditorGUILayout.LabelField("Test & Analytics Tools", EditorStyles.boldLabel);
             EditorGUILayout.Space(4);
@@ -105,6 +119,8 @@ namespace PuzzleGame.Editor
                 {
                     EditorGUILayout.Space(4);
                     EditorGUILayout.LabelField($"Toplam kayıt: {_analyticsData.Count}", EditorStyles.miniBoldLabel);
+
+                    DrawAnalyticsGraph();
 
                     // Display analytics table
                     using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
@@ -193,7 +209,7 @@ namespace PuzzleGame.Editor
                     _testLevelNumber = EditorGUILayout.IntField(_testLevelNumber, GUILayout.Width(60));
                     if (GUILayout.Button("Test", GUILayout.Width(80)))
                     {
-                        SetStatus($"Test: Level {_testLevelNumber} başlatılacak (editor'dan manual)", MessageType.Info);
+                        _window.SetStatus($"Test: Level {_testLevelNumber} başlatılacak (editor'dan manual)", MessageType.Info);
                     }
                 }
 
@@ -209,7 +225,7 @@ namespace PuzzleGame.Editor
                 {
                     if (GUILayout.Button("Auto-Win Current Level", GUILayout.Width(180)))
                     {
-                        SetStatus("Auto-Win: Mevcut seviye otomatik kazanılacak", MessageType.Info);
+                        _window.SetStatus("Auto-Win: Mevcut seviye otomatik kazanılacak", MessageType.Info);
                     }
 
                     if (GUILayout.Button("Reset Progress", GUILayout.Width(140)))
@@ -263,13 +279,13 @@ namespace PuzzleGame.Editor
                     {
                         EditorGUILayout.LabelField("Log Level:", GUILayout.Width(80));
                         if (GUILayout.Button("Verbose", GUILayout.Width(80)))
-                            SetStatus("Log: Verbose", MessageType.Info);
+                            _window.SetStatus("Log: Verbose", MessageType.Info);
                         if (GUILayout.Button("Info", GUILayout.Width(60)))
-                            SetStatus("Log: Info", MessageType.Info);
+                            _window.SetStatus("Log: Info", MessageType.Info);
                         if (GUILayout.Button("Warning", GUILayout.Width(80)))
-                            SetStatus("Log: Warning", MessageType.Info);
+                            _window.SetStatus("Log: Warning", MessageType.Info);
                         if (GUILayout.Button("Error", GUILayout.Width(60)))
-                            SetStatus("Log: Error", MessageType.Info);
+                            _window.SetStatus("Log: Error", MessageType.Info);
                     }
 
                     EditorGUILayout.Space(4);
@@ -314,11 +330,6 @@ namespace PuzzleGame.Editor
             }
         }
 
-        private string _screenshotPath = "Assets/Screenshots/";
-        private string _screenshotName = "game_screenshot";
-        private int _screenshotScale = 1;
-        private bool _screenshotTransparent = false;
-
         private void DrawScreenshotSection()
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
@@ -361,7 +372,7 @@ namespace PuzzleGame.Editor
                         }
                         else
                         {
-                            SetStatus("Screenshot folder not found", MessageType.Warning);
+                            _window.SetStatus("Screenshot folder not found", MessageType.Warning);
                         }
                     }
                 }
@@ -400,19 +411,19 @@ namespace PuzzleGame.Editor
                 {
                     // For transparent, we'd need to use a different approach with RenderTexture
                     // For now, warn user
-                    SetStatus("Transparent mode requires RenderTexture - using normal capture", MessageType.Warning);
+                    _window.SetStatus("Transparent mode requires RenderTexture - using normal capture", MessageType.Warning);
                 }
 
                 AssetDatabase.Refresh();
 
-                SetStatus($"Screenshot saved: {filename}", MessageType.Info);
+                _window.SetStatus($"Screenshot saved: {filename}", MessageType.Info);
 
                 // Show in explorer
                 EditorUtility.RevealInFinder(filePath);
             }
             catch (Exception ex)
             {
-                SetStatus($"Screenshot error: {ex.Message}", MessageType.Error);
+                _window.SetStatus($"Screenshot error: {ex.Message}", MessageType.Error);
             }
         }
 
@@ -427,7 +438,7 @@ namespace PuzzleGame.Editor
                     string json = File.ReadAllText(path);
                     var data = JsonUtility.FromJson<AnalyticsWrapper>(json);
                     _analyticsData = data?.entries ?? new List<AnalyticsEntry>();
-                    SetStatus($"Loaded {_analyticsData.Count} analytics records", MessageType.Info);
+                    _window.SetStatus($"Loaded {_analyticsData.Count} analytics records", MessageType.Info);
                 }
                 else
                 {
@@ -437,18 +448,18 @@ namespace PuzzleGame.Editor
                     {
                         var data = JsonUtility.FromJson<AnalyticsWrapper>(textAsset.text);
                         _analyticsData = data?.entries ?? new List<AnalyticsEntry>();
-                        SetStatus($"Loaded {_analyticsData.Count} analytics records", MessageType.Info);
+                        _window.SetStatus($"Loaded {_analyticsData.Count} analytics records", MessageType.Info);
                     }
                     else
                     {
                         _analyticsData = new List<AnalyticsEntry>();
-                        SetStatus("Analytics file not found", MessageType.Warning);
+                        _window.SetStatus("Analytics file not found", MessageType.Warning);
                     }
                 }
             }
             catch (Exception ex)
             {
-                SetStatus($"Error loading analytics: {ex.Message}", MessageType.Error);
+                _window.SetStatus($"Error loading analytics: {ex.Message}", MessageType.Error);
             }
         }
 
@@ -476,14 +487,14 @@ namespace PuzzleGame.Editor
                 });
             }
 
-            SetStatus("Demo analytics generated", MessageType.Info);
+            _window.SetStatus("Demo analytics generated", MessageType.Info);
         }
 
         private void ResetPlayerProgress()
         {
             // Reset player prefs
             PlayerPrefs.DeleteAll();
-            SetStatus("Player progress reset!", MessageType.Info);
+            _window.SetStatus("Player progress reset!", MessageType.Info);
         }
 
         private void CompleteAllLevels()
@@ -494,23 +505,86 @@ namespace PuzzleGame.Editor
                 PlayerPrefs.SetInt($"level_{i}_stars", 3);
             }
             PlayerPrefs.SetInt("unlocked_level", maxLevel + 1);
-            SetStatus($"Completed all {maxLevel} levels!", MessageType.Info);
+            _window.SetStatus($"Completed all {maxLevel} levels!", MessageType.Info);
         }
 
         private void UnlockAllLevels()
         {
             PlayerPrefs.SetInt("unlocked_level", 999);
-            SetStatus("All levels unlocked!", MessageType.Info);
+            _window.SetStatus("All levels unlocked!", MessageType.Info);
         }
 
         private void LogMoldInfo()
         {
-            var Molds = FindObjectsByType<PuzzleGame.MoldController>();
+            var Molds = UnityEngine.Object.FindObjectsByType<PuzzleGame.MoldController>(FindObjectsInactive.Exclude);
             Debug.Log($"[DEBUG] Active Molds in scene: {Molds.Length}");
             foreach (var Mold in Molds)
             {
                 Debug.Log($"[DEBUG] Mold #{Mold.MoldIndex}: {Mold.State.LayerCount} layers, {Mold.State.TotalFill:F2} fill");
             }
+        }
+
+        private void DrawAnalyticsGraph()
+        {
+            if (_analyticsData == null || _analyticsData.Count == 0) return;
+
+            EditorGUILayout.Space(6);
+            EditorGUILayout.LabelField("📈 Zorluk Eğrisi Grafiği (Başarı Oranı %)", EditorStyles.miniBoldLabel);
+            
+            Rect rect = GUILayoutUtility.GetRect(100, 120, GUILayout.ExpandWidth(true));
+            
+            // Draw background frame
+            EditorGUI.DrawRect(rect, new Color(0.12f, 0.12f, 0.12f, 1f));
+            
+            // Draw grid lines
+            // Y lines (0%, 50%, 100% completion rate)
+            Handles.color = new Color(0.25f, 0.25f, 0.25f, 0.5f);
+            float y0 = rect.y;
+            float y50 = rect.y + rect.height * 0.5f;
+            float y100 = rect.y + rect.height;
+            Handles.DrawLine(new Vector3(rect.x, y0, 0), new Vector3(rect.x + rect.width, y0, 0));
+            Handles.DrawLine(new Vector3(rect.x, y50, 0), new Vector3(rect.x + rect.width, y50, 0));
+            Handles.DrawLine(new Vector3(rect.x, y100, 0), new Vector3(rect.x + rect.width, y100, 0));
+
+            // Labels for Y grid lines
+            var labelStyle = new GUIStyle(EditorStyles.miniLabel);
+            labelStyle.normal.textColor = new Color(0.6f, 0.6f, 0.6f, 1f);
+            GUI.Label(new Rect(rect.x + 4, y0 + 2, 60, 15), "100%", labelStyle);
+            GUI.Label(new Rect(rect.x + 4, y50 - 7, 60, 15), "50%", labelStyle);
+            GUI.Label(new Rect(rect.x + 4, y100 - 15, 60, 15), "0%", labelStyle);
+
+            var ordered = _analyticsData.OrderBy(e => e.levelNumber).ToList();
+            int count = ordered.Count;
+            if (count > 1)
+            {
+                Vector3[] points = new Vector3[count];
+                float maxX = count - 1;
+                
+                for (int i = 0; i < count; i++)
+                {
+                    float ratioX = i / maxX;
+                    float ratioY = 1.0f - ordered[i].completionRate; 
+                    
+                    float px = rect.x + ratioX * rect.width;
+                    float py = rect.y + ratioY * rect.height;
+                    points[i] = new Vector3(px, py, 0);
+                }
+                
+                // Draw threshold danger line at 50% completion rate (0.5 y-ratio)
+                Handles.color = new Color(0.85f, 0.25f, 0.25f, 0.6f);
+                Handles.DrawLine(new Vector3(rect.x, y50, 0), new Vector3(rect.x + rect.width, y50, 0));
+
+                // Draw the line graph
+                Handles.color = new Color(0.1f, 0.7f, 1.0f, 1f); // Sleek cyan
+                Handles.DrawAAPolyLine(3.5f, points);
+
+                // Draw end points info labels
+                GUI.Label(new Rect(rect.x + 5, y100 + 2, 80, 15), $"Lvl {ordered[0].levelNumber}", labelStyle);
+                string endText = $"Lvl {ordered[count - 1].levelNumber}";
+                GUI.Label(new Rect(rect.x + rect.width - 65, y100 + 2, 60, 15), endText, labelStyle);
+            }
+            
+            EditorGUILayout.Space(18); // Space for labels below
         }
 
         private void LogConfigInfo()
@@ -536,16 +610,15 @@ namespace PuzzleGame.Editor
 
         private void SimulatePlays(int count)
         {
-            SetStatus($"Simulating {count} plays...", MessageType.Info);
+            _window.SetStatus($"Simulating {count} plays...", MessageType.Info);
             // This would integrate with the BFS solver
             for (int i = 0; i < count; i++)
             {
                 // Simulate level solving
             }
-            SetStatus($"Simulation complete!", MessageType.Info);
+            _window.SetStatus($"Simulation complete!", MessageType.Info);
         }
 
-        // JSON wrapper class
         [Serializable]
         private class AnalyticsWrapper
         {

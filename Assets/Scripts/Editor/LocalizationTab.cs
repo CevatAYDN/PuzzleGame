@@ -13,9 +13,11 @@ using PuzzleGame.Application.Services;
 
 namespace PuzzleGame.Editor
 {
-    public partial class ForgeEditorWindow
+    public class LocalizationTab : IEditorTab
     {
-        // ── Localization tab ───────────────────────────────────────────────
+        public string TabName => "Localization";
+        private ForgeEditorWindow _window;
+
         private Vector2 _localizationScroll;
         private SupportedLanguage _selectedLanguage = SupportedLanguage.Turkish;
         private string _localizationPath = "Assets/Resources/Localization/";
@@ -25,9 +27,20 @@ namespace PuzzleGame.Editor
         private string _newTranslationEN = "";
         private string _searchFilter = "";
 
-        // ── LOCALIZATION TAB ─────────────────────────────────────────────────
+        public void OnEnable(ForgeEditorWindow window)
+        {
+            _window = window;
+        }
 
-        private void DrawLocalizationTab()
+        public void OnDisable()
+        {
+        }
+
+        public void OnSceneGUI(SceneView sceneView)
+        {
+        }
+
+        public void OnGUI()
         {
             EditorGUILayout.LabelField("Localization (i18n)", EditorStyles.boldLabel);
             EditorGUILayout.Space(4);
@@ -292,13 +305,13 @@ namespace PuzzleGame.Editor
         {
             if (string.IsNullOrEmpty(_newKeyName))
             {
-                SetStatus("Please enter a key name", MessageType.Warning);
+                _window.SetStatus("Please enter a key name", MessageType.Warning);
                 return;
             }
 
             if (_localizationEntries.Any(e => e.Key == _newKeyName))
             {
-                SetStatus("Key already exists", MessageType.Warning);
+                _window.SetStatus("Key already exists", MessageType.Warning);
                 return;
             }
 
@@ -310,20 +323,20 @@ namespace PuzzleGame.Editor
 
             _localizationEntries.Add(entry);
             _newKeyName = "";
-            SetStatus($"Added key: {_newKeyName}", MessageType.Info);
+            _window.SetStatus($"Added key: {_newKeyName}", MessageType.Info);
         }
 
         private void AddTranslationKey()
         {
             if (string.IsNullOrEmpty(_newKeyName))
             {
-                SetStatus("Lütfen bir anahtar adı girin", MessageType.Warning);
+                _window.SetStatus("Lütfen bir anahtar adı girin", MessageType.Warning);
                 return;
             }
 
             if (_localizationEntries.Any(e => e.Key == _newKeyName))
             {
-                SetStatus("Bu anahtar zaten mevcut", MessageType.Warning);
+                _window.SetStatus("Bu anahtar zaten mevcut", MessageType.Warning);
                 return;
             }
 
@@ -346,7 +359,7 @@ namespace PuzzleGame.Editor
             _newTranslationTR = "";
             _newTranslationEN = "";
 
-            SetStatus($"Added: {_newKeyName}", MessageType.Info);
+            _window.SetStatus($"Added: {_newKeyName}", MessageType.Info);
         }
 
         private void GenerateMissingKeys(string[] keys)
@@ -366,7 +379,7 @@ namespace PuzzleGame.Editor
                     });
                 }
             }
-            SetStatus($"Generated {keys.Length} missing keys", MessageType.Info);
+            _window.SetStatus($"Generated {keys.Length} missing keys", MessageType.Info);
         }
 
         private void LoadLocalization()
@@ -379,7 +392,7 @@ namespace PuzzleGame.Editor
                 {
                     var wrapper = JsonUtility.FromJson<LocalizationWrapper>(textAsset.text);
                     _localizationEntries = wrapper?.entries ?? new List<LocalizationEntry>();
-                    SetStatus($"Loaded {_localizationEntries.Count} translation keys", MessageType.Info);
+                    _window.SetStatus($"Loaded {_localizationEntries.Count} translation keys", MessageType.Info);
                     return;
                 }
 
@@ -397,18 +410,18 @@ namespace PuzzleGame.Editor
                             _localizationEntries.AddRange(wrapper.entries);
                         }
                     }
-                    SetStatus($"Loaded {_localizationEntries.Count} translation keys", MessageType.Info);
+                    _window.SetStatus($"Loaded {_localizationEntries.Count} translation keys", MessageType.Info);
                 }
                 else
                 {
                     // Generate default keys
                     _localizationEntries = GetDefaultLocalizationEntries();
-                    SetStatus("Created default localization keys", MessageType.Info);
+                    _window.SetStatus("Created default localization keys", MessageType.Info);
                 }
             }
             catch (Exception ex)
             {
-                SetStatus($"Error: {ex.Message}", MessageType.Error);
+                _window.SetStatus($"Error: {ex.Message}", MessageType.Error);
             }
         }
 
@@ -430,11 +443,11 @@ namespace PuzzleGame.Editor
                 File.WriteAllText(filePath, json);
                 
                 AssetDatabase.Refresh();
-                SetStatus($"Saved {_localizationEntries.Count} keys", MessageType.Info);
+                _window.SetStatus($"Saved {_localizationEntries.Count} keys", MessageType.Info);
             }
             catch (Exception ex)
             {
-                SetStatus($"Save error: {ex.Message}", MessageType.Error);
+                _window.SetStatus($"Save error: {ex.Message}", MessageType.Error);
             }
         }
 
@@ -446,7 +459,7 @@ namespace PuzzleGame.Editor
                 var wrapper = new LocalizationWrapper { entries = _localizationEntries };
                 string json = JsonUtility.ToJson(wrapper, true);
                 File.WriteAllText(path, json);
-                SetStatus($"Exported to {path}", MessageType.Info);
+                _window.SetStatus($"Exported to {path}", MessageType.Info);
             }
         }
 
@@ -462,12 +475,12 @@ namespace PuzzleGame.Editor
                     if (wrapper?.entries != null)
                     {
                         _localizationEntries = wrapper.entries;
-                        SetStatus($"Imported {wrapper.entries.Count} keys", MessageType.Info);
+                        _window.SetStatus($"Imported {wrapper.entries.Count} keys", MessageType.Info);
                     }
                 }
                 catch (Exception ex)
                 {
-                    SetStatus($"Import error: {ex.Message}", MessageType.Error);
+                    _window.SetStatus($"Import error: {ex.Message}", MessageType.Error);
                 }
             }
         }
@@ -489,7 +502,6 @@ namespace PuzzleGame.Editor
             };
         }
 
-        // JSON wrapper
         [Serializable]
         private class LocalizationWrapper
         {

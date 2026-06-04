@@ -1,20 +1,15 @@
 using UnityEditor;
 using UnityEngine;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using PuzzleGame.Domain.Models;
-using PuzzleGame.Application.Configuration;
-using PuzzleGame.Application.Configuration.FeatureSystem;
-using PuzzleGame.Domain.Services;
-using PuzzleGame.Infrastructure;
-using PuzzleGame.Application.Services;
 
 namespace PuzzleGame.Editor
 {
-    public partial class ForgeEditorWindow
+    public class ValidateTab : IEditorTab
     {
-        // ── Validate tab ────────────────────────────────────────────────────
+        public string TabName => "Validate";
+        private ForgeEditorWindow _window;
+
         private List<ValidationResult> _validationResults = new List<ValidationResult>();
         private Vector2 _validateScroll;
 
@@ -25,34 +20,79 @@ namespace PuzzleGame.Editor
             public bool ok;
         }
 
-        // ── VALIDATE TAB ────────────────────────────────────────────────────
+        public void OnEnable(ForgeEditorWindow window)
+        {
+            _window = window;
+        }
 
-        private void DrawValidateTab()
+        public void OnDisable()
+        {
+        }
+
+        public void OnGUI()
         {
             EditorGUILayout.LabelField("Project Validation", EditorStyles.boldLabel);
             EditorGUILayout.Space(4);
 
             EditorGUILayout.HelpBox(
-                "Shader varlığı, eksik referans, palette kontrolü.",
+                "Checks shader existence, missing references, and color palette health.",
                 MessageType.None);
 
             if (GUILayout.Button("Run Validation", GUILayout.Height(26)))
                 EditorApplication.delayCall += RunValidation;
 
             EditorGUILayout.Space(6);
+            if (_validationResults.Count > 0)
+            {
+                int passed = _validationResults.Count(r => r.ok);
+                int failed = _validationResults.Count - passed;
+
+                if (failed == 0)
+                {
+                    EditorGUILayout.HelpBox($"✓ Bütün Kontroller Başarılı ({passed}/{passed})", MessageType.Info);
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox($"⚠️ {failed} Kontrol Başarısız! Lütfen aşağıdaki sorunları düzeltin.", MessageType.Error);
+                }
+                EditorGUILayout.Space(4);
+            }
+
             _validateScroll = EditorGUILayout.BeginScrollView(_validateScroll);
 
             foreach (var result in _validationResults)
             {
                 using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox))
                 {
-                    GUILayout.Label(result.ok ? "✓" : "✗", GUILayout.Width(20));
-                    EditorGUILayout.LabelField(result.label, GUILayout.MinWidth(160));
+                    var badgeColor = result.ok ? new Color(0.12f, 0.75f, 0.12f, 1f) : new Color(0.85f, 0.2f, 0.2f, 1f);
+                    var badgeText = result.ok ? "● OK" : "● FAIL";
+
+                    var oldColor = GUI.contentColor;
+                    GUI.contentColor = badgeColor;
+                    GUILayout.Label(badgeText, EditorStyles.boldLabel, GUILayout.Width(60));
+                    GUI.contentColor = oldColor;
+
+                    EditorGUILayout.LabelField(result.label, EditorStyles.boldLabel, GUILayout.MinWidth(160));
                     GUILayout.FlexibleSpace();
-                    EditorGUILayout.LabelField(result.detail, EditorStyles.miniLabel);
+                    
+                    // Display detail with warning coloring if not ok
+                    if (!result.ok)
+                    {
+                        GUI.contentColor = new Color(0.9f, 0.6f, 0.1f, 1f);
+                        EditorGUILayout.LabelField(result.detail, EditorStyles.miniBoldLabel);
+                        GUI.contentColor = oldColor;
+                    }
+                    else
+                    {
+                        EditorGUILayout.LabelField(result.detail, EditorStyles.miniLabel);
+                    }
                 }
             }
             EditorGUILayout.EndScrollView();
+        }
+
+        public void OnSceneGUI(SceneView sceneView)
+        {
         }
 
         private void RunValidation()
@@ -125,8 +165,8 @@ namespace PuzzleGame.Editor
             }
 
             // GameManager / MoldController in scene
-            var gms = FindObjectsByType<GameManager>(FindObjectsInactive.Include);
-            var Molds = FindObjectsByType<MoldController>(FindObjectsInactive.Include);
+            var gms = Object.FindObjectsByType<GameManager>(FindObjectsInactive.Include);
+            var Molds = Object.FindObjectsByType<MoldController>(FindObjectsInactive.Include);
             _validationResults.Add(new ValidationResult
             {
                 label = "Scene: GameManager",
@@ -194,8 +234,8 @@ namespace PuzzleGame.Editor
             });
 
             int failures = _validationResults.Count(r => !r.ok);
-            SetStatus(failures == 0
-                ? $"All {(_validationResults.Count)} checks passed."
+            _window.SetStatus(failures == 0
+                ? $"All {_validationResults.Count} checks passed."
                 : $"{failures} issue(s) found.",
                 failures == 0 ? MessageType.Info : MessageType.Warning);
         }

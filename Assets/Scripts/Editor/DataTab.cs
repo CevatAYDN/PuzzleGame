@@ -1,52 +1,57 @@
 using UnityEditor;
 using UnityEngine;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using PuzzleGame.Domain.Models;
-using PuzzleGame.Application.Configuration;
-using PuzzleGame.Application.Configuration.FeatureSystem;
-using PuzzleGame.Domain.Services;
-using PuzzleGame.Infrastructure;
-using PuzzleGame.Application.Services;
 
 namespace PuzzleGame.Editor
 {
-    public partial class ForgeEditorWindow
+    public class DataTab : IEditorTab
     {
-        // ── Data tab ────────────────────────────────────────────────────────
+        public string TabName => "Data";
+        private ForgeEditorWindow _window;
+
         private bool _overrideExisting = false;
         private Dictionary<string, bool> _dataPresence = new Dictionary<string, bool>();
         private Vector2 _dataScroll;
 
-        // ── DATA TAB ────────────────────────────────────────────────────────
+        public void OnEnable(ForgeEditorWindow window)
+        {
+            _window = window;
+        }
 
-        private void DrawDataTab()
+        public void OnDisable()
+        {
+        }
+
+        public void OnGUI()
         {
             EditorGUILayout.LabelField("ScriptableObject Asset Management", EditorStyles.boldLabel);
             EditorGUILayout.Space(4);
 
             EditorGUILayout.HelpBox(
-                "Asset'ler " + DataAssetCreator.DataPath + " altında oluşturulur.\n" +
-                "Aktif değerlerin üzerine yazılsın mı?",
+                "Assets are created under " + DataAssetCreator.DataPath + ".\n" +
+                "Overwrite active values?",
                 MessageType.None);
 
             EditorGUI.BeginChangeCheck();
             _overrideExisting = EditorGUILayout.ToggleLeft("Reset existing assets on update", _overrideExisting);
-            if (EditorGUI.EndChangeCheck()) Repaint();
+            if (EditorGUI.EndChangeCheck()) _window.Repaint();
 
             _dataScroll = EditorGUILayout.BeginScrollView(_dataScroll);
-            EditorGUILayout.LabelField("Asset Durumu", EditorStyles.miniBoldLabel);
+            EditorGUILayout.LabelField("Asset Status", EditorStyles.miniBoldLabel);
             foreach (var kvp in _dataPresence.OrderBy(x => x.Key))
             {
                 using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox))
                 {
-                    var icon = kvp.Value ? "✓" : "✗";
-                    var color = kvp.Value ? Color.green : Color.gray;
-                    GUILayout.Label(icon, GUILayout.Width(20));
-                    GUI.contentColor = color;
-                    GUILayout.Label(kvp.Key + ".asset", GUILayout.MinWidth(160));
-                    GUI.contentColor = Color.white;
+                    var badgeColor = kvp.Value ? new Color(0.12f, 0.75f, 0.12f, 1f) : new Color(0.6f, 0.6f, 0.6f, 1f);
+                    var badgeText = kvp.Value ? "● FOUND" : "● MISSING";
+
+                    var oldColor = GUI.contentColor;
+                    GUI.contentColor = badgeColor;
+                    GUILayout.Label(badgeText, EditorStyles.boldLabel, GUILayout.Width(75));
+                    GUI.contentColor = oldColor;
+
+                    EditorGUILayout.LabelField(kvp.Key + ".asset", EditorStyles.miniLabel, GUILayout.MinWidth(160));
                     GUILayout.FlexibleSpace();
                     if (GUILayout.Button("Ping", GUILayout.Width(50)))
                     {
@@ -75,7 +80,9 @@ namespace PuzzleGame.Editor
             DrawPlayerSaveSection();
         }
 
-        // ── PLAYER SAVE SECTION ───────────────────────────────────────────────
+        public void OnSceneGUI(SceneView sceneView)
+        {
+        }
 
         private void DrawPlayerSaveSection()
         {
@@ -93,21 +100,24 @@ namespace PuzzleGame.Editor
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    GUILayout.Label("Exists:  ", GUILayout.Width(60));
-                    GUI.contentColor = exists ? Color.green : Color.gray;
-                    GUILayout.Label(exists ? "✓" : "✗", GUILayout.Width(20));
-                    GUI.contentColor = Color.white;
+                    var oldColor = GUI.contentColor;
+
+                    GUILayout.Label("File Status:", GUILayout.Width(80));
+                    GUI.contentColor = exists ? new Color(0.12f, 0.75f, 0.12f, 1f) : new Color(0.6f, 0.6f, 0.6f, 1f);
+                    GUILayout.Label(exists ? "● DETECTED" : "● EMPTY", EditorStyles.boldLabel, GUILayout.Width(100));
+                    GUI.contentColor = oldColor;
+
                     GUILayout.FlexibleSpace();
 
                     if (exists)
                     {
-                        GUILayout.Label("Integrity:", GUILayout.Width(65));
-                        GUI.contentColor = integ ? Color.green : Color.red;
-                        GUILayout.Label(integ ? "OK" : "TAMPERED", GUILayout.Width(80));
-                        GUI.contentColor = Color.white;
-                        GUILayout.FlexibleSpace();
+                        GUILayout.Label("Security Integrity:", GUILayout.Width(110));
+                        GUI.contentColor = integ ? new Color(0.12f, 0.75f, 0.12f, 1f) : new Color(0.85f, 0.2f, 0.2f, 1f);
+                        GUILayout.Label(integ ? "● OK" : "● COMPROMISED", EditorStyles.boldLabel, GUILayout.Width(110));
+                        GUI.contentColor = oldColor;
 
-                        GUILayout.Label((size / 1024.0).ToString("F1") + " KB", GUILayout.Width(60));
+                        GUILayout.FlexibleSpace();
+                        GUILayout.Label((size / 1024.0).ToString("F1") + " KB", EditorStyles.miniLabel, GUILayout.Width(60));
                     }
                 }
 
@@ -138,23 +148,23 @@ namespace PuzzleGame.Editor
         {
             if (!Application.Services.GameSaveManager.EditorInstance.HasSaveData)
             {
-                SetStatus("No save file to reveal.", MessageType.Warning);
+                _window.SetStatus("No save file to reveal.", MessageType.Warning);
                 return;
             }
             EditorUtility.RevealInFinder(Application.Services.GameSaveManager.EditorInstance.SaveFilePath);
-            SetStatus("Save file revealed.", MessageType.Info);
+            _window.SetStatus("Save file revealed.", MessageType.Info);
         }
 
         private void VerifySaveFile()
         {
             if (!Application.Services.GameSaveManager.EditorInstance.HasSaveData)
             {
-                SetStatus("No save file to verify.", MessageType.Warning);
+                _window.SetStatus("No save file to verify.", MessageType.Warning);
                 return;
             }
 
             bool ok = Application.Services.GameSaveManager.EditorInstance.VerifyIntegrity();
-            SetStatus(ok
+            _window.SetStatus(ok
                 ? "Save integrity: OK (HMAC-SHA256 matches)."
                 : "Save integrity: FAILED — file tampered or corrupted!",
                 ok ? MessageType.Info : MessageType.Error);
@@ -164,20 +174,20 @@ namespace PuzzleGame.Editor
         {
             if (!Application.Services.GameSaveManager.EditorInstance.HasSaveData)
             {
-                SetStatus("No save data to delete.", MessageType.Info);
+                _window.SetStatus("No save data to delete.", MessageType.Info);
                 return;
             }
 
             if (!EditorUtility.DisplayDialog(
                 "Delete all save data?",
-                "Bu işlem geri alınamaz. Oyuncunun tüm kayıtlı level ilerlemesi silinecek.",
+                "This action cannot be undone. All player level progress will be deleted.",
                 "Delete", "Cancel"))
             {
                 return;
             }
 
             Application.Services.GameSaveManager.EditorInstance.DeleteAll();
-            SetStatus("Save data deleted.", MessageType.Info);
+            _window.SetStatus("Save data deleted.", MessageType.Info);
         }
 
         private void PingAsset(string fileName)
@@ -191,7 +201,7 @@ namespace PuzzleGame.Editor
             }
             else
             {
-                SetStatus($"{fileName}.asset not found.", MessageType.Warning);
+                _window.SetStatus($"{fileName}.asset not found.", MessageType.Warning);
             }
         }
 
@@ -205,7 +215,7 @@ namespace PuzzleGame.Editor
                 return;
             }
             var results = DataAssetCreator.CreateAllDefaults(_ => true);
-            SetStatus($"Reset {fileName}.asset to defaults.", MessageType.Info);
+            _window.SetStatus($"Reset {fileName}.asset to defaults.", MessageType.Info);
             RefreshDataPresence();
         }
 
@@ -240,7 +250,7 @@ namespace PuzzleGame.Editor
                 int updated = results.Count(r => r.overwritten);
                 int skipped = results.Count(r => !r.created && !r.overwritten);
 
-                SetStatus($"Created: {created}, Updated: {updated}, Skipped: {skipped}", MessageType.Info);
+                _window.SetStatus($"Created: {created}, Updated: {updated}, Skipped: {skipped}", MessageType.Info);
             }
             finally
             {
@@ -260,10 +270,10 @@ namespace PuzzleGame.Editor
             if (obj != null) EditorGUIUtility.PingObject(obj);
         }
 
-        private void RefreshDataPresence()
+        public void RefreshDataPresence()
         {
             _dataPresence = DataAssetCreator.CheckAllExist();
-            RefreshLevelList();
+            _window.RefreshLevelList();
         }
     }
 }

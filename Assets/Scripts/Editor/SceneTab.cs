@@ -1,20 +1,18 @@
 using UnityEditor;
 using UnityEngine;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Configuration;
-using PuzzleGame.Application.Configuration.FeatureSystem;
-using PuzzleGame.Domain.Services;
 using PuzzleGame.Infrastructure;
-using PuzzleGame.Application.Services;
 
 namespace PuzzleGame.Editor
 {
-    public partial class ForgeEditorWindow
+    public class SceneTab : IEditorTab
     {
-        // ── Scene tab ───────────────────────────────────────────────────────
+        public string TabName => "Scene";
+        private ForgeEditorWindow _window;
+
         private SceneBuilder.BuildOptions _buildOpts = SceneBuilder.All;
         private SceneBuilder.MoldLayout _MoldLayout = SceneBuilder.MoldLayout.Grid;
         private SceneBuilder.ShaderVariant _shaderVariant = SceneBuilder.ShaderVariant.Premium;
@@ -23,9 +21,16 @@ namespace PuzzleGame.Editor
         private Vector2 _sceneScroll;
         private LevelData _stageLevelAsset;
 
-        // ── SCENE TAB ───────────────────────────────────────────────────────
+        public void OnEnable(ForgeEditorWindow window)
+        {
+            _window = window;
+        }
 
-        private void DrawSceneTab()
+        public void OnDisable()
+        {
+        }
+
+        public void OnGUI()
         {
             EditorGUILayout.LabelField("Scene Builder", EditorStyles.boldLabel);
             _sceneScroll = EditorGUILayout.BeginScrollView(_sceneScroll);
@@ -138,7 +143,7 @@ namespace PuzzleGame.Editor
                     EditorApplication.delayCall += () =>
                     {
                         SceneBuilder.SetupCurrentScene();
-                        SetStatus("Current scene set up with GameManager + DI.", MessageType.Info);
+                        _window.SetStatus("Current scene set up with GameManager + DI.", MessageType.Info);
                     };
                 }
                 GUI.backgroundColor = Color.white;
@@ -159,7 +164,7 @@ namespace PuzzleGame.Editor
                         if (GUILayout.Button("Load Level into Scene", GUILayout.Height(26)))
                         {
                             var lvl = _stageLevelAsset;
-                            EditorApplication.delayCall += () => LoadLevelIntoScene(lvl);
+                            EditorApplication.delayCall += () => _window.LoadLevelIntoScene(lvl);
                         }
 
                         GUI.backgroundColor = new Color(0.15f, 0.65f, 0.25f);
@@ -174,6 +179,29 @@ namespace PuzzleGame.Editor
             }
 
             EditorGUILayout.EndScrollView();
+        }
+
+        public void OnSceneGUI(SceneView sceneView)
+        {
+            var Molds = Object.FindObjectsByType<MoldController>(FindObjectsInactive.Include);
+            foreach (var Mold in Molds)
+            {
+                if (Mold == null || Mold.transform == null) continue;
+
+                // Move Handles
+                EditorGUI.BeginChangeCheck();
+                Vector3 newPos = Handles.PositionHandle(Mold.transform.position, Quaternion.identity);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(Mold.transform, "Move Mold");
+                    Mold.transform.position = newPos;
+                }
+
+                // Info Label Overlay
+                Handles.Label(Mold.transform.position + Vector3.up * 2f, 
+                    $"{Mold.name}\nLayers: {(Mold.State != null ? Mold.State.LayerCount : 0)}", 
+                    EditorStyles.boldLabel);
+            }
         }
 
         private void AddMolds(int count, bool firstEmpty)
@@ -197,7 +225,7 @@ namespace PuzzleGame.Editor
                     SceneBuilder.CreateMold(SceneBuilder.MoldConfig.WithColors(
                         positions[i], colors, _shaderVariant, "Mold"));
                 }
-                SetStatus($"Added {count} Molds ({(firstEmpty ? "1 empty, " : "")}{count - (firstEmpty ? 1 : 0)} filled).", MessageType.Info);
+                _window.SetStatus($"Added {count} Molds ({(firstEmpty ? "1 empty, " : "")}{count - (firstEmpty ? 1 : 0)} filled).", MessageType.Info);
             }
             finally
             {
@@ -218,9 +246,82 @@ namespace PuzzleGame.Editor
             {
                 EditorUtility.DisplayProgressBar("PuzzleGame Scene", "Building...", 0.3f);
                 SceneBuilder.Build(_buildOpts);
-                SetStatus("Scene built. Ctrl+Z to undo.", MessageType.Info);
+                _window.SetStatus("Scene built. Ctrl+Z to undo.", MessageType.Info);
             }
             finally { EditorUtility.ClearProgressBar(); }
+        }
+
+        private void ExportSceneToLevel(LevelData level)
+        {
+            if (level == null)
+            {
+                _window.SetStatus("No level selected to export to.", MessageType.Warning);
+                return;
+            }
+
+            var Molds = Object.FindObjectsByType<MoldController>(FindObjectsInactive.Include);
+            if (Molds.Length == 0)
+            {
+                _window.SetStatus("No Molds found in the scene to export.", MessageType.Warning);
+                return;
+            }
+
+            var sortedMolds = Molds
+                .OrderByDescending(b => b.transform.position.z)
+                .ThenBy(b => b.transform.position.x)
+                .ToArray();
+
+            level.autoGenerate = false;
+            level.MoldCount = sortedMolds.Length;
+            level.Molds.Clear();
+
+            int emptyCount = 0;
+
+            foreach (var Mold in sortedMolds)
+            {
+                var MoldData = new LevelMoldData();
+                MoldData.isEmpty = Mold.IsEmpty;
+                if (MoldData.isEmpty)
+                {
+                    emptyCount++;
+                }
+
+                MoldData.layers = new List<LevelLayerData>();
+                if (!Mold.IsEmpty && Mold.State != null && Mold.State.Layers != null)
+                {
+                    foreach (var layer in Mold.State.Layers)
+                    {
+                        var layerData = new LevelLayerData();
+                        layerData.color = ColorAdapter.ToUnityStatic(layer.Color);
+                        layerData.amount = layer.Amount;
+                        MoldData.layers.Add(layerData);
+                    }
+                }
+                level.Molds.Add(MoldData);
+            }
+
+            level.emptyMoldCount = emptyCount;
+
+            var levelConfig = AssetDatabase.LoadAssetAtPath<LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
+            var result = LevelSolverUtility.SolveLevel(level, levelConfig);
+            if (result.IsSolvable)
+            {
+                level.parMoves = result.SolutionPath.Count;
+                level.goodMoves = Mathf.RoundToInt(result.SolutionPath.Count * 1.4f);
+                if (level.goodMoves < level.parMoves + 2) level.goodMoves = level.parMoves + 2;
+                _window.SetStatus($"Exported scene to Level {level.levelNumber} successfully. Solvable in {result.SolutionPath.Count} moves (Par auto-assigned).", MessageType.Info);
+            }
+            else
+            {
+                level.parMoves = 10;
+                level.goodMoves = 15;
+                _window.SetStatus($"Exported scene to Level {level.levelNumber} successfully, but layout is UNSOLVABLE! Reset par to defaults.", MessageType.Warning);
+            }
+
+            EditorUtility.SetDirty(level);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            _window.RefreshLevelList();
         }
     }
 }

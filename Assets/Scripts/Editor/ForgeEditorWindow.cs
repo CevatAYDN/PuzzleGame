@@ -3,33 +3,19 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Configuration;
-using PuzzleGame.Application.Configuration.FeatureSystem;
-using PuzzleGame.Domain.Services;
-using PuzzleGame.Infrastructure;
-using PuzzleGame.Application.Services;
 
 namespace PuzzleGame.Editor
 {
     /// <summary>
-    /// PuzzleGame için tüm editor araçları — tek pencerede 8 sekme:
-    ///   - Data: ScriptableObject asset yönetimi
-    ///   - Levels: Batch level creation ve yönetimi
-    ///   - Scene: Sahne oluşturma kontrolü
-    ///   - Validate: Proje sağlık kontrolleri
-    ///   - Palette: Color palette ve level property editor
-    ///   - Features: Multi-layer Cast & Reaction system yönetimi (YENİ)
-    ///   - Level UI: Pre-built level designer (YENİ)
-    ///   - Test: Analytics & cheat tools (YENİ)
-    /// Split into partial classes: one file per tab + solver helpers.
+    /// PuzzleGame Editor Tools — Modular, Plug-in based Editor Window.
+    /// Manages dynamically loaded IEditorTab instances.
     /// </summary>
     public partial class ForgeEditorWindow : EditorWindow
     {
-        private enum Tab { Data, Levels, Scene, Validate, Palette, Features, LevelUI, Test, Localization, PouringLab }
-        private Tab _activeTab = Tab.Data;
+        private List<IEditorTab> _tabs;
+        private int _activeTabIndex = 0;
 
-        // ── Status bar ──────────────────────────────────────────────────────
         private string _statusMessage = "Ready.";
         private MessageType _statusType = MessageType.Info;
 
@@ -38,62 +24,92 @@ namespace PuzzleGame.Editor
         {
             var window = GetWindow<ForgeEditorWindow>("PuzzleGame Editor");
             window.minSize = new Vector2(420, 360);
-            window.RefreshDataPresence();
+            window.RefreshData();
         }
 
         private void OnEnable()
         {
-            RefreshDataPresence();
+            // Initialize modular tabs
+            _tabs = new List<IEditorTab>
+            {
+                new DataTab(),
+                new LevelsTab(),
+                new SceneTab(),
+                new ValidateTab(),
+                new PaletteTab(),
+                new FeaturesTab(),
+                new LevelUITab(),
+                new TestTab(),
+                new LocalizationTab(),
+                new PouringLabTab()
+            };
+
+            foreach (var tab in _tabs)
+            {
+                tab.OnEnable(this);
+            }
+
+            SceneView.duringSceneGui += OnSceneGUIInternal;
+            RefreshData();
+        }
+
+        private void OnDisable()
+        {
+            SceneView.duringSceneGui -= OnSceneGUIInternal;
+            if (_tabs != null)
+            {
+                foreach (var tab in _tabs)
+                {
+                    tab.OnDisable();
+                }
+            }
         }
 
         private void OnGUI()
         {
+            if (_tabs == null || _tabs.Count == 0) return;
+
             DrawTabs();
             EditorGUILayout.Space(6);
-            switch (_activeTab)
+
+            if (_activeTabIndex >= 0 && _activeTabIndex < _tabs.Count)
             {
-                case Tab.Data:       DrawDataTab();         break;
-                case Tab.Levels:     DrawLevelsTab();       break;
-                case Tab.Scene:      DrawSceneTab();        break;
-                case Tab.Validate:   DrawValidateTab();     break;
-                case Tab.Palette:    DrawPaletteTab();      break;
-                case Tab.Features:   DrawFeaturesTab();    break;
-                case Tab.LevelUI:    DrawLevelUITab();      break;
-                case Tab.Test:       DrawTestTab();        break;
-                case Tab.Localization: DrawLocalizationTab(); break;
-                case Tab.PouringLab:   DrawPouringLabTab(); break;
+                _tabs[_activeTabIndex].OnGUI();
             }
+
             DrawStatusBar();
         }
 
-        // ── Tab bar ─────────────────────────────────────────────────────────
+        private void OnSceneGUIInternal(SceneView sceneView)
+        {
+            if (_tabs != null && _activeTabIndex >= 0 && _activeTabIndex < _tabs.Count)
+            {
+                _tabs[_activeTabIndex].OnSceneGUI(sceneView);
+            }
+        }
 
         private void DrawTabs()
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-            if (GUILayout.Toggle(_activeTab == Tab.Data, "Data", EditorStyles.toolbarButton)) _activeTab = Tab.Data;
-            if (GUILayout.Toggle(_activeTab == Tab.Levels, "Levels", EditorStyles.toolbarButton)) _activeTab = Tab.Levels;
-            if (GUILayout.Toggle(_activeTab == Tab.Scene, "Scene", EditorStyles.toolbarButton)) _activeTab = Tab.Scene;
-            if (GUILayout.Toggle(_activeTab == Tab.Validate, "Validate", EditorStyles.toolbarButton)) _activeTab = Tab.Validate;
-            if (GUILayout.Toggle(_activeTab == Tab.Palette, "Palette", EditorStyles.toolbarButton)) _activeTab = Tab.Palette;
-            if (GUILayout.Toggle(_activeTab == Tab.Features, "Features", EditorStyles.toolbarButton)) _activeTab = Tab.Features;
-            if (GUILayout.Toggle(_activeTab == Tab.LevelUI, "Level UI", EditorStyles.toolbarButton)) _activeTab = Tab.LevelUI;
-            if (GUILayout.Toggle(_activeTab == Tab.Test, "Test", EditorStyles.toolbarButton)) _activeTab = Tab.Test;
-            if (GUILayout.Toggle(_activeTab == Tab.Localization, "i18n", EditorStyles.toolbarButton)) _activeTab = Tab.Localization;
-            if (GUILayout.Toggle(_activeTab == Tab.PouringLab, "Pouring Lab", EditorStyles.toolbarButton)) _activeTab = Tab.PouringLab;
+            for (int i = 0; i < _tabs.Count; i++)
+            {
+                bool active = _activeTabIndex == i;
+                if (GUILayout.Toggle(active, _tabs[i].TabName, EditorStyles.toolbarButton))
+                {
+                    _activeTabIndex = i;
+                }
+            }
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Refresh", EditorStyles.toolbarButton, GUILayout.Width(70)))
             {
                 EditorApplication.delayCall += () =>
                 {
-                    RefreshDataPresence();
+                    RefreshData();
                     SetStatus("Refreshed.", MessageType.Info);
                 };
             }
             EditorGUILayout.EndHorizontal();
         }
-
-        // ── Status bar ──────────────────────────────────────────────────────
 
         private void DrawStatusBar()
         {
@@ -101,11 +117,41 @@ namespace PuzzleGame.Editor
             EditorGUILayout.HelpBox(_statusMessage, _statusType);
         }
 
-        private void SetStatus(string message, MessageType type)
+        public void SetStatus(string message, MessageType type)
         {
             _statusMessage = message;
             _statusType = type;
             Repaint();
+        }
+
+        public void RefreshData()
+        {
+            if (_tabs == null) return;
+            var dataTab = _tabs.OfType<DataTab>().FirstOrDefault();
+            if (dataTab != null)
+            {
+                dataTab.RefreshDataPresence();
+            }
+        }
+
+        public void RefreshLevelList()
+        {
+            if (_tabs == null) return;
+            var levelsTab = _tabs.OfType<LevelsTab>().FirstOrDefault();
+            if (levelsTab != null)
+            {
+                levelsTab.RefreshLevelList();
+            }
+        }
+
+        public void LoadLevelIntoScene(LevelData level)
+        {
+            if (_tabs == null) return;
+            var levelsTab = _tabs.OfType<LevelsTab>().FirstOrDefault();
+            if (levelsTab != null)
+            {
+                levelsTab.LoadLevelIntoScene(level);
+            }
         }
     }
 }

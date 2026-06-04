@@ -1,36 +1,39 @@
 using UnityEditor;
 using UnityEngine;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Configuration.FeatureSystem;
-using PuzzleGame.Domain.Services;
-using PuzzleGame.Infrastructure;
-using PuzzleGame.Application.Services;
 
 namespace PuzzleGame.Editor
 {
-    public partial class ForgeEditorWindow
+    public class FeaturesTab : IEditorTab
     {
-        // ── Features tab ───────────────────────────────────────────────────
+        public string TabName => "Features";
+        private ForgeEditorWindow _window;
+
         private LevelData _selectedLevelForFeatures;
-        private Vector2 _featuresScroll;
         private int _selectedFeatureTab = 0;
         private string[] _featureTabNames = new string[] { "Multi-Layer Cast", "Reaction System" };
 
-        // ── FEATURES TAB ───────────────────────────────────────────────────
+        public void OnEnable(ForgeEditorWindow window)
+        {
+            _window = window;
+        }
 
-        private void DrawFeaturesTab()
+        public void OnDisable()
+        {
+        }
+
+        public void OnGUI()
         {
             EditorGUILayout.LabelField("Level Features Management", EditorStyles.boldLabel);
             EditorGUILayout.Space(4);
 
             EditorGUILayout.HelpBox(
-                "Her seviye için özellikleri etkinleştirin veya devre dışı bırakın.\n" +
-                "Multi-Layer Cast: Ardışık aynı renk katmanlarını tek seferde döker.\n" +
-                "Reaction System: Renkler arası kimyasal reaksiyonları yönetir.",
+                "Enable/disable feature systems per level.\n" +
+                "Multi-Layer Cast: Cast multiple layers of matching color at once.\n" +
+                "Reaction System: Handles chemical reactions between colors.",
                 MessageType.Info);
 
             EditorGUILayout.Space(4);
@@ -73,13 +76,12 @@ namespace PuzzleGame.Editor
 
             if (_selectedLevelForFeatures == null)
             {
-                EditorGUILayout.HelpBox("Lütfen düzenlemek için bir seviye seçin.", MessageType.Warning);
+                EditorGUILayout.HelpBox("Please select a level to edit.", MessageType.Warning);
                 return;
             }
 
             EditorGUILayout.Space(4);
 
-            // Feature tabs
             _selectedFeatureTab = GUILayout.Toolbar(_selectedFeatureTab, _featureTabNames);
             EditorGUILayout.Space(4);
 
@@ -102,7 +104,7 @@ namespace PuzzleGame.Editor
                     Undo.RecordObject(_selectedLevelForFeatures, "Save Features");
                     EditorUtility.SetDirty(_selectedLevelForFeatures);
                     AssetDatabase.SaveAssets();
-                    SetStatus("Features saved!", MessageType.Info);
+                    _window.SetStatus("Features saved!", MessageType.Info);
                 }
 
                 if (GUILayout.Button("Reset to Default", GUILayout.Height(28)))
@@ -110,6 +112,10 @@ namespace PuzzleGame.Editor
                     ResetFeaturesToDefault();
                 }
             }
+        }
+
+        public void OnSceneGUI(SceneView sceneView)
+        {
         }
 
         private void DrawMultiLayerCastSettings()
@@ -121,7 +127,6 @@ namespace PuzzleGame.Editor
 
                 Undo.RecordObject(_selectedLevelForFeatures, "MultiLayer Cast");
 
-                // Enable toggle
                 _selectedLevelForFeatures.enableMultiLayerCast = EditorGUILayout.ToggleLeft(
                     "Enable Multi-Layer Cast", 
                     _selectedLevelForFeatures.enableMultiLayerCast);
@@ -130,7 +135,6 @@ namespace PuzzleGame.Editor
 
                 if (_selectedLevelForFeatures.enableMultiLayerCast)
                 {
-                    // Initialize config if null
                     if (_selectedLevelForFeatures.multiLayerCastConfig == null)
                     {
                         _selectedLevelForFeatures.multiLayerCastConfig = new MultiLayerCastData
@@ -160,12 +164,12 @@ namespace PuzzleGame.Editor
 
                     EditorGUILayout.Space(4);
                     EditorGUILayout.HelpBox(
-                        $"Bu seviye için: En az {config.minConsecutiveForCast} ardışık aynı renk katmanı varsa döküm yapılır.",
+                        $"Configuration: Cast will occur if there are at least {config.minConsecutiveForCast} consecutive matching layers.",
                         MessageType.None);
                 }
                 else
                 {
-                    EditorGUILayout.HelpBox("Multi-layer Cast devre dışı. Oyuncular her seferinde tek katman dökecek.", MessageType.Info);
+                    EditorGUILayout.HelpBox("Multi-layer Cast is disabled.", MessageType.Info);
                 }
             }
         }
@@ -179,7 +183,6 @@ namespace PuzzleGame.Editor
 
                 Undo.RecordObject(_selectedLevelForFeatures, "Reaction System");
 
-                // Enable toggle
                 _selectedLevelForFeatures.enableReactionSystem = EditorGUILayout.ToggleLeft(
                     "Enable Reaction System", 
                     _selectedLevelForFeatures.enableReactionSystem);
@@ -188,7 +191,6 @@ namespace PuzzleGame.Editor
 
                 if (_selectedLevelForFeatures.enableReactionSystem)
                 {
-                    // Initialize config if null
                     if (_selectedLevelForFeatures.reactionConfig == null)
                     {
                         _selectedLevelForFeatures.reactionConfig = new ReactionSystemData
@@ -208,13 +210,11 @@ namespace PuzzleGame.Editor
 
                     EditorGUILayout.Space(4);
 
-                    // Reaction rules list
                     EditorGUILayout.LabelField("Reaction Rules", EditorStyles.miniBoldLabel);
                     
                     if (config.reactionRules == null)
                         config.reactionRules = new List<ReactionRule>();
 
-                    // Add new rule button
                     using (new EditorGUILayout.HorizontalScope())
                     {
                         GUILayout.FlexibleSpace();
@@ -233,7 +233,6 @@ namespace PuzzleGame.Editor
 
                     EditorGUILayout.Space(4);
 
-                    // List existing rules
                     for (int i = 0; i < config.reactionRules.Count; i++)
                     {
                         var rule = config.reactionRules[i];
@@ -271,7 +270,6 @@ namespace PuzzleGame.Editor
                                 }
                             }
                             
-                            // EXPOSE MISSING EFFECT PREFAB
                             EditorGUI.BeginChangeCheck();
                             var prefab = (GameObject)EditorGUILayout.ObjectField("Effect Prefab", rule.effectPrefab, typeof(GameObject), false);
                             if (EditorGUI.EndChangeCheck()) { Undo.RecordObject(_selectedLevelForFeatures, "Change Rule Prefab"); rule.effectPrefab = prefab; }
@@ -291,12 +289,12 @@ namespace PuzzleGame.Editor
 
                     if (config.reactionRules.Count == 0)
                     {
-                        EditorGUILayout.HelpBox("Henüz kural eklenmemiş. '+ Add Rule' ile reaksiyon ekleyin.", MessageType.Info);
+                        EditorGUILayout.HelpBox("No reaction rules defined.", MessageType.Info);
                     }
                 }
                 else
                 {
-                    EditorGUILayout.HelpBox("Reaction system devre dışı. Seviye normal sıvı sıralama olarak oynanacak.", MessageType.Info);
+                    EditorGUILayout.HelpBox("Reaction system is disabled.", MessageType.Info);
                 }
             }
         }
@@ -313,7 +311,7 @@ namespace PuzzleGame.Editor
             _selectedLevelForFeatures.reactionConfig = null;
 
             EditorUtility.SetDirty(_selectedLevelForFeatures);
-            SetStatus("Features reset to default.", MessageType.Info);
+            _window.SetStatus("Features reset to default.", MessageType.Info);
         }
     }
 }
