@@ -203,5 +203,5 @@ Shader "PuzzleGame/MobileBottle"
         }
     }
 
-    FallBack "Universal Render Pipeline/Unlit"
+    FallBack Off
 }

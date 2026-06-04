@@ -27,6 +27,7 @@ Shader "Custom/PremiumLayeredOre"
 
         [Header(Mold Properties)]
         _BottleHeight("Mold Mesh Height (object space)", Float) = 2.0
+        _Radius("Mold Radius (object space)", Float) = 0.4
         _SurfaceHeight("Surface Height", Range(0.0, 1.0)) = 1.0
 
         [Header(Wobble Effect)]
@@ -134,6 +135,7 @@ Shader "Custom/PremiumLayeredOre"
                 float _EdgeWidth;
                 float _LayerBoundaryWidth;
                 float _LayerBoundaryDarken;
+                float _Radius;
             CBUFFER_END
 
             struct Attributes
@@ -237,12 +239,23 @@ Shader "Custom/PremiumLayeredOre"
             half4 frag(Varyings input, half facing : VFACE) : SV_Target
             {
                 float3x3 worldToObject = (float3x3)GetWorldToObjectMatrix();
-                float3 upOS = normalize(mul(worldToObject, float3(0.0, 1.0, 0.0)));
+                float3 worldUpOS = normalize(mul(worldToObject, float3(0.0, 1.0, 0.0)));
+                float3 localUpOS = float3(0.0, 1.0, 0.0);
+                float blend = clamp(worldUpOS.y, 0.35, 1.0);
+                float3 upOS = normalize(lerp(localUpOS, worldUpOS, blend));
 
-                float bottleHeight = max(_BottleHeight, 0.001);
-                float planeScale = bottleHeight * upOS.y;
+                // Bounding box height calculation along upOS to normalize liquid height
+                float horizontalLength = length(upOS.xz);
+                float maxHorizontal = _Radius * horizontalLength;
+                float minHorizontal = -maxHorizontal;
+                float maxVertical = max(0.0, _BottleHeight * upOS.y);
+                float minVertical = min(0.0, _BottleHeight * upOS.y);
+
+                float minH = minHorizontal + minVertical;
+                float maxH = maxHorizontal + maxVertical;
+
                 float height = dot(input.positionOS, upOS);
-                float normalizedY = saturate(height / max(planeScale, 0.0001));
+                float normalizedY = saturate((height - minH) / max(maxH - minH, 0.0001));
 
                 float time = _Time.y;
                 
@@ -343,6 +356,50 @@ Shader "Custom/PremiumLayeredOre"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
+            CBUFFER_START(UnityPerMaterial)
+                float4 _Color1;
+                float4 _Color2;
+                float4 _Color3;
+                float4 _Color4;
+                float _Fill1;
+                float _Fill2;
+                float _Fill3;
+                float _Fill4;
+
+                float4 _EmissionColorMultiplier;
+                float _EmissionIntensity;
+                float4 _CrustColor;
+                float _CrustScale;
+                float _CrustThreshold;
+                float _HeatDistortion;
+                float _HeatSpeed;
+
+                float _BottleHeight;
+                float _SurfaceHeight;
+                float _WobbleX;
+                float _WobbleZ;
+                float _WobbleStrength;
+                float _SurfaceSmoothness;
+                float _SurfaceRippleAmplitude;
+                float _SurfaceRippleFrequency;
+                float _SurfaceRippleSpeed;
+
+                float4 _HighlightColor;
+                float _HighlightIntensity;
+                float _HighlightWidth;
+                float4 _SpecularColor;
+                float _SpecularIntensity;
+                float _SpecularSmoothness;
+                float _SparkleIntensity;
+                float _SparkleSize;
+                float _Transparency;
+                float _EdgeDarken;
+                float _EdgeWidth;
+                float _LayerBoundaryWidth;
+                float _LayerBoundaryDarken;
+                float _Radius;
+            CBUFFER_END
+
             struct Attributes
             {
                 float4 positionOS : POSITION;
@@ -368,4 +425,5 @@ Shader "Custom/PremiumLayeredOre"
             ENDHLSL
         }
     }
+    FallBack Off
 }

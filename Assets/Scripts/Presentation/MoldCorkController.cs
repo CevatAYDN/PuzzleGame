@@ -186,7 +186,7 @@ namespace PuzzleGame
                 SafeDestroy(oldMesh);
             }
 
-            var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default");
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default");
             var mat = new Material(shader);
             Color woodColor = new Color(
                 PuzzleGame.Infrastructure.CorkConstants.WoodR,
@@ -194,6 +194,11 @@ namespace PuzzleGame
                 PuzzleGame.Infrastructure.CorkConstants.WoodB);
             mat.color = woodColor;
             mat.SetColor("_BaseColor", woodColor);
+            if (shader.name.Contains("Lit"))
+            {
+                mat.SetFloat("_Metallic", 0.8f);
+                mat.SetFloat("_Smoothness", 0.2f);
+            }
 
             Material oldMat = corkRenderer.sharedMaterial;
             corkRenderer.sharedMaterial = mat;

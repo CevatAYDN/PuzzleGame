@@ -239,41 +239,75 @@ namespace PuzzleGame
         public void SetVisualCastProgress(LayerSnapshot startLayers, float t, bool isSource, OreLayer CastedLayer)
         {
             _visualLayers.Clear();
-            float totalFill = 0f;
+            
+            float startTotalFill = 0f;
+            int startCount = startLayers.Count;
+            for (int i = 0; i < startCount; i++)
+            {
+                startTotalFill += startLayers.Get(i).Amount;
+            }
+
             if (isSource)
             {
-                int count = startLayers.Count;
-                for (int i = 0; i < count; i++)
+                float totalVolumeToCast = Mathf.Max(0f, startTotalFill - State.TotalFill);
+                float volumeToRemove = totalVolumeToCast * t;
+
+                for (int i = 0; i < startCount; i++)
                 {
-                    var layer = startLayers.Get(i);
-                    if (i == count - 1)
+                    _visualLayers.Add(startLayers.Get(i));
+                }
+
+                for (int i = _visualLayers.Count - 1; i >= 0 && volumeToRemove > 0f; i--)
+                {
+                    var layer = _visualLayers[i];
+                    if (layer.Amount <= volumeToRemove)
                     {
-                        layer = layer.WithAmount(layer.Amount * (1f - t));
+                        volumeToRemove -= layer.Amount;
+                        _visualLayers.RemoveAt(i);
                     }
-                    if (layer.Amount > ForgeConstants.LayerAmountEpsilon)
+                    else
                     {
-                        _visualLayers.Add(layer);
+                        _visualLayers[i] = layer.WithAmount(layer.Amount - volumeToRemove);
+                        volumeToRemove = 0f;
+                    }
+                }
+
+                float totalFill = 0f;
+                for (int i = _visualLayers.Count - 1; i >= 0; i--)
+                {
+                    var layer = _visualLayers[i];
+                    if (layer.Amount <= ForgeConstants.LayerAmountEpsilon)
+                    {
+                        _visualLayers.RemoveAt(i);
+                    }
+                    else
+                    {
                         totalFill += layer.Amount;
                     }
                 }
+                _visualTotalFill = totalFill;
             }
             else
             {
-                int count = startLayers.Count;
-                for (int i = 0; i < count; i++)
+                float totalVolumeToCast = Mathf.Max(0f, State.TotalFill - startTotalFill);
+                float volumeToAdd = totalVolumeToCast * t;
+
+                float totalFill = 0f;
+                for (int i = 0; i < startCount; i++)
                 {
                     var layer = startLayers.Get(i);
                     _visualLayers.Add(layer);
                     totalFill += layer.Amount;
                 }
-                var extra = CastedLayer.WithAmount(CastedLayer.Amount * t);
-                if (extra.Amount > ForgeConstants.LayerAmountEpsilon)
+
+                if (volumeToAdd > ForgeConstants.LayerAmountEpsilon)
                 {
-                    _visualLayers.Add(extra);
-                    totalFill += extra.Amount;
+                    _visualLayers.Add(CastedLayer.WithAmount(volumeToAdd));
+                    totalFill += volumeToAdd;
                 }
+                _visualTotalFill = totalFill;
             }
-            _visualTotalFill = totalFill;
+
             UpdateVisuals();
         }
 
@@ -354,6 +388,10 @@ namespace PuzzleGame
         {
             if (UnityEngine.Application.isPlaying) return;
             RestoreStateFromSerialized(true);
+            if (_meshGenerator != null)
+            {
+                _meshGenerator.BuildMesh();
+            }
             UpdateVisuals();
         }
 #endif

@@ -175,5 +175,5 @@ Shader "Custom/PremiumBottleGlass"
             ENDHLSL
         }
     }
-    FallBack "Universal Render Pipeline/Unlit"
+    FallBack Off
 }

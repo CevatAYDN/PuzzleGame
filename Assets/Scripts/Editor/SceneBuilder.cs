@@ -597,30 +597,32 @@ namespace PuzzleGame.Editor
 
         private static void ApplyStandardGlassProperties(Material mat)
         {
-            mat.SetColor("_Color", new Color(0.95f, 0.97f, 1.0f, 0.18f));
-            mat.SetFloat("_Smoothness", 0.95f);
+            mat.SetColor("_Color", new Color(0.2f, 0.2f, 0.22f, 0.35f)); // Obsidian dark glass tint
+            mat.SetFloat("_Smoothness", 0.85f);
             mat.SetFloat("_FresnelPower", 5f);
             mat.SetFloat("_FresnelIntensity", 1.5f);
-            mat.SetColor("_FresnelColor", new Color(1f, 1f, 1f, 0.5f));
+            mat.SetColor("_FresnelColor", new Color(0.4f, 0.4f, 0.45f, 0.5f)); // Darker rim
             mat.SetColor("_SpecularColor", new Color(1f, 1f, 1f, 1f));
-            mat.SetFloat("_SpecularIntensity", 2f);
+            mat.SetFloat("_SpecularIntensity", 1.5f);
         }
 
         private static void ApplyPremiumGlassProperties(Material mat)
         {
-            mat.SetColor("_Color", new Color(0.95f, 0.97f, 1.0f, 0.12f));
-            mat.SetFloat("_Smoothness", 0.98f);
-            mat.SetFloat("_Thickness", 0.04f);
-            mat.SetFloat("_RefractionIntensity", 0.06f);
-            mat.SetFloat("_IndexOfRefraction", 1.45f);
+            mat.SetColor("_Color", new Color(0.2f, 0.2f, 0.22f, 0.25f)); // Dark obsidian transparent base
+            mat.SetColor("_OutlineColor", new Color(0.4f, 0.4f, 0.45f, 1.0f)); // Steel outline instead of blue
+            mat.SetColor("_InnerLineColor", new Color(0.35f, 0.35f, 0.38f, 1.0f)); // Subtle metallic inner lines
+            mat.SetFloat("_Smoothness", 0.9f);
+            mat.SetFloat("_Thickness", 0.05f);
+            mat.SetFloat("_RefractionIntensity", 0.04f);
+            mat.SetFloat("_IndexOfRefraction", 1.4f);
             mat.SetFloat("_FresnelPower", 4.5f);
-            mat.SetFloat("_FresnelIntensity", 2.0f);
-            mat.SetColor("_FresnelColor", new Color(1f, 1f, 1f, 0.8f));
-            mat.SetColor("_ThicknessColor", new Color(0.6f, 0.8f, 1.0f, 0.5f));
+            mat.SetFloat("_FresnelIntensity", 1.5f);
+            mat.SetColor("_FresnelColor", new Color(0.4f, 0.4f, 0.45f, 0.6f));
+            mat.SetColor("_ThicknessColor", new Color(0.3f, 0.3f, 0.35f, 0.4f)); // Steel rim thickness
             mat.SetFloat("_ThicknessPower", 2.0f);
             mat.SetColor("_SpecularColor", new Color(1f, 1f, 1f, 1f));
-            mat.SetFloat("_SpecularIntensity", 2.0f);
-            mat.SetFloat("_SpecularSecondary", 0.5f);
+            mat.SetFloat("_SpecularIntensity", 1.5f);
+            mat.SetFloat("_SpecularSecondary", 0.3f);
         }
 
         private static void ApplyStandardOreProperties(Material mat)
