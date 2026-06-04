@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using PuzzleGame.Domain;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Configuration;
@@ -13,7 +14,6 @@ namespace PuzzleGame.Application.Services
     /// <summary>
     /// Modular Cast service that handles both single and multi-layer Casts.
     /// Supports data-driven feature flags from LevelData.
-    /// ICastService interface lives in Application/Interfaces/ICastService.cs (Fix #6).
     /// </summary>
     public class CastService : ICastService
     {
@@ -23,6 +23,9 @@ namespace PuzzleGame.Application.Services
         private readonly IEventAggregator _eventAggregator;
         private LevelData _currentLevelData;
 
+        // Zero-allocation: RolledBack listesi pool edilerek gereksiz GC önlendi.
+        private readonly List<OreLayer> _rollbackBuffer = new List<OreLayer>(8);
+
         public CastService(IMoldValidator validator, IGameHistoryManager historyManager, IReactionService reactionService, IEventAggregator eventAggregator)
         {
             _validator = validator;
@@ -31,22 +34,15 @@ namespace PuzzleGame.Application.Services
             _eventAggregator = eventAggregator;
         }
 
-
-        public void SetLevelData(LevelData levelData)
-        {
-            _currentLevelData = levelData;
-        }
+        public void SetLevelData(LevelData levelData) => _currentLevelData = levelData;
 
         public bool TryCast(IMoldView source, IMoldView target, LevelData levelData, IMoldView[] activeMolds)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (target == null) throw new ArgumentNullException(nameof(target));
-            if (levelData == null) throw new ArgumentNullException(nameof(levelData),
-                "levelData is required. Default to no-multi-layer if unsure.");
+            if (levelData == null) throw new ArgumentNullException(nameof(levelData), "levelData is required.");
 
-            bool enableMultiLayer = levelData.enableMultiLayerCast;
-
-            return enableMultiLayer
+            return levelData.enableMultiLayerCast
                 ? TryMultiLayerCast(source, target, levelData, activeMolds)
                 : TrySingleLayerCast(source, target, activeMolds);
         }
@@ -59,17 +55,14 @@ namespace PuzzleGame.Application.Services
             var sourceState = source.State;
             var targetState = target.State;
 
-            if (sourceState.IsEmpty) return 0;
-            if (targetState.IsFull) return 0;
+            if (sourceState.IsEmpty || targetState.IsFull) return 0;
 
             var topLayerOpt = sourceState.TopLayer;
             if (topLayerOpt == null) return 0;
             var topColor = topLayerOpt.Value.Color;
 
             if (!enableMultiLayer)
-            {
                 return _validator.CanCast(sourceState, targetState) ? 1 : 0;
-            }
 
             int maxCapacity = targetState.MaxLayers - targetState.LayerCount;
             int consecutiveCount = 0;
@@ -79,22 +72,15 @@ namespace PuzzleGame.Application.Services
                 var layerOpt = sourceState.GetLayerAt(sourceState.LayerCount - 1 - i);
 
                 if (_validator.ColorsMatch(layerOpt.Color, topColor))
-                {
                     consecutiveCount++;
-                }
-                else
-                {
-                    break;
-                }
+                else break;
             }
 
             var config = levelData?.multiLayerCastConfig;
             int minRequired = config?.minConsecutiveForCast ?? ForgeConstants.MinEmptyMolds;
 
             if (config?.CastConsecutiveOnly ?? true)
-            {
                 return consecutiveCount >= minRequired ? consecutiveCount : 0;
-            }
 
             return consecutiveCount;
         }
@@ -103,19 +89,13 @@ namespace PuzzleGame.Application.Services
         {
             if (source.State.IsEmpty)
             {
-                _eventAggregator.Publish(new CastRejectedEvent(
-                    GetMoldIndex(source),
-                    GetMoldIndex(target),
-                    "source_empty"));
+                _eventAggregator.Publish(new CastRejectedEvent(GetMoldIndex(source), GetMoldIndex(target), "source_empty"));
                 return false;
             }
 
             if (!_validator.CanCast(source.State, target.State))
             {
-                _eventAggregator.Publish(new CastRejectedEvent(
-                    GetMoldIndex(source),
-                    GetMoldIndex(target),
-                    "validator_rejected"));
+                _eventAggregator.Publish(new CastRejectedEvent(GetMoldIndex(source), GetMoldIndex(target), "validator_rejected"));
                 return false;
             }
 
@@ -127,43 +107,23 @@ namespace PuzzleGame.Application.Services
             }
             catch (InvalidOperationException ex)
             {
-                // Validator said can Cast but AddLayer failed — invariant violation.
-                // Roll back the popped layer.
                 source.State.AddLayer(layer);
-                throw new InvalidOperationException(
-                    "CastService invariant violated: CanCast passed but AddLayer rejected the layer.",
-                    ex);
+                throw new InvalidOperationException("CastService invariant violated: CanCast passed but AddLayer rejected.", ex);
             }
 
-            _historyManager.RecordUndoSnapshot();
-            _historyManager.IncrementMoveCount();
-
-            _eventAggregator.Publish(new CastCompletedEvent(source.State, target.State));
-
-            CheckForReactions(source, target, activeMolds);
-
-            MoldLogger.LogInfo($"[CastService] Single layer Cast: {source.GameObject.name} → {target.GameObject.name}");
+            FinalizeCast(source, target, activeMolds, 1);
             return true;
         }
 
         private bool TryMultiLayerCast(IMoldView source, IMoldView target, LevelData levelData, IMoldView[] activeMolds)
         {
-            int CastCount = GetCastLayerCount(source, target, levelData);
+            int castCount = GetCastLayerCount(source, target, levelData);
+            if (castCount == 0) return false;
 
-            if (CastCount == 0)
-            {
-                MoldLogger.LogDebug("[CastService] Multi-layer Cast: no valid Cast found");
-                return false;
-            }
+            int casted = 0;
+            _rollbackBuffer.Clear();
 
-            var topLayerOpt = source.State.TopLayer;
-            var topColor = topLayerOpt?.Color ?? default;
-
-
-            int Casted = 0;
-            var rolledBackLayers = new System.Collections.Generic.List<OreLayer>(CastCount);
-
-            for (int i = 0; i < CastCount; i++)
+            for (int i = 0; i < castCount; i++)
             {
                 OreLayer layer;
                 try
@@ -172,64 +132,60 @@ namespace PuzzleGame.Application.Services
                 }
                 catch (InvalidOperationException)
                 {
-                    // Source ran dry unexpectedly — rollback already-Casted layers.
-                    // FIX: Complete rollback of all Casted layers on early break
-                    for (int r = Casted - 1; r >= 0; r--)
-                    {
-                        target.State.PopTopLayer();
-                        source.State.AddLayer(rolledBackLayers[r]);
-                    }
+                    Rollback(source, target, casted);
                     return false;
                 }
 
                 try
                 {
                     target.State.AddLayer(layer);
-                    Casted++;
+                    casted++;
+                    _rollbackBuffer.Add(layer);
                 }
                 catch (InvalidOperationException ex)
                 {
-                    rolledBackLayers.Add(layer);
-                    // Rollback any layers already Casted to target this iteration.
-                    for (int r = Casted - 1; r >= 0; r--)
-                    {
-                        target.State.PopTopLayer();
-                        source.State.AddLayer(rolledBackLayers[r]);
-                    }
-                    throw new InvalidOperationException(
-                        "CastService multi-layer invariant violated.", ex);
+                    source.State.AddLayer(layer);
+                    Rollback(source, target, casted);
+                    throw new InvalidOperationException("CastService multi-layer invariant violated.", ex);
                 }
             }
 
-            if (Casted > 0)
+            if (casted > 0)
             {
-                _historyManager.RecordUndoSnapshot();
-                _historyManager.IncrementMoveCount();
-
-                CheckForReactions(source, target, activeMolds);
-
-                MoldLogger.LogInfo($"[CastService] Multi-layer Cast: {Casted} layers from {source.GameObject.name} → {target.GameObject.name}");
+                FinalizeCast(source, target, activeMolds, casted);
                 return true;
             }
 
             return false;
         }
 
-        // Fix #14: Use MoldIndex property instead of parsing GameObject.name.
+        private void Rollback(IMoldView source, IMoldView target, int castedCount)
+        {
+            for (int r = castedCount - 1; r >= 0; r--)
+            {
+                target.State.PopTopLayer();
+                source.State.AddLayer(_rollbackBuffer[r]);
+            }
+        }
+
+        private void FinalizeCast(IMoldView source, IMoldView target, IMoldView[] activeMolds, int count)
+        {
+            _historyManager.RecordUndoSnapshot();
+            _historyManager.IncrementMoveCount();
+
+            _eventAggregator.Publish(new CastCompletedEvent(source.State, target.State));
+            CheckForReactions(source, target, activeMolds);
+
+            MoldLogger.LogInfo($"[CastService] Casted {count} layers: {source.GameObject.name} → {target.GameObject.name}");
+        }
+
         private static int GetMoldIndex(IMoldView Mold) => Mold.MoldIndex;
 
-        // Fix Code Quality #4: Delegate to _validator.ColorsMatch() — no duplicate logic.
-        // IsColorMatch private method removed.
         private void CheckForReactions(IMoldView source, IMoldView target, IMoldView[] activeMolds)
         {
-            if (_currentLevelData == null || !_currentLevelData.enableReactionSystem)
-                return;
-
-            if (_currentLevelData.reactionConfig == null || !_currentLevelData.reactionConfig.enableReactions)
-                return;
-
-            if (_reactionService == null) return;
-            if (activeMolds == null || activeMolds.Length == 0) return;
+            if (_currentLevelData == null || !_currentLevelData.enableReactionSystem) return;
+            if (_currentLevelData.reactionConfig == null || !_currentLevelData.reactionConfig.enableReactions) return;
+            if (_reactionService == null || activeMolds == null || activeMolds.Length == 0) return;
 
             int count = _reactionService.CheckReactions(activeMolds, _currentLevelData.reactionConfig);
 

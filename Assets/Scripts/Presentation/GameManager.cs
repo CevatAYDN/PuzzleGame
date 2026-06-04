@@ -63,6 +63,7 @@ namespace PuzzleGame
         private ITweenService _tweenService;
 
         private bool _isInitialized;
+        private readonly System.Text.StringBuilder _hudSb = new System.Text.StringBuilder(64);
 
         [Inject]
         public void Construct(
@@ -210,21 +211,33 @@ namespace PuzzleGame
             }
         }
 
+        private Rect _errorRect;
+        private Rect _errorLabelRect;
+        private GUIStyle _errorStyle;
+        private int _lastScreenWidth;
+        private int _lastScreenHeight;
+
         private void OnGUI()
         {
             if (!_isInitialized)
             {
-                var rect = new Rect(20, 20, Screen.width - 40, Screen.height - 40);
-                GUI.Box(rect, "VCONTAINER DI FAILURE");
-                var labelRect = new Rect(40, 60, Screen.width - 80, Screen.height - 120);
-                var style = new GUIStyle(GUI.skin.label)
+                if (_errorStyle == null || _lastScreenWidth != Screen.width || _lastScreenHeight != Screen.height)
                 {
-                    fontSize = 20,
-                    alignment = TextAnchor.MiddleCenter,
-                    wordWrap = true
-                };
-                GUI.Label(labelRect, "VContainer DI failed — GameManager (LifetimeScope) not found or not configured.\n\n" +
-                                     "Fix: Tools > PuzzleGame > Open Editor > Scene tab > 'Setup Current Scene (GameManager + DI)'", style);
+                    _lastScreenWidth = Screen.width;
+                    _lastScreenHeight = Screen.height;
+                    _errorRect = new Rect(20, 20, Screen.width - 40, Screen.height - 40);
+                    _errorLabelRect = new Rect(40, 60, Screen.width - 80, Screen.height - 120);
+                    _errorStyle = new GUIStyle(GUI.skin.label)
+                    {
+                        fontSize = 20,
+                        alignment = TextAnchor.MiddleCenter,
+                        wordWrap = true
+                    };
+                }
+
+                GUI.Box(_errorRect, "VCONTAINER DI FAILURE");
+                GUI.Label(_errorLabelRect, "VContainer DI failed — GameManager (LifetimeScope) not found or not configured.\n\n" +
+                                     "Fix: Tools > PuzzleGame > Open Editor > Scene tab > 'Setup Current Scene (GameManager + DI)'", _errorStyle);
             }
         }
 
@@ -331,7 +344,9 @@ namespace PuzzleGame
             if (moveCountText != null && _historyManager != null)
             {
                 string movesLabel = _localizationService != null ? _localizationService.GetString("moves_text") : "Hamle";
-                moveCountText.text = $"{movesLabel}: {_historyManager.CurrentMoveCount}";
+                _hudSb.Clear();
+                _hudSb.Append(movesLabel).Append(": ").Append(_historyManager.CurrentMoveCount);
+                moveCountText.SetText(_hudSb);
             }
         }
 

@@ -34,7 +34,7 @@ namespace PuzzleGame
             Func<float> visualTotalFillProvider)
         {
             _renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
-            _rendererService = rendererService ?? throw new ArgumentNullException(nameof(rendererService));
+            _rendererService = rendererService;
             _visualConfig = visualConfig;
             _visualLayersProvider = visualLayersProvider ?? throw new ArgumentNullException(nameof(visualLayersProvider));
             _visualTotalFillProvider = visualTotalFillProvider ?? throw new ArgumentNullException(nameof(visualTotalFillProvider));

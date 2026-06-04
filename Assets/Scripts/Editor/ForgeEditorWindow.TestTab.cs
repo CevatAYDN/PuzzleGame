@@ -549,7 +549,7 @@ namespace PuzzleGame.Editor
         [Serializable]
         private class AnalyticsWrapper
         {
-            public List<AnalyticsEntry> entries;
+            public List<AnalyticsEntry> entries = new List<AnalyticsEntry>();
         }
     }
 }

@@ -125,15 +125,25 @@ namespace PuzzleGame
 
         private void RestoreStateFromSerialized()
         {
-            // FIX: Removed runtime reflection. Services should be injected via Initialize() or set via property.
-            // If not injected, create default implementations directly (non-DI fallback for Editor).
-            if (_rendererService == null)
+#if UNITY_EDITOR
+            if (!UnityEngine.Application.isPlaying)
             {
-                _rendererService = new RendererService();
+                if (_rendererService == null)
+                {
+                    _rendererService = new PuzzleGame.Infrastructure.Implementations.RendererService();
+                }
+                if (_validator == null)
+                {
+                    _validator = new PuzzleGame.Domain.Services.MoldValidationService();
+                }
             }
-            if (_validator == null)
+#endif
+
+            // DI container MUST inject these. No fallback 'new RendererService()' or 'new MoldValidationService()' here
+            // to ensure Clean Architecture and prevent tightly-coupled logic.
+            if (_rendererService == null || _validator == null)
             {
-                _validator = new MoldValidationService();
+                MoldLogger.LogWarning($"MoldController '{name}' initialized from serialized state without DI services. Editor preview mode may lack visuals/validation.");
             }
 
             _meshGenerator = GetComponent<MoldMeshGenerator>();
@@ -328,6 +338,11 @@ namespace PuzzleGame
 
         private void OnDestroy()
         {
+#if PRIME_TWEEN_INSTALLED
+            PrimeTween.Tween.StopAll(transform);
+            if (corkObject != null) PrimeTween.Tween.StopAll(corkObject.transform);
+#endif
+
             _corkController?.DisposeResources();
 
             // FIX: Complete material disposal to prevent memory leaks

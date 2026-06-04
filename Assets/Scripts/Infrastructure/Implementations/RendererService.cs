@@ -90,15 +90,21 @@ namespace PuzzleGame.Infrastructure.Implementations
 
             _OreBlock.SetFloat(SurfaceHeightID, totalFill);
             int materialIndex = config != null ? config.oreMaterialIndex : 1;
-            renderer.SetPropertyBlock(_OreBlock, materialIndex);
+            int matsCount = renderer.sharedMaterials != null ? renderer.sharedMaterials.Length : 0;
+            if (matsCount > 0)
+            {
+                int targetIndex = Mathf.Clamp(materialIndex, 0, matsCount - 1);
+                renderer.SetPropertyBlock(_OreBlock, targetIndex);
+            }
 
 #if UNITY_EDITOR
             if (!UnityEngine.Application.isPlaying)
             {
                 var mats = renderer.sharedMaterials;
-                if (materialIndex >= 0 && materialIndex < mats.Length)
+                if (mats != null && mats.Length > 0)
                 {
-                    var mat = mats[materialIndex];
+                    int targetIndex = Mathf.Clamp(materialIndex, 0, mats.Length - 1);
+                    var mat = mats[targetIndex];
                     if (mat != null)
                     {
                         cumulative = 0f;
@@ -154,15 +160,21 @@ namespace PuzzleGame.Infrastructure.Implementations
 
             int materialIndex = config != null ? config.moldMaterialIndex : 0;
             _glassBlock.SetColor(GlassColorID, glassColor);
-            renderer.SetPropertyBlock(_glassBlock, materialIndex);
+            int matsCount = renderer.sharedMaterials != null ? renderer.sharedMaterials.Length : 0;
+            if (matsCount > 0)
+            {
+                int targetIndex = Mathf.Clamp(materialIndex, 0, matsCount - 1);
+                renderer.SetPropertyBlock(_glassBlock, targetIndex);
+            }
 
 #if UNITY_EDITOR
             if (!UnityEngine.Application.isPlaying)
             {
                 var mats = renderer.sharedMaterials;
-                if (materialIndex >= 0 && materialIndex < mats.Length)
+                if (mats != null && mats.Length > 0)
                 {
-                    var mat = mats[materialIndex];
+                    int targetIndex = Mathf.Clamp(materialIndex, 0, mats.Length - 1);
+                    var mat = mats[targetIndex];
                     if (mat != null)
                     {
                         mat.SetColor(GlassColorID, glassColor);
