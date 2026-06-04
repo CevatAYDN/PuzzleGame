@@ -33,13 +33,14 @@ namespace PuzzleGame.Application.Services
 
         private static string BuildSecretKey()
         {
-            // Parçaları birleştirerek "türetilmiş" anahtar
-            return string.Concat(
-                "PG-S", "ave-",
-                "v1", "-",
-                "X72k", "Q9mP",
-                "r4tF", "v8wL"
-            );
+            // Cihaz-bağımlı tuz + statik biber.
+            // Tuz: her kurulumda farklıdır (device unique id + cihaz adı).
+            // Biber: tersine mühendisliği zorlaştırmak için kodun içinde tutulur.
+            // Tüm tuzun kaybolması (yeni cihaz, format) eski save'lerin reddedilmesine yol açar — kabul edilebilir trade-off.
+            string deviceId = SystemInfo.deviceUniqueIdentifier ?? "fallback";
+            string deviceModel = SystemInfo.deviceModel ?? "unknown";
+            const string pepper = "PG-Save-v1-X72kQ9mPr4tFv8wL";
+            return $"{deviceId}:{deviceModel}:{pepper}";
         }
 
         private string FilePath =>

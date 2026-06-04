@@ -68,7 +68,8 @@ namespace PuzzleGame
         public void Initialize(IRendererService rendererService,
                                IMoldValidator  validator,
                                IAnimationService animationService,
-                               List<OreLayer> initialLayers)
+                               List<OreLayer> initialLayers,
+                               Application.Configuration.MoldVisualConfig visualConfigOverride = null)
         {
             if (rendererService == null) throw new ArgumentNullException(nameof(rendererService));
             if (validator == null)       throw new ArgumentNullException(nameof(validator));
@@ -83,11 +84,11 @@ namespace PuzzleGame
 
             if (visualConfig == null)
             {
-                visualConfig = Resources.Load<Application.Configuration.MoldVisualConfig>("Data/MoldVisualConfig");
+                visualConfig = visualConfigOverride;
                 if (visualConfig == null)
                 {
                     MoldLogger.LogWarning(
-                        "[MoldController] MoldVisualConfig not found at Resources/Data/MoldVisualConfig on " +
+                        "[MoldController] MoldVisualConfig not injected on " +
                         gameObject.name + ". Using default SO.",
                         this);
                     visualConfig = ScriptableObject.CreateInstance<Application.Configuration.MoldVisualConfig>();
@@ -161,18 +162,14 @@ namespace PuzzleGame
         private void RestoreStateFromSerialized(bool isFromOnValidate = false)
         {
 #if UNITY_EDITOR
+            // Editor preview mode only: keep scene previews working outside playmode.
+            // Direct instantiation is confined to UNITY_EDITOR so production DI is not bypassed.
             if (!UnityEngine.Application.isPlaying)
             {
                 if (_rendererService == null)
-                {
-                    // Fallback for editor validation to keep scene previews working outside playmode.
-                    // Completely fully-qualified here to remove the top-level Dependency Inversion Principle violation.
                     _rendererService = new PuzzleGame.Infrastructure.Implementations.RendererService();
-                }
                 if (_validator == null)
-                {
                     _validator = new PuzzleGame.Domain.Services.MoldValidationService();
-                }
             }
 #endif
 

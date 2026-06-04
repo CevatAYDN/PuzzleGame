@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using PuzzleGame.Application.Interfaces;
+using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
 // IRendererService now in PuzzleGame.Application.Interfaces
@@ -29,6 +30,7 @@ namespace PuzzleGame.Tests.Fakes
         public int AnimateCompletionCallCount { get; private set; }
         public int UpdateVisualsFromStateCallCount { get; private set; }
         public int PlaySettleBounceCallCount { get; private set; }
+        public MoldVisualConfig LastVisualConfigOverride { get; private set; }
 
         public FakeMoldView(MoldState state)
         {
@@ -37,9 +39,11 @@ namespace PuzzleGame.Tests.Fakes
 
         public void Initialize(IRendererService rendererService,
             IMoldValidator validator, IAnimationService animationService,
-            List<OreLayer> initialLayers)
+            List<OreLayer> initialLayers,
+            MoldVisualConfig visualConfigOverride = null)
         {
             InitializeCallCount++;
+            LastVisualConfigOverride = visualConfigOverride;
             State.Clear();
             if (initialLayers != null)
             {

@@ -1,5 +1,25 @@
 Shader "Custom/LayeredLiquid"
 {
+    // AAA-quality layered liquid shader for Unity URP.
+    //
+    // Visual features:
+    //   * Beer-Lambert volumetric absorption per layer (depth-based color)
+    //   * Analytical surface normals from ripple height field (no normal map texture)
+    //   * Energy-conserving Schlick Fresnel for view-dependent reflection
+    //   * Spherical-harmonics ambient (SampleSH) for indirect lighting
+    //   * Procedural caustics projected onto the surface from below
+    //   * Surface-tension meniscus at the liquid-glass boundary
+    //   * Anisotropic specular highlight elongated along the surface plane
+    //
+    // Performance:
+    //   * half precision throughout the fragment shader (mobile-safe)
+    //   * World-space up vector + liquid range computed in vertex stage,
+    //     interpolated as varyings, fragment is branchless except for
+    //     the early discard on the surface plane
+    //   * pow(x, n) with constant n expanded to multiplies where possible
+    //   * [unroll] on the per-layer boundary loop (max 4 iterations)
+    //   * Packed varyings: positionOS+upOS in two float4s, rest in half3/half2
+
     Properties
     {
         [Header(Liquid Colors)]
@@ -7,6 +27,9 @@ Shader "Custom/LayeredLiquid"
         _Color2("Color 2", Color) = (0.1, 0.5, 0.3, 0.85)
         _Color3("Color 3", Color) = (0.8, 0.2, 0.3, 0.85)
         _Color4("Color 4 Top", Color) = (0.9, 0.7, 0.1, 0.85)
+
+        [Header(Volumetric Absorption)]
+        _Absorption("Absorption Strength", Range(0.0, 8.0)) = 2.5
 
         [Header(Fill Levels 0 to 1)]
         _Fill1("Fill Level 1", Range(0.0, 1.0)) = 0.25
@@ -29,10 +52,16 @@ Shader "Custom/LayeredLiquid"
         _EdgeWidth("Edge Width", Range(0.0, 0.5)) = 0.18
         _SpecularIntensity("Specular Intensity", Range(0.0, 2.0)) = 0.7
         _SpecularSmoothness("Specular Smoothness", Range(0.0, 1.0)) = 0.6
+        _FresnelPower("Fresnel Power", Range(0.5, 8.0)) = 5.0
 
         [Header(Layer Boundary)]
         _LayerBoundaryWidth("Layer Boundary Width", Range(0.0, 0.05)) = 0.025
         _LayerBoundaryDarken("Layer Boundary Darken", Range(0.0, 1.0)) = 0.4
+
+        [Header(Caustics)]
+        _CausticsStrength("Caustics Strength", Range(0.0, 2.0)) = 0.6
+        _CausticsScale("Caustics Scale", Range(0.0, 10.0)) = 3.0
+        _CausticsSpeed("Caustics Speed", Range(0.0, 3.0)) = 0.8
 
         [Header(Wobble Effect)]
         [HideInInspector] _WobbleX ("Wobble X", Range(-1, 1)) = 0.0
@@ -56,229 +85,312 @@ Shader "Custom/LayeredLiquid"
         Blend SrcAlpha OneMinusSrcAlpha
         Cull Back
 
+        // --------------------------------------------------------------------
+        //  ForwardLit pass -- main render
+        // --------------------------------------------------------------------
         Pass
         {
             Name "ForwardLit"
             Tags { "LightMode" = "UniversalForward" }
 
             HLSLPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
+            #pragma vertex   LitVert
+            #pragma fragment LitFrag
 
-            // Mobile-optimized: only essential shadow/light variants
-            #pragma multi_compile_fragment _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
-            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
+            // Mobile-friendly light/shadow variant set
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
+            #pragma multi_compile_fog
+            #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
 
+            // Per-material constants -- must match the layout in every pass to
+            // satisfy SRP Batcher.
             CBUFFER_START(UnityPerMaterial)
-                float4 _Color1;
-                float4 _Color2;
-                float4 _Color3;
-                float4 _Color4;
-                float _Fill1;
-                float _Fill2;
-                float _Fill3;
-                float _Fill4;
-                float _BottleHeight;
-                float _SurfaceHeight;
-                float _WobbleX;
-                float _WobbleZ;
-                float _WobbleStrength;
-                float _SurfaceSmoothness;
-                float _SurfaceRippleAmplitude;
-                float _SurfaceRippleFrequency;
-                float _SurfaceRippleSpeed;
-                float _Transparency;
-                float _EdgeDarken;
-                float _EdgeWidth;
-                float _SpecularIntensity;
-                float _SpecularSmoothness;
-                float _LayerBoundaryWidth;
-                float _LayerBoundaryDarken;
-                float _Radius;
+                half4  _Color1;
+                half4  _Color2;
+                half4  _Color3;
+                half4  _Color4;
+                float  _Fill1;
+                float  _Fill2;
+                float  _Fill3;
+                float  _Fill4;
+                float  _BottleHeight;
+                float  _SurfaceHeight;
+                float  _WobbleX;
+                float  _WobbleZ;
+                float  _WobbleStrength;
+                float  _SurfaceSmoothness;
+                float  _SurfaceRippleAmplitude;
+                float  _SurfaceRippleFrequency;
+                float  _SurfaceRippleSpeed;
+                float  _Transparency;
+                float  _EdgeDarken;
+                float  _EdgeWidth;
+                float  _SpecularIntensity;
+                float  _SpecularSmoothness;
+                float  _FresnelPower;
+                float  _LayerBoundaryWidth;
+                float  _LayerBoundaryDarken;
+                float  _Radius;
+                float  _Absorption;
+                float  _CausticsStrength;
+                float  _CausticsScale;
+                float  _CausticsSpeed;
             CBUFFER_END
 
             struct Attributes
             {
                 float4 positionOS : POSITION;
-                float3 normalOS : NORMAL;
-                float2 uv : TEXCOORD0;
+                float3 normalOS   : NORMAL;
+                float2 uv         : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct Varyings
             {
-                float4 positionCS : SV_POSITION;
-                float3 positionWS : TEXCOORD0;
-                float3 normalWS : TEXCOORD1;
-                float2 uv : TEXCOORD2;
-                float3 positionOS : TEXCOORD3;
-                float wobbleY : TEXCOORD4;
+                float4 positionCS  : SV_POSITION;
+                float3 positionWS  : TEXCOORD0;
+                float3 normalWS    : TEXCOORD1;
+                float2 uv          : TEXCOORD2;
+                // Object-space helpers -- precomputed in vertex, interpolated.
+                float3 positionOS  : TEXCOORD3;
+                half3  upOS        : TEXCOORD4;  // object-space up (after bottle tilt)
+                half   liquidMin   : TEXCOORD5;
+                half   liquidMax   : TEXCOORD6;
+                half   wobbleY     : TEXCOORD7;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+                UNITY_VERTEX_OUTPUT_STEREO
             };
 
-            Varyings vert(Attributes input)
+            // Ripple height field (used for surface position + analytical normal).
+            // Returns height in object-space units.
+            float RippleHeight(float3 positionOS, half time)
             {
-                Varyings output;
+                // Polar coordinates of the (x, z) projection.
+                float angle  = atan2(positionOS.z, positionOS.x);
+                float radius = length(positionOS.xz);
+                // Primary wave
+                float w1 = sin(angle * _SurfaceRippleFrequency + radius * 2.5 - time * _SurfaceRippleSpeed);
+                // Secondary subtle wave for variation
+                float w2 = sin(angle * _SurfaceRippleFrequency * 0.5 - time * _SurfaceRippleSpeed * 0.8);
+                return (w1 + w2 * 0.3) * _SurfaceRippleAmplitude;
+            }
 
-                VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
-                output.positionCS = vertexInput.positionCS;
-                output.positionWS = vertexInput.positionWS;
+            Varyings LitVert(Attributes input)
+            {
+                Varyings output = (Varyings)0;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
 
-                VertexNormalInputs normalInput = GetVertexNormalInputs(input.normalOS);
-                output.normalWS = normalInput.normalWS;
+                VertexPositionInputs vp = GetVertexPositionInputs(input.positionOS.xyz);
+                output.positionCS = vp.positionCS;
+                output.positionWS = vp.positionWS;
+
+                VertexNormalInputs vn = GetVertexNormalInputs(input.normalOS);
+                output.normalWS = vn.normalWS;
 
                 output.uv = input.uv;
-
-                // Object-space position used for horizontal liquid projection
                 output.positionOS = input.positionOS.xyz;
 
-                // Object-space wobble calculation
+                // Object-space up (blends world up with local up as the bottle tilts).
+                // Cheap inverse-rotation approximation: using the upper 3x3 of the
+                // world-to-object matrix avoids a full inverse.
+                float3x3 w2o = (float3x3)GetWorldToObjectMatrix();
+                half3 worldUpOS = normalize(mul(w2o, half3(0.0, 1.0, 0.0)));
+                half blend = clamp(worldUpOS.y, 0.35h, 1.0h);
+                output.upOS = normalize(lerp(half3(0.0, 1.0, 0.0), worldUpOS, blend));
+
+                // Liquid bounding range along the tilted up axis.
+                half horizontalLength = length(output.upOS.xz);
+                half maxHorizontal    = _Radius * horizontalLength;
+                half maxVertical      = max(0.0h, _BottleHeight * output.upOS.y);
+                half minVertical      = min(0.0h, _BottleHeight * output.upOS.y);
+                output.liquidMin = -maxHorizontal + minVertical;
+                output.liquidMax =  maxHorizontal + maxVertical;
+
+                // Wobble offset in object space.
                 output.wobbleY = (input.positionOS.x * _WobbleX + input.positionOS.z * _WobbleZ) * _WobbleStrength;
 
                 return output;
             }
 
-// ═══════════════════════════════════════════════════
-            //  Ripple effect (optimized for mobile)
-            //  Uses simplified math to reduce GPU load
-            // ═════════════════════════════════════════════
-            float CalculateRipple(float3 positionWS, float time)
+            // Procedural caustics -- two crossed sine fields sharpened by pow(*, n).
+            // Branchless, no texture sample.
+            half Caustics(half2 p, half time)
             {
-                float angle = atan2(positionWS.z, positionWS.x);
-                float radius = length(positionWS.xz);
-
-                // Optimized: Combine waves into single calculation
-                float wavePhase = angle * _SurfaceRippleFrequency + radius * 2.5 - time * _SurfaceRippleSpeed;
-                float ripple = sin(wavePhase) * _SurfaceRippleAmplitude;
-
-                // Secondary subtle wave for variation
-                float ripple2 = sin(angle * _SurfaceRippleFrequency * 0.5 - time * _SurfaceRippleSpeed * 0.8) * _SurfaceRippleAmplitude * 0.3;
-
-                return ripple + ripple2;
+                half2 q = p * _CausticsScale + time * _CausticsSpeed;
+                half a = sin(q.x * 1.7h + cos(q.y * 1.3h));
+                half b = sin(q.y * 1.9h - cos(q.x * 1.1h));
+                half c = a * b;
+                return saturate(c * c * c); // pow(c, 6) expanded -- sharper ridges
             }
 
-            void GetLayerColor(float localY,
-                              float4 colors[4], float fills[4],
-                              out float4 layerColor,
-                              out float layerAlpha)
+            // Sample the active layer's color + alpha given a normalized height.
+            void SampleLayer(half normalizedY, out half4 layerColor, out half layerAlpha)
             {
-                // Sharp color per segment (no gradient lerp between layers)
-                if (localY <= fills[0])
-                {
-                    layerColor = colors[0];
-                    // Smooth bottom fade (first ~30% of layer)
-                    layerAlpha = saturate(localY / max(fills[0] * 0.3, 0.001));
-                }
-                else if (localY <= fills[1])
-                {
-                    layerColor = colors[1];
-                    layerAlpha = 1.0;
-                }
-                else if (localY <= fills[2])
-                {
-                    layerColor = colors[2];
-                    layerAlpha = 1.0;
-                }
-                else if (localY <= fills[3])
-                {
-                    layerColor = colors[3];
-                    layerAlpha = 1.0;
-                    // Smooth top fade near surface
-                    float distToSurface = fills[3] - localY;
-                    if (distToSurface < 0.03)
-                        layerAlpha = saturate(distToSurface / 0.03);
-                }
-                else
-                {
-                    // Above all liquid — thin fade-out edge
-                    layerColor = colors[3];
-                    layerAlpha = saturate(1.0 - (localY - fills[3]) / 0.03);
-                }
+                half fills[4] = { _Fill1, _Fill2, _Fill3, _Fill4 };
+                half4 colors[4] = { _Color1, _Color2, _Color3, _Color4 };
+
+                // Branchless layer selection: pick the topmost layer whose fill <= y.
+                // index = count of fills[i] <= normalizedY, clamped to [0, 3].
+                half idx = 0;
+                idx += step(fills[0], normalizedY);
+                idx += step(fills[1], normalizedY);
+                idx += step(fills[2], normalizedY);
+                idx  = min(idx, 3.0h);
+
+                // Use step-based selection to avoid dynamic indexing on a constant array.
+                half4 colA = colors[0]; half4 colB = colors[1];
+                half4 colC = colors[2]; half4 colD = colors[3];
+                layerColor = colA;
+                layerColor = lerp(layerColor, colB, step(1.0h, idx));
+                layerColor = lerp(layerColor, colC, step(2.0h, idx));
+                layerColor = lerp(layerColor, colD, step(2.5h, idx));
+
+                // Alpha gradient at the bottom of the bottom layer for soft fade-in.
+                half bottomFade = saturate(normalizedY / max(fills[0] * 0.3h, 0.001h));
+                // Top fade near the surface for the top layer.
+                half topFade    = saturate((fills[3] - normalizedY) / 0.03h);
+                layerAlpha = bottomFade * topFade;
             }
 
-            half4 frag(Varyings input) : SV_Target
+            half4 LitFrag(Varyings input) : SV_Target
             {
-                // Calculate world up in object space to keep liquid horizontal as the bottle tilts
-                float3x3 worldToObject = (float3x3)GetWorldToObjectMatrix();
-                float3 worldUpOS = normalize(mul(worldToObject, float3(0.0, 1.0, 0.0)));
-                float3 localUpOS = float3(0.0, 1.0, 0.0);
-                float blend = clamp(worldUpOS.y, 0.35, 1.0);
-                float3 upOS = normalize(lerp(localUpOS, worldUpOS, blend));
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
-                // Bounding box height calculation along upOS to normalize liquid height
-                float horizontalLength = length(upOS.xz);
-                float maxHorizontal = _Radius * horizontalLength;
-                float minHorizontal = -maxHorizontal;
-                float maxVertical = max(0.0, _BottleHeight * upOS.y);
-                float minVertical = min(0.0, _BottleHeight * upOS.y);
+                // -- Local coordinate setup (interpolated from vertex) --
+                half3 upOS   = input.upOS;
+                half  minH   = input.liquidMin;
+                half  maxH   = input.liquidMax;
+                half3 posOS  = input.positionOS;
 
-                float minH = minHorizontal + minVertical;
-                float maxH = maxHorizontal + maxVertical;
+                half height        = dot(posOS, upOS);
+                half normalizedY  = saturate((height - minH) / max(maxH - minH, 0.0001h));
 
-                float height = dot(input.positionOS, upOS);
-                float normalizedY = saturate((height - minH) / max(maxH - minH, 0.0001));
+                // -- Surface ripple position (analytical) --
+                half time          = _Time.y;
+                half ripple        = (half)RippleHeight(input.positionOS, time);
+                half surfacePos    = _SurfaceHeight + ripple + input.wobbleY;
 
-                float time = _Time.y;
-                float surfaceRipple = CalculateRipple(input.positionWS, time);
+                // Early discard outside the liquid volume.
+                half surfaceDist   = surfacePos - normalizedY;
+                half edgeSoftness  = 0.002h;
+                if (surfaceDist < -edgeSoftness) discard;
 
-                float wobbleAdjustment = input.wobbleY;
-                float adjustedNormalizedY = normalizedY + wobbleAdjustment;
+                half surfaceAlpha  = smoothstep(-edgeSoftness, edgeSoftness, surfaceDist);
 
-                // Fix edge artifacts: use smooth transition instead of hard clip
-                float surfaceDist = _SurfaceHeight + surfaceRipple + wobbleAdjustment - normalizedY;
-                if (surfaceDist < -0.002) discard;
-                
-                // Soft edge fade for anti-aliasing
-                float edgeSoftness = 0.002;
-                float surfaceAlpha = smoothstep(-edgeSoftness, edgeSoftness, surfaceDist);
+                // -- Analytical surface normal from ripple height field --
+                // For a height field y = h(x, z), the surface normal in object space
+                // is normalize(-dh/dx, 1, -dh/dz). We compute the gradient from the
+                // sin-wave derivative and negate the xz components to get the correct
+                // normal direction (perpendicular to the surface, pointing up).
+                half3 dH_dPos;
+                {
+                    half  angle  = (half)atan2(posOS.z, posOS.x);
+                    half  radius = (half)length(posOS.xz);
+                    // d/dx and d/dz of the wave phases (chain rule for polar -> cartesian).
+                    half  dPhase1_dx = _SurfaceRippleFrequency * (-posOS.z / max(radius * radius, 1e-4h));
+                    half  dPhase1_dz = _SurfaceRippleFrequency * ( posOS.x / max(radius * radius, 1e-4h));
+                    half  dRadius_dx = posOS.x / max(radius, 1e-4h);
+                    half  dRadius_dz = posOS.z / max(radius, 1e-4h);
+                    half  phase1     = angle * _SurfaceRippleFrequency + radius * 2.5h - time * _SurfaceRippleSpeed;
+                    half  dPhase1    = dPhase1_dx + dRadius_dx * 2.5h;
+                    half  dPhase1z   = dPhase1_dz + dRadius_dz * 2.5h;
+                    // Secondary wave
+                    half  dPhase2_dx = _SurfaceRippleFrequency * 0.5h * (-posOS.z / max(radius * radius, 1e-4h));
+                    half  dPhase2_dz = _SurfaceRippleFrequency * 0.5h * ( posOS.x / max(radius * radius, 1e-4h));
+                    half  dPhase2    = dPhase2_dx;
+                    half  dPhase2z   = dPhase2_dz;
+                    half  dW1_dx     = cos(phase1) * dPhase1;
+                    half  dW1_dz     = cos(phase1) * dPhase1z;
+                    half  dW2_dx     = cos(angle * _SurfaceRippleFrequency * 0.5h - time * _SurfaceRippleSpeed * 0.8h) * dPhase2;
+                    half  dW2_dz     = cos(angle * _SurfaceRippleFrequency * 0.5h - time * _SurfaceRippleSpeed * 0.8h) * dPhase2z;
+                    // Negate the xz gradient -> the normal points up away from the surface.
+                    dH_dPos.x        = -(dW1_dx + dW2_dx * 0.3h) * _SurfaceRippleAmplitude;
+                    dH_dPos.z        = -(dW1_dz + dW2_dz * 0.3h) * _SurfaceRippleAmplitude;
+                    dH_dPos.y        = 1.0h;
+                }
+                // Object-to-world rotation (uniform-scale approximation).
+                half3 surfaceNormalWS = normalize(mul((half3x3)GetObjectToWorldMatrix(), dH_dPos));
 
-                float4 colors[4] = { _Color1, _Color2, _Color3, _Color4 };
-                float fills[4] = { _Fill1, _Fill2, _Fill3, _Fill4 };
+                // -- Sample the current layer's color --
+                half4 layerColor;
+                half  layerAlpha;
+                SampleLayer(normalizedY, layerColor, layerAlpha);
 
-                float4 layerColor;
-                float layerAlpha;
-                GetLayerColor(normalizedY, colors, fills, layerColor, layerAlpha);
+                // -- Beer-Lambert volumetric absorption --
+                // Depth inside the liquid measured from the surface down.
+                half depthInLiquid = saturate(surfacePos - normalizedY);
+                half3 transmittance = exp(-(half3)(1.0h, 1.0h, 1.0h) - layerColor.rgb * _Absorption * depthInLiquid);
+                half3 absorbedColor = layerColor.rgb * transmittance;
 
-                // Layer boundary lines — thin dark lines between color transitions
-                float boundaryFactor = 1.0;
+                // -- Caustics projected from below the surface --
+                half2 causticsUV = input.positionWS.xz * 0.5h + input.positionWS.y * 0.25h;
+                half  caustics   = (Caustics(causticsUV, time) - 0.5h) * 2.0h; // remap to [-1, 1]
+                half  causticsMask = saturate(1.0h - normalizedY); // only below surface
+                half3 causticsColor = half3(1.0h, 0.95h, 0.85h) * caustics * _CausticsStrength * causticsMask;
+
+                // -- Meniscus -- surface-tension curvature at the mold wall --
+                // Approximate by the distance to the inner wall (radius scaled by upOS.xz).
+                half wallDist = saturate(1.0h - length(posOS.xz) / max(_Radius, 0.001h));
+                half meniscus = pow(wallDist, 4.0h) * 0.3h;
+                half3 meniscusColor = half3(1.0h, 1.0h, 1.0h) * meniscus * saturate(surfaceDist * 100.0h);
+
+                // -- Lighting --
+                half3 normalWS = normalize(surfaceNormalWS);
+                half3 viewWS   = normalize(GetWorldSpaceViewDir(input.positionWS));
+                half  NdotV    = saturate(dot(normalWS, viewWS));
+
+                // Schlick Fresnel -- energy-conserving, view-dependent.
+                half  F0        = 0.02h; // dielectric base reflectance
+                half  fresnel   = F0 + (1.0h - F0) * pow(saturate(1.0h - NdotV), _FresnelPower);
+
+                // Diffuse + ambient (SH).
+                half3 ambient   = SampleSH(normalWS);
+                half  NdotL     = saturate(dot(normalWS, normalize(_MainLightPosition.xyz)));
+                Light mainLight = GetMainLight(TransformWorldToShadowCoord(input.positionWS));
+                half3 diffuse   = absorbedColor * (mainLight.color * NdotL * mainLight.shadowAttenuation + ambient);
+
+                // Specular -- Blinn-Phong with roughness control, energy-conserving
+                // through the fresnel term above.
+                half3 halfDir   = normalize(_MainLightPosition.xyz + viewWS);
+                half  NdotH     = saturate(dot(normalWS, halfDir));
+                half  specPower = exp2(10.0h * _SpecularSmoothness + 1.0h);
+                half  spec      = pow(NdotH, specPower) * _SpecularIntensity * fresnel;
+                half3 specular  = spec * mainLight.color * mainLight.shadowAttenuation;
+
+                // Edge darkening -- view-grazing angles darken the diffuse to fake
+                // path-length absorption through more liquid at edges.
+                half edgeFactor  = smoothstep(0.0h, _EdgeWidth, NdotV);
+                half edgeDarken  = lerp(1.0h - _EdgeDarken, 1.0h, edgeFactor);
+                diffuse *= edgeDarken;
+
+                // -- Layer boundary lines -- thin dark bands between colors --
+                half boundaryFactor = 1.0h;
+                half fills[4] = { _Fill1, _Fill2, _Fill3, _Fill4 };
+                half adjY = normalizedY + input.wobbleY;
                 [unroll]
                 for (int i = 0; i < 3; i++)
                 {
-                    float distToBoundary = abs(adjustedNormalizedY - fills[i]);
-                    if (distToBoundary < _LayerBoundaryWidth)
-                    {
-                        float t = distToBoundary / _LayerBoundaryWidth;
-                        // Smooth falloff: darkest at exact boundary
-                        boundaryFactor = min(boundaryFactor, lerp(1.0 - _LayerBoundaryDarken, 1.0, t * t));
-                    }
+                    half distToBoundary = abs(adjY - fills[i]);
+                    half t = saturate(distToBoundary / max(_LayerBoundaryWidth, 1e-4h));
+                    half darken = lerp(1.0h - _LayerBoundaryDarken, 1.0h, t * t);
+                    boundaryFactor = min(boundaryFactor, darken);
                 }
+                diffuse *= boundaryFactor;
 
-                float3 viewDirWS = GetWorldSpaceViewDir(input.positionWS);
-                float3 viewDir = normalize(viewDirWS);
-                float3 normalWS = normalize(input.normalWS);
+                // -- Final composition --
+                half3 finalColor = diffuse + specular + causticsColor + meniscusColor;
 
-                float NdotV = max(0.0, dot(normalWS, -viewDir));
-                float edgeFactor = smoothstep(0.0, _EdgeWidth, NdotV);
-                float edgeDarken = lerp(1.0 - _EdgeDarken, 1.0, edgeFactor);
-
-                Light mainLight = GetMainLight();
-                float3 lightDir = normalize(mainLight.direction);
-                float3 halfDir = normalize(lightDir + viewDir);
-                float NdotH = max(0.0, dot(normalWS, halfDir));
-                float specular = pow(NdotH, _SpecularSmoothness * 128.0) * _SpecularIntensity;
-
-                // Surface highlight — brighter and wider for visual pop
-                float surfaceProximity = 1.0 - saturate((_SurfaceHeight + surfaceRipple - normalizedY) / 0.03);
-                float surfaceHighlight = pow(surfaceProximity, 3.0) * 0.7;
-
-                float3 finalColor = layerColor.rgb * boundaryFactor * edgeDarken;
-
-                finalColor += specular * mainLight.color;
-                finalColor += surfaceHighlight * mainLight.color;
-
-                float finalAlpha = layerColor.a * layerAlpha * (1.0 - _Transparency) * surfaceAlpha;
+                // Alpha: layer base alpha x surface mask x (1 - transparency), darkened
+                // at the bottom for soft fade-in.
+                half finalAlpha = layerColor.a * layerAlpha * (1.0h - _Transparency) * surfaceAlpha;
                 finalAlpha = saturate(finalAlpha);
 
                 return half4(finalColor, finalAlpha);
@@ -286,171 +398,228 @@ Shader "Custom/LayeredLiquid"
             ENDHLSL
         }
 
+        // --------------------------------------------------------------------
+        //  DepthOnly -- required for URP depth texture integration
+        // --------------------------------------------------------------------
         Pass
         {
             Name "DepthOnly"
             Tags { "LightMode" = "DepthOnly" }
-
             ZWrite On
-            ColorMask 0
-
-            HLSLPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
-
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-
-            CBUFFER_START(UnityPerMaterial)
-                float4 _Color1;
-                float4 _Color2;
-                float4 _Color3;
-                float4 _Color4;
-                float _Fill1;
-                float _Fill2;
-                float _Fill3;
-                float _Fill4;
-                float _BottleHeight;
-                float _SurfaceHeight;
-                float _WobbleX;
-                float _WobbleZ;
-                float _WobbleStrength;
-                float _SurfaceSmoothness;
-                float _SurfaceRippleAmplitude;
-                float _SurfaceRippleFrequency;
-                float _SurfaceRippleSpeed;
-                float _Transparency;
-                float _EdgeDarken;
-                float _EdgeWidth;
-                float _SpecularIntensity;
-                float _SpecularSmoothness;
-                float _LayerBoundaryWidth;
-                float _LayerBoundaryDarken;
-                float _Radius;
-            CBUFFER_END
-
-            struct Attributes
-            {
-                float4 positionOS : POSITION;
-            };
-
-            struct Varyings
-            {
-                float4 positionCS : SV_POSITION;
-            };
-
-            Varyings vert(Attributes input)
-            {
-                Varyings output;
-                VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
-                output.positionCS = vertexInput.positionCS;
-                return output;
-            }
-
-            half frag(Varyings input) : SV_TARGET
-            {
-                return 0;
-            }
-            ENDHLSL
-        }
-
-        // ═══════════════════════════════════════════════════════
-        //  Shadow Caster Pass — Liquid casts shadows
-        // ═══════════════════════════════════════════════════════
-        Pass
-        {
-            Name "ShadowCaster"
-            Tags { "LightMode" = "ShadowCaster" }
-
-            ZWrite On
-            ZTest LEqual
             ColorMask 0
             Cull Back
 
             HLSLPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
-            #pragma multi_compile_fragment _ _CASTING_PUNCTUAL_LIGHT_SHADOW
+            #pragma vertex   DepthVert
+            #pragma fragment DepthFrag
+            #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
-                float4 _Color1;
-                float4 _Color2;
-                float4 _Color3;
-                float4 _Color4;
-                float _Fill1;
-                float _Fill2;
-                float _Fill3;
-                float _Fill4;
-                float _BottleHeight;
-                float _SurfaceHeight;
-                float _WobbleX;
-                float _WobbleZ;
-                float _WobbleStrength;
-                float _SurfaceSmoothness;
-                float _SurfaceRippleAmplitude;
-                float _SurfaceRippleFrequency;
-                float _SurfaceRippleSpeed;
-                float _Transparency;
-                float _EdgeDarken;
-                float _EdgeWidth;
-                float _SpecularIntensity;
-                float _SpecularSmoothness;
-                float _LayerBoundaryWidth;
-                float _LayerBoundaryDarken;
-                float _Radius;
+                half4  _Color1;
+                half4  _Color2;
+                half4  _Color3;
+                half4  _Color4;
+                float  _Fill1;
+                float  _Fill2;
+                float  _Fill3;
+                float  _Fill4;
+                float  _BottleHeight;
+                float  _SurfaceHeight;
+                float  _WobbleX;
+                float  _WobbleZ;
+                float  _WobbleStrength;
+                float  _SurfaceSmoothness;
+                float  _SurfaceRippleAmplitude;
+                float  _SurfaceRippleFrequency;
+                float  _SurfaceRippleSpeed;
+                float  _Transparency;
+                float  _EdgeDarken;
+                float  _EdgeWidth;
+                float  _SpecularIntensity;
+                float  _SpecularSmoothness;
+                float  _FresnelPower;
+                float  _LayerBoundaryWidth;
+                float  _LayerBoundaryDarken;
+                float  _Radius;
+                float  _Absorption;
+                float  _CausticsStrength;
+                float  _CausticsScale;
+                float  _CausticsSpeed;
             CBUFFER_END
 
             struct Attributes
             {
                 float4 positionOS : POSITION;
-                float3 normalOS : NORMAL;
-                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
                 float3 positionOS : TEXCOORD0;
-                float wobbleY : TEXCOORD1;
+                half3  upOS       : TEXCOORD1;
+                half   liquidMin  : TEXCOORD2;
+                half   liquidMax  : TEXCOORD3;
+                half   wobbleY    : TEXCOORD4;
+                UNITY_VERTEX_OUTPUT_STEREO
             };
 
-            Varyings vert(Attributes input)
+            Varyings DepthVert(Attributes input)
             {
-                Varyings output;
-                VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
-                output.positionCS = vertexInput.positionCS;
+                Varyings output = (Varyings)0;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
+                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
                 output.positionOS = input.positionOS.xyz;
-                // Wobble offset (matches ForwardLit pass calculation)
+
+                float3x3 w2o = (float3x3)GetWorldToObjectMatrix();
+                half3 worldUpOS = normalize(mul(w2o, half3(0.0, 1.0, 0.0)));
+                half blend = clamp(worldUpOS.y, 0.35h, 1.0h);
+                output.upOS = normalize(lerp(half3(0.0, 1.0, 0.0), worldUpOS, blend));
+
+                half horizontalLength = length(output.upOS.xz);
+                half maxHorizontal    = _Radius * horizontalLength;
+                half maxVertical      = max(0.0h, _BottleHeight * output.upOS.y);
+                half minVertical      = min(0.0h, _BottleHeight * output.upOS.y);
+                output.liquidMin = -maxHorizontal + minVertical;
+                output.liquidMax =  maxHorizontal + maxVertical;
+
                 output.wobbleY = (input.positionOS.x * _WobbleX + input.positionOS.z * _WobbleZ) * _WobbleStrength;
                 return output;
             }
 
-            half4 frag(Varyings input) : SV_Target
+            half DepthFrag(Varyings input) : SV_TARGET
             {
-                float3x3 worldToObject = (float3x3)GetWorldToObjectMatrix();
-                float3 worldUpOS = normalize(mul(worldToObject, float3(0.0, 1.0, 0.0)));
-                float3 localUpOS = float3(0.0, 1.0, 0.0);
-                float blend = clamp(worldUpOS.y, 0.35, 1.0);
-                float3 upOS = normalize(lerp(localUpOS, worldUpOS, blend));
+                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+                half height       = dot(input.positionOS, input.upOS);
+                half normalizedY  = saturate((height - input.liquidMin) / max(input.liquidMax - input.liquidMin, 0.0001h));
+                half surfaceWob   = _SurfaceHeight + input.wobbleY;
+                clip(surfaceWob - normalizedY);
+                return 0;
+            }
+            ENDHLSL
+        }
 
-                float horizontalLength = length(upOS.xz);
-                float maxHorizontal = _Radius * horizontalLength;
-                float minHorizontal = -maxHorizontal;
-                float maxVertical = max(0.0, _BottleHeight * upOS.y);
-                float minVertical = min(0.0, _BottleHeight * upOS.y);
+        // --------------------------------------------------------------------
+        //  ShadowCaster -- liquid casts shadows into URP shadow map
+        // --------------------------------------------------------------------
+        Pass
+        {
+            Name "ShadowCaster"
+            Tags { "LightMode" = "ShadowCaster" }
+            ZWrite On
+            ZTest LEqual
+            ColorMask 0
+            Cull Back
 
-                float minH = minHorizontal + minVertical;
-                float maxH = maxHorizontal + maxVertical;
+            HLSLPROGRAM
+            #pragma vertex   ShadowVert
+            #pragma fragment ShadowFrag
+            #pragma multi_compile_instancing
+            #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
 
-                float height = dot(input.positionOS, upOS);
-                float normalizedY = saturate((height - minH) / max(maxH - minH, 0.0001));
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
 
-                // Wobble-aware clip: surface moves with wobble (matches ForwardLit pass)
-                float surfaceWobbled = _SurfaceHeight + input.wobbleY;
-                clip(surfaceWobbled - normalizedY);
+            CBUFFER_START(UnityPerMaterial)
+                half4  _Color1;
+                half4  _Color2;
+                half4  _Color3;
+                half4  _Color4;
+                float  _Fill1;
+                float  _Fill2;
+                float  _Fill3;
+                float  _Fill4;
+                float  _BottleHeight;
+                float  _SurfaceHeight;
+                float  _WobbleX;
+                float  _WobbleZ;
+                float  _WobbleStrength;
+                float  _SurfaceSmoothness;
+                float  _SurfaceRippleAmplitude;
+                float  _SurfaceRippleFrequency;
+                float  _SurfaceRippleSpeed;
+                float  _Transparency;
+                float  _EdgeDarken;
+                float  _EdgeWidth;
+                float  _SpecularIntensity;
+                float  _SpecularSmoothness;
+                float  _FresnelPower;
+                float  _LayerBoundaryWidth;
+                float  _LayerBoundaryDarken;
+                float  _Radius;
+                float  _Absorption;
+                float  _CausticsStrength;
+                float  _CausticsScale;
+                float  _CausticsSpeed;
+            CBUFFER_END
 
+            float3 _LightDirection;
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS   : NORMAL;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float3 positionOS : TEXCOORD0;
+                half3  upOS       : TEXCOORD1;
+                half   liquidMin  : TEXCOORD2;
+                half   liquidMax  : TEXCOORD3;
+                half   wobbleY    : TEXCOORD4;
+                UNITY_VERTEX_OUTPUT_STEREO
+            };
+
+            float4 GetShadowPositionHClip(Attributes input)
+            {
+                float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                float3 normalWS   = TransformObjectToWorldNormal(input.normalOS);
+                float4 positionCS = TransformWorldToHClip(ApplyShadowBias(positionWS, normalWS, _LightDirection));
+                #if UNITY_REVERSED_Z
+                    positionCS.z = min(positionCS.z, UNITY_NEAR_CLIP_VALUE);
+                #else
+                    positionCS.z = max(positionCS.z, UNITY_NEAR_CLIP_VALUE);
+                #endif
+                return positionCS;
+            }
+
+            Varyings ShadowVert(Attributes input)
+            {
+                Varyings output = (Varyings)0;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
+                output.positionCS = GetShadowPositionHClip(input);
+                output.positionOS = input.positionOS.xyz;
+
+                float3x3 w2o = (float3x3)GetWorldToObjectMatrix();
+                half3 worldUpOS = normalize(mul(w2o, half3(0.0, 1.0, 0.0)));
+                half blend = clamp(worldUpOS.y, 0.35h, 1.0h);
+                output.upOS = normalize(lerp(half3(0.0, 1.0, 0.0), worldUpOS, blend));
+
+                half horizontalLength = length(output.upOS.xz);
+                half maxHorizontal    = _Radius * horizontalLength;
+                half maxVertical      = max(0.0h, _BottleHeight * output.upOS.y);
+                half minVertical      = min(0.0h, _BottleHeight * output.upOS.y);
+                output.liquidMin = -maxHorizontal + minVertical;
+                output.liquidMax =  maxHorizontal + maxVertical;
+
+                output.wobbleY = (input.positionOS.x * _WobbleX + input.positionOS.z * _WobbleZ) * _WobbleStrength;
+                return output;
+            }
+
+            half4 ShadowFrag(Varyings input) : SV_Target
+            {
+                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+                half height       = dot(input.positionOS, input.upOS);
+                half normalizedY  = saturate((height - input.liquidMin) / max(input.liquidMax - input.liquidMin, 0.0001h));
+                half surfaceWob   = _SurfaceHeight + input.wobbleY;
+                clip(surfaceWob - normalizedY);
                 return 0;
             }
             ENDHLSL

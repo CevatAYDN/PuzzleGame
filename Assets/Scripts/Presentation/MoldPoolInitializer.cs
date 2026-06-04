@@ -123,6 +123,8 @@ namespace PuzzleGame
 
         private void CacheMolds()
         {
+            // One-time scene scan: FindObjectsByType is O(scene) and must NOT run per-level
+            // (call site gates via `if (_allMoldsPool == null) CacheMolds()`).
             var temp = UnityEngine.Object.FindObjectsByType<MoldController>(FindObjectsInactive.Include);
             Array.Sort(temp, Comparer);
             _allMoldsPool = temp;

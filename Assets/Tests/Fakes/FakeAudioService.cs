@@ -21,11 +21,20 @@ namespace PuzzleGame.Tests.Fakes
 
         public AudioClipId LastSfxId { get; private set; }
         public AudioClipId LastMusicId { get; private set; }
+        public Vector3? LastSfxWorldPos { get; private set; }
 
-        public void PlaySfx(AudioClipId id, Vector3? worldPos = null)
+        public void PlaySfx(AudioClipId id)
         {
             PlaySfxCallCount++;
             LastSfxId = id;
+            LastSfxWorldPos = null;
+        }
+
+        public void PlaySfxAt(AudioClipId id, Vector3 worldPos)
+        {
+            PlaySfxCallCount++;
+            LastSfxId = id;
+            LastSfxWorldPos = worldPos;
         }
 
         public void PlayMusic(AudioClipId id, bool loop = true)

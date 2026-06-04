@@ -57,6 +57,8 @@ namespace PuzzleGame.Infrastructure.Implementations
 
             var sfxPrefab = CreateAudioSourcePrefab("SfxAudioSource_Prefab", config.sfxGroup);
             var musicPrefab = CreateAudioSourcePrefab("MusicAudioSource_Prefab", config.musicGroup);
+            if (sfxPrefab == null || musicPrefab == null)
+                throw new InvalidOperationException("Failed to create AudioSource prefabs (Unity may have rejected component addition).");
 
             _sfxPool = _poolManager.RegisterPool<AudioSource>("SfxPool", sfxPrefab, config.sfxPoolSize,
                 onRent: ResetAudioSource,
@@ -78,7 +80,17 @@ namespace PuzzleGame.Infrastructure.Implementations
             };
         }
 
-        public void PlaySfx(AudioClipId id, Vector3? worldPos = null)
+        public void PlaySfx(AudioClipId id)
+        {
+            PlaySfxInternal(id, worldPos: null);
+        }
+
+        public void PlaySfxAt(AudioClipId id, Vector3 worldPos)
+        {
+            PlaySfxInternal(id, worldPos: worldPos);
+        }
+
+        private void PlaySfxInternal(AudioClipId id, Vector3? worldPos)
         {
             if (_disposed) return;
             if (_isMuted && id != AudioClipId.UiClick) return;
@@ -99,7 +111,7 @@ namespace PuzzleGame.Infrastructure.Implementations
                 return;
             }
 
-            ConfigureSource(source, clip, loop: false, worldPos);
+            ConfigureSource(source, clip, loop: false, worldPos, channelVolume: SfxVolume);
             _activeSfxIds[source] = id;
             source.Play();
 
@@ -129,8 +141,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             _currentMusic = _musicPool.Rent();
             _activeMusicIds[_currentMusic] = id;
 
-            ConfigureSource(_currentMusic, clip, loop, worldPos: null);
-            _currentMusic.volume = MusicVolume * MasterVolume;
+            ConfigureSource(_currentMusic, clip, loop, worldPos: null, channelVolume: MusicVolume);
             _currentMusic.Play();
         }
 
@@ -178,6 +189,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             if (_currentMusic != null)
             {
                 _currentMusic.Stop();
+                _activeMusicIds.Remove(_currentMusic);
                 _musicPool.Return(_currentMusic);
                 _currentMusic = null;
             }
@@ -187,6 +199,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             foreach (var source in activeSources)
                 if (source != null) _sfxPool.Return(source);
             _activeSfxIds.Clear();
+            _activeMusicIds.Clear();
         }
 
         // ──────────────────────────────────────────────
@@ -202,11 +215,11 @@ namespace PuzzleGame.Infrastructure.Implementations
             _musicPool.Return(music);
         }
 
-        private void ConfigureSource(AudioSource source, AudioClip clip, bool loop, Vector3? worldPos)
+        private void ConfigureSource(AudioSource source, AudioClip clip, bool loop, Vector3? worldPos, float channelVolume)
         {
             source.clip = clip;
             source.loop = loop;
-            source.volume = SfxVolume * MasterVolume;
+            source.volume = channelVolume * MasterVolume;
             source.pitch = 1f;
             source.spatialBlend = (_config.spatialBlend3D && worldPos.HasValue) ? 1f : 0f;
             if (worldPos.HasValue)
@@ -234,10 +247,15 @@ namespace PuzzleGame.Infrastructure.Implementations
         private static AudioSource CreateAudioSourcePrefab(string name, AudioMixerGroup group)
         {
             var go = new GameObject(name, typeof(AudioSource));
+            go.hideFlags = HideFlags.HideAndDontSave;
             go.SetActive(false);
             var source = go.GetComponent<AudioSource>();
+            if (source == null) return null;
             source.playOnAwake = false;
-            source.outputAudioMixerGroup = group;
+            // AudioMixerGroup is optional in the AudioConfig; only assign when supplied
+            // to avoid the destroyed-asset null warning some Unity versions log on assignment.
+            if (group != null)
+                source.outputAudioMixerGroup = group;
             source.spatialBlend = 0f;
             return source;
         }

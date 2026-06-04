@@ -10,7 +10,7 @@ Shader "PuzzleGame/MobileMold"
         _GlassColor ("Glass Tint", Color) = (0.9, 0.95, 1.0, 0.3)
         _GlassAlpha ("Glass Opacity", Range(0, 1)) = 0.3
 
-        [Header(Liquid - Multi Layer)]
+        [Header(Liquid Multi Layer)]
         _Color1("Color 1 (Bottom)", Color) = (0.15, 0.55, 0.95, 0.98)
         _Color2("Color 2", Color) = (0.08, 0.65, 0.35, 0.98)
         _Color3("Color 3", Color) = (0.95, 0.18, 0.28, 0.98)
@@ -22,7 +22,7 @@ Shader "PuzzleGame/MobileMold"
         _Fill3("Fill Level 3", Range(0, 1)) = 0.75
         _Fill4("Fill Level 4", Range(0, 1)) = 1.0
 
-        [Header(Surface & Sparkle)]
+        [Header(Surface and Sparkle)]
         _SurfaceHeight ("Surface Height", Range(0, 1)) = 1.0
         _WaveSpeed ("Wave Speed", Float) = 2.0
         _WaveAmplitude ("Wave Height", Float) = 0.04

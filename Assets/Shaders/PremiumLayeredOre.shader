@@ -318,7 +318,7 @@ Shader "Custom/PremiumLayeredOre"
                 float specular = pow(NdotH, _SpecularSmoothness * 256.0) * _SpecularIntensity;
                 float3 specularColor = specular * _SpecularColor.rgb * mainLight.color;
 
-                // ── Sparkle Effect ──────────────────────────────────────────
+                // -- Sparkle Effect ------------------------------------------
                 float2 screenUV = input.positionCS.xy * _ScreenParams.zw;
                 float sparkleHash = hash(screenUV * _SparkleSize + floor(time * 4.7));
                 float sparkleGate = smoothstep(0.92, 1.0, sparkleHash)

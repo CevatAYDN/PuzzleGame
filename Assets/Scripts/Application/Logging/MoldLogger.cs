@@ -61,25 +61,29 @@ namespace PuzzleGame.Application.Logging
         public static void LogInfo(System.FormattableString message, Object context = null)
         {
             if (_infoEnabled)
-                Debug.Log($"[MoldGame | INFO] {message.ToString(System.Globalization.CultureInfo.InvariantCulture)}", context);
+                Debug.Log(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                    "[MoldGame | INFO] " + message.Format, message.GetArguments()), context);
         }
 
         public static void LogWarning(System.FormattableString message, Object context = null)
         {
             if (_warningEnabled)
-                Debug.LogWarning($"[MoldGame | WARN] {message.ToString(System.Globalization.CultureInfo.InvariantCulture)}", context);
+                Debug.LogWarning(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                    "[MoldGame | WARN] " + message.Format, message.GetArguments()), context);
         }
 
         public static void LogError(System.FormattableString message, Object context = null)
         {
             if (_errorEnabled)
-                Debug.LogError($"[MoldGame | ERROR] {message.ToString(System.Globalization.CultureInfo.InvariantCulture)}", context);
+                Debug.LogError(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                    "[MoldGame | ERROR] " + message.Format, message.GetArguments()), context);
         }
 
         public static void LogDebug(System.FormattableString message, Object context = null)
         {
             if (_debugEnabled)
-                Debug.Log($"[MoldGame | DEBUG] {message.ToString(System.Globalization.CultureInfo.InvariantCulture)}", context);
+                Debug.Log(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                    "[MoldGame | DEBUG] " + message.Format, message.GetArguments()), context);
         }
 
         /// <summary>Runtime toggle — useful for in-game debug menus.</summary>

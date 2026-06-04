@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
@@ -37,6 +38,10 @@ namespace PuzzleGame.Application.Services
         private LevelData _currentLevelData;
 
         private IMoldView[] _Molds;
+        // EntityId is Unity 6's stable per-object identifier (replaces the deprecated
+        // int GetInstanceID()). It is a value type with proper IEquatable<EntityId>/
+        // GetHashCode, so it's safe as a Dictionary key.
+        private readonly Dictionary<EntityId, IMoldView> _MoldByColliderId = new Dictionary<EntityId, IMoldView>();
         private Vector3 _selectedOriginalPos;
 
 
@@ -74,6 +79,16 @@ namespace PuzzleGame.Application.Services
         public void SetMolds(IMoldView[] Molds)
         {
             _Molds = Molds;
+            _MoldByColliderId.Clear();
+            if (Molds == null) return;
+            for (int i = 0; i < Molds.Length; i++)
+            {
+                var view = Molds[i];
+                if (view?.GameObject == null) continue;
+                var col = view.GameObject.GetComponent<Collider>();
+                if (col != null)
+                    _MoldByColliderId[col.GetEntityId()] = view;
+            }
         }
 
         public void ProcessInput()
@@ -92,18 +107,18 @@ namespace PuzzleGame.Application.Services
             // no reflection on RaycastHit private fields.
             if (!_inputHandler.Raycast(screenPos, _gameConfig.MoldLayerMask, out RaycastHit hit, out Collider hitCollider))
             {
-                if (MoldLogger.IsWarningEnabled)
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+                if (_inputHandler.Raycast(screenPos, ~0, out RaycastHit debugHit, out _))
                 {
-                    if (_inputHandler.Raycast(screenPos, ~0, out RaycastHit debugHit, out _))
-                    {
-                        MoldLogger.LogWarning($"Input raycast missed Mold because it hit '{debugHit.collider?.name}' " +
-                            $"(Layer: {LayerMask.LayerToName(debugHit.collider?.gameObject.layer ?? 0)}) instead of the Mold layer.");
-                    }
-                    else
-                    {
-                        MoldLogger.LogWarning($"Input raycast missed everything at screen position {screenPos}.");
-                    }
+                    int layer = debugHit.collider != null ? debugHit.collider.gameObject.layer : 0;
+                    MoldLogger.LogWarning($"Input raycast missed Mold because it hit '{debugHit.collider?.name}' " +
+                        $"(Layer: {LayerMask.LayerToName(layer)}) instead of the Mold layer.");
                 }
+                else
+                {
+                    MoldLogger.LogWarning($"Input raycast missed everything at screen position {screenPos}.");
+                }
+#endif
                 if (_selectionService.SelectedMold != null)
                 {
                     LowerSelectedMold();
@@ -112,24 +127,10 @@ namespace PuzzleGame.Application.Services
                 return;
             }
 
-            // Resolve clicked Mold from the Collider returned by the new Raycast overload.
-            IMoldView clicked = hitCollider != null ? hitCollider.GetComponent<IMoldView>() : null;
-
-            // Fallback: search Mold list by collider instance ID (edge case: pooled objects)
-            if (clicked == null && hitCollider != null && _Molds != null)
-            {
-                var colliderId = hitCollider.GetEntityId();
-                foreach (var b in _Molds)
-                {
-                    if (b?.GameObject == null) continue;
-                    var col = b.GameObject.GetComponent<Collider>();
-                    if (col != null && col.GetEntityId() == colliderId)
-                    {
-                        clicked = b;
-                        break;
-                    }
-                }
-            }
+            // O(1) lookup via collider instance ID cache (built in SetMolds).
+            IMoldView clicked = null;
+            if (hitCollider != null)
+                _MoldByColliderId.TryGetValue(hitCollider.GetEntityId(), out clicked);
 
             if (clicked == null)
             {
@@ -251,32 +252,40 @@ namespace PuzzleGame.Application.Services
         }
 
         /// <summary>
-        /// Fix #4: Returns existing level data or a pre-built default LevelData asset.
-        /// No longer creates ScriptableObject instances at runtime.
+        /// Returns existing level data or constructs a transient play-test default.
+        /// The default is owned by this instance and is destroyed in <see cref="DisposeDefaults"/>
+        /// to avoid the static-ScriptableObject leak that occurred with the previous static field.
         /// </summary>
-        private static LevelData _playTestDefaults;
+        private LevelData _playTestDefaults;
 
         /// <summary>
-        /// Fix #4: Returns existing level data or a pre-built default LevelData asset.
-        /// No longer creates ScriptableObject instances at runtime via new operator.
+        /// Returns existing level data or a transient default for play-test mode.
         /// </summary>
         private LevelData GetActiveLevelData()
         {
             if (_currentLevelData != null) return _currentLevelData;
 
-            // Play-test fallback: return a minimal inline-configured LevelData.
-            // This is only reached when playing directly from the scene editor
-            // without going through the level selection flow.
             if (_playTestDefaults == null)
             {
                 _playTestDefaults = ScriptableObject.CreateInstance<LevelData>();
                 _playTestDefaults.autoGenerate = false;
                 _playTestDefaults.enableMultiLayerCast = false;
                 _playTestDefaults.enableReactionSystem = false;
+                _playTestDefaults.hideFlags = HideFlags.HideAndDontSave;
+                _playTestDefaults.name = "InputHandlerService_PlayTestDefaults";
             }
 
             MoldLogger.LogDebug("GetActiveLevelData: no level set, using play-test defaults.");
             return _playTestDefaults;
+        }
+
+        public void DisposeDefaults()
+        {
+            if (_playTestDefaults != null)
+            {
+                UnityEngine.Object.Destroy(_playTestDefaults);
+                _playTestDefaults = null;
+            }
         }
     }
 }

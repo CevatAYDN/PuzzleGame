@@ -170,14 +170,15 @@ namespace PuzzleGame.Presentation.UI
 
         private int _levelNumber;
         private Action<int> _onClick;
+        private Button _cachedButton;
 
         private void Awake()
         {
-            var button = GetComponent<Button>();
-            if (button != null)
+            _cachedButton = GetComponent<Button>();
+            if (_cachedButton != null)
             {
-                button.onClick.RemoveAllListeners();
-                button.onClick.AddListener(OnButtonClicked);
+                _cachedButton.onClick.RemoveAllListeners();
+                _cachedButton.onClick.AddListener(OnButtonClicked);
             }
         }
 
@@ -211,9 +212,8 @@ namespace PuzzleGame.Presentation.UI
                 if (star3 != null) star3.SetActive(stars >= 3);
             }
 
-            var button = GetComponent<Button>();
-            if (button != null)
-                button.interactable = unlocked;
+            if (_cachedButton != null)
+                _cachedButton.interactable = unlocked;
         }
 
         private void OnButtonClicked() => _onClick?.Invoke(_levelNumber);

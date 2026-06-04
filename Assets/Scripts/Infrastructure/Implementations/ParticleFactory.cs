@@ -2,6 +2,11 @@ using System;
 using UnityEngine;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Logging;
+using PuzzleGame.Infrastructure.Providers;
+#if ENABLE_ADDRESSABLES
+using UnityEngine.AddressableAssets;
+using UnityEngine.ResourceManagement.AsyncOperations;
+#endif
 
 namespace PuzzleGame.Infrastructure.Implementations
 {
@@ -14,18 +19,29 @@ namespace PuzzleGame.Infrastructure.Implementations
     {
         private const string SplashPrefabResourcePath = "Particles/SplashParticle";
         private const string BubblePrefabResourcePath = "Particles/BubbleParticle";
+        private const string SplashPrefabAddress = "Particles/SplashParticle";
+        private const string BubblePrefabAddress = "Particles/BubbleParticle";
+
+        private readonly IAssetProvider _assetProvider;
 
         private Material _splashMaterial;
         private Material _bubbleMaterial;
         private Texture2D _solidCircleTex;
         private Texture2D _bubbleTex;
 
+        public ParticleFactory(IAssetProvider assetProvider = null)
+        {
+            // IAssetProvider is optional — when null, LoadPrefabSync falls back to Resources.
+            // This keeps non-Addressables builds working without requiring a stub provider.
+            _assetProvider = assetProvider;
+        }
+
         public ParticleSystem CreateSplash()
         {
-            var loaded = Resources.Load<ParticleSystem>(SplashPrefabResourcePath);
+            var loaded = LoadPrefabSync(SplashPrefabAddress, SplashPrefabResourcePath);
             if (loaded != null) return loaded;
 
-            MoldLogger.LogWarning($"Splash particle prefab not found at Resources/{SplashPrefabResourcePath}. Creating fallback at runtime.");
+            MoldLogger.LogWarning($"Splash particle prefab not found at Addressable '{SplashPrefabAddress}' or Resources/{SplashPrefabResourcePath}. Creating fallback at runtime.");
 
             var go = new GameObject("SplashParticle_Prefab", typeof(ParticleSystem));
             go.SetActive(false);
@@ -67,10 +83,10 @@ namespace PuzzleGame.Infrastructure.Implementations
 
         public ParticleSystem CreateBubble()
         {
-            var loaded = Resources.Load<ParticleSystem>(BubblePrefabResourcePath);
+            var loaded = LoadPrefabSync(BubblePrefabAddress, BubblePrefabResourcePath);
             if (loaded != null) return loaded;
 
-            MoldLogger.LogWarning($"Bubble particle prefab not found at Resources/{BubblePrefabResourcePath}. Creating fallback at runtime.");
+            MoldLogger.LogWarning($"Bubble particle prefab not found at Addressable '{BubblePrefabAddress}' or Resources/{BubblePrefabResourcePath}. Creating fallback at runtime.");
 
             var go = new GameObject("BubbleParticle_Prefab", typeof(ParticleSystem));
             go.SetActive(false);
@@ -117,6 +133,27 @@ namespace PuzzleGame.Infrastructure.Implementations
             renderer.sharedMaterial = GetBubbleMaterial(GetBubbleTex());
 
             return ps;
+        }
+
+        // Load through Addressables when available (synchronous WaitForCompletion bridge
+        // for boot-time prefab resolution) and fall back to Resources when the asset is
+        // only available via the legacy path. This keeps CreateSplash/CreateBubble
+        // synchronous for callers while still preferring the Addressables pipeline.
+        private ParticleSystem LoadPrefabSync(string address, string resourcePath)
+        {
+#if ENABLE_ADDRESSABLES
+            if (_assetProvider != null)
+            {
+                var handle = Addressables.LoadAssetAsync<ParticleSystem>(address);
+                if (handle.IsDone)
+                {
+                    return handle.Status == AsyncOperationStatus.Succeeded ? handle.Result : Resources.Load<ParticleSystem>(resourcePath);
+                }
+                handle.WaitForCompletion();
+                return handle.Status == AsyncOperationStatus.Succeeded ? handle.Result : Resources.Load<ParticleSystem>(resourcePath);
+            }
+#endif
+            return Resources.Load<ParticleSystem>(resourcePath);
         }
 
         // ── Material caching logic (from ParticleMaterialFactory) ─────────────────

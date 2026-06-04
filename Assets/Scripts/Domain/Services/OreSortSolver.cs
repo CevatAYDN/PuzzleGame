@@ -57,7 +57,7 @@ namespace PuzzleGame.Domain.Services
                 throw new ArgumentNullException(nameof(initialMolds));
 
             if (initialMolds.Count == 0)
-                return new SolverResult { IsSolvable = false, SolutionPath = null, VisitedStatesCount = 0 };
+                return new SolverResult { IsSolvable = false, SolutionPath = new List<Move>(), VisitedStatesCount = 0 };
 
             if (maxLayers < 1 || maxLayers > ForgeConstants.MaxLayers)
                 throw new ArgumentOutOfRangeException(nameof(maxLayers), maxLayers,
@@ -70,6 +70,13 @@ namespace PuzzleGame.Domain.Services
             var uniqueColors = new List<DomainColor>();
             int GetColorId(DomainColor c)
             {
+                // Guard against NaN/Inf components: comparisons with NaN are always false,
+                // so a single NaN color would never match itself and would be re-inserted
+                // into uniqueColors on every call, polluting the BFS state space.
+                if (!float.IsFinite(c.R) || !float.IsFinite(c.G) ||
+                    !float.IsFinite(c.B) || !float.IsFinite(c.A))
+                    return 0; // sentinel: invalid color, never matches a valid one downstream
+
                 for (int i = 0; i < uniqueColors.Count; i++)
                 {
                     var uc = uniqueColors[i];
@@ -149,74 +156,65 @@ namespace PuzzleGame.Domain.Services
                         }
                         if (countToCast == 0) continue;
 
-                        // Fix #13: Rent temporary outer array from pool; individual row arrays still allocated
-                        // because StateNode owns them across frames. Significantly reduces GC for wide puzzles.
-                        int[][] nextMolds = ArrayPool<int[]>.Shared.Rent(current.Molds.Length);
-                        try
+                        // Fix #13: Allocate owned rows directly. The outer-array pool was redundant —
+                        // rows inside it were always freshly `new int[]` (except the shared ones
+                        // borrowed from `current.Molds`), so pooling the outer array bought nothing
+                        // and created a confusing reference lifecycle.
+                        int[][] ownedMolds = new int[current.Molds.Length][];
+                        for (int k = 0; k < current.Molds.Length; k++)
                         {
-                            for (int k = 0; k < current.Molds.Length; k++)
+                            if (k == i)
                             {
-                                if (k == i)
+                                int newSrcLen = source.Length - countToCast;
+                                if (newSrcLen == 0)
                                 {
-                                    int newSrcLen = source.Length - countToCast;
-                                    if (newSrcLen == 0)
-                                    {
-                                        nextMolds[k] = Array.Empty<int>();
-                                    }
-                                    else
-                                    {
-                                        nextMolds[k] = new int[newSrcLen];
-                                        Array.Copy(source, nextMolds[k], newSrcLen);
-                                    }
-                                }
-                                else if (k == j)
-                                {
-                                    int newTgtLen = target.Length + countToCast;
-                                    nextMolds[k] = new int[newTgtLen];
-                                    Array.Copy(target, nextMolds[k], target.Length);
-                                    for (int p = 0; p < countToCast; p++)
-                                        nextMolds[k][target.Length + p] = sourceTopColor;
+                                    ownedMolds[k] = Array.Empty<int>();
                                 }
                                 else
                                 {
-                                    nextMolds[k] = current.Molds[k];
+                                    ownedMolds[k] = new int[newSrcLen];
+                                    Array.Copy(source, ownedMolds[k], newSrcLen);
                                 }
                             }
-
-                            // Snapshot owned copy (pool array returned in finally)
-                            int[][] ownedMolds = new int[current.Molds.Length][];
-                            Array.Copy(nextMolds, ownedMolds, current.Molds.Length);
-
-                            var nextNode = new StateNode(ownedMolds, new Move(i, j), current, MoldCount);
-                            ulong hash = nextNode.ComputeCanonicalKey(maxLayers);
-                            if (!visited.Contains(hash))
+                            else if (k == j)
                             {
-                                if (nextNode.IsSolved(maxLayers))
-                                {
-                                    var path = new List<Move>();
-                                    var temp = nextNode;
-                                    while (temp.Parent != null)
-                                    {
-                                        path.Add(temp.LastMove);
-                                        temp = temp.Parent;
-                                    }
-                                    path.Reverse();
-                                    return new SolverResult { IsSolvable = true, SolutionPath = path, VisitedStatesCount = visitedCount };
-                                }
-
-                                visited.Add(hash);
-                                queue.Enqueue(nextNode);
+                                int newTgtLen = target.Length + countToCast;
+                                ownedMolds[k] = new int[newTgtLen];
+                                Array.Copy(target, ownedMolds[k], target.Length);
+                                for (int p = 0; p < countToCast; p++)
+                                    ownedMolds[k][target.Length + p] = sourceTopColor;
+                            }
+                            else
+                            {
+                                ownedMolds[k] = current.Molds[k];
                             }
                         }
-                        finally
+
+                        var nextNode = new StateNode(ownedMolds, new Move(i, j), current, MoldCount);
+                        ulong hash = nextNode.ComputeCanonicalKey(maxLayers);
+                        if (!visited.Contains(hash))
                         {
-                            ArrayPool<int[]>.Shared.Return(nextMolds);
+                            if (nextNode.IsSolved(maxLayers))
+                            {
+                                var path = new List<Move>();
+                                var temp = nextNode;
+                                while (temp.Parent != null)
+                                {
+                                    path.Add(temp.LastMove);
+                                    temp = temp.Parent;
+                                }
+                                path.Reverse();
+                                return new SolverResult { IsSolvable = true, SolutionPath = path, VisitedStatesCount = visitedCount };
+                            }
+
+                            visited.Add(hash);
+                            queue.Enqueue(nextNode);
                         }
                     }
                 }
             }
 
-            return new SolverResult { IsSolvable = false, SolutionPath = null, VisitedStatesCount = visitedCount };
+            return new SolverResult { IsSolvable = false, SolutionPath = new List<Move>(), VisitedStatesCount = visitedCount };
         }
 
         // ─────────────────────────────────────────────────────────────────

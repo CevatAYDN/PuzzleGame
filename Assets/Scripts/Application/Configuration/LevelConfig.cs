@@ -20,5 +20,9 @@ namespace PuzzleGame.Application.Configuration
             new Color(0.70f, 0.30f, 0.90f),
             new Color(0.95f, 0.50f, 0.15f),
         };
+
+        [Header("Mold Visuals")]
+        [Tooltip("Override per-level mold visual style. If null, the global MoldVisualConfig asset is used.")]
+        public MoldVisualConfig moldVisualConfig;
     }
 }

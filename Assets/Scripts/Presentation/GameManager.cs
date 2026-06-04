@@ -63,6 +63,7 @@ namespace PuzzleGame
         private ITweenService _tweenService;
 
         private bool _isInitialized;
+        private bool _animationServiceDisposed;
         private readonly System.Text.StringBuilder _hudSb = new System.Text.StringBuilder(64);
 
         [Inject]
@@ -189,10 +190,7 @@ namespace PuzzleGame
         {
             _updateManager?.Unregister(this);
 
-            if (_animationService is System.IDisposable disposable)
-            {
-                disposable.Dispose();
-            }
+            DisposeAnimationService();
 
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
             _eventAggregator?.Unsubscribe<LevelSelectedEvent>(OnLevelSelected);
@@ -210,10 +208,18 @@ namespace PuzzleGame
         {
             MoldLogger.LogDebug("Scene unloaded — cleaning up subscriptions and particle pools.");
             _eventAggregator.Clear();
+            DisposeAnimationService();
+            _camera = Camera.main;
+        }
+
+        private void DisposeAnimationService()
+        {
+            if (_animationServiceDisposed) return;
             if (_animationService is System.IDisposable disposable)
             {
                 disposable.Dispose();
             }
+            _animationServiceDisposed = true;
         }
 
         private Rect _errorRect;
@@ -221,29 +227,34 @@ namespace PuzzleGame
         private GUIStyle _errorStyle;
         private int _lastScreenWidth;
         private int _lastScreenHeight;
+        private bool _diErrorLogged;
 
         private void OnGUI()
         {
-            if (!_isInitialized)
+            if (_isInitialized) return;
+            if (!_diErrorLogged)
             {
-                if (_errorStyle == null || _lastScreenWidth != Screen.width || _lastScreenHeight != Screen.height)
-                {
-                    _lastScreenWidth = Screen.width;
-                    _lastScreenHeight = Screen.height;
-                    _errorRect = new Rect(20, 20, Screen.width - 40, Screen.height - 40);
-                    _errorLabelRect = new Rect(40, 60, Screen.width - 80, Screen.height - 120);
-                    _errorStyle = new GUIStyle(GUI.skin.label)
-                    {
-                        fontSize = 20,
-                        alignment = TextAnchor.MiddleCenter,
-                        wordWrap = true
-                    };
-                }
-
-                GUI.Box(_errorRect, "VCONTAINER DI FAILURE");
-                GUI.Label(_errorLabelRect, "VContainer DI failed — GameManager (LifetimeScope) not found or not configured.\n\n" +
-                                     "Fix: Tools > PuzzleGame > Open Editor > Scene tab > 'Setup Current Scene (GameManager + DI)'", _errorStyle);
+                MoldLogger.LogError("VContainer DI failed — GameManager (LifetimeScope) not found. " +
+                                    "Fix: Tools > PuzzleGame > Open Editor > Scene tab > 'Setup Current Scene (GameManager + DI)'");
+                _diErrorLogged = true;
             }
+            if (_errorStyle == null || _lastScreenWidth != Screen.width || _lastScreenHeight != Screen.height)
+            {
+                _lastScreenWidth = Screen.width;
+                _lastScreenHeight = Screen.height;
+                _errorRect = new Rect(20, 20, Screen.width - 40, Screen.height - 40);
+                _errorLabelRect = new Rect(40, 60, Screen.width - 80, Screen.height - 120);
+                _errorStyle = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 20,
+                    alignment = TextAnchor.MiddleCenter,
+                    wordWrap = true
+                };
+            }
+
+            GUI.Box(_errorRect, "VCONTAINER DI FAILURE");
+            GUI.Label(_errorLabelRect, "VContainer DI failed — GameManager (LifetimeScope) not found or not configured.\n\n" +
+                                 "Fix: Tools > PuzzleGame > Open Editor > Scene tab > 'Setup Current Scene (GameManager + DI)'", _errorStyle);
         }
 
         // Fix #10: MonoBehaviour.Update() removed to avoid double-firing ProcessInput.

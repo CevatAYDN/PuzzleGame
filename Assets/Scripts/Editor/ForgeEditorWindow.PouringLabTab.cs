@@ -173,7 +173,7 @@ namespace PuzzleGame.Editor
 
         private void RefreshLabMolds()
         {
-            var controllers = FindObjectsOfType<MoldController>(true);
+            var controllers = FindObjectsByType<MoldController>(FindObjectsInactive.Include);
             _labMolds = controllers.Cast<IMoldView>().ToArray();
             _labMoldNames = _labMolds.Select((m, i) => $"[{i}] {m.GameObject.name}").ToArray();
 

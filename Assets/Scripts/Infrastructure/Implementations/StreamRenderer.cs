@@ -42,7 +42,7 @@ namespace PuzzleGame.Infrastructure.Implementations
                         "[StreamRenderer] MagmaFlow.vfx not found in Resources folder. " +
                         "Stream rendering will not work. Please create or import MagmaFlow.vfx.",
                         owner);
-                    _eventAggregator?.Publish(VFXStatusEvent.Missing(vfx.GetInstanceID()));
+                    _eventAggregator?.Publish(VFXStatusEvent.Missing(vfx.GetEntityId()));
                 }
             }
             return vfx;
@@ -127,7 +127,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             {
                 int particleCount = vfx.aliveParticleCount;
                 _eventAggregator?.Publish(
-                    VFXStatusEvent.Active(vfx.GetInstanceID(), intensity, particleCount));
+                    VFXStatusEvent.Active(vfx.GetEntityId(), intensity, particleCount));
             }
         }
     }

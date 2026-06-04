@@ -12,7 +12,10 @@ namespace PuzzleGame.Application.Interfaces
         float MusicVolume { get; set; }
         float SfxVolume { get; set; }
 
-        void PlaySfx(AudioClipId id, Vector3? worldPos = null);
+        // Non-spatial 2D SFX — UI clicks, level transitions, cast state changes, etc.
+        void PlaySfx(AudioClipId id);
+        // Spatial 3D SFX — emitted at a world position (e.g. cork pop, world-anchored effects).
+        void PlaySfxAt(AudioClipId id, Vector3 worldPos);
         void PlayMusic(AudioClipId id, bool loop = true);
         void StopMusic(float fadeOut = 0.5f);
         void MuteAll();

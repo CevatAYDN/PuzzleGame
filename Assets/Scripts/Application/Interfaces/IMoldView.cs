@@ -31,7 +31,8 @@ namespace PuzzleGame.Application.Interfaces
         void Initialize(IRendererService rendererService,
                         IMoldValidator validator,
                         IAnimationService animationService,
-                        List<OreLayer> initialLayers);
+                        List<OreLayer> initialLayers,
+                        Configuration.MoldVisualConfig visualConfigOverride = null);
         void SetSelectionHighlight(bool active);
         void AnimateCompletion();
         void UpdateVisualsFromState();

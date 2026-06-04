@@ -1,4 +1,5 @@
 using PuzzleGame.Domain.Models;
+using UnityEngine;
 
 namespace PuzzleGame.Application.Events
 {
@@ -100,16 +101,18 @@ namespace PuzzleGame.Application.Events
     /// <summary>
     /// Published by StreamRenderer to report VFX component status.
     /// Throttled — only emitted every 30 frames to avoid event spam.
+    /// ComponentId is EntityId (Unity 6 stable identifier), replacing the deprecated
+    /// int GetInstanceID() — see InputHandlerService for the same migration rationale.
     /// </summary>
     public readonly struct VFXStatusEvent
     {
-        public int ComponentId { get; }
+        public EntityId ComponentId { get; }
         public bool IsActive { get; }
         public float Intensity { get; }
         public int ParticleCount { get; }
         public string Status { get; }
 
-        public VFXStatusEvent(int componentId, bool isActive, float intensity, int particleCount, string status)
+        public VFXStatusEvent(EntityId componentId, bool isActive, float intensity, int particleCount, string status)
         {
             ComponentId = componentId;
             IsActive = isActive;
@@ -118,12 +121,12 @@ namespace PuzzleGame.Application.Events
             Status = status ?? "unknown";
         }
 
-        public static VFXStatusEvent Missing(int componentId)
+        public static VFXStatusEvent Missing(EntityId componentId)
         {
             return new VFXStatusEvent(componentId, false, 0f, 0, "missing");
         }
 
-        public static VFXStatusEvent Active(int componentId, float intensity, int particleCount)
+        public static VFXStatusEvent Active(EntityId componentId, float intensity, int particleCount)
         {
             return new VFXStatusEvent(componentId, true, intensity, particleCount, "active");
         }

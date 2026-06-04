@@ -236,7 +236,7 @@ namespace PuzzleGame.Application.Services
             cork.localPosition = startPos;
             cork.localScale = Vector3.zero;
 
-            _audioService?.PlaySfx(AudioClipId.CorkPop, cork.position);
+            _audioService?.PlaySfxAt(AudioClipId.CorkPop, cork.position);
 
             IncrCount();
             var t1 = _tween.TweenLocalPosition(cork, endPos, duration, EaseType.OutBounce);

@@ -13,6 +13,7 @@ using PuzzleGame.Infrastructure.Implementations;
 using PuzzleGame.Infrastructure.Pool;
 using PuzzleGame.Infrastructure;
 using PuzzleGame.Application.Logging;
+using PuzzleGame.Infrastructure.Providers;
 
 namespace PuzzleGame.Installers
 {
@@ -99,6 +100,12 @@ namespace PuzzleGame.Installers
             // Application services
             builder.Register<IMoldSelectionService, MoldSelectionService>(Lifetime.Singleton);
             builder.Register<IAudioService, AudioService>(Lifetime.Singleton);
+#if ENABLE_ADDRESSABLES
+            builder.Register<IAssetProvider, AddressablesAssetProvider>(Lifetime.Singleton);
+            // Register a factory that Initialize()s the provider on first use (VContainer calls
+            // the factory lazily, after Configure() completes, so Addressables is ready by then).
+            builder.RegisterBuildCallback(resolver => resolver.Resolve<IAssetProvider>().Initialize());
+#endif
             builder.Register<IParticleFactory, ParticleFactory>(Lifetime.Singleton);
             builder.Register<IStreamRenderer, StreamRenderer>(Lifetime.Singleton);
             builder.Register<IStreamTrailController, StreamTrailController>(Lifetime.Singleton);

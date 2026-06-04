@@ -18,8 +18,10 @@ namespace PuzzleGame.Domain
     public static class ForgeConstants
     {
         // ── Mold Capacity ─────────────────────────────────────────────
-        /// <summary>Hard upper bound for ore layers a single mold can hold.</summary>
-        public const int MaxLayers = 8;
+        /// <summary>Hard upper bound for ore layers a single mold can hold.
+        /// Must match _Color1..N / _Fill1..N in Custom/LayeredLiquid shader
+        /// (Assets/Shaders/LayeredOre.shader).</summary>
+        public const int MaxLayers = 4;
         /// <summary>Default starting capacity for a brand-new mold.</summary>
         public const int DefaultLayerCapacity = 4;
         /// <summary>Minimum mold count in any level.</summary>

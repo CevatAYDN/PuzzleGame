@@ -35,16 +35,6 @@ namespace PuzzleGame
         {
             _meshFilter = GetComponent<MeshFilter>();
             _meshRenderer = GetComponent<MeshRenderer>();
-            EnforceMoldShape();
-        }
-
-        private void EnforceMoldShape()
-        {
-            // Override shape parameters to generate a heavy-duty casting mold/crucible instead of a bottle
-            neckHeight = 0f;
-            capHeight = 0f;
-            neckRadius = bodyRadius * 1.05f;
-            capRadius = bodyRadius * 1.05f;
         }
 
         private void Start()
@@ -60,8 +50,6 @@ namespace PuzzleGame
 
         public void BuildMesh()
         {
-            EnforceMoldShape();
-
             if (_meshFilter == null) _meshFilter = GetComponent<MeshFilter>();
             if (_meshRenderer == null) _meshRenderer = GetComponent<MeshRenderer>();
             if (_meshFilter == null || _meshRenderer == null) return;
@@ -161,7 +149,6 @@ namespace PuzzleGame
             mesh.SetUVs(0, uvs);
             mesh.SetTriangles(tris, 0);
             mesh.RecalculateBounds();
-            mesh.RecalculateNormals();
             mesh.RecalculateTangents();
 
             _meshFilter.sharedMesh = mesh;
@@ -217,8 +204,6 @@ namespace PuzzleGame
         private void OnValidate()
         {
             if (UnityEngine.Application.isPlaying || _isBuildingInProgress) return;
-
-            EnforceMoldShape();
 
             _isBuildingInProgress = true;
             EditorApplication.delayCall += () =>

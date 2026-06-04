@@ -67,9 +67,10 @@ namespace PuzzleGame.Application.Services
             for (int i = 0; i < snapshot.Length && i < _Molds.Length; i++)
             {
                 if (_Molds[i] == null || _Molds[i].State == null) continue;
+                if (snapshot[i] == null) continue;
                 try
                 {
-                    _Molds[i].State.ReplaceLayers((IEnumerable<OreLayer>)snapshot[i] ?? System.Array.Empty<OreLayer>());
+                    _Molds[i].State.ReplaceLayers(snapshot[i]);
                     _Molds[i].UpdateVisualsFromState();
                 }
                 catch (ArgumentException ex)

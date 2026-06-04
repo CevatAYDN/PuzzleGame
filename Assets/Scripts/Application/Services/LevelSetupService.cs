@@ -131,7 +131,7 @@ namespace PuzzleGame.Application.Services
                     ? assignments[i]
                     : new List<OreLayer>();
 
-                Mold.Initialize(rendererService, validator, animationService, initial);
+                Mold.Initialize(rendererService, validator, animationService, initial, _levelConfig?.moldVisualConfig);
             }
         }
 
