@@ -140,6 +140,59 @@ namespace PuzzleGame.Editor
                 ok = Molds.Length > 0
             });
 
+            // GPU Instancing Validation (AAA Mobile Draw Call optimization)
+            bool gpuInstancingOk = true;
+            List<string> nonInstancedMats = new List<string>();
+            for (int i = 0; i < Molds.Length; i++)
+            {
+                var mold = Molds[i];
+                if (mold.glassMaterial != null && !mold.glassMaterial.enableInstancing)
+                {
+                    gpuInstancingOk = false;
+                    if (!nonInstancedMats.Contains(mold.glassMaterial.name))
+                        nonInstancedMats.Add(mold.glassMaterial.name);
+                }
+                if (mold.OreMaterial != null && !mold.OreMaterial.enableInstancing)
+                {
+                    gpuInstancingOk = false;
+                    if (!nonInstancedMats.Contains(mold.OreMaterial.name))
+                        nonInstancedMats.Add(mold.OreMaterial.name);
+                }
+            }
+            _validationResults.Add(new ValidationResult
+            {
+                label = "Materials GPU Instancing",
+                detail = gpuInstancingOk 
+                    ? "All materials have GPU Instancing enabled." 
+                    : $"Missing on: {string.Join(", ", nonInstancedMats)}",
+                ok = gpuInstancingOk
+            });
+
+            // Target Frame Rate Validation (Mobile Refresh Rate / Smoothness optimization)
+            bool targetFrameRateFound = false;
+            var scriptGuids = AssetDatabase.FindAssets("t:MonoScript");
+            for (int i = 0; i < scriptGuids.Length; i++)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(scriptGuids[i]);
+                if (path.StartsWith("Assets/"))
+                {
+                    var monoScript = AssetDatabase.LoadAssetAtPath<MonoScript>(path);
+                    if (monoScript != null && monoScript.text.Contains("targetFrameRate"))
+                    {
+                        targetFrameRateFound = true;
+                        break;
+                    }
+                }
+            }
+            _validationResults.Add(new ValidationResult
+            {
+                label = "Target Frame Rate (FPS) Setup",
+                detail = targetFrameRateFound 
+                    ? "Application.targetFrameRate found in scripts." 
+                    : "Warning: targetFrameRate NOT configured! Game may lock at 30 FPS on mobile.",
+                ok = targetFrameRateFound
+            });
+
             int failures = _validationResults.Count(r => !r.ok);
             SetStatus(failures == 0
                 ? $"All {(_validationResults.Count)} checks passed."
