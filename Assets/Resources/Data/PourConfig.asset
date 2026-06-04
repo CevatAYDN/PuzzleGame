@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0acada47ba4132428eccd1c8b473a38, type: 3}
+  m_Name: PourConfig
+  m_EditorClassIdentifier: PuzzleGame.Application::PuzzleGame.Application.Configuration.PourConfig
+  pourDuration: 1.2
+  distanceSpeedMultiplier: 1.5
+  minFlowIntensity: 0.3
+  maxFlowIntensity: 1.5
+  overrideVFX: 0
+  flowIntensity: 0.8
+  streamWidth: 0.08
+  streamArcHeight: 0.1
+  showPourPreview: 1
+  showAffectedBoundaries: 0

@@ -107,8 +107,10 @@ namespace PuzzleGame.Infrastructure.Implementations
                 : _config.boundsRadius;
 
             Vector3 boundsCenter = (sourceMouth + targetMouth) * 0.5f;
-            vfx.SetVector3("BoundsCenter", boundsCenter);
-            vfx.SetFloat("BoundsSize", boundsSize);
+            if (vfx.HasVector3("BoundsCenter"))
+                vfx.SetVector3("BoundsCenter", boundsCenter);
+            if (vfx.HasFloat("BoundsSize"))
+                vfx.SetFloat("BoundsSize", boundsSize);
 
             // Distance-scaled particle count
             if (_config.useDistanceScaledParticles && vfx.HasInt("ParticleCount"))

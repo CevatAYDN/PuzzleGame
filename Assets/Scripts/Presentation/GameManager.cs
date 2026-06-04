@@ -195,8 +195,8 @@ namespace PuzzleGame
             }
 
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
-            _eventAggregator.Unsubscribe<LevelSelectedEvent>(OnLevelSelected);
-            _eventAggregator.Unsubscribe<CastCompletedEvent>(OnCastCompleted);
+            _eventAggregator?.Unsubscribe<LevelSelectedEvent>(OnLevelSelected);
+            _eventAggregator?.Unsubscribe<CastCompletedEvent>(OnCastCompleted);
 
             if (_historyManager != null)
             {

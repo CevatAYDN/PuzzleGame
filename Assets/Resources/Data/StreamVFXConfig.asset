@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c870a2b52152cfa4a9fc6f5754a17242, type: 3}
+  m_Name: StreamVFXConfig
+  m_EditorClassIdentifier: PuzzleGame.Application::PuzzleGame.Application.Configuration.StreamVFXConfig
+  flowIntensity: 0.8
+  colorIntensityBoost: 1.5
+  streamWidthMultiplier: 1
+  particleCapacity: 128
+  boundsRadius: 3
+  scaleBoundsWithDistance: 1
+  boundsScalePerUnit: 1.5
+  streamColorHint: {r: 0.98, g: 0.72, b: 0.05, a: 1}
+  useDistanceScaledParticles: 1
+  particlesPerUnitDistance: 40
+  enableTrail: 1
+  trailFadeDuration: 0.5
+  trailAlpha: 0.15
+  trailSampleCount: 8

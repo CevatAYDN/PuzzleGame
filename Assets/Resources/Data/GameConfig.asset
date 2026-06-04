@@ -17,7 +17,7 @@ MonoBehaviour:
     m_Bits: 4294967295
   colorMatchTolerance: 0.05
   maxLayersPerMold: 4
-  saturationBoost: 1.25
-  brightnessBoost: 1.15
+  saturationBoost: 1.35
+  brightnessBoost: 1.2
   applyMobileShaderDefaults: 1
   solverMaxVisitedStates: 10000

@@ -60,6 +60,11 @@ namespace PuzzleGame
         {
             if (config == null)
             {
+                config = Resources.Load<Application.Configuration.WobbleConfig>("Data/WobbleConfig");
+            }
+
+            if (config == null)
+            {
                 MoldLogger.LogError(
                     "[Wobble] WobbleConfig is null on " + gameObject.name + ". " +
                     "Wobble effect disabled — assign a config via MoldPoolInitializer or inspector.",

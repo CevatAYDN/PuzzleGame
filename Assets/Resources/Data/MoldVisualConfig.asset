@@ -16,12 +16,15 @@ MonoBehaviour:
   maxLayers: 4
   moldMaterialIndex: 0
   oreMaterialIndex: 1
-  saturationBoost: 1.25
-  brightnessBoost: 1.15
+  saturationBoost: 1.35
+  brightnessBoost: 1.2
   moldEmptyColor: {r: 1, g: 1, b: 1, a: 0.18}
   moldTintBase: 0.85
   moldTintMultiplier: 0.15
   moldTintAlpha: 0.25
+  sparkleIntensity: 0.1
+  sparkleSize: 12
+  layerBoundaryWidth: 0.012
   wobbleBaseImpulse: 2
   wobbleTargetMultiplier: 0.8
   highlightActiveFresnel: 4

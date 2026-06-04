@@ -114,6 +114,19 @@ namespace PuzzleGame.Installers
                    .As<IPourSystemController>()
                    .AsSelf();
 
+            // Error indicator service (tries to find in scene, instantiates runtime fallback if missing)
+            builder.Register<IErrorIndicatorService>(resolver =>
+            {
+                var component = Object.FindAnyObjectByType<PuzzleGame.Presentation.ErrorIndicatorController>();
+                if (component == null)
+                {
+                    var go = new GameObject("ErrorIndicatorController");
+                    component = go.AddComponent<PuzzleGame.Presentation.ErrorIndicatorController>();
+                    MoldLogger.LogWarning("[GameInstaller] ErrorIndicatorController not found in scene hierarchy. Created a runtime fallback instance.");
+                }
+                return component;
+            }, Lifetime.Singleton);
+
             // GameManager — inject via VContainer
             builder.RegisterComponentInHierarchy<GameManager>();
 

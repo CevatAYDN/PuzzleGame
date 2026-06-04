@@ -21,6 +21,11 @@ MonoBehaviour:
   streamWidth: 0.08
   shakeDuration: 0.25
   shakeAngle: 8
+  successShakeAmplitude: 0.05
+  successShakeDuration: 0.1
+  errorShakeAmplitude: 0.15
+  errorShakeDuration: 0.3
+  cameraShakeFrequency: 10
   tiltPhasePortion: 0.25
   flowPhasePortion: 0.5
   returnPhasePortion: 0.25

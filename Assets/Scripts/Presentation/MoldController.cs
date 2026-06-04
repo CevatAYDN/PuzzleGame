@@ -83,10 +83,16 @@ namespace PuzzleGame
 
             if (visualConfig == null)
             {
-                MoldLogger.LogError(
-                    "[MoldController] MoldVisualConfig is null on " + gameObject.name + ". " +
-                    "Using default config values — assign a MoldVisualConfig via inspector or MoldPoolInitializer.",
-                    this);
+                visualConfig = Resources.Load<Application.Configuration.MoldVisualConfig>("Data/MoldVisualConfig");
+                if (visualConfig == null)
+                {
+                    MoldLogger.LogWarning(
+                        "[MoldController] MoldVisualConfig not found at Resources/Data/MoldVisualConfig on " +
+                        gameObject.name + ". Using default SO.",
+                        this);
+                    visualConfig = ScriptableObject.CreateInstance<Application.Configuration.MoldVisualConfig>();
+                    visualConfig.name = "MoldVisualConfig_Fallback";
+                }
             }
             if (_renderer == null)
             {
