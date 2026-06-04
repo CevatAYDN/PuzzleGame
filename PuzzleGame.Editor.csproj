@@ -54,6 +54,7 @@
     <Compile Include="Assets\Scripts\Editor\ForgeEditorWindow.DataTab.cs" />
     <Compile Include="Assets\Scripts\Editor\DataAssetCreator.cs" />
     <Compile Include="Assets\Scripts\Editor\ForgeEditorWindow.LevelsTab.cs" />
+    <Compile Include="Assets\Scripts\Editor\ForgeEditorWindow.PouringLabTab.cs" />
     <Compile Include="Assets\Scripts\Editor\AddressablesInstaller.cs" />
     <Compile Include="Assets\Scripts\Editor\ForgeEditorWindow.ValidateTab.cs" />
     <Compile Include="Assets\Scripts\Editor\ForgeEditorWindow.cs" />

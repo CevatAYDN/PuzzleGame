@@ -69,6 +69,7 @@
     <Compile Include="Assets\Tests\Infrastructure\ColorAdapterTests.cs" />
     <Compile Include="Assets\Tests\Infrastructure\Pool\GameObjectPoolTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\AnimationServiceTests.cs" />
+    <Compile Include="Assets\Tests\Fakes\FakeErrorIndicatorService.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeTweenService.cs" />
     <Compile Include="Assets\Tests\Domain\Services\LocalizationServiceTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeReactionService.cs" />
@@ -77,6 +78,7 @@
     <Compile Include="Assets\Tests\Application\Services\InputHandlerServiceTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeStreamRenderer.cs" />
     <Compile Include="Assets\Tests\Application\Services\GameSaveManagerTests.cs" />
+    <Compile Include="Assets\Tests\Fakes\FakeStreamTrailController.cs" />
     <Compile Include="Assets\Tests\Domain\Services\LevelGeneratorV2Tests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeHistoryManager.cs" />
     <Compile Include="Assets\Tests\Application\Services\ScriptableObjectLevelRepositoryTests.cs" />

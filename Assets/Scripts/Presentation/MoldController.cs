@@ -81,6 +81,27 @@ namespace PuzzleGame
             _renderer        = GetComponent<Renderer>();
             _wobble          = GetComponent<Wobble>();
 
+            if (visualConfig == null)
+            {
+                MoldLogger.LogError(
+                    "[MoldController] MoldVisualConfig is null on " + gameObject.name + ". " +
+                    "Using default config values — assign a MoldVisualConfig via inspector or MoldPoolInitializer.",
+                    this);
+            }
+            if (_renderer == null)
+            {
+                MoldLogger.LogError(
+                    "[MoldController] Renderer component missing on " + gameObject.name + ". " +
+                    "Visual updates will not apply. Ensure Renderer is attached to the Prefab.",
+                    this);
+            }
+            if (_meshGenerator == null)
+            {
+                MoldLogger.LogWarning(
+                    "[MoldController] MoldMeshGenerator missing on " + gameObject.name + ". " +
+                    "Height calculations will rely on config default.");
+            }
+
             _visualRenderer = new MoldVisualRenderer(
                 _renderer, _rendererService, visualConfig,
                 () => _visualLayers, () => _visualTotalFill);

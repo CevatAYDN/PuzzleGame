@@ -1,6 +1,7 @@
 using UnityEngine;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Configuration;
+using PuzzleGame.Application.Logging;
 using PuzzleGame.Domain.Interfaces;
 namespace PuzzleGame
 {
@@ -57,7 +58,17 @@ namespace PuzzleGame
 
         private void Start()
         {
-            _OreMatIndex = config != null ? config.OreMaterialIndex : 1;
+            if (config == null)
+            {
+                MoldLogger.LogError(
+                    "[Wobble] WobbleConfig is null on " + gameObject.name + ". " +
+                    "Wobble effect disabled — assign a config via MoldPoolInitializer or inspector.",
+                    this);
+                enabled = false;
+                return;
+            }
+
+            _OreMatIndex = config.OreMaterialIndex;
             _previousPosition = transform.position;
             _previousRotation = transform.rotation.eulerAngles;
             _hasOreMaterial = false; // Resolved dynamically via HasOreMaterial() to prevent start-order race conditions

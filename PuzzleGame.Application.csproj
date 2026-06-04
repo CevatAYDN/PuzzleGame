@@ -49,13 +49,17 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.4.8f1\Editor\Data\Tools\BuildPipeline\Unity.SourceGenerators\Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Scripts\Application\Configuration\PourConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Services\GameHistoryManager.cs" />
     <Compile Include="Assets\Scripts\Application\Events\FeatureEvents.cs" />
+    <Compile Include="Assets\Scripts\Application\Interfaces\IPourSystemController.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IEventAggregator.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IRendererService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\GameStateMachine.cs" />
     <Compile Include="Assets\Scripts\Application\Services\ScriptableObjectLevelRepository.cs" />
+    <Compile Include="Assets\Scripts\Application\Interfaces\IErrorIndicatorService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IGameObjectPool.cs" />
+    <Compile Include="Assets\Scripts\Application\Configuration\StreamVFXConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\AudioClipId.cs" />
     <Compile Include="Assets\Scripts\Application\Services\PrimeTweenService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IMoldView.cs" />
@@ -91,6 +95,7 @@
     <Compile Include="Assets\Scripts\Application\Events\LevelEvents.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\AudioConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IInputHandler.cs" />
+    <Compile Include="Assets\Scripts\Application\Interfaces\IStreamTrailController.cs" />
     <Compile Include="Assets\Scripts\Application\Events\GameEvents.cs" />
     <Compile Include="Assets\Scripts\Application\Services\CastAnimationState.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\ILevelRepository.cs" />

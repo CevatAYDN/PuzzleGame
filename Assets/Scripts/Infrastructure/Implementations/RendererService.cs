@@ -28,8 +28,11 @@ namespace PuzzleGame.Infrastructure.Implementations
             return ids;
         }
 
-        private static readonly int SurfaceHeightID = Shader.PropertyToID("_SurfaceHeight");
-        private static readonly int GlassColorID    = Shader.PropertyToID("_Color");
+        private static readonly int SurfaceHeightID      = Shader.PropertyToID("_SurfaceHeight");
+        private static readonly int GlassColorID         = Shader.PropertyToID("_Color");
+        private static readonly int SparkleIntensityID   = Shader.PropertyToID("_SparkleIntensity");
+        private static readonly int SparkleSizeID        = Shader.PropertyToID("_SparkleSize");
+        private static readonly int LayerBoundaryWidthID = Shader.PropertyToID("_LayerBoundaryWidth");
 
         private readonly IColorAdapter _colorAdapter;
 
@@ -89,6 +92,12 @@ namespace PuzzleGame.Infrastructure.Implementations
             }
 
             _OreBlock.SetFloat(SurfaceHeightID, totalFill);
+            if (config != null)
+            {
+                _OreBlock.SetFloat(SparkleIntensityID, config.sparkleIntensity);
+                _OreBlock.SetFloat(SparkleSizeID,      config.sparkleSize);
+                _OreBlock.SetFloat(LayerBoundaryWidthID, config.layerBoundaryWidth);
+            }
             int materialIndex = config != null ? config.oreMaterialIndex : 1;
             int matsCount = renderer.sharedMaterials != null ? renderer.sharedMaterials.Length : 0;
             if (matsCount > 0)
@@ -128,6 +137,12 @@ namespace PuzzleGame.Infrastructure.Implementations
                         }
 
                         mat.SetFloat(SurfaceHeightID, totalFill);
+                        if (config != null)
+                        {
+                            mat.SetFloat(SparkleIntensityID, config.sparkleIntensity);
+                            mat.SetFloat(SparkleSizeID,      config.sparkleSize);
+                            mat.SetFloat(LayerBoundaryWidthID, config.layerBoundaryWidth);
+                        }
                         UnityEditor.EditorUtility.SetDirty(mat);
                     }
                 }

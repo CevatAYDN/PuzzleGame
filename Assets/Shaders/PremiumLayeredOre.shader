@@ -318,6 +318,17 @@ Shader "Custom/PremiumLayeredOre"
                 float specular = pow(NdotH, _SpecularSmoothness * 256.0) * _SpecularIntensity;
                 float3 specularColor = specular * _SpecularColor.rgb * mainLight.color;
 
+                // ── Sparkle Effect ──────────────────────────────────────────
+                float2 screenUV = input.positionCS.xy * _ScreenParams.zw;
+                float sparkleHash = hash(screenUV * _SparkleSize + floor(time * 4.7));
+                float sparkleGate = smoothstep(0.92, 1.0, sparkleHash)
+                                  * smoothstep(0.0, 0.06, abs(sparkleHash - 0.96));
+                float sparkleAngle = pow(NdotH, _SpecularSmoothness * 512.0);
+                float sparkle = sparkleGate * sparkleAngle * _SparkleIntensity
+                              * saturate(NdotV - 0.3) * 5.0;
+                float3 sparkleColor = sparkle * _SpecularColor.rgb * mainLight.color * 3.0;
+                specularColor += sparkleColor;
+
                 // Rim Light & Volume Shadow for cylindrical feel
                 float rim = 1.0 - NdotV;
                 float rimIntensity = smoothstep(0.6, 1.0, rim);

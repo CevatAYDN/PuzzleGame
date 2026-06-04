@@ -49,15 +49,18 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.4.8f1\Editor\Data\Tools\BuildPipeline\Unity.SourceGenerators\Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Scripts\Presentation\CameraEffectsController.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldController.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldMeshGenerator.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldVisualRenderer.cs" />
+    <Compile Include="Assets\Scripts\Presentation\ErrorIndicatorController.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\LevelSelectUI.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldCorkController.cs" />
     <Compile Include="Assets\Scripts\Presentation\URPConfigHelper.cs" />
     <Compile Include="Assets\Scripts\Presentation\GameManager.cs" />
     <Compile Include="Assets\Scripts\Presentation\Wobble.cs" />
     <Compile Include="Assets\Scripts\Installers\GameInstaller.cs" />
+    <Compile Include="Assets\Scripts\Presentation\UI\DebugOverlayUI.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldPoolInitializer.cs" />
   </ItemGroup>
   <ItemGroup>

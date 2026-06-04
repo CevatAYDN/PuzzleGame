@@ -35,6 +35,14 @@ namespace PuzzleGame.Application.Configuration
         [Tooltip("Alpha applied to the mold tint.")]
         public float moldTintAlpha = 0.25f;
 
+        [Header("Sparkle & Surface")]
+        [Tooltip("Global sparkle intensity for PremiumLayeredOre / MobileMold shaders.")]
+        [Range(0f, 2f)] public float sparkleIntensity = 0.1f;
+        [Tooltip("Sparkle grain size.")]
+        [Range(1f, 32f)] public float sparkleSize = 12f;
+        [Tooltip("Layer boundary darkening width in normalized height.")]
+        [Range(0f, 0.05f)] public float layerBoundaryWidth = 0.012f;
+
         [Header("Animation Defaults")]
         public float wobbleBaseImpulse = 2.0f;
         public float wobbleTargetMultiplier = 0.8f;

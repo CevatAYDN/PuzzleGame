@@ -26,7 +26,7 @@ namespace PuzzleGame.Editor
     /// </summary>
     public partial class ForgeEditorWindow : EditorWindow
     {
-        private enum Tab { Data, Levels, Scene, Validate, Palette, Features, LevelUI, Test, Localization }
+        private enum Tab { Data, Levels, Scene, Validate, Palette, Features, LevelUI, Test, Localization, PouringLab }
         private Tab _activeTab = Tab.Data;
 
         // ── Status bar ──────────────────────────────────────────────────────
@@ -61,6 +61,7 @@ namespace PuzzleGame.Editor
                 case Tab.LevelUI:    DrawLevelUITab();      break;
                 case Tab.Test:       DrawTestTab();        break;
                 case Tab.Localization: DrawLocalizationTab(); break;
+                case Tab.PouringLab:   DrawPouringLabTab(); break;
             }
             DrawStatusBar();
         }
@@ -79,6 +80,7 @@ namespace PuzzleGame.Editor
             if (GUILayout.Toggle(_activeTab == Tab.LevelUI, "Level UI", EditorStyles.toolbarButton)) _activeTab = Tab.LevelUI;
             if (GUILayout.Toggle(_activeTab == Tab.Test, "Test", EditorStyles.toolbarButton)) _activeTab = Tab.Test;
             if (GUILayout.Toggle(_activeTab == Tab.Localization, "i18n", EditorStyles.toolbarButton)) _activeTab = Tab.Localization;
+            if (GUILayout.Toggle(_activeTab == Tab.PouringLab, "Pouring Lab", EditorStyles.toolbarButton)) _activeTab = Tab.PouringLab;
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Refresh", EditorStyles.toolbarButton, GUILayout.Width(70)))
             {

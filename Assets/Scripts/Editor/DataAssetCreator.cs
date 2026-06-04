@@ -90,6 +90,11 @@ namespace PuzzleGame.Editor
                     a.streamWidth = 0.08f;
                     a.shakeDuration = 0.25f;
                     a.shakeAngle = 8f;
+                    a.successShakeAmplitude = 0.05f;
+                    a.successShakeDuration = 0.1f;
+                    a.errorShakeAmplitude = 0.15f;
+                    a.errorShakeDuration = 0.3f;
+                    a.cameraShakeFrequency = 10f;
                     a.tiltPhasePortion = 0.25f;
                     a.flowPhasePortion = 0.50f;
                     a.returnPhasePortion = 0.25f;
@@ -100,6 +105,9 @@ namespace PuzzleGame.Editor
                     b.brightnessBoost = 1.2f;
                     b.maxLayers = 4;
                     b.castImpulseStrength = 2.0f;
+                    b.sparkleIntensity = 0.1f;
+                    b.sparkleSize = 12f;
+                    b.layerBoundaryWidth = 0.012f;
                 }, overridePerAsset("MoldVisualConfig")),
 
                 Ensure<WobbleConfig>("WobbleConfig", w => {
@@ -134,6 +142,35 @@ namespace PuzzleGame.Editor
                     a.musicPoolSize = 2;
                     a.spatialBlend3D = false;
                 }, overridePerAsset("AudioConfig")),
+
+                Ensure<StreamVFXConfig>("StreamVFXConfig", s => {
+                    s.flowIntensity = 0.8f;
+                    s.colorIntensityBoost = 1.5f;
+                    s.streamWidthMultiplier = 1f;
+                    s.particleCapacity = 128;
+                    s.boundsRadius = 3f;
+                    s.scaleBoundsWithDistance = true;
+                    s.boundsScalePerUnit = 1.5f;
+                    s.useDistanceScaledParticles = true;
+                    s.particlesPerUnitDistance = 40f;
+                    s.enableTrail = true;
+                    s.trailAlpha = 0.15f;
+                    s.trailSampleCount = 8;
+                    s.trailFadeDuration = 0.5f;
+                }, overridePerAsset("StreamVFXConfig")),
+
+                Ensure<PourConfig>("PourConfig", p => {
+                    p.pourDuration = 1.2f;
+                    p.distanceSpeedMultiplier = 1.5f;
+                    p.minFlowIntensity = 0.3f;
+                    p.maxFlowIntensity = 1.5f;
+                    p.overrideVFX = false;
+                    p.flowIntensity = 0.8f;
+                    p.streamWidth = 0.08f;
+                    p.streamArcHeight = 0.1f;
+                    p.showPourPreview = true;
+                    p.showAffectedBoundaries = false;
+                }, overridePerAsset("PourConfig")),
             };
 
             AssetDatabase.SaveAssets();
@@ -163,6 +200,8 @@ namespace PuzzleGame.Editor
                 ["WobbleConfig"]       = Exists<WobbleConfig>("WobbleConfig"),
                 ["LevelConfig"]        = Exists<LevelConfig>("LevelConfig"),
                 ["AudioConfig"]        = Exists<AudioConfig>("AudioConfig"),
+                ["StreamVFXConfig"]   = Exists<StreamVFXConfig>("StreamVFXConfig"),
+                ["PourConfig"]        = Exists<PourConfig>("PourConfig"),
             };
         }
     }

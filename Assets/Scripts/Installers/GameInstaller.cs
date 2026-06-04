@@ -31,6 +31,7 @@ namespace PuzzleGame.Installers
         [SerializeField] public AnimationConfig animationConfig;
         [SerializeField] public LevelConfig levelConfig;
         [SerializeField] public AudioConfig audioConfig;
+        [SerializeField] public StreamVFXConfig streamVFXConfig;
         [SerializeField] public LevelData[] levelCatalog;
 
         protected override void Configure(IContainerBuilder builder)
@@ -43,6 +44,7 @@ namespace PuzzleGame.Installers
             builder.RegisterInstance(animationConfig);
             builder.RegisterInstance(levelConfig);
             builder.RegisterInstance(audioConfig);
+            builder.RegisterInstance(streamVFXConfig);
             builder.RegisterInstance(levelCatalog);
 
             // Fix #7: Lazy Camera.main — Configure() may run before the scene is fully ready.
@@ -99,12 +101,18 @@ namespace PuzzleGame.Installers
             builder.Register<IAudioService, AudioService>(Lifetime.Singleton);
             builder.Register<IParticleFactory, ParticleFactory>(Lifetime.Singleton);
             builder.Register<IStreamRenderer, StreamRenderer>(Lifetime.Singleton);
+            builder.Register<IStreamTrailController, StreamTrailController>(Lifetime.Singleton);
             builder.Register<IAnimationService, AnimationService>(Lifetime.Singleton);
             builder.Register<ILevelSetupService, LevelSetupService>(Lifetime.Singleton);
             builder.Register<ILevelValidationService, LevelValidationService>(Lifetime.Singleton);
             builder.Register<ICastService, CastService>(Lifetime.Singleton);
             builder.Register<IReactionService, ReactionService>(Lifetime.Singleton);
             builder.Register<IInputHandlerService, InputHandlerService>(Lifetime.Singleton);
+
+            // Developer tools
+            builder.Register<PourSystemController>(Lifetime.Singleton)
+                   .As<IPourSystemController>()
+                   .AsSelf();
 
             // GameManager — inject via VContainer
             builder.RegisterComponentInHierarchy<GameManager>();
@@ -140,6 +148,14 @@ namespace PuzzleGame.Installers
             {
                 throw new System.InvalidOperationException(
                     "AudioConfig asset missing at Resources/Data/AudioConfig.");
+            }
+
+            if (streamVFXConfig == null) streamVFXConfig = Resources.Load<StreamVFXConfig>("Data/StreamVFXConfig");
+            if (streamVFXConfig == null)
+            {
+                MoldLogger.LogWarning("StreamVFXConfig asset missing at Resources/Data/StreamVFXConfig. " +
+                    "Using fallback — create it via Tools > PuzzleGame > Open Editor > Data tab.");
+                streamVFXConfig = ScriptableObject.CreateInstance<StreamVFXConfig>();
             }
 
             // OnValidate the values the inspector might have corrupted

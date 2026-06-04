@@ -41,6 +41,7 @@ namespace PuzzleGame.Application.Services
         // ── Stream / Particles ─────────────────────────────────────────────────
         public UnityEngine.VFX.VisualEffect Effect;
         public IStreamRenderer StreamRenderer;
+        public IStreamTrailController TrailController;
         public Color StreamColor;
         public ParticleSystem SplashPS;
         public ParticleSystem BubblePS;
@@ -75,6 +76,10 @@ namespace PuzzleGame.Application.Services
 
             AudioService?.PlaySfx(AudioClipId.CastLoop);
 
+            // Begin trail from source mouth
+            Vector3 sourceMouth = SourceT.TransformPoint(LocalSourceMouth);
+            TrailController?.BeginTrail(sourceMouth, StreamColor);
+
             SplashPS = SplashPool.Rent(TargetT);
             BubblePS = BubblePool.Rent(TargetT);
             if (SplashPS != null)
@@ -94,6 +99,7 @@ namespace PuzzleGame.Application.Services
         {
             // Phase 3: Return
             if (Effect != null) Effect.Stop();
+            TrailController?.EndTrail();
             if (SplashPS != null) { SplashPS.Stop(); Owner.DelayReturnToPool(SplashPS, SplashPool, 1.0f); }
             if (BubblePS != null) { BubblePS.Stop(); Owner.DelayReturnToPool(BubblePS, BubblePool, 1.5f); }
 
@@ -140,6 +146,10 @@ namespace PuzzleGame.Application.Services
             s.StreamRenderer.Update(s.Effect, s.Source, s.Target,
                 s.SourceT, s.TargetT, val, s.Config);
 
+            // Update trail — trails source mouth position during flow
+            Vector3 sourceMouthWS = s.SourceT.TransformPoint(s.LocalSourceMouth);
+            s.TrailController?.UpdateTrail(sourceMouthWS);
+
             float currentFill = s.Target.VisualTotalFill;
             if (s.SplashPS != null)
                 s.SplashPS.transform.position = s.TargetT.position + Vector3.up * (s.Target.Height * currentFill);
@@ -171,6 +181,7 @@ namespace PuzzleGame.Application.Services
             TargetT = null;
             Effect = null;
             StreamRenderer = null;
+            TrailController = null;
             SplashPS = null;
             BubblePS = null;
             TweenService = null;

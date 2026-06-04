@@ -21,17 +21,19 @@ namespace PuzzleGame.Application.Services
         private readonly IGameHistoryManager _historyManager;
         private readonly IReactionService _reactionService;
         private readonly IEventAggregator _eventAggregator;
+        private readonly IErrorIndicatorService _errorIndicator;
         private LevelData _currentLevelData;
 
         // Zero-allocation: RolledBack listesi pool edilerek gereksiz GC önlendi.
         private readonly List<OreLayer> _rollbackBuffer = new List<OreLayer>(8);
 
-        public CastService(IMoldValidator validator, IGameHistoryManager historyManager, IReactionService reactionService, IEventAggregator eventAggregator)
+        public CastService(IMoldValidator validator, IGameHistoryManager historyManager, IReactionService reactionService, IEventAggregator eventAggregator, IErrorIndicatorService errorIndicator)
         {
             _validator = validator;
             _historyManager = historyManager;
             _reactionService = reactionService;
             _eventAggregator = eventAggregator;
+            _errorIndicator = errorIndicator;
         }
 
         public void SetLevelData(LevelData levelData) => _currentLevelData = levelData;
@@ -90,12 +92,14 @@ namespace PuzzleGame.Application.Services
             if (source.State.IsEmpty)
             {
                 _eventAggregator.Publish(new CastRejectedEvent(GetMoldIndex(source), GetMoldIndex(target), "source_empty"));
+                _errorIndicator?.ShowErrorOnMold(GetMoldIndex(source), "source_empty");
                 return false;
             }
 
             if (!_validator.CanCast(source.State, target.State))
             {
                 _eventAggregator.Publish(new CastRejectedEvent(GetMoldIndex(source), GetMoldIndex(target), "validator_rejected"));
+                _errorIndicator?.ShowErrorOnMold(GetMoldIndex(target), "validator_rejected");
                 return false;
             }
 

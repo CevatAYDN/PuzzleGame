@@ -21,6 +21,18 @@ namespace PuzzleGame.Application.Configuration
         public float shakeDuration = 0.25f;
         public float shakeAngle = 8f;
 
+        [Header("Camera Effects")]
+        [Tooltip("Shake amplitude in world units for successful pour.")]
+        public float successShakeAmplitude = 0.05f;
+        [Tooltip("Shake duration for successful pour.")]
+        public float successShakeDuration = 0.1f;
+        [Tooltip("Shake amplitude for rejected pour.")]
+        public float errorShakeAmplitude = 0.15f;
+        [Tooltip("Shake duration for rejected pour.")]
+        public float errorShakeDuration = 0.3f;
+        [Tooltip("Base camera shake frequency in Hz.")]
+        public float cameraShakeFrequency = 10f;
+
         [Header("Cast Phases (portions of CastDuration, must sum to 1.0)")]
         [Range(0f, 1f)] public float tiltPhasePortion = 0.25f;
         [Range(0f, 1f)] public float flowPhasePortion = 0.50f;

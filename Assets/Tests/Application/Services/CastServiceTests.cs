@@ -17,6 +17,7 @@ namespace PuzzleGame.Tests.Application.Services
         private FakeHistoryManager _historyManager;
         private FakeReactionService _reactionService;
         private EventAggregator _eventAggregator;
+        private FakeErrorIndicatorService _errorIndicator;
 
         private MoldState CreateMold(int maxLayers = 4)
         {
@@ -37,7 +38,8 @@ namespace PuzzleGame.Tests.Application.Services
             _validator = new FakeMoldValidator();
             _historyManager = new FakeHistoryManager();
             _reactionService = new FakeReactionService();
-            _sut = new CastService(_validator, _historyManager, _reactionService, _eventAggregator);
+            _errorIndicator = new FakeErrorIndicatorService();
+            _sut = new CastService(_validator, _historyManager, _reactionService, _eventAggregator, _errorIndicator);
         }
 
         [TearDown]

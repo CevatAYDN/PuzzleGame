@@ -23,7 +23,7 @@ namespace PuzzleGame.Application.Services
         private readonly IAudioService _audioService;
         private int _activeTweenCount;
 
-        private const int MaxPoolSize = 16;
+        private const int MaxPoolSize = 32;
 
         private readonly IGameObjectPool<ParticleSystem> _splashPool;
         private readonly IGameObjectPool<ParticleSystem> _bubblePool;
@@ -34,6 +34,7 @@ namespace PuzzleGame.Application.Services
         private readonly IColorAdapter _colorAdapter;
         private readonly IParticleFactory _particleFactory;
         private readonly IStreamRenderer _streamRenderer;
+        private readonly IStreamTrailController _trailController;
 
         private readonly ParticleSystem _splashPrefab;
         private readonly ParticleSystem _bubblePrefab;
@@ -43,7 +44,7 @@ namespace PuzzleGame.Application.Services
 
         public bool IsAnimating => _activeTweenCount > 0;
 
-        public AnimationService(AnimationConfig config, ITweenService tween, IAudioService audioService, IPoolManager poolManager, IColorAdapter colorAdapter, IParticleFactory particleFactory, IStreamRenderer streamRenderer)
+        public AnimationService(AnimationConfig config, ITweenService tween, IAudioService audioService, IPoolManager poolManager, IColorAdapter colorAdapter, IParticleFactory particleFactory, IStreamRenderer streamRenderer, IStreamTrailController trailController)
         {
             _config = config;
             _tween = tween ?? throw new ArgumentNullException(nameof(tween));
@@ -52,6 +53,7 @@ namespace PuzzleGame.Application.Services
             _colorAdapter = colorAdapter;
             _particleFactory = particleFactory ?? throw new ArgumentNullException(nameof(particleFactory));
             _streamRenderer = streamRenderer ?? throw new ArgumentNullException(nameof(streamRenderer));
+            _trailController = trailController;
 
             _splashPrefab = _particleFactory.CreateSplash();
             _bubblePrefab = _particleFactory.CreateBubble();
@@ -195,6 +197,7 @@ namespace PuzzleGame.Application.Services
             state.TweenService = _tween;
             state.AudioService = _audioService;
             state.StreamRenderer = _streamRenderer;
+            state.TrailController = _trailController;
             state.SplashPool = _splashPool;
             state.BubblePool = _bubblePool;
             state.Owner = this;
