@@ -44,10 +44,28 @@ namespace PuzzleGame.Editor
         {
             _existingLevels.Clear();
             var guids = AssetDatabase.FindAssets("t:LevelData", new[] { LevelDataBatchCreator.LevelPath });
-            for (int i = 1; i <= 100; i++)
+            
+            int maxFoundLevel = 0;
+            var foundPaths = new HashSet<string>();
+            foreach (var guid in guids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var level = AssetDatabase.LoadAssetAtPath<LevelData>(path);
+                if (level != null)
+                {
+                    foundPaths.Add(path);
+                    if (level.levelNumber > maxFoundLevel) maxFoundLevel = level.levelNumber;
+                }
+            }
+
+            int targetMax = Mathf.Max(100, Mathf.Max((int)_levelEnd, maxFoundLevel));
+
+            for (int i = 1; i <= targetMax; i++)
             {
                 string path = $"{LevelDataBatchCreator.LevelPath}/Level_{i:D2}.asset";
-                var level = AssetDatabase.LoadAssetAtPath<LevelData>(path);
+                bool exists = foundPaths.Contains(path) || System.IO.File.Exists(path);
+                var level = exists ? AssetDatabase.LoadAssetAtPath<LevelData>(path) : null;
+                
                 _existingLevels.Add(new LevelInfo
                 {
                     number = i,

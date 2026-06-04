@@ -40,7 +40,7 @@ namespace PuzzleGame.Editor
             {
                 EditorGUILayout.LabelField("Select Level to Edit", EditorStyles.miniBoldLabel);
 
-                var levels = AssetDatabase.FindAssets("t:LevelData", new[] { "Assets/Resources/Levels" });
+                var levels = AssetDatabase.FindAssets("t:LevelData", new[] { LevelDataBatchCreator.LevelPath });
                 var levelOptions = new List<string> { "-- Select Level --" };
                 var levelPaths = new List<string> { null };
                 var levelList = new List<LevelData>();
@@ -190,15 +190,17 @@ namespace PuzzleGame.Editor
                     if (GUILayout.Button("+ Add Filled Mold"))
                     {
                         Undo.RecordObject(_selectedLevelForUI, "Add Mold");
+                        Color c1 = SceneBuilder.DefaultPalette[UnityEngine.Random.Range(0, SceneBuilder.DefaultPalette.Length)];
+                        Color c2 = SceneBuilder.DefaultPalette[(UnityEngine.Random.Range(1, SceneBuilder.DefaultPalette.Length) + 1) % SceneBuilder.DefaultPalette.Length];
                         var newMold = new LevelMoldData
                         {
                             isEmpty = false,
                             layers = new List<LevelLayerData>
                             {
-                                new LevelLayerData { color = Color.red, amount = 0.25f },
-                                new LevelLayerData { color = Color.red, amount = 0.25f },
-                                new LevelLayerData { color = Color.blue, amount = 0.25f },
-                                new LevelLayerData { color = Color.blue, amount = 0.25f }
+                                new LevelLayerData { color = c1, amount = 0.25f },
+                                new LevelLayerData { color = c1, amount = 0.25f },
+                                new LevelLayerData { color = c2, amount = 0.25f },
+                                new LevelLayerData { color = c2, amount = 0.25f }
                             }
                         };
                         _selectedLevelForUI.Molds.Add(newMold);
@@ -274,6 +276,7 @@ namespace PuzzleGame.Editor
                         // Remove layer
                         if (GUILayout.Button("X", GUILayout.Width(25)))
                         {
+                            Undo.RecordObject(_selectedLevelForUI, "Delete Layer");
                             Mold.layers.RemoveAt(i);
                             i--;
                         }
@@ -281,12 +284,14 @@ namespace PuzzleGame.Editor
                         // Move up/down
                         if (i > 0 && GUILayout.Button("▲", GUILayout.Width(25)))
                         {
+                            Undo.RecordObject(_selectedLevelForUI, "Move Layer Up");
                             var temp = Mold.layers[i];
                             Mold.layers[i] = Mold.layers[i - 1];
                             Mold.layers[i - 1] = temp;
                         }
                         if (i < Mold.layers.Count - 1 && GUILayout.Button("▼", GUILayout.Width(25)))
                         {
+                            Undo.RecordObject(_selectedLevelForUI, "Move Layer Down");
                             var temp = Mold.layers[i];
                             Mold.layers[i] = Mold.layers[i + 1];
                             Mold.layers[i + 1] = temp;
@@ -316,6 +321,7 @@ namespace PuzzleGame.Editor
                         Color newColor;
                         if (ColorUtility.TryParseHtmlString(_newMoldColorHex, out newColor))
                         {
+                            Undo.RecordObject(_selectedLevelForUI, "Add Layer");
                             Mold.layers.Add(new LevelLayerData { color = newColor, amount = _newMoldLayerAmount });
                         }
                     }
@@ -336,6 +342,7 @@ namespace PuzzleGame.Editor
 
         private void AddQuickColor(LevelMoldData Mold, Color color)
         {
+            Undo.RecordObject(_selectedLevelForUI, "Add Quick Color");
             if (Mold.layers == null) Mold.layers = new List<LevelLayerData>();
             Mold.layers.Add(new LevelLayerData { color = color, amount = 0.25f });
         }

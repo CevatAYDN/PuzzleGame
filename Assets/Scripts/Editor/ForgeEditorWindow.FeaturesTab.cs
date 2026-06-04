@@ -145,20 +145,18 @@ namespace PuzzleGame.Editor
 
                     var config = _selectedLevelForFeatures.multiLayerCastConfig;
 
-                    config.CastAllMatching = EditorGUILayout.ToggleLeft(
-                        "Cast All Matching Layers", 
-                        config.CastAllMatching);
+                    EditorGUI.BeginChangeCheck();
+                    var newCastAll = EditorGUILayout.ToggleLeft("Cast All Matching Layers", config.CastAllMatching);
+                    if (EditorGUI.EndChangeCheck()) { Undo.RecordObject(_selectedLevelForFeatures, "Toggle Cast All"); config.CastAllMatching = newCastAll; }
 
-                    config.CastConsecutiveOnly = EditorGUILayout.ToggleLeft(
-                        "Cast Consecutive Only", 
-                        config.CastConsecutiveOnly);
+                    EditorGUI.BeginChangeCheck();
+                    var newConsecutive = EditorGUILayout.ToggleLeft("Cast Consecutive Only", config.CastConsecutiveOnly);
+                    if (EditorGUI.EndChangeCheck()) { Undo.RecordObject(_selectedLevelForFeatures, "Toggle Consecutive"); config.CastConsecutiveOnly = newConsecutive; }
 
                     EditorGUILayout.Space(4);
-                    config.minConsecutiveForCast = EditorGUILayout.IntSlider(
-                        "Min Consecutive for Cast", 
-                        config.minConsecutiveForCast, 
-                        2, 
-                        _selectedLevelForFeatures.maxLayersPerMold);
+                    EditorGUI.BeginChangeCheck();
+                    var newMin = EditorGUILayout.IntSlider("Min Consecutive for Cast", config.minConsecutiveForCast, 2, _selectedLevelForFeatures.maxLayersPerMold);
+                    if (EditorGUI.EndChangeCheck()) { Undo.RecordObject(_selectedLevelForFeatures, "Change Min Consecutive"); config.minConsecutiveForCast = newMin; }
 
                     EditorGUILayout.Space(4);
                     EditorGUILayout.HelpBox(
@@ -204,9 +202,9 @@ namespace PuzzleGame.Editor
 
                     var config = _selectedLevelForFeatures.reactionConfig;
 
-                    config.enableReactions = EditorGUILayout.ToggleLeft(
-                        "Enable Reactions", 
-                        config.enableReactions);
+                    EditorGUI.BeginChangeCheck();
+                    var newEnableReactions = EditorGUILayout.ToggleLeft("Enable Reactions", config.enableReactions);
+                    if (EditorGUI.EndChangeCheck()) { Undo.RecordObject(_selectedLevelForFeatures, "Toggle Reactions"); config.enableReactions = newEnableReactions; }
 
                     EditorGUILayout.Space(4);
 
@@ -222,6 +220,7 @@ namespace PuzzleGame.Editor
                         GUILayout.FlexibleSpace();
                         if (GUILayout.Button("+ Add Rule", GUILayout.Width(100)))
                         {
+                            Undo.RecordObject(_selectedLevelForFeatures, "Add Reaction Rule");
                             config.reactionRules.Add(new ReactionRule
                             {
                                 colorA = OreColor.Red,
@@ -245,9 +244,20 @@ namespace PuzzleGame.Editor
                             
                             using (new EditorGUILayout.HorizontalScope())
                             {
-                                rule.colorA = (OreColor)EditorGUILayout.EnumPopup("Color A", rule.colorA, GUILayout.Width(150));
-                                rule.colorB = (OreColor)EditorGUILayout.EnumPopup("+", rule.colorB, GUILayout.Width(80));
-                                rule.reactionType = (ReactionRule.ReactionType)EditorGUILayout.EnumPopup("Type", rule.reactionType, GUILayout.Width(120));
+                                EditorGUILayout.LabelField("Color A", GUILayout.Width(50));
+                                EditorGUI.BeginChangeCheck();
+                                var cA = (OreColor)EditorGUILayout.EnumPopup(rule.colorA, GUILayout.Width(80));
+                                if (EditorGUI.EndChangeCheck()) { Undo.RecordObject(_selectedLevelForFeatures, "Change Rule"); rule.colorA = cA; }
+
+                                EditorGUILayout.LabelField("+", GUILayout.Width(15));
+                                EditorGUI.BeginChangeCheck();
+                                var cB = (OreColor)EditorGUILayout.EnumPopup(rule.colorB, GUILayout.Width(80));
+                                if (EditorGUI.EndChangeCheck()) { Undo.RecordObject(_selectedLevelForFeatures, "Change Rule"); rule.colorB = cB; }
+
+                                EditorGUILayout.LabelField("Type", GUILayout.Width(40));
+                                EditorGUI.BeginChangeCheck();
+                                var type = (ReactionRule.ReactionType)EditorGUILayout.EnumPopup(rule.reactionType, GUILayout.Width(100));
+                                if (EditorGUI.EndChangeCheck()) { Undo.RecordObject(_selectedLevelForFeatures, "Change Rule"); rule.reactionType = type; }
                             }
 
                             if (rule.reactionType == ReactionRule.ReactionType.Transform)
@@ -255,15 +265,23 @@ namespace PuzzleGame.Editor
                                 using (new EditorGUILayout.HorizontalScope())
                                 {
                                     EditorGUILayout.LabelField("→ Result:", GUILayout.Width(60));
-                                    rule.resultColor = (OreColor)EditorGUILayout.EnumPopup(rule.resultColor, GUILayout.Width(150));
+                                    EditorGUI.BeginChangeCheck();
+                                    var res = (OreColor)EditorGUILayout.EnumPopup(rule.resultColor, GUILayout.Width(150));
+                                    if (EditorGUI.EndChangeCheck()) { Undo.RecordObject(_selectedLevelForFeatures, "Change Rule"); rule.resultColor = res; }
                                 }
                             }
+                            
+                            // EXPOSE MISSING EFFECT PREFAB
+                            EditorGUI.BeginChangeCheck();
+                            var prefab = (GameObject)EditorGUILayout.ObjectField("Effect Prefab", rule.effectPrefab, typeof(GameObject), false);
+                            if (EditorGUI.EndChangeCheck()) { Undo.RecordObject(_selectedLevelForFeatures, "Change Rule Prefab"); rule.effectPrefab = prefab; }
 
                             using (new EditorGUILayout.HorizontalScope())
                             {
                                 GUILayout.FlexibleSpace();
                                 if (GUILayout.Button("Remove", GUILayout.Width(80)))
                                 {
+                                    Undo.RecordObject(_selectedLevelForFeatures, "Remove Rule");
                                     config.reactionRules.RemoveAt(i);
                                     i--;
                                 }
