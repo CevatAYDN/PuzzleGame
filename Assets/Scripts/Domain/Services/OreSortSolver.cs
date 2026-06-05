@@ -39,6 +39,9 @@ namespace PuzzleGame.Domain.Services
         {
             public int MaxVisitedStates { get; set; } = ForgeConstants.SolverMaxVisitedStates;
             public float ColorTolerance  { get; set; } = ForgeConstants.ColorMatchEpsilon;
+            public bool EnableMultiLayerCast { get; set; } = false;
+            public bool CastConsecutiveOnly { get; set; } = true;
+            public int MinConsecutiveForCast { get; set; } = 1;
         }
 
         /// <summary>
@@ -146,14 +149,29 @@ namespace PuzzleGame.Domain.Services
                         int sourceTopColor = source[source.Length - 1];
                         if (target.Length > 0 && target[target.Length - 1] != sourceTopColor) continue;
 
-                        // Count consecutive same-color layers from top of source
+                        // Count consecutive same-color layers from top of source according to options
                         int countToCast = 0;
                         int idx = source.Length - 1;
-                        while (idx >= 0 && source[idx] == sourceTopColor && (target.Length + countToCast) < maxLayers)
+
+                        if (!options.EnableMultiLayerCast)
                         {
-                            countToCast++;
-                            idx--;
+                            if (target.Length < maxLayers)
+                                countToCast = 1;
                         }
+                        else
+                        {
+                            while (idx >= 0 && source[idx] == sourceTopColor && (target.Length + countToCast) < maxLayers)
+                            {
+                                countToCast++;
+                                idx--;
+                            }
+
+                            if (options.CastConsecutiveOnly && countToCast < options.MinConsecutiveForCast)
+                            {
+                                countToCast = 0;
+                            }
+                        }
+
                         if (countToCast == 0) continue;
 
                         // Fix #13: Allocate owned rows directly. The outer-array pool was redundant —

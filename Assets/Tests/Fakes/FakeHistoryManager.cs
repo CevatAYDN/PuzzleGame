@@ -27,6 +27,11 @@ namespace PuzzleGame.Tests.Fakes
             LastInitializedMolds = Molds;
         }
 
+        public void SetMolds(IMoldView[] Molds)
+        {
+            LastInitializedMolds = Molds;
+        }
+
         public void RecordUndoSnapshot()
         {
             RecordUndoSnapshotCallCount++;

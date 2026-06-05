@@ -25,6 +25,11 @@ namespace PuzzleGame.Application.Services
             ResetAll();
         }
 
+        public void SetMolds(IMoldView[] Molds)
+        {
+            _Molds = Molds ?? throw new ArgumentNullException(nameof(Molds));
+        }
+
         public void RecordUndoSnapshot()
         {
             if (_Molds == null)

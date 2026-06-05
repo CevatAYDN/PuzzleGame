@@ -10,6 +10,7 @@ namespace PuzzleGame.Application.Interfaces
         event Action<int> OnMoveCountChanged;
 
         void Initialize(IMoldView[] Molds);
+        void SetMolds(IMoldView[] Molds);
         void RecordUndoSnapshot();
         void IncrementMoveCount();
         void Undo();

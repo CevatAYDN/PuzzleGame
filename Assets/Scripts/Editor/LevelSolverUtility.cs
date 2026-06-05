@@ -3,6 +3,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using PuzzleGame.Domain.Models;
+using PuzzleGame.Domain;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Services;
 using PuzzleGame.Infrastructure;
@@ -69,7 +70,16 @@ namespace PuzzleGame.Editor
             var assignments = GetLevelAssignments(level, levelConfig);
             int maxLayers = level.autoGenerate ? level.maxLayersPerMold : 4;
             if (maxLayers < 4) maxLayers = 4;
-            return OreSortSolver.Solve(assignments, maxLayers);
+
+            var config = level.multiLayerCastConfig;
+            var options = new OreSortSolver.OreSortSolverOptions
+            {
+                EnableMultiLayerCast = level.enableMultiLayerCast,
+                CastConsecutiveOnly = config?.CastConsecutiveOnly ?? true,
+                MinConsecutiveForCast = config?.minConsecutiveForCast ?? ForgeConstants.MinEmptyMolds,
+                ColorTolerance = ForgeConstants.ColorMatchEpsilon
+            };
+            return OreSortSolver.Solve(assignments, maxLayers, options);
         }
     }
 }

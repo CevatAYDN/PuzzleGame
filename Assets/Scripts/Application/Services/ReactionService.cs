@@ -137,9 +137,18 @@ namespace PuzzleGame.Application.Services
             int layerIndexA = result.AffectedLayerA;
             int layerIndexB = result.AffectedLayerB;
 
+            float combinedAmount = 1f;
             try
             {
-                state.ReplaceAtIndex(layerIndexA, new OreLayer(domainColor, 1f, resultColor));
+                combinedAmount = state.GetLayerAt(layerIndexA).Amount + state.GetLayerAt(layerIndexB).Amount;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+            }
+
+            try
+            {
+                state.ReplaceAtIndex(layerIndexA, new OreLayer(domainColor, combinedAmount, resultColor));
                 state.RemoveAtIndex(layerIndexB);
             }
             catch (ArgumentOutOfRangeException ex)

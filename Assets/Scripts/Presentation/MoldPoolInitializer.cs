@@ -165,9 +165,11 @@ namespace PuzzleGame
                 }
             }
 
-            // Expose the new combined active molds to the input handler service and error indicators
+            // Expose the new combined active molds to the input handler service, history manager and error indicators
             var finalArray = combinedActiveMolds.ToArray();
+            _Molds = finalArray;
             _inputHandlerService.SetMolds(finalArray);
+            _historyManager.SetMolds(finalArray);
             _errorIndicator?.Initialize(finalArray);
         }
 
