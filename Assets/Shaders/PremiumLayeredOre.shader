@@ -58,9 +58,18 @@ Shader "Custom/PremiumLayeredOre"
         _EdgeDarken("Edge Darken", Range(0.0, 1.0)) = 0.1
         _EdgeWidth("Edge Width", Range(0.0, 0.5)) = 0.25
 
+        [Header(Optical Properties)]
+        _Transparency("Transparency", Range(0.0, 1.0)) = 0.02
+        _EdgeDarken("Edge Darken", Range(0.0, 1.0)) = 0.1
+        _EdgeWidth("Edge Width", Range(0.0, 0.5)) = 0.25
+
         [Header(Layer Boundary)]
         _LayerBoundaryWidth("Layer Boundary Width", Range(0.0, 0.05)) = 0.012
         _LayerBoundaryDarken("Layer Boundary Darken", Range(0.0, 1.0)) = 0.15
+
+        [Header(Rim Flash)]
+        _RimColor("Rim Color", Color) = (0.5, 0.5, 0.5, 1.0)
+        _RimIntensity("Rim Intensity", Range(0.0, 5.0)) = 0.5
     }
 
     SubShader
@@ -136,6 +145,8 @@ Shader "Custom/PremiumLayeredOre"
                 float _LayerBoundaryWidth;
                 float _LayerBoundaryDarken;
                 float _Radius;
+                float _RimIntensity;
+                float4 _RimColor;
             CBUFFER_END
 
             struct Attributes
@@ -342,6 +353,9 @@ Shader "Custom/PremiumLayeredOre"
                 finalColor += specularColor;
                 finalColor += rimColor;
 
+                // Rim Flash -- overlay from MPB (error indicator / pour highlight)
+                finalColor += _RimColor.rgb * _RimIntensity * 0.5f;
+
                 float finalAlpha = layerColor.a * layerAlpha * (1.0 - _Transparency) * surfaceAlpha;
                 finalAlpha = saturate(finalAlpha);
 
@@ -409,6 +423,8 @@ Shader "Custom/PremiumLayeredOre"
                 float _LayerBoundaryWidth;
                 float _LayerBoundaryDarken;
                 float _Radius;
+                float _RimIntensity;
+                float4 _RimColor;
             CBUFFER_END
 
             struct Attributes
@@ -436,5 +452,5 @@ Shader "Custom/PremiumLayeredOre"
             ENDHLSL
         }
     }
-    FallBack Off
+    Fallback Off
 }

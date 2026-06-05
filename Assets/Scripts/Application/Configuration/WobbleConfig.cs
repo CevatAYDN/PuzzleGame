@@ -23,5 +23,22 @@ namespace PuzzleGame.Application.Configuration
         [Header("Material Indices")]
         [Tooltip("Submesh index for the Ore material on the MeshRenderer")]
         public int OreMaterialIndex = 1;
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (updateInterval < 0.001f)
+            {
+                updateInterval = 0.001f;
+                UnityEditor.EditorUtility.SetDirty(this);
+            }
+            if (maxWobble < 0f) maxWobble = 0f;
+            if (wobbleSpeed < 0f) wobbleSpeed = 0f;
+            if (recoveryRate < 0f) recoveryRate = 0f;
+            if (movementMultiplier < 0f) movementMultiplier = 0f;
+            if (rotationMultiplier < 0f) rotationMultiplier = 0f;
+            if (OreMaterialIndex < 0) OreMaterialIndex = 0;
+        }
+#endif
     }
 }

@@ -27,5 +27,10 @@ namespace PuzzleGame.Tests.Fakes
         {
             IsTrailActive = false;
         }
+
+        public void Cleanup()
+        {
+            IsTrailActive = false;
+        }
     }
 }

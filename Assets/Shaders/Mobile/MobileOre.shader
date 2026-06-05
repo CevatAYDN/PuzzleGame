@@ -15,11 +15,19 @@ Shader "PuzzleGame/MobileLiquid"
         [Toggle(_USE_GRADIENT)] _UseGradient ("Enable Gradient", Float) = 0
         _ColorTop ("Color Top", Color) = (0.3, 0.7, 1.0, 1.0)
         _ColorBottom ("Color Bottom", Color) = (0.1, 0.3, 0.8, 1.0)
+
+        [Header(Wobble Effect)]
+        [HideInInspector] _WobbleX ("Wobble X", Range(-1, 1)) = 0.0
+        [HideInInspector] _WobbleZ ("Wobble Z", Range(-1, 1)) = 0.0
+
+        [Header(Rim Flash)]
+        _RimColor ("Rim Color", Color) = (0.5, 0.5, 0.5, 1.0)
+        _RimIntensity ("Rim Intensity", Range(0.0, 5.0)) = 0.5
     }
 
     SubShader
     {
-        Tags { "RenderType" = "Transparent" "Queue" = "Transparent" }
+        Tags { "RenderType" = "Transparent" "Queue" = "Transparent" "RenderPipeline" = "UniversalPipeline" }
         LOD 100
 
         Blend SrcAlpha OneMinusSrcAlpha
@@ -29,7 +37,7 @@ Shader "PuzzleGame/MobileLiquid"
         Pass
         {
             Name "Liquid"
-            CGPROGRAM
+            HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
             #pragma target 2.0
@@ -39,7 +47,7 @@ Shader "PuzzleGame/MobileLiquid"
             #pragma skip_variants LIGHTMAP_ON DYNAMICLIGHTMAP_ON
             #pragma multi_compile_instancing
 
-            #include "UnityCG.cginc"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
             struct appdata
             {
@@ -54,30 +62,36 @@ Shader "PuzzleGame/MobileLiquid"
                 float4 vertex : SV_POSITION;
             };
 
-            fixed4 _LiquidColor;
+            float4 _LiquidColor;
             half _FillLevel;
             half _WaveSpeed;
             half _WaveAmplitude;
             half _WaveFrequency;
+            float _WobbleX;
+            float _WobbleZ;
+            float4 _RimColor;
+            float _RimIntensity;
 
             #if _USE_GRADIENT
-            fixed4 _ColorTop;
-            fixed4 _ColorBottom;
+            float4 _ColorTop;
+            float4 _ColorBottom;
             #endif
 
             v2f vert (appdata v)
             {
                 v2f o;
                 UNITY_SETUP_INSTANCE_ID(v);
-                o.vertex = UnityObjectToClipPos(v.vertex);
+                float3 posOS = v.vertex.xyz;
+                // Simple wobble offset
+                float wobbleY = (posOS.x * _WobbleX + posOS.z * _WobbleZ) * 0.05;
+                o.vertex = TransformObjectToHClip(posOS + float3(0, wobbleY, 0));
                 o.uv = v.uv;
                 return o;
             }
 
-            fixed4 frag (v2f i) : SV_Target
+            float4 frag (v2f i) : SV_Target
             {
                 // --- Wave surface calculation ---
-                // Two overlapping sine waves for natural look (still very cheap: 2 sin calls)
                 half wave1 = sin(i.uv.x * 6.283 * _WaveFrequency + _Time.y * _WaveSpeed) * _WaveAmplitude;
                 half wave2 = sin(i.uv.x * 12.566 * _WaveFrequency * 0.7 + _Time.y * _WaveSpeed * 1.3) * _WaveAmplitude * 0.5;
                 half wave = wave1 + wave2;
@@ -85,7 +99,6 @@ Shader "PuzzleGame/MobileLiquid"
                 half surface = _FillLevel + wave;
 
                 // --- Fill mask: below surface = liquid, above = transparent ---
-                // Use smoothstep for anti-aliased surface edge
                 half fillMask = 1.0 - smoothstep(surface - 0.015, surface + 0.015, i.uv.y);
 
                 // No liquid when completely empty
@@ -93,19 +106,22 @@ Shader "PuzzleGame/MobileLiquid"
 
                 // --- Color ---
                 #if _USE_GRADIENT
-                // Vertical gradient from bottom to surface
                 half gradientT = saturate((surface - i.uv.y) / max(surface, 0.001));
-                fixed4 col = lerp(_ColorBottom, _ColorTop, gradientT);
+                float4 col = lerp(_ColorBottom, _ColorTop, gradientT);
                 #else
-                fixed4 col = _LiquidColor;
+                float4 col = _LiquidColor;
                 #endif
 
                 col.a *= fillMask;
+
+                // Rim flash overlay
+                col.rgb += _RimColor.rgb * _RimIntensity * fillMask;
+
                 return col;
             }
-            ENDCG
+            ENDHLSL
         }
     }
 
-    FallBack "Unlit/Transparent"
+    Fallback "Unlit/Transparent"
 }

@@ -45,6 +45,10 @@ Shader "Custom/MoldGlass"
         [Header(Surface Detail)]
         [Toggle] _NormalMapEnabled("Procedural Normal Variation", Float) = 1.0
         _SurfaceNoiseScale("Surface Noise Scale", Range(0.0, 20.0)) = 6.0
+
+        [Header(Rim Flash)]
+        _RimColor("Rim Color", Color) = (0.5, 0.5, 0.5, 1.0)
+        _RimIntensity("Rim Intensity", Range(0.0, 5.0)) = 0.5
     }
 
     SubShader
@@ -99,6 +103,8 @@ Shader "Custom/MoldGlass"
                 half   _CausticsSpeed;
                 half   _NormalMapEnabled;
                 half   _SurfaceNoiseScale;
+                half   _RimIntensity;
+                half4  _RimColor;
             CBUFFER_END
 
             struct Attributes
@@ -218,7 +224,9 @@ Shader "Custom/MoldGlass"
                 half3 causticsColor = half3(1.0h, 0.97h, 0.88h) * caustics * _CausticsStrength * causticsMask;
 
                 // -- Final composition --
-                half3 finalColor = diffuse + specular + rim + causticsColor;
+                // -- Rim Flash -- overlay from MPB (error indicator red flash) --
+                half3 rimFlash = half3(_RimColor.rgb * _RimIntensity);
+                half3 finalColor = diffuse + specular + rim + causticsColor + rimFlash;
                 // Glass opacity = base alpha + fresnel boost (silhouette becomes more opaque)
                 half  finalAlpha = saturate(_Color.a + fresnel * 0.4h);
                 return half4(finalColor, finalAlpha);
@@ -260,6 +268,8 @@ Shader "Custom/MoldGlass"
                 half   _CausticsSpeed;
                 half   _NormalMapEnabled;
                 half   _SurfaceNoiseScale;
+                half   _RimIntensity;
+                half4  _RimColor;
             CBUFFER_END
 
             struct Attributes
@@ -329,6 +339,8 @@ Shader "Custom/MoldGlass"
                 half   _CausticsSpeed;
                 half   _NormalMapEnabled;
                 half   _SurfaceNoiseScale;
+                half   _RimIntensity;
+                half4  _RimColor;
             CBUFFER_END
 
             float3 _LightDirection;
@@ -378,5 +390,5 @@ Shader "Custom/MoldGlass"
         }
     }
 
-    FallBack Off
+    Fallback Off
 }

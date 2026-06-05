@@ -27,6 +27,7 @@ namespace PuzzleGame
 
         private static readonly int WobbleXProperty = Shader.PropertyToID("_WobbleX");
         private static readonly int WobbleZProperty = Shader.PropertyToID("_WobbleZ");
+        private static readonly int WobbleStrengthProperty = Shader.PropertyToID("_WobbleStrength");
 
         private void Awake()
         {
@@ -151,6 +152,7 @@ namespace PuzzleGame
                         _renderer.GetPropertyBlock(_propBlock, _OreMatIndex);
                         _propBlock.SetFloat(WobbleXProperty, wobbleAmountX);
                         _propBlock.SetFloat(WobbleZProperty, wobbleAmountZ);
+                        _propBlock.SetFloat(WobbleStrengthProperty, maxWobble);
                         _renderer.SetPropertyBlock(_propBlock, _OreMatIndex);
                     }
                 }
@@ -168,6 +170,7 @@ namespace PuzzleGame
                     _renderer.GetPropertyBlock(_propBlock, _OreMatIndex);
                     _propBlock.SetFloat(WobbleXProperty, 0f);
                     _propBlock.SetFloat(WobbleZProperty, 0f);
+                    _propBlock.SetFloat(WobbleStrengthProperty, 0f);
                     _renderer.SetPropertyBlock(_propBlock, _OreMatIndex);
                 }
                 _isWobbleActive = false;
@@ -186,6 +189,7 @@ namespace PuzzleGame
                 _renderer.GetPropertyBlock(_propBlock, _OreMatIndex);
                 _propBlock.SetFloat(WobbleXProperty, 0f);
                 _propBlock.SetFloat(WobbleZProperty, 0f);
+                _propBlock.SetFloat(WobbleStrengthProperty, 0f);
                 _renderer.SetPropertyBlock(_propBlock, _OreMatIndex);
             }
 

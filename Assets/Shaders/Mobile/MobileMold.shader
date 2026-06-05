@@ -36,11 +36,15 @@ Shader "PuzzleGame/MobileMold"
         [Header(Performance)]
         [Toggle(_USE_NORMAL_MAP)] _UseNormalMap ("Enable Normal Map", Float) = 0
         [NoScaleOffset] _NormalMap ("Normal Map (Optional)", 2D) = "bump" {}
+
+        [Header(Rim Flash)]
+        _RimColor ("Rim Color", Color) = (0.5, 0.5, 0.5, 1.0)
+        _RimIntensity ("Rim Intensity", Range(0.0, 5.0)) = 0.5
     }
 
     SubShader
     {
-        Tags { "RenderType" = "Transparent" "Queue" = "Transparent" "RenderPipeline" = "UniversalPipeline" }
+        Tags { "RenderType" = "Transparent" "Queue" = "Transparent" "RenderPipeline" = "UniversalPipeline" "IgnoreProjector" = "True" }
         LOD 100
 
         Blend SrcAlpha OneMinusSrcAlpha
@@ -77,6 +81,8 @@ Shader "PuzzleGame/MobileMold"
             float4 _MainTex_ST;
             fixed4 _GlassColor;
             fixed _GlassAlpha;
+            fixed4 _RimColor;
+            float _RimIntensity;
 
             v2f vertGlass(appdata v)
             {
@@ -91,6 +97,8 @@ Shader "PuzzleGame/MobileMold"
             {
                 fixed4 glass = _GlassColor;
                 glass.a = _GlassAlpha;
+                // Rim flash overlay (error indicator)
+                glass.rgb += _RimColor.rgb * _RimIntensity;
                 return glass;
             }
             ENDCG
@@ -141,6 +149,10 @@ Shader "PuzzleGame/MobileMold"
             float _SparkleSize;
             float _LayerBoundaryWidth;
             float _LayerBoundaryDarken;
+            float _WobbleX;
+            float _WobbleZ;
+            float4 _RimColor;
+            float _RimIntensity;
 
         #if _USE_NORMAL_MAP
             sampler2D _NormalMap;
@@ -189,7 +201,10 @@ Shader "PuzzleGame/MobileMold"
             {
                 v2f o;
                 UNITY_SETUP_INSTANCE_ID(v);
-                o.vertex = UnityObjectToClipPos(v.vertex);
+                float3 posOS = v.vertex.xyz;
+                float wobbleY = (posOS.x * _WobbleX + posOS.z * _WobbleZ) * _WaveAmplitude * 2.0;
+                float3 posOSWobble = posOS + float3(0, wobbleY, 0);
+                o.vertex = UnityObjectToClipPos(posOSWobble);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 o.normalWS = UnityObjectToWorldNormal(v.normal);
                 o.screenPos = ComputeScreenPos(o.vertex);
@@ -205,7 +220,7 @@ Shader "PuzzleGame/MobileMold"
                 float3 worldPos = i.worldPos;
                 float time = _Time.y;
 
-                // Simple wave on surface
+            // Simple wave on surface
                 float wave = sin(worldPos.x * 4.0 + time * _WaveSpeed)
                            * cos(worldPos.z * 3.5 - time * _WaveSpeed * 0.7)
                            * _WaveAmplitude;
@@ -249,6 +264,7 @@ Shader "PuzzleGame/MobileMold"
                 float3 sparkleColor = sparkleGate * _SparkleIntensity * 3.0 * fixed3(1, 1, 1);
 
                 float3 finalColor = diffuse * boundaryFactor + sparkleColor;
+                finalColor += _RimColor.rgb * _RimIntensity;
 
                 // Surface fade
                 float surfaceAlpha = smoothstep(-0.002, 0.002, surfaceY - localY);

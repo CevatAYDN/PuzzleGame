@@ -133,5 +133,20 @@ namespace PuzzleGame.Infrastructure.Implementations
                 _lineRenderer.SetPosition(i, _positions[lastIdx]);
             }
         }
+
+        /// <summary>
+        /// Destroys the owned LineRenderer material to prevent leaks.
+        /// Call when the owning cast animation state is cleaned up.
+        /// </summary>
+        public void Cleanup()
+        {
+            if (_lineRenderer != null && _lineRenderer.material != null)
+            {
+                UnityEngine.Object.Destroy(_lineRenderer.material);
+                _lineRenderer.material = null;
+            }
+            _lineRenderer = null;
+            _isActive = false;
+        }
     }
 }

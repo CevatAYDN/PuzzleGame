@@ -107,46 +107,11 @@ namespace PuzzleGame.Infrastructure.Implementations
             }
 
 #if UNITY_EDITOR
-            if (!UnityEngine.Application.isPlaying)
-            {
-                var mats = renderer.sharedMaterials;
-                if (mats != null && mats.Length > 0)
-                {
-                    int targetIndex = Mathf.Clamp(materialIndex, 0, mats.Length - 1);
-                    var mat = mats[targetIndex];
-                    if (mat != null)
-                    {
-                        cumulative = 0f;
-                        for (int i = 0; i < maxLayers; i++)
-                        {
-                            Color color = Color.clear;
-                            float fill  = cumulative;
-
-                            if (i < _mergedLayers.Count)
-                            {
-                                var layer = _mergedLayers[i];
-                                float sat = config != null ? config.saturationBoost : 1.25f;
-                                float bri = config != null ? config.brightnessBoost : 1.15f;
-                                color      = AdjustColor(_colorAdapter.ToUnity(layer.Color), sat, bri);
-                                cumulative += layer.Amount;
-                                fill       = cumulative;
-                            }
-
-                            mat.SetColor(ColorIDs[i], color);
-                            mat.SetFloat(FillIDs[i],  fill);
-                        }
-
-                        mat.SetFloat(SurfaceHeightID, totalFill);
-                        if (config != null)
-                        {
-                            mat.SetFloat(SparkleIntensityID, config.sparkleIntensity);
-                            mat.SetFloat(SparkleSizeID,      config.sparkleSize);
-                            mat.SetFloat(LayerBoundaryWidthID, config.layerBoundaryWidth);
-                        }
-                        UnityEditor.EditorUtility.SetDirty(mat);
-                    }
-                }
-            }
+            // Editor-time shared material modification removed — modifying shared
+            // material assets at edit time permanently corrupts them on disk and
+            // affects all mold instances using the same asset. Use the MPB path
+            // for runtime (play mode) rendering; editor previews should use
+            // EditorGUI.DrawPreview or a dedicated preview material instead.
 #endif
         }
 
@@ -183,20 +148,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             }
 
 #if UNITY_EDITOR
-            if (!UnityEngine.Application.isPlaying)
-            {
-                var mats = renderer.sharedMaterials;
-                if (mats != null && mats.Length > 0)
-                {
-                    int targetIndex = Mathf.Clamp(materialIndex, 0, mats.Length - 1);
-                    var mat = mats[targetIndex];
-                    if (mat != null)
-                    {
-                        mat.SetColor(GlassColorID, glassColor);
-                        UnityEditor.EditorUtility.SetDirty(mat);
-                    }
-                }
-            }
+            // Editor-time shared material modification removed — see comment in UpdateOre.
 #endif
         }
 

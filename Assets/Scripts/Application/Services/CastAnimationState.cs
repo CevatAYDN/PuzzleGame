@@ -181,6 +181,7 @@ namespace PuzzleGame.Application.Services
             TargetT = null;
             Effect = null;
             StreamRenderer = null;
+            TrailController?.Cleanup();
             TrailController = null;
             SplashPS = null;
             BubblePS = null;

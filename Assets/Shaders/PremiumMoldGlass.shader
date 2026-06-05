@@ -20,6 +20,10 @@ Shader "Custom/PremiumBottleGlass"
         _SpecularColor("Specular Color", Color) = (1.0, 1.0, 1.0, 1.0)
         _SpecularIntensity("Specular Intensity", Range(0, 5)) = 2.0
         _SpecularSmoothness("Specular Smoothness", Range(0, 1)) = 0.9
+
+        [Header(Rim Flash)]
+        _RimColor("Rim Color", Color) = (0.5, 0.5, 0.5, 1.0)
+        _RimIntensity("Rim Intensity", Range(0.0, 5.0)) = 0.5
     }
 
     SubShader
@@ -66,6 +70,8 @@ Shader "Custom/PremiumBottleGlass"
                 float _SpecularSmoothness;
                 float4 _InnerLineColor;
                 float _InnerLineWidth;
+                float _RimIntensity;
+                float4 _RimColor;
             CBUFFER_END
 
             struct Attributes
@@ -167,6 +173,7 @@ Shader "Custom/PremiumBottleGlass"
                 finalColor += specular;
                 finalColor += innerLineColor;
                 finalColor += outlineColor;
+                finalColor += _RimColor.rgb * _RimIntensity;
 
                 float finalAlpha = saturate(glassAlpha + outline);
 
@@ -175,5 +182,5 @@ Shader "Custom/PremiumBottleGlass"
             ENDHLSL
         }
     }
-    FallBack Off
+    Fallback Off
 }

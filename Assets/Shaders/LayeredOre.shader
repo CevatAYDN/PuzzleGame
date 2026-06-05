@@ -67,6 +67,10 @@ Shader "Custom/LayeredLiquid"
         [HideInInspector] _WobbleX ("Wobble X", Range(-1, 1)) = 0.0
         [HideInInspector] _WobbleZ ("Wobble Z", Range(-1, 1)) = 0.0
         _WobbleStrength ("Wobble Strength", Range(0.0, 0.3)) = 0.15
+
+        [Header(Rim Flash)]
+        _RimColor ("Rim Color", Color) = (0.5, 0.5, 0.5, 1.0)
+        _RimIntensity ("Rim Intensity", Range(0.0, 5.0)) = 0.5
     }
 
     SubShader
@@ -140,6 +144,8 @@ Shader "Custom/LayeredLiquid"
                 float  _CausticsStrength;
                 float  _CausticsScale;
                 float  _CausticsSpeed;
+                float  _RimIntensity;
+                float4 _RimColor;
             CBUFFER_END
 
             struct Attributes
@@ -386,7 +392,9 @@ Shader "Custom/LayeredLiquid"
                 diffuse *= boundaryFactor;
 
                 // -- Final composition --
-                half3 finalColor = diffuse + specular + causticsColor + meniscusColor;
+                // -- Rim Flash -- overlay from MPB (error indicator / pour highlight) --
+                half3 rimFlash = half3(_RimColor.rgb * _RimIntensity * 0.5h);
+                half3 finalColor = diffuse + specular + causticsColor + meniscusColor + rimFlash;
 
                 // Alpha: layer base alpha x surface mask x (1 - transparency), darkened
                 // at the bottom for soft fade-in.
@@ -447,6 +455,8 @@ Shader "Custom/LayeredLiquid"
                 float  _CausticsStrength;
                 float  _CausticsScale;
                 float  _CausticsSpeed;
+                float  _RimIntensity;
+                float4 _RimColor;
             CBUFFER_END
 
             struct Attributes
@@ -554,6 +564,8 @@ Shader "Custom/LayeredLiquid"
                 float  _CausticsStrength;
                 float  _CausticsScale;
                 float  _CausticsSpeed;
+                float  _RimIntensity;
+                float4 _RimColor;
             CBUFFER_END
 
             float3 _LightDirection;
@@ -626,5 +638,5 @@ Shader "Custom/LayeredLiquid"
         }
     }
 
-    FallBack Off
+    Fallback Off
 }

@@ -26,5 +26,11 @@ namespace PuzzleGame.Application.Interfaces
         /// Ends the trail effect with a fade-out. Called when flow phase completes.
         /// </summary>
         void EndTrail();
+
+        /// <summary>
+        /// Destroys owned resources (LineRenderer material). Called when the
+        /// owning cast animation state is released to prevent material leaks.
+        /// </summary>
+        void Cleanup();
     }
 }
