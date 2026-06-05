@@ -6,13 +6,17 @@ using UnityEngine;
 
 namespace PuzzleGame.Infrastructure.Pool
 {
-    /// <summary>
-    /// Central pool registry. Manages named pools for different object types.
-    /// Implements IPoolManager for clean DI through Application layer.
-    /// - RegisterPool: creates a new pool by name
-    /// - Rent/Return: type-safe access via named pools
-    /// - Cleanup: destroy all pooled objects (scene unload)
-    /// </summary>
+/// <summary>
+/// Central pool registry. Manages named pools for different object types.
+/// Implements IPoolManager for clean DI through Application layer.
+/// - RegisterPool: creates a new pool by name
+/// - Rent/Return: type-safe access via named pools
+/// - Cleanup: destroy all pooled objects (scene unload)
+/// </summary>
+/// <remarks>
+/// Unity executes on a single main thread, so thread-safety locking is unnecessary.
+/// Lock removal eliminates GC pressure from Monitor allocations and simplifies code.
+/// </remarks>
     public sealed class PoolManager : IPoolManager
     {
         private readonly Dictionary<string, INamedPool> _pools = new Dictionary<string, INamedPool>();

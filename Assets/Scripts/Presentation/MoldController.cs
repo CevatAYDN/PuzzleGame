@@ -62,6 +62,7 @@ namespace PuzzleGame
         private IRendererService _rendererService;
         private IMoldValidator _validator;
         private IAnimationService _animationService;
+        private ITweenService _tweenService;
         private MoldVisualRenderer _visualRenderer;
         private MoldCorkController _corkController;
         private MoldMeshGenerator _meshGenerator;
@@ -72,7 +73,8 @@ namespace PuzzleGame
                                IMoldValidator  validator,
                                IAnimationService animationService,
                                List<OreLayer> initialLayers,
-                               Application.Configuration.MoldVisualConfig visualConfigOverride = null)
+                               Application.Configuration.MoldVisualConfig visualConfigOverride = null,
+                               ITweenService tweenService = null)
         {
             if (rendererService == null) throw new ArgumentNullException(nameof(rendererService));
             if (validator == null)       throw new ArgumentNullException(nameof(validator));
@@ -81,6 +83,7 @@ namespace PuzzleGame
             _rendererService = rendererService;
             _validator       = validator;
             _animationService = animationService;
+            _tweenService    = tweenService;
             _meshGenerator   = GetComponent<MoldMeshGenerator>();
             _renderer        = GetComponent<Renderer>();
             _wobble          = GetComponent<Wobble>();
@@ -164,38 +167,31 @@ namespace PuzzleGame
 
         private void RestoreStateFromSerialized(bool isFromOnValidate = false)
         {
-#if UNITY_EDITOR
-            // Editor preview mode only: keep scene previews working outside playmode.
-            // Direct instantiation is confined to UNITY_EDITOR so production DI is not bypassed.
-            if (!UnityEngine.Application.isPlaying)
-            {
-                if (_rendererService == null)
-                    _rendererService = new PuzzleGame.Infrastructure.Implementations.RendererService();
-                if (_validator == null)
-                    _validator = new PuzzleGame.Domain.Services.MoldValidationService();
-            }
-#endif
-
             if (_rendererService == null || _validator == null)
             {
-                MoldLogger.LogWarning($"MoldController '{name}' initialized from serialized state without DI services. Editor preview mode may lack visuals/validation.");
+#if UNITY_EDITOR
+                if (!UnityEngine.Application.isPlaying)
+                {
+                    MoldLogger.LogDebug($"MoldController '{name}' editor preview — DI services not available; visuals/validation skipped until play mode.");
+                }
+#endif
             }
 
             _meshGenerator = GetComponent<MoldMeshGenerator>();
             _renderer = GetComponent<Renderer>();
             _wobble = GetComponent<Wobble>();
 
-            _visualRenderer = new MoldVisualRenderer(
-                _renderer, _rendererService, visualConfig,
-                () => _visualLayers, () => _visualTotalFill);
+            _visualRenderer = _rendererService != null
+                ? new MoldVisualRenderer(_renderer, _rendererService, visualConfig,
+                    () => _visualLayers, () => _visualTotalFill)
+                : null;
 
             _corkController = new MoldCorkController(
                 transform, _animationService,
                 () => Height,
                 () => _meshGenerator != null ? _meshGenerator.neckRadius : PuzzleGame.Infrastructure.CorkConstants.Radius,
                 corkObject);
-            
-            // Fix: Cork is initialized properly during state restores to avoid desync
+
             _corkController.EnsureCork(isFromOnValidate);
             corkObject = _corkController.CorkObject;
 
@@ -214,6 +210,8 @@ namespace PuzzleGame
                 }
             }
             _visualTotalFill = _state.TotalFill;
+
+            if (_visualRenderer != null) _visualRenderer.Update();
         }
 
         // Property-based injection for non-DI scenarios (Editor preview)
@@ -425,16 +423,10 @@ namespace PuzzleGame
 
         private void OnDestroy()
         {
-#if PRIME_TWEEN_INSTALLED
-            PrimeTween.Tween.StopAll(transform);
-            if (corkObject != null) PrimeTween.Tween.StopAll(corkObject.transform);
-#endif
+            _tweenService?.StopAll(transform);
+            if (corkObject != null) _tweenService?.StopAll(corkObject.transform);
 
             _corkController?.DisposeResources();
-
-            // Fix: Do NOT destroy glassMaterial or OreMaterial because they are assets from the database.
-            // Destroying references here destroys project assets!
-            // Do NOT call Destroy(lr.sharedMaterial) either, as that ruins the original shared material.
 
             _visualRenderer = null;
         }

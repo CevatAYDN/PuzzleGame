@@ -8,6 +8,7 @@
         "VContainer",
         "PrimeTween.Runtime",
         "Unity.TextMeshPro",
+        "Unity.InputSystem",
         "Unity.RenderPipelines.Universal.Runtime"
     ],
     "includePlatforms": [],

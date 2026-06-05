@@ -17,6 +17,8 @@ namespace PuzzleGame.Application.Interfaces
         ITweenHandle TweenCustom(object target, float from, float to, float duration, Action<object, float> onUpdate);
         ITweenHandle SequenceCreate();
         ITweenHandle Delay(float duration);
+
+        void StopAll(Transform target);
     }
 
     public interface ITweenHandle

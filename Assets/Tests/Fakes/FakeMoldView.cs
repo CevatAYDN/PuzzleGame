@@ -40,7 +40,8 @@ namespace PuzzleGame.Tests.Fakes
         public void Initialize(IRendererService rendererService,
             IMoldValidator validator, IAnimationService animationService,
             List<OreLayer> initialLayers,
-            MoldVisualConfig visualConfigOverride = null)
+            MoldVisualConfig visualConfigOverride = null,
+            ITweenService tweenService = null)
         {
             InitializeCallCount++;
             LastVisualConfigOverride = visualConfigOverride;

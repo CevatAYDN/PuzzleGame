@@ -252,31 +252,33 @@ namespace PuzzleGame.Application.Services
         }
 
         /// <summary>
-        /// Returns existing level data or constructs a transient play-test default.
-        /// The default is owned by this instance and is destroyed in <see cref="DisposeDefaults"/>
-        /// to avoid the static-ScriptableObject leak that occurred with the previous static field.
+        /// Returns existing level data or a transient default for play-test mode.
+        /// Uses a lightweight struct instead of ScriptableObject to avoid asset leaks.
         /// </summary>
         private LevelData _playTestDefaults;
 
-        /// <summary>
-        /// Returns existing level data or a transient default for play-test mode.
-        /// </summary>
         private LevelData GetActiveLevelData()
         {
             if (_currentLevelData != null) return _currentLevelData;
 
             if (_playTestDefaults == null)
             {
-                _playTestDefaults = ScriptableObject.CreateInstance<LevelData>();
-                _playTestDefaults.autoGenerate = false;
-                _playTestDefaults.enableMultiLayerCast = false;
-                _playTestDefaults.enableReactionSystem = false;
-                _playTestDefaults.hideFlags = HideFlags.HideAndDontSave;
-                _playTestDefaults.name = "InputHandlerService_PlayTestDefaults";
+                _playTestDefaults = CreatePlayTestLevelDefaults();
             }
 
             MoldLogger.LogDebug("GetActiveLevelData: no level set, using play-test defaults.");
             return _playTestDefaults;
+        }
+
+        private LevelData CreatePlayTestLevelDefaults()
+        {
+            var data = ScriptableObject.CreateInstance<LevelData>();
+            data.autoGenerate = false;
+            data.enableMultiLayerCast = false;
+            data.enableReactionSystem = false;
+            data.hideFlags = HideFlags.HideAndDontSave;
+            data.name = "InputHandlerService_PlayTestDefaults";
+            return data;
         }
 
         public void DisposeDefaults()

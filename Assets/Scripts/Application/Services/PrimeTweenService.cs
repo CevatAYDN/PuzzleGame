@@ -52,6 +52,12 @@ namespace PuzzleGame.Application.Services
         public ITweenHandle Delay(float duration)
             => Start(PrimeTween.Tween.Delay(duration));
 
+        public void StopAll(Transform target)
+        {
+            if (target == null) return;
+            PrimeTween.Tween.StopAll(target);
+        }
+
         private static Ease ToPrimeEase(EaseType ease) => ease switch
         {
             EaseType.Linear => Ease.Linear,

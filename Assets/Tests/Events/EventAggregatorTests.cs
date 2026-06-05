@@ -87,33 +87,21 @@ namespace PuzzleGame.Events.Tests
             Assert.That(callCount, Is.EqualTo(1));
         }
 
+        // ── Concurrent publish (Unity is single-threaded, so this is a stress test) ──
+        // Note: Lock removal in EventAggregator means this tests main-thread safety only.
         [Test]
-        public void Publish_Concurrent_DoesNotThrow()
+        public void Publish_StressTest_DoesNotThrow()
         {
-            const int threadCount = 10;
-            const int iterations = 100;
             int callCount = 0;
+            const int iterations = 100;
+            _eventAggregator.Subscribe<TestEvent>(e => callCount++);
 
-            _eventAggregator.Subscribe<TestEvent>(e => {
-                System.Threading.Interlocked.Increment(ref callCount);
-            });
-
-            var threads = new System.Threading.Thread[threadCount];
-            for (int i = 0; i < threadCount; i++)
+            for (int i = 0; i < iterations; i++)
             {
-                threads[i] = new System.Threading.Thread(() =>
-                {
-                    for (int j = 0; j < iterations; j++)
-                    {
-                        _eventAggregator.Publish(new TestEvent());
-                    }
-                });
+                _eventAggregator.Publish(new TestEvent());
             }
 
-            foreach (var t in threads) t.Start();
-            foreach (var t in threads) t.Join();
-
-            Assert.That(callCount, Is.EqualTo(threadCount * iterations));
+            Assert.That(callCount, Is.EqualTo(iterations));
         }
 
         // ── Unsubscribe ─────────────────────────────────────────────────────

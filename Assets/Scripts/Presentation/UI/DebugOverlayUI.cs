@@ -4,6 +4,9 @@ using TMPro;
 using System.Text;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Configuration;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 namespace PuzzleGame.Presentation.UI
 {
@@ -14,9 +17,6 @@ namespace PuzzleGame.Presentation.UI
     /// </summary>
     public class DebugOverlayUI : MonoBehaviour
     {
-        [Header("Key Bind")]
-        [SerializeField] private KeyCode _toggleKey = KeyCode.BackQuote;
-
         [Header("References")]
         [SerializeField] private GameObject _overlayRoot;
         [SerializeField] private TextMeshProUGUI _moldStateText;
@@ -51,7 +51,7 @@ namespace PuzzleGame.Presentation.UI
 
         private void Update()
         {
-            if (Input.GetKeyDown(_toggleKey))
+            if (IsToggleKeyPressed())
             {
                 _isVisible = !_isVisible;
                 if (_overlayRoot != null)
@@ -62,6 +62,16 @@ namespace PuzzleGame.Presentation.UI
             {
                 RefreshDisplay();
             }
+        }
+
+        private static bool IsToggleKeyPressed()
+        {
+#if ENABLE_INPUT_SYSTEM
+            var kb = Keyboard.current;
+            return kb != null && kb.backquoteKey.wasPressedThisFrame;
+#else
+            return Input.GetKeyDown(KeyCode.BackQuote);
+#endif
         }
 
         private void RefreshDisplay()

@@ -118,11 +118,12 @@ namespace PuzzleGame.Application.Services
         {
             var position = Mold.Transform.position;
 
+            Mold.State.Clear();
+            Mold.UpdateVisualsFromState();
+
             _eventAggregator.Publish(new MoldExplodedEvent(
                 result.MoldIndex,
                 position));
-
-            Mold.State.Clear();
 
             MoldLogger.LogInfo($"[ReactionService] EXPLOSION at {Mold.GameObject.name}! Mold emptied.");
         }
@@ -157,6 +158,8 @@ namespace PuzzleGame.Application.Services
                     $"ReactionService.ProcessTransform: layer index out of range for Mold '{Mold.GameObject.name}'.",
                     ex);
             }
+
+            Mold.UpdateVisualsFromState();
 
             _eventAggregator.Publish(new ReactionTriggeredEvent(
                 result.MoldIndex,

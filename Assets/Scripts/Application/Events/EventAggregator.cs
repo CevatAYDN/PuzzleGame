@@ -8,12 +8,11 @@ namespace PuzzleGame.Application.Events
     /// <summary>
     /// Lightweight, type-safe publish/subscribe bus.
     /// Instance-based — inject via IEventAggregator for testability.
-    ///
-    /// Usage:
-    ///   _eventAggregator.Subscribe&lt;CastCompletedEvent&gt;(OnCastCompleted);
-    ///   _eventAggregator.Publish(new CastCompletedEvent(source, target));
-    ///   _eventAggregator.Unsubscribe&lt;CastCompletedEvent&gt;(OnCastCompleted);
     /// </summary>
+    /// <remarks>
+    /// Unity is single-threaded on the main thread, so locking is unnecessary.
+    /// This eliminates GC pressure from Monitor allocations.
+    /// </remarks>
     public class EventAggregator : IEventAggregator
     {
         private interface ISubscription
@@ -51,81 +50,65 @@ namespace PuzzleGame.Application.Events
         private const int MaxPoolSize = 16;
 
         private readonly Stack<List<ISubscription>> _listPool = new Stack<List<ISubscription>>();
-        private readonly object _lockObj = new object();
 
         private List<ISubscription> GetTempList()
         {
-            lock (_lockObj)
-            {
-                return _listPool.Count > 0 ? _listPool.Pop() : new List<ISubscription>(8);
-            }
+            return _listPool.Count > 0 ? _listPool.Pop() : new List<ISubscription>(8);
         }
 
         private void ReturnTempList(List<ISubscription> list)
         {
             list.Clear();
-            lock (_lockObj)
-            {
-                if (_listPool.Count < MaxPoolSize)
-                    _listPool.Push(list);
-            }
+            if (_listPool.Count < MaxPoolSize)
+                _listPool.Push(list);
         }
 
         public void Subscribe<T>(Action<T> handler)
         {
             if (handler == null) return;
 
-            lock (_lockObj)
+            if (!_subscribers.TryGetValue(typeof(T), out var list))
             {
-                if (!_subscribers.TryGetValue(typeof(T), out var list))
-                {
-                    list = GetTempList();
-                    _subscribers[typeof(T)] = list;
-                }
-                list.Add(new Subscription<T>(handler));
+                list = GetTempList();
+                _subscribers[typeof(T)] = list;
             }
+            list.Add(new Subscription<T>(handler));
         }
 
         public void Unsubscribe<T>(Action<T> handler)
         {
             if (handler == null) return;
 
-            lock (_lockObj)
+            if (!_subscribers.TryGetValue(typeof(T), out var list))
+                return;
+
+            for (int i = list.Count - 1; i >= 0; i--)
             {
-                if (!_subscribers.TryGetValue(typeof(T), out var list))
-                    return;
-
-                for (int i = list.Count - 1; i >= 0; i--)
+                if (list[i].Matches(handler))
                 {
-                    if (list[i].Matches(handler))
-                    {
-                        list.RemoveAt(i);
-                    }
+                    list.RemoveAt(i);
                 }
+            }
 
-                if (list.Count == 0)
-                {
-                    _subscribers.Remove(typeof(T));
-                    ReturnTempList(list);
-                }
+            if (list.Count == 0)
+            {
+                _subscribers.Remove(typeof(T));
+                ReturnTempList(list);
             }
         }
 
         public void Publish<T>(T eventArgs)
         {
-            // Fix Code Quality #7: Unity is single-threaded on the main thread.
-            // Instead of list.ToArray() (GC alloc per Publish), we copy into a pooled List,
-            // invoke outside the lock (to avoid re-entrant deadlock), then return the list.
-            var snapshot = GetTempList();
+            List<ISubscription> snapshot = GetTempList();
 
-            lock (_lockObj)
+            if (_subscribers.TryGetValue(typeof(T), out var list) && list.Count > 0)
             {
-                if (!_subscribers.TryGetValue(typeof(T), out var list) || list.Count == 0)
-                {
-                    ReturnTempList(snapshot);
-                    return;
-                }
                 snapshot.AddRange(list);
+            }
+            else
+            {
+                ReturnTempList(snapshot);
+                return;
             }
 
             Exception firstException = null;
@@ -159,16 +142,13 @@ namespace PuzzleGame.Application.Events
 
         public void Clear()
         {
-            lock (_lockObj)
+            foreach (var list in _subscribers.Values)
             {
-                foreach (var list in _subscribers.Values)
-                {
-                    list.Clear();
-                    if (_listPool.Count < MaxPoolSize)
-                        _listPool.Push(list);
-                }
-                _subscribers.Clear();
+                list.Clear();
+                if (_listPool.Count < MaxPoolSize)
+                    _listPool.Push(list);
             }
+            _subscribers.Clear();
         }
     }
 }

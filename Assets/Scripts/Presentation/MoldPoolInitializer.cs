@@ -16,23 +16,23 @@ namespace PuzzleGame
     /// and wires them into the game systems (history, input, level setup, camera).
     /// Extracted from GameManager for SRP (single responsibility = Mold pool initialization).
     /// </summary>
-    public sealed class MoldPoolInitializer
-    {
-        private readonly ILevelSetupService _levelSetupService;
-        private readonly IRendererService _rendererService;
-        private readonly IMoldValidator _validator;
-        private readonly IAnimationService _animationService;
-        private readonly IInputHandlerService _inputHandlerService;
-        private readonly IGameHistoryManager _historyManager;
-        private readonly IUpdateManager _updateManager;
-        private readonly Camera _camera;
-        private readonly IErrorIndicatorService _errorIndicator;
+public sealed class MoldPoolInitializer : IActiveMoldsProvider
+{
+    private readonly ILevelSetupService _levelSetupService;
+    private readonly IRendererService _rendererService;
+    private readonly IMoldValidator _validator;
+    private readonly IAnimationService _animationService;
+    private readonly IInputHandlerService _inputHandlerService;
+    private readonly IGameHistoryManager _historyManager;
+    private readonly IUpdateManager _updateManager;
+    private readonly Camera _camera;
+    private readonly IErrorIndicatorService _errorIndicator;
 
-        private readonly List<MoldController> _gameplayMoldsPool = new List<MoldController>();
-        private readonly List<MoldController> _optionalMoldsPool = new List<MoldController>();
-        private IMoldView[] _Molds;
+    private readonly List<MoldController> _gameplayMoldsPool = new List<MoldController>();
+    private readonly List<MoldController> _optionalMoldsPool = new List<MoldController>();
+    private IMoldView[] _Molds;
 
-        public IMoldView[] Molds => _Molds;
+    public IMoldView[] Molds => _Molds;
 
         public MoldPoolInitializer(
             ILevelSetupService levelSetupService,

@@ -13,6 +13,8 @@ namespace PuzzleGame.Tests.Fakes
         public List<List<OreLayer>> GenerateResult { get; set; }
             = new List<List<OreLayer>>();
 
+        public bool GenerateSolvableFlag { get; set; } = true;
+
         public int GenerateCallCount { get; private set; }
         public int LastMoldCount { get; private set; }
         public int LastMaxLayers { get; private set; }
@@ -33,6 +35,14 @@ namespace PuzzleGame.Tests.Fakes
             LastDifficulty = difficulty;
             LastSeed = seed;
             return GenerateResult;
+        }
+
+        public (List<List<OreLayer>> Molds, bool IsSolvable) GenerateSolvable(
+            int MoldCount, int maxLayers, int emptyMoldCount,
+            DomainColor[] colorPalette, Difficulty difficulty, int seed, int maxAttempts)
+        {
+            GenerateCallCount++;
+            return (GenerateResult, GenerateSolvableFlag);
         }
 
         /// <summary>

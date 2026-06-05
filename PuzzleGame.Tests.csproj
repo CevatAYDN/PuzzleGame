@@ -61,6 +61,7 @@
     <Compile Include="Assets\Tests\Fakes\FakeAudioService.cs" />
     <Compile Include="Assets\Tests\Application\Services\GameStateMachineTests.cs" />
     <Compile Include="Assets\Tests\Infrastructure\RendererServiceTests.cs" />
+    <Compile Include="Assets\Tests\Application\Services\CoinWalletTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeParticleFactory.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeCastService.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeSaveManager.cs" />
@@ -76,6 +77,7 @@
     <Compile Include="Assets\Tests\Application\Services\CastServiceTests.cs" />
     <Compile Include="Assets\Tests\Application\MoldSelectionServiceTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\InputHandlerServiceTests.cs" />
+    <Compile Include="Assets\Tests\Domain\Services\LevelGeneratorSolvabilityTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeStreamRenderer.cs" />
     <Compile Include="Assets\Tests\Application\Services\GameSaveManagerTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeStreamTrailController.cs" />
@@ -86,6 +88,7 @@
     <Compile Include="Assets\Tests\Domain\Models\MoldStateTests.cs" />
     <Compile Include="Assets\Tests\Domain\Services\OreSortSolverTests.cs" />
     <Compile Include="Assets\Tests\Domain\MoldStateReplaceLayersTests.cs" />
+    <Compile Include="Assets\Tests\Application\Services\TutorialServiceTests.cs" />
     <Compile Include="Assets\Tests\Infrastructure\UpdateManagerTests.cs" />
     <Compile Include="Assets\Tests\Domain\Services\MoldValidationServiceTests.cs" />
     <Compile Include="Assets\Tests\Domain\Services\LevelGeneratorTests.cs" />

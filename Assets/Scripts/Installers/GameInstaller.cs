@@ -15,6 +15,7 @@ using PuzzleGame.Infrastructure;
 using PuzzleGame.Application.Logging;
 using PuzzleGame.Infrastructure.Providers;
 using PuzzleGame.Presentation;
+using PuzzleGame.Presentation.UI;
 
 namespace PuzzleGame.Installers
 {
@@ -34,6 +35,7 @@ namespace PuzzleGame.Installers
         [SerializeField] public LevelConfig levelConfig;
         [SerializeField] public AudioConfig audioConfig;
         [SerializeField] public StreamVFXConfig streamVFXConfig;
+        [SerializeField] public EconomyConfig economyConfig;
         [SerializeField] public LevelData[] levelCatalog;
 
         protected override void Configure(IContainerBuilder builder)
@@ -47,11 +49,9 @@ namespace PuzzleGame.Installers
             builder.RegisterInstance(levelConfig);
             builder.RegisterInstance(audioConfig);
             builder.RegisterInstance(streamVFXConfig);
+            builder.RegisterInstance(economyConfig);
             builder.RegisterInstance(levelCatalog);
 
-            // Fix #7: Lazy Camera.main — Configure() may run before the scene is fully ready.
-            // Using a factory ensures Camera.main is resolved at the time the first consumer
-            // requests it (after Start()), not during LifetimeScope.Configure().
             builder.Register<Camera>(resolver =>
             {
                 var cam = Camera.main;
@@ -84,10 +84,9 @@ namespace PuzzleGame.Installers
             builder.Register<IInputHandler, InputHandler>(Lifetime.Singleton);
 #endif
 
-            // Domain services
-            var colorTolerance = gameConfig.colorMatchTolerance;
-            builder.Register<IMoldValidator, MoldValidationService>(Lifetime.Singleton)
-                   .WithParameter(colorTolerance);
+            builder.Register<IMoldValidator>(resolver =>
+                new MoldValidationService(resolver.Resolve<GameConfig>().colorMatchTolerance),
+                Lifetime.Singleton);
             builder.Register<IGameStateMachine, GameStateMachine>(Lifetime.Singleton);
             builder.Register<IGameHistoryManager, GameHistoryManager>(Lifetime.Singleton);
             builder.Register<ILevelProgressService, SecureFileLevelProgressService>(Lifetime.Singleton);
@@ -97,6 +96,22 @@ namespace PuzzleGame.Installers
             builder.Register<ILocalizationService, LocalizationService>(Lifetime.Singleton)
                    .WithParameter(Domain.Models.SupportedLanguage.Turkish);
             builder.Register<ISaveManager, GameSaveManager>(Lifetime.Singleton);
+
+            // Economy
+            builder.Register<ICoinWallet, CoinWallet>(Lifetime.Singleton);
+            builder.Register<IHintService, HintService>(Lifetime.Singleton);
+            builder.Register<IUndoService, UndoService>(Lifetime.Singleton);
+
+            // Tutorial
+            builder.Register<ITutorialService, TutorialService>(Lifetime.Singleton);
+
+            // Haptics + analytics (mobile platform hooks; no-op by default)
+            builder.Register<IHapticFeedbackService, HapticFeedbackService>(Lifetime.Singleton);
+            builder.Register<IAnalyticsService, NoOpAnalyticsService>(Lifetime.Singleton);
+
+            // Daily challenge + streak (retention)
+            builder.Register<IDailyChallengeService, DailyChallengeService>(Lifetime.Singleton);
+            builder.Register<IStreakService, StreakService>(Lifetime.Singleton);
 
             // Application services
             builder.Register<IMoldSelectionService, MoldSelectionService>(Lifetime.Singleton);
@@ -123,38 +138,23 @@ namespace PuzzleGame.Installers
                    .As<IPourSystemController>()
                    .AsSelf();
 
-            // Error indicator service (tries to find in scene, instantiates runtime fallback if missing)
-            builder.Register<IErrorIndicatorService>(resolver =>
-            {
-                var component = Object.FindAnyObjectByType<PuzzleGame.Presentation.ErrorIndicatorController>();
-                if (component == null)
-                {
-                    var go = new GameObject("ErrorIndicatorController");
-                    component = go.AddComponent<PuzzleGame.Presentation.ErrorIndicatorController>();
-                    MoldLogger.LogWarning("[GameInstaller] ErrorIndicatorController not found in scene hierarchy. Created a runtime fallback instance.");
-                }
-                resolver.Inject(component);
-                return component;
-            }, Lifetime.Singleton);
+            builder.RegisterComponentInHierarchy<PuzzleGame.Presentation.ErrorIndicatorController>()
+                .As<IErrorIndicatorService>();
 
-            // Camera effects controller (uses the main camera GameObject and performs injection)
-            builder.Register<CameraEffectsController>(resolver =>
-            {
-                var cam = resolver.Resolve<Camera>();
-                var effects = cam.GetComponent<CameraEffectsController>();
-                if (effects == null)
-                {
-                    effects = cam.gameObject.AddComponent<CameraEffectsController>();
-                }
-                resolver.Inject(effects);
-                return effects;
-            }, Lifetime.Singleton);
+            builder.RegisterComponentInHierarchy<CameraEffectsController>();
 
-            // MoldPoolInitializer registered as singleton
-            builder.Register<MoldPoolInitializer>(Lifetime.Singleton);
+            builder.Register<MoldPoolInitializer>(Lifetime.Singleton)
+                   .As<IActiveMoldsProvider>()
+                   .AsSelf();
 
-            // GameManager — inject via VContainer
             builder.RegisterComponentInHierarchy<GameManager>();
+
+            // Presentation controllers — POCOs, scoped to scene lifetime via the container
+            builder.Register<LevelFlowController>(Lifetime.Singleton);
+            builder.Register<WinLoseEvaluator>(Lifetime.Singleton);
+
+            // HUD presenter — must be a MonoBehaviour to serialize inspector references
+            builder.RegisterComponentInHierarchy<HudPresenter>();
 
             MoldLogger.LogInfo("GameInstaller configured — all services registered.");
         }
@@ -195,6 +195,14 @@ namespace PuzzleGame.Installers
                 MoldLogger.LogWarning("StreamVFXConfig asset missing at Resources/Data/StreamVFXConfig. " +
                     "Using fallback — create it via Tools > PuzzleGame > Open Editor > Data tab.");
                 streamVFXConfig = ScriptableObject.CreateInstance<StreamVFXConfig>();
+            }
+
+            if (economyConfig == null) economyConfig = Resources.Load<EconomyConfig>("Data/EconomyConfig");
+            if (economyConfig == null)
+            {
+                MoldLogger.LogWarning("EconomyConfig asset missing at Resources/Data/EconomyConfig. " +
+                    "Using defaults — create it via Tools > PuzzleGame > Open Editor > Data tab.");
+                economyConfig = ScriptableObject.CreateInstance<EconomyConfig>();
             }
 
             // OnValidate the values the inspector might have corrupted

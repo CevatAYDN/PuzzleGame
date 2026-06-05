@@ -36,10 +36,13 @@ namespace PuzzleGame.Application.Services
             _rules[(GameState.Menu, GameState.LevelLoading)] = () => true;
             // LevelLoading → Playing
             _rules[(GameState.LevelLoading, GameState.Playing)] = () => true;
-            // Playing → Paused/LevelComplete/LevelFailed
+            // Playing → Paused/LevelComplete/LevelFailed/OptionalCasting
             _rules[(GameState.Playing, GameState.Paused)] = () => true;
             _rules[(GameState.Playing, GameState.LevelComplete)] = () => true;
             _rules[(GameState.Playing, GameState.LevelFailed)] = () => true;
+            _rules[(GameState.Playing, GameState.OptionalCasting)] = () => true;
+            // OptionalCasting → LevelComplete
+            _rules[(GameState.OptionalCasting, GameState.LevelComplete)] = () => true;
             // Paused → Playing (resume)
             _rules[(GameState.Paused, GameState.Playing)] = () => true;
             // LevelComplete/Failed → Menu/LevelLoading
@@ -49,6 +52,7 @@ namespace PuzzleGame.Application.Services
             _rules[(GameState.LevelFailed, GameState.Menu)] = () => true;
             // Any → Menu (escape)
             _rules[(GameState.Playing, GameState.Menu)] = () => true;
+            _rules[(GameState.OptionalCasting, GameState.Menu)] = () => true;
             // GameOver → Menu
             _rules[(GameState.GameOver, GameState.Menu)] = () => true;
         }

@@ -73,6 +73,10 @@ namespace PuzzleGame.Tests.Fakes
             handle.InvokeComplete();
             return handle;
         }
+
+        public void StopAll(Transform target)
+        {
+        }
     }
 
     /// <summary>

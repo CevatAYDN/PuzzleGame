@@ -32,5 +32,8 @@ namespace PuzzleGame.Tests.Fakes
             if (previous != null)
                 OnMoldDeselected?.Invoke(previous);
         }
+
+        public void RaiseSelected(MoldState mold) => OnMoldSelected?.Invoke(mold);
+        public void RaiseDeselected(MoldState mold) => OnMoldDeselected?.Invoke(mold);
     }
 }

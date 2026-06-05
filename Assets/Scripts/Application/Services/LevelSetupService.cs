@@ -17,30 +17,26 @@ namespace PuzzleGame.Application.Services
     /// </summary>
     public class LevelSetupService : ILevelSetupService
     {
+        private static readonly DomainColor[] DefaultPalette = new DomainColor[]
+        {
+            new DomainColor(0.95f, 0.25f, 0.35f),
+            new DomainColor(0.30f, 0.75f, 0.40f),
+            new DomainColor(0.25f, 0.55f, 0.95f),
+            new DomainColor(0.95f, 0.80f, 0.20f),
+            new DomainColor(0.65f, 0.30f, 0.85f),
+            new DomainColor(0.95f, 0.50f, 0.15f),
+        };
+
         private readonly GameConfig _gameConfig;
         private readonly LevelConfig _levelConfig;
         private readonly ILevelGenerator _levelGenerator;
 
-        // Fix #1: Pure C# DomainColor — no UnityEngine.Color dependency.
-        private static readonly DomainColor[] DefaultPalette =
-        {
-            new DomainColor(0.95f, 0.20f, 0.55f, 1f),
-            new DomainColor(0.20f, 0.55f, 0.95f, 1f),
-            new DomainColor(0.30f, 0.85f, 0.35f, 1f),
-            new DomainColor(0.98f, 0.80f, 0.15f, 1f),
-            new DomainColor(0.70f, 0.30f, 0.90f, 1f),
-            new DomainColor(0.95f, 0.50f, 0.15f, 1f),
-        };
-
-        public LevelSetupService(GameConfig gameConfig, LevelConfig levelConfig, ILevelGenerator levelGenerator, IColorAdapter colorAdapter)
+        public LevelSetupService(GameConfig gameConfig, LevelConfig levelConfig, ILevelGenerator levelGenerator)
         {
             _gameConfig = gameConfig;
             _levelConfig = levelConfig;
             _levelGenerator = levelGenerator;
-            _colorAdapter = colorAdapter;
         }
-
-        private readonly IColorAdapter _colorAdapter;
 
         public List<List<OreLayer>> GenerateLevelAssignments(IMoldView[] Molds, LevelData currentLevel)
         {
@@ -56,8 +52,7 @@ namespace PuzzleGame.Application.Services
             int seed = currentLevel.randomSeed;
             Difficulty diff = currentLevel.difficulty;
 
-            // Fix #1: Convert LevelConfig.palette (UnityEngine.Color[]) only at the boundary.
-            // DefaultPalette is now DomainColor[] so conversion is not needed for the default case.
+            // Convert LevelConfig.palette (UnityEngine.Color[]) only at the boundary.
             DomainColor[] pal = _levelConfig != null && _levelConfig.palette != null && _levelConfig.palette.Length > 0
                 ? ConvertPalette(_levelConfig.palette)
                 : DefaultPalette;
@@ -65,13 +60,21 @@ namespace PuzzleGame.Application.Services
 
             if (currentLevel.autoGenerate)
             {
-                return _levelGenerator.Generate(
+                var (generated, isSolvable) = _levelGenerator.GenerateSolvable(
                     Molds.Length,
                     currentLevel.maxLayersPerMold,
                     empties,
                     pal,
                     diff,
                     seed);
+
+                if (!isSolvable)
+                {
+                    MoldLogger.LogWarning(
+                        $"LevelSetupService: Auto-generated level (seed={seed}) was unsolvable " +
+                        "after retry budget. Layout still loaded — player may be stuck.");
+                }
+                return generated;
             }
 
             // Pre-built level: convert List<LevelMoldData> to List<List<OreLayer>>
@@ -88,7 +91,7 @@ namespace PuzzleGame.Application.Services
                     {
                         foreach (var layerData in MoldData.layers)
                         {
-                            layers.Add(new OreLayer(_colorAdapter.FromUnity(layerData.color), layerData.amount));
+                            layers.Add(new OreLayer(ToDomainColor(layerData.color), layerData.amount));
                         }
                     }
                     assignments.Add(layers);
@@ -139,8 +142,11 @@ namespace PuzzleGame.Application.Services
         {
             var result = new DomainColor[colors.Length];
             for (int i = 0; i < colors.Length; i++)
-                result[i] = _colorAdapter.FromUnity(colors[i]);
+                result[i] = ToDomainColor(colors[i]);
             return result;
         }
+
+        private static DomainColor ToDomainColor(UnityEngine.Color c)
+            => new DomainColor(c.r, c.g, c.b, c.a);
     }
 }

@@ -36,7 +36,7 @@ namespace PuzzleGame.Tests.Application.Services
             };
 
             _levelGenerator = new FakeLevelGenerator();
-            _sut = new LevelSetupService(_gameConfig, _levelConfig, _levelGenerator, new ColorAdapter());
+            _sut = new LevelSetupService(_gameConfig, _levelConfig, _levelGenerator);
         }
 
         [TearDown]

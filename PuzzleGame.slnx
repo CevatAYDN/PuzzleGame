@@ -3,8 +3,8 @@
   <Project Path="PuzzleGame.Infrastructure.csproj" />
   <Project Path="PuzzleGame.Application.csproj" />
   <Project Path="Unity.RenderPipelines.Core.Samples.Runtime.csproj" />
+  <Project Path="PuzzleGame.Composition.csproj" />
   <Project Path="PuzzleGame.Editor.csproj" />
   <Project Path="PuzzleGame.Domain.csproj" />
-  <Project Path="PuzzleGame.Composition.csproj" />
   <Project Path="Unity.RenderPipelines.Core.Samples.Editor.csproj" />
 </Solution>

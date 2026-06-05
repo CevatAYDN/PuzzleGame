@@ -49,6 +49,7 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.4.8f1\Editor\Data\Tools\BuildPipeline\Unity.SourceGenerators\Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Scripts\Presentation\WinLoseEvaluator.cs" />
     <Compile Include="Assets\Scripts\Presentation\CameraEffectsController.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldController.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldMeshGenerator.cs" />
@@ -59,6 +60,8 @@
     <Compile Include="Assets\Scripts\Presentation\URPConfigHelper.cs" />
     <Compile Include="Assets\Scripts\Presentation\GameManager.cs" />
     <Compile Include="Assets\Scripts\Presentation\Wobble.cs" />
+    <Compile Include="Assets\Scripts\Presentation\LevelFlowController.cs" />
+    <Compile Include="Assets\Scripts\Presentation\UI\HudPresenter.cs" />
     <Compile Include="Assets\Scripts\Installers\GameInstaller.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\DebugOverlayUI.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldPoolInitializer.cs" />
@@ -1201,6 +1204,10 @@
     </Reference>
     <Reference Include="Unity.TextMeshPro">
       <HintPath>Library\ScriptAssemblies\Unity.TextMeshPro.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.InputSystem">
+      <HintPath>Library\ScriptAssemblies\Unity.InputSystem.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.RenderPipelines.Universal.Runtime">

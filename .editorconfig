@@ -1,0 +1,28 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{yml,yaml,json,csproj,sln,props,targets}]
+indent_size = 2
+
+[*.cs]
+# C# style: 4 spaces, no tabs
+indent_style = space
+indent_size = 4
+# Allowed sort orders: ignore
+dotnet_sort_system_directives_first = true
+# Style rules
+csharp_new_line_before_open_brace = all
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_prefer_braces = true:warning
+dotnet_style_namespace_match_folder = true:suggestion
+
+[*.md]
+trim_trailing_whitespace = false

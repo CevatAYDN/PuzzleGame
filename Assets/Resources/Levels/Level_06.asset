@@ -14,24 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PuzzleGame.Domain.Models.LevelData
   levelNumber: 6
   difficulty: 1
-  bottleCount: 5
-  emptyBottleCount: 2
-  colorCount: 3
-  maxLayersPerBottle: 4
-  randomSeed: 8022
+  MoldCount: 5
+  emptyMoldCount: 2
+  colorCount: 5
+  maxLayersPerMold: 4
+  randomSeed: 6000
   autoGenerate: 1
-  bottles: []
+  Molds: []
   parMoves: 8
   goodMoves: 11
   previewImage: {fileID: 0}
-  enableMultiLayerPour: 1
+  enableMultiLayerCast: 1
   enableReactionSystem: 0
-  multiLayerPourConfig:
+  multiLayerCastConfig:
     featureType: 0
     isEnabled: 0
-    pourAllMatching: 1
-    pourConsecutiveOnly: 1
-    minConsecutiveForPour: 2
+    CastAllMatching: 1
+    CastConsecutiveOnly: 1
+    minConsecutiveForCast: 2
   reactionConfig:
     featureType: 0
     isEnabled: 0

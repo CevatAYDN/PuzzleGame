@@ -43,8 +43,8 @@ MonoBehaviour:
     isEmpty: 1
   - layers: []
     isEmpty: 1
-  parMoves: 0
-  goodMoves: 2
+  parMoves: 4
+  goodMoves: 6
   previewImage: {fileID: 0}
   enableMultiLayerCast: 1
   enableReactionSystem: 1

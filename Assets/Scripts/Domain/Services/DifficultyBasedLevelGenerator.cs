@@ -70,7 +70,9 @@ namespace PuzzleGame.Domain.Services
                 {
                     if (layerIndex < allLayers.Count)
                     {
-                        result[i].Add(new OreLayer(allLayers[layerIndex], amountPerLayer));
+                        var domainColor = allLayers[layerIndex];
+                        var oreColor = OreColorExtensions.FromDomainColor(domainColor);
+                        result[i].Add(new OreLayer(domainColor, amountPerLayer, oreColor));
                         layerIndex++;
                     }
                 }
@@ -85,13 +87,44 @@ namespace PuzzleGame.Domain.Services
             return result;
         }
 
+        public (List<List<OreLayer>> Molds, bool IsSolvable) GenerateSolvable(
+            int MoldCount,
+            int maxLayers,
+            int emptyMoldCount,
+            DomainColor[] colorPalette,
+            Difficulty difficulty,
+            int seed = 0,
+            int maxAttempts = 8)
+        {
+            if (maxAttempts < 1) maxAttempts = 1;
+
+            int baseSeed = seed;
+            List<List<OreLayer>> lastResult = null;
+
+            for (int attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                int currentSeed = baseSeed == 0
+                    ? unchecked((int)(DateTime.UtcNow.Ticks & 0x7FFFFFFF)) + attempt
+                    : baseSeed + attempt;
+
+                lastResult = Generate(MoldCount, maxLayers, emptyMoldCount, colorPalette, difficulty, currentSeed);
+                var solverResult = OreSortSolver.Solve(lastResult, maxLayers);
+                if (solverResult.IsSolvable)
+                {
+                    return (lastResult, true);
+                }
+            }
+
+            return (lastResult ?? Generate(MoldCount, maxLayers, emptyMoldCount, colorPalette, difficulty, baseSeed), false);
+        }
+
         private static void ApplyAdvancedDifficulty(
             List<List<OreLayer>> assignments,
             float difficulty,
             Random rng)
         {
             int affectedMolds = (int)(assignments.Count * difficulty);
-            
+
             for (int i = 0; i < affectedMolds && i < assignments.Count; i++)
             {
                 var Mold = assignments[i];
@@ -99,7 +132,7 @@ namespace PuzzleGame.Domain.Services
                 {
                     var top = Mold[Mold.Count - 1];
                     var second = Mold[Mold.Count - 2];
-                    
+
                     if (rng.NextDouble() > 0.5)
                     {
                         Mold[Mold.Count - 1] = second;
