@@ -24,6 +24,9 @@ namespace PuzzleGame.Infrastructure.Implementations
             _config = config ?? throw new System.ArgumentNullException(nameof(config));
         }
 
+        public float TrailFadeDuration => _config.trailFadeDuration;
+        public float TrailAlpha => _config.trailAlpha;
+
         /// <summary>
         /// Ensures the LineRenderer component exists on the given GameObject.
         /// Only called once during CastAnimationState setup.
@@ -134,16 +137,32 @@ namespace PuzzleGame.Infrastructure.Implementations
             }
         }
 
+        public void SetAlpha(float alpha)
+        {
+            if (_lineRenderer == null) return;
+            Color faded = _lineRenderer.startColor;
+            faded.a = alpha;
+            _lineRenderer.startColor = faded;
+
+            if (alpha <= 0f)
+            {
+                _lineRenderer.enabled = false;
+            }
+        }
+
         /// <summary>
         /// Destroys the owned LineRenderer material to prevent leaks.
         /// Call when the owning cast animation state is cleaned up.
         /// </summary>
         public void Cleanup()
         {
-            if (_lineRenderer != null && _lineRenderer.material != null)
+            if (_lineRenderer != null)
             {
-                UnityEngine.Object.Destroy(_lineRenderer.material);
-                _lineRenderer.material = null;
+                if (_lineRenderer.material != null)
+                {
+                    UnityEngine.Object.Destroy(_lineRenderer.material);
+                }
+                UnityEngine.Object.Destroy(_lineRenderer);
             }
             _lineRenderer = null;
             _isActive = false;

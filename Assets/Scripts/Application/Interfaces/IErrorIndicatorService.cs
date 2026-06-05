@@ -7,6 +7,11 @@ namespace PuzzleGame.Application.Interfaces
     public interface IErrorIndicatorService
     {
         /// <summary>
+        /// Initializes the indicator service with active level parameters.
+        /// </summary>
+        void Initialize(Configuration.AnimationConfig animConfig, IMoldView[] moldViews);
+
+        /// <summary>
         /// Flashes a red error indicator on the specified mold.
         /// </summary>
         /// <param name="moldIndex">Pool index of the mold to highlight.</param>

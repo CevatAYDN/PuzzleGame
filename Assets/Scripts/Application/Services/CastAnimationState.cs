@@ -99,7 +99,15 @@ namespace PuzzleGame.Application.Services
         {
             // Phase 3: Return
             if (Effect != null) Effect.Stop();
-            TrailController?.EndTrail();
+            if (TrailController != null)
+            {
+                TrailController.EndTrail();
+                float maxAlpha = TrailController.TrailAlpha;
+                float fadeDuration = TrailController.TrailFadeDuration;
+                var fadeTween = TweenService.TweenCustom(TrailController, maxAlpha, 0f, fadeDuration, 
+                    (trail, val) => ((IStreamTrailController)trail).SetAlpha(val));
+                Owner.RegisterTween(fadeTween);
+            }
             if (SplashPS != null) { SplashPS.Stop(); Owner.DelayReturnToPool(SplashPS, SplashPool, 1.0f); }
             if (BubblePS != null) { BubblePS.Stop(); Owner.DelayReturnToPool(BubblePS, BubblePool, 1.5f); }
 

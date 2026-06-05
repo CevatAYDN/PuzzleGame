@@ -10,6 +10,20 @@ namespace PuzzleGame.Tests.Fakes
         public Vector3 LastPosition { get; private set; }
         public Color LastColor { get; private set; }
 
+        public float LastAlpha { get; private set; }
+        public float TrailFadeDuration => 0.5f;
+        public float TrailAlpha => 0.15f;
+
+        public LineRenderer EnsureLineRenderer(GameObject owner)
+        {
+            return owner.GetComponent<LineRenderer>() ?? owner.AddComponent<LineRenderer>();
+        }
+
+        public void SetAlpha(float alpha)
+        {
+            LastAlpha = alpha;
+        }
+
         public void BeginTrail(Vector3 startPosition, Color color)
         {
             IsTrailActive = true;

@@ -193,6 +193,9 @@ namespace PuzzleGame.Application.Services
             _streamRenderer.SetColor(state.Effect, state.StreamColor);
             if (state.Effect != null) state.Effect.Stop();
 
+            // Ensure the trail line renderer is initialized on the source object
+            _trailController.EnsureLineRenderer(source.GameObject);
+
             state.Config = _config;
             state.TweenService = _tween;
             state.AudioService = _audioService;

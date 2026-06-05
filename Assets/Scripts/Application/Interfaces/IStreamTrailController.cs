@@ -9,6 +9,19 @@ namespace PuzzleGame.Application.Interfaces
     /// </summary>
     public interface IStreamTrailController
     {
+        float TrailFadeDuration { get; }
+        float TrailAlpha { get; }
+
+        /// <summary>
+        /// Ensures the LineRenderer component exists on the given GameObject.
+        /// </summary>
+        LineRenderer EnsureLineRenderer(GameObject owner);
+
+        /// <summary>
+        /// Sets the current alpha opacity of the trail renderer.
+        /// </summary>
+        void SetAlpha(float alpha);
+
         /// <summary>
         /// Call each frame during flow phase to update trail position.
         /// </summary>

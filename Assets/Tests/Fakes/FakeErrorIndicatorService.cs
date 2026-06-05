@@ -9,6 +9,11 @@ namespace PuzzleGame.Tests.Fakes
         public int ShowErrorCallCount { get; private set; }
         public int ClearAllCallCount { get; private set; }
 
+        public void Initialize(PuzzleGame.Application.Configuration.AnimationConfig animConfig, IMoldView[] moldViews)
+        {
+            // No-op for fake
+        }
+
         public void ShowErrorOnMold(int moldIndex, string reason)
         {
             LastErrorMoldIndex = moldIndex;
