@@ -12,6 +12,7 @@ using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Events;
 using PuzzleGame.Application.Logging;
 using PuzzleGame.Presentation.UI;
+using PuzzleGame.Presentation;
 using VContainer;
 // IUpdateable/IUpdateManager now live in Application.Interfaces (Fix #11)
 
@@ -58,6 +59,7 @@ namespace PuzzleGame
         private Camera _camera;
         private LevelData _currentLevel;
         private MoldPoolInitializer _poolInitializer;
+        private CameraEffectsController _cameraEffects;
         private IShaderOptimizer _shaderOptimizer;
         private IEventAggregator _eventAggregator;
         private IUpdateManager _updateManager;
@@ -90,7 +92,9 @@ namespace PuzzleGame
             IEventAggregator eventAggregator,
             IUpdateManager updateManager,
             ITweenService tweenService,
-            IErrorIndicatorService errorIndicator)
+            IErrorIndicatorService errorIndicator,
+            MoldPoolInitializer poolInitializer,
+            CameraEffectsController cameraEffects)
         {
             if (validator == null)        throw new ArgumentNullException(nameof(validator));
             if (stateMachine == null)     throw new ArgumentNullException(nameof(stateMachine));
@@ -122,6 +126,8 @@ namespace PuzzleGame
             _updateManager = updateManager;
             _tweenService = tweenService;
             _errorIndicator = errorIndicator;
+            _poolInitializer = poolInitializer;
+            _cameraEffects = cameraEffects;
 
             _isInitialized = true;
         }
@@ -171,13 +177,7 @@ namespace PuzzleGame
                 }
             }
 
-            _poolInitializer = new MoldPoolInitializer(
-                _levelSetupService, _rendererService, _validator, _animationService,
-                _inputHandlerService, _historyManager, _updateManager, _camera);
-
             _poolInitializer.InitializeForLevel(_currentLevel);
-            _errorIndicator?.Initialize(animConfig, _poolInitializer.Molds);
-            InitCameraEffects();
             InitHUD();
             _updateManager?.Register(this);
         }
@@ -355,7 +355,6 @@ namespace PuzzleGame
             _historyManager.ResetAll();
 
             _poolInitializer.InitializeForLevel(_currentLevel);
-            _errorIndicator?.Initialize(animConfig, _poolInitializer.Molds);
 
             _stateMachine.TransitionTo(GameState.Playing);
             _audioService.PlaySfx(AudioClipId.LevelStart);
@@ -383,17 +382,5 @@ namespace PuzzleGame
             if (winPanel != null) winPanel.SetActive(false);
         }
 
-        private void InitCameraEffects()
-        {
-            if (_camera != null)
-            {
-                var cameraEffects = _camera.gameObject.GetComponent<PuzzleGame.Presentation.CameraEffectsController>();
-                if (cameraEffects == null)
-                {
-                    cameraEffects = _camera.gameObject.AddComponent<PuzzleGame.Presentation.CameraEffectsController>();
-                }
-                cameraEffects.Initialize(_eventAggregator, animConfig, _tweenService);
-            }
-        }
     }
 }

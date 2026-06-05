@@ -2,6 +2,7 @@ using UnityEngine;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Configuration;
 using System.Collections.Generic;
+using VContainer;
 
 namespace PuzzleGame.Presentation
 {
@@ -24,9 +25,14 @@ namespace PuzzleGame.Presentation
         private static readonly int RimIntensityID = Shader.PropertyToID("_RimIntensity");
         private static readonly Color ErrorRed = new Color(1f, 0.15f, 0.1f, 1f);
 
-        public void Initialize(AnimationConfig animConfig, IMoldView[] moldViews)
+        [Inject]
+        public void Construct(AnimationConfig animConfig)
         {
             _animConfig = animConfig;
+        }
+
+        public void Initialize(IMoldView[] moldViews)
+        {
             _moldViews = moldViews;
         }
 

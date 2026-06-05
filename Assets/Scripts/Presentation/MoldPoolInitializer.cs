@@ -23,7 +23,9 @@ namespace PuzzleGame
         private readonly IAnimationService _animationService;
         private readonly IInputHandlerService _inputHandlerService;
         private readonly IGameHistoryManager _historyManager;
+        private readonly IUpdateManager _updateManager;
         private readonly Camera _camera;
+        private readonly IErrorIndicatorService _errorIndicator;
 
         private MoldController[] _allMoldsPool;
         private IMoldView[] _Molds;
@@ -38,7 +40,8 @@ namespace PuzzleGame
             IInputHandlerService inputHandlerService,
             IGameHistoryManager historyManager,
             IUpdateManager updateManager,
-            Camera camera)
+            Camera camera,
+            IErrorIndicatorService errorIndicator)
         {
             _levelSetupService = levelSetupService;
             _rendererService = rendererService;
@@ -48,9 +51,8 @@ namespace PuzzleGame
             _historyManager = historyManager;
             _updateManager = updateManager;
             _camera = camera;
+            _errorIndicator = errorIndicator;
         }
-
-        private readonly IUpdateManager _updateManager;
 
         /// <summary>
         /// Discovers Molds in scene (once), activates the correct count for the level,
@@ -115,6 +117,7 @@ namespace PuzzleGame
             _inputHandlerService.SetLevelData(level);
 
             _levelSetupService.SetupMolds(_Molds, level, _rendererService, _validator, _animationService);
+            _errorIndicator?.Initialize(_Molds);
 
             ConfigureCamera();
         }

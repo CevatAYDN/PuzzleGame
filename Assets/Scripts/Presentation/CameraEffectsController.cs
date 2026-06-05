@@ -2,6 +2,7 @@ using UnityEngine;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Events;
+using VContainer;
 
 namespace PuzzleGame.Presentation
 {
@@ -23,14 +24,19 @@ namespace PuzzleGame.Presentation
         [System.Diagnostics.Conditional("UNITY_EDITOR")]
         private void Log(string msg) => Debug.Log($"[CameraEffects] {msg}");
 
-        public void Initialize(IEventAggregator eventAggregator, AnimationConfig config, ITweenService tweenService)
+        [Inject]
+        public void Construct(IEventAggregator eventAggregator, AnimationConfig config, ITweenService tweenService)
         {
             _eventAggregator = eventAggregator ?? throw new System.ArgumentNullException(nameof(eventAggregator));
             _config = config;
             _tweenService = tweenService ?? throw new System.ArgumentNullException(nameof(tweenService));
+        }
+
+        private void Start()
+        {
             _restPosition = transform.localPosition;
 
-            if (!_hasSubscribed)
+            if (!_hasSubscribed && _eventAggregator != null)
             {
                 _eventAggregator.Subscribe<CastCompletedEvent>(OnCastCompleted);
                 _eventAggregator.Subscribe<CastRejectedEvent>(OnCastRejected);

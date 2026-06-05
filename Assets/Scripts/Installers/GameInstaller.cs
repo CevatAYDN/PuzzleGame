@@ -14,6 +14,7 @@ using PuzzleGame.Infrastructure.Pool;
 using PuzzleGame.Infrastructure;
 using PuzzleGame.Application.Logging;
 using PuzzleGame.Infrastructure.Providers;
+using PuzzleGame.Presentation;
 
 namespace PuzzleGame.Installers
 {
@@ -132,8 +133,25 @@ namespace PuzzleGame.Installers
                     component = go.AddComponent<PuzzleGame.Presentation.ErrorIndicatorController>();
                     MoldLogger.LogWarning("[GameInstaller] ErrorIndicatorController not found in scene hierarchy. Created a runtime fallback instance.");
                 }
+                resolver.Inject(component);
                 return component;
             }, Lifetime.Singleton);
+
+            // Camera effects controller (uses the main camera GameObject and performs injection)
+            builder.Register<CameraEffectsController>(resolver =>
+            {
+                var cam = resolver.Resolve<Camera>();
+                var effects = cam.GetComponent<CameraEffectsController>();
+                if (effects == null)
+                {
+                    effects = cam.gameObject.AddComponent<CameraEffectsController>();
+                }
+                resolver.Inject(effects);
+                return effects;
+            }, Lifetime.Singleton);
+
+            // MoldPoolInitializer registered as singleton
+            builder.Register<MoldPoolInitializer>(Lifetime.Singleton);
 
             // GameManager — inject via VContainer
             builder.RegisterComponentInHierarchy<GameManager>();
