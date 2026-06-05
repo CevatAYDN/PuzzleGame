@@ -93,7 +93,7 @@ namespace PuzzleGame.Application.Services
 
         public void ProcessInput()
         {
-            if (_stateMachine == null || !_stateMachine.IsInState(GameState.Playing)) return;
+            if (_stateMachine == null || (!_stateMachine.IsInState(GameState.Playing) && !_stateMachine.IsInState(GameState.OptionalCasting))) return;
             if (_animationService == null || _animationService.IsAnimating) return;
             if (_inputHandler == null) return;
 

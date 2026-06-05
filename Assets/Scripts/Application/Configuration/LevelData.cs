@@ -23,6 +23,14 @@ namespace PuzzleGame.Application.Configuration
         [Range(0f, 1f)] public float amount = 0.25f;
     }
 
+    [Serializable]
+    public class OptionalTargetData
+    {
+        public string name = "Sword";
+        public Color requiredColor = Color.yellow;
+        [Range(0.1f, 10f)] public float capacity = 1f;
+    }
+
     /// <summary>
     /// Static level descriptor. Inspector-driven, supports both auto-generated
     /// and pre-built Mold layouts. Star thresholds (par/good) drive reward UI.
@@ -50,6 +58,9 @@ namespace PuzzleGame.Application.Configuration
 
         [Header("Pre-built (if autoGenerate = false)")]
         public List<LevelMoldData> Molds = new List<LevelMoldData>();
+
+        [Header("Optional Targets")]
+        public List<OptionalTargetData> optionalTargets = new List<OptionalTargetData>();
 
         [Header("Stars")]
         [Tooltip("3 stars if moves <= parMoves")]

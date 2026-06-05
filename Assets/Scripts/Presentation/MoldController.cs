@@ -24,6 +24,9 @@ namespace PuzzleGame
 
         public GameObject corkObject;
 
+        [Header("Optional Target Settings")]
+        public bool isOptionalTarget = false;
+
         [SerializeField] private List<LevelLayerData> _serializedLayers = new List<LevelLayerData>();
 
         public MoldState State

@@ -4,6 +4,7 @@ using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain;
 using PuzzleGame.Domain.Interfaces;
+using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Logging;
 // IRendererService now in PuzzleGame.Application.Interfaces
 using UnityEngine;
@@ -27,7 +28,8 @@ namespace PuzzleGame
         private readonly Camera _camera;
         private readonly IErrorIndicatorService _errorIndicator;
 
-        private MoldController[] _allMoldsPool;
+        private readonly List<MoldController> _gameplayMoldsPool = new List<MoldController>();
+        private readonly List<MoldController> _optionalMoldsPool = new List<MoldController>();
         private IMoldView[] _Molds;
 
         public IMoldView[] Molds => _Molds;
@@ -60,32 +62,35 @@ namespace PuzzleGame
         /// </summary>
         public void InitializeForLevel(LevelData level)
         {
-            if (_allMoldsPool == null) CacheMolds();
-            if (_allMoldsPool == null || _allMoldsPool.Length == 0)
+            if (_gameplayMoldsPool.Count == 0 && _optionalMoldsPool.Count == 0) CacheMolds();
+
+            // 1. Hide all optional molds first
+            foreach (var mold in _optionalMoldsPool)
             {
-                MoldLogger.LogError("No Molds cached in master pool, cannot setup level.");
-                return;
+                if (mold != null) mold.gameObject.SetActive(false);
             }
 
-            int targetCount = _allMoldsPool.Length;
+            // 2. Setup standard gameplay molds count
+            int targetCount = _gameplayMoldsPool.Count;
             if (level != null)
             {
                 targetCount = level.MoldCount;
             }
-            targetCount = Mathf.Clamp(targetCount, ForgeConstants.MinMoldsPerLevel, _allMoldsPool.Length);
+            targetCount = Mathf.Clamp(targetCount, ForgeConstants.MinMoldsPerLevel, _gameplayMoldsPool.Count);
 
-            for (int i = 0; i < _allMoldsPool.Length; i++)
+            for (int i = 0; i < _gameplayMoldsPool.Count; i++)
             {
-                if (_allMoldsPool[i] != null)
+                if (_gameplayMoldsPool[i] != null)
                 {
-                    _allMoldsPool[i].gameObject.SetActive(i < targetCount);
+                    _gameplayMoldsPool[i].gameObject.SetActive(i < targetCount);
                 }
             }
 
+            // 3. Collect active gameplay molds
             int activeCount = 0;
-            for (int i = 0; i < _allMoldsPool.Length; i++)
+            for (int i = 0; i < _gameplayMoldsPool.Count; i++)
             {
-                var b = _allMoldsPool[i];
+                var b = _gameplayMoldsPool[i];
                 if (b != null && b.gameObject.activeSelf)
                 {
                     activeCount++;
@@ -94,9 +99,9 @@ namespace PuzzleGame
 
             _Molds = new IMoldView[activeCount];
             int index = 0;
-            for (int i = 0; i < _allMoldsPool.Length; i++)
+            for (int i = 0; i < _gameplayMoldsPool.Count; i++)
             {
-                var b = _allMoldsPool[i];
+                var b = _gameplayMoldsPool[i];
                 if (b != null && b.gameObject.activeSelf)
                 {
                     b.MoldIndex = index;
@@ -105,9 +110,9 @@ namespace PuzzleGame
             }
 
             // Wire Wobble components to the update manager
-            for (int i = 0; i < _allMoldsPool.Length; i++)
+            for (int i = 0; i < _gameplayMoldsPool.Count; i++)
             {
-                var wobble = _allMoldsPool[i]?.GetComponent<Wobble>();
+                var wobble = _gameplayMoldsPool[i]?.GetComponent<Wobble>();
                 if (wobble != null)
                     wobble.SetUpdateManager(_updateManager);
             }
@@ -122,23 +127,80 @@ namespace PuzzleGame
             ConfigureCamera();
         }
 
+        public void ActivateOptionalMolds(LevelData level)
+        {
+            if (level == null || level.optionalTargets == null || level.optionalTargets.Count == 0) return;
+
+            int requestedOptionalCount = Mathf.Min(level.optionalTargets.Count, _optionalMoldsPool.Count);
+
+            // We will build a new combined array of IMoldView: all active gameplay molds + activated optional molds
+            var combinedActiveMolds = new List<IMoldView>(_Molds);
+
+            int startIndex = _Molds.Length;
+            for (int i = 0; i < _optionalMoldsPool.Count; i++)
+            {
+                var mold = _optionalMoldsPool[i];
+                if (mold == null) continue;
+
+                if (i < requestedOptionalCount)
+                {
+                    mold.gameObject.SetActive(true);
+                    mold.MoldIndex = startIndex + i;
+
+                    // Initialize the optional mold as empty
+                    mold.Initialize(_rendererService, _validator, _animationService, new List<OreLayer>());
+                    
+                    var wobble = mold.GetComponent<Wobble>();
+                    if (wobble != null)
+                        wobble.SetUpdateManager(_updateManager);
+
+                    combinedActiveMolds.Add(mold);
+
+                    var targetConfig = level.optionalTargets[i];
+                    mold.gameObject.name = $"Optional_{targetConfig.name}_{i}";
+                }
+                else
+                {
+                    mold.gameObject.SetActive(false);
+                }
+            }
+
+            // Expose the new combined active molds to the input handler service and error indicators
+            var finalArray = combinedActiveMolds.ToArray();
+            _inputHandlerService.SetMolds(finalArray);
+            _errorIndicator?.Initialize(finalArray);
+        }
+
         private static readonly MoldNameComparer Comparer = new MoldNameComparer();
 
         private void CacheMolds()
         {
-            // One-time scene scan: FindObjectsByType is O(scene) and must NOT run per-level
-            // (call site gates via `if (_allMoldsPool == null) CacheMolds()`).
             var temp = UnityEngine.Object.FindObjectsByType<MoldController>(FindObjectsInactive.Include);
             Array.Sort(temp, Comparer);
-            _allMoldsPool = temp;
+            
+            _gameplayMoldsPool.Clear();
+            _optionalMoldsPool.Clear();
+
+            foreach (var mold in temp)
+            {
+                if (mold == null) continue;
+                if (mold.isOptionalTarget)
+                {
+                    _optionalMoldsPool.Add(mold);
+                }
+                else
+                {
+                    _gameplayMoldsPool.Add(mold);
+                }
+            }
 
             if (MoldLogger.IsInfoEnabled)
             {
-                MoldLogger.LogInfo($"Found {_allMoldsPool.Length} Molds in master pool.");
+                MoldLogger.LogInfo($"Found {_gameplayMoldsPool.Count} gameplay molds and {_optionalMoldsPool.Count} optional molds in master pool.");
             }
 
-            if (_allMoldsPool.Length == 0)
-                MoldLogger.LogWarning("No MoldController found in scene.");
+            if (_gameplayMoldsPool.Count == 0)
+                MoldLogger.LogWarning("No gameplay MoldController found in scene.");
         }
 
         private void ConfigureCamera()

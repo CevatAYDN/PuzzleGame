@@ -305,21 +305,67 @@ namespace PuzzleGame
 
             if (allComplete && hasOre)
             {
-                _stateMachine.TransitionTo(GameState.LevelComplete);
-
-                int moveCount = _historyManager.CurrentMoveCount;
-                int stars = _currentLevel != null ? _currentLevel.CalculateStars(moveCount) : 3;
-                if (_currentLevel != null)
-                {
-                    _levelProgress?.RecordCompletion(_currentLevel.levelNumber, moveCount, stars);
-                }
-
                 _audioService.PlaySfx(AudioClipId.LevelComplete);
 
-                if (winPanel != null) winPanel.SetActive(true);
-
-                _eventAggregator.Publish(new LevelCompletedEvent(moveCount));
+                if (_currentLevel != null && _currentLevel.optionalTargets != null && _currentLevel.optionalTargets.Count > 0)
+                {
+                    _stateMachine.TransitionTo(GameState.OptionalCasting);
+                    _poolInitializer?.ActivateOptionalMolds(_currentLevel);
+                    MoldLogger.LogInfo("All main crucibles complete! Transitioned to OptionalCasting.");
+                }
+                else
+                {
+                    FinalizeLevelCompletion();
+                }
             }
+        }
+
+        public void CompleteLevelWithOptionalRewards()
+        {
+            if (!_stateMachine.IsInState(GameState.OptionalCasting)) return;
+            FinalizeLevelCompletion();
+        }
+
+        private void FinalizeLevelCompletion()
+        {
+            _stateMachine.TransitionTo(GameState.LevelComplete);
+
+            int moveCount = _historyManager.CurrentMoveCount;
+            int stars = _currentLevel != null ? _currentLevel.CalculateStars(moveCount) : 3;
+
+            // Check if any optional targets were filled
+            bool perfectCast = false;
+            if (_currentLevel != null && _currentLevel.optionalTargets != null && _currentLevel.optionalTargets.Count > 0)
+            {
+                var molds = _poolInitializer?.Molds;
+                if (molds != null)
+                {
+                    foreach (var mold in molds)
+                    {
+                        if (mold != null && mold.GameObject.name.StartsWith("Optional_") && !mold.IsEmpty)
+                        {
+                            perfectCast = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (perfectCast)
+            {
+                // Reward extra star/bonus state
+                stars = Mathf.Min(3, stars + 1);
+                MoldLogger.LogInfo("Optional casting target filled! Perfect Forge!");
+            }
+
+            if (_currentLevel != null)
+            {
+                _levelProgress?.RecordCompletion(_currentLevel.levelNumber, moveCount, stars);
+            }
+
+            if (winPanel != null) winPanel.SetActive(true);
+
+            _eventAggregator.Publish(new LevelCompletedEvent(moveCount));
         }
 
         public void Undo()

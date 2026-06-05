@@ -18,6 +18,9 @@ namespace PuzzleGame.Domain.Models
         /// <summary>Oyun aktif, input enabled.</summary>
         Playing,
 
+        /// <summary>Seviye bitti, isteğe bağlı döküm yapılıyor.</summary>
+        OptionalCasting,
+
         /// <summary>Oyun duraklatıldı, input disabled, timeScale=0.</summary>
         Paused,
 
