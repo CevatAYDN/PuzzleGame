@@ -189,8 +189,8 @@ namespace PuzzleGame.Editor
                     if (GUILayout.Button("+ Add Filled Mold"))
                     {
                         Undo.RecordObject(_selectedLevelForUI, "Add Mold");
-                        Color c1 = SceneBuilder.DefaultPalette[UnityEngine.Random.Range(0, SceneBuilder.DefaultPalette.Length)];
-                        Color c2 = SceneBuilder.DefaultPalette[(UnityEngine.Random.Range(1, SceneBuilder.DefaultPalette.Length) + 1) % SceneBuilder.DefaultPalette.Length];
+                        Color c1 = SceneBuilderModel.DefaultPalette[UnityEngine.Random.Range(0, SceneBuilderModel.DefaultPalette.Length)];
+                        Color c2 = SceneBuilderModel.DefaultPalette[(UnityEngine.Random.Range(1, SceneBuilderModel.DefaultPalette.Length) + 1) % SceneBuilderModel.DefaultPalette.Length];
                         var newMold = new LevelMoldData
                         {
                             isEmpty = false,

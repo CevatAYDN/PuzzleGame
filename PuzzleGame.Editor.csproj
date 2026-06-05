@@ -59,12 +59,15 @@
     <Compile Include="Assets\Scripts\Editor\DataAssetCreator.cs" />
     <Compile Include="Assets\Scripts\Editor\EditorServiceLocatorTests.cs" />
     <Compile Include="Assets\Scripts\Editor\LevelsTab.cs" />
+    <Compile Include="Assets\Scripts\Editor\SceneBuilderModel.cs" />
+    <Compile Include="Assets\Scripts\Editor\SceneBuilderPrimitives.cs" />
     <Compile Include="Assets\Scripts\Editor\TestTab.cs" />
     <Compile Include="Assets\Scripts\Editor\LevelSolverUtility.cs" />
     <Compile Include="Assets\Scripts\Editor\PouringLabTab.cs" />
     <Compile Include="Assets\Scripts\Editor\LevelUITab.cs" />
     <Compile Include="Assets\Scripts\Editor\AddressablesInstaller.cs" />
     <Compile Include="Assets\Scripts\Editor\ForgeEditorWindow.cs" />
+    <Compile Include="Assets\Scripts\Editor\SceneBuilderMoldFactory.cs" />
     <Compile Include="Assets\Scripts\Editor\SceneTab.cs" />
     <Compile Include="Assets\Scripts\Editor\SceneBuilder.cs" />
     <Compile Include="Assets\Scripts\Editor\LevelDataBatchCreator.cs" />

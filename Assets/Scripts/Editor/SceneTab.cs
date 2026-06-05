@@ -13,9 +13,9 @@ namespace PuzzleGame.Editor
         public string TabName => "Scene";
         private ForgeEditorWindow _window;
 
-        private SceneBuilder.BuildOptions _buildOpts = SceneBuilder.All;
-        private SceneBuilder.MoldLayout _MoldLayout = SceneBuilder.MoldLayout.Grid;
-        private SceneBuilder.ShaderVariant _shaderVariant = SceneBuilder.ShaderVariant.Premium;
+        private SceneBuilderModel.BuildOptions _buildOpts = SceneBuilderModel.All;
+        private SceneBuilderModel.MoldLayout _MoldLayout = SceneBuilderModel.MoldLayout.Grid;
+        private SceneBuilderModel.ShaderVariant _shaderVariant = SceneBuilderModel.ShaderVariant.Premium;
         private int _MoldCount = 2;
         private bool _firstEmpty = true;
         private Vector2 _sceneScroll;
@@ -59,10 +59,10 @@ namespace PuzzleGame.Editor
                 _MoldCount = EditorGUILayout.IntSlider(_MoldCount, 1, 20);
 
                 EditorGUILayout.LabelField("Layout", EditorStyles.miniLabel);
-                _MoldLayout = (SceneBuilder.MoldLayout)EditorGUILayout.EnumPopup(_MoldLayout);
+                _MoldLayout = (SceneBuilderModel.MoldLayout)EditorGUILayout.EnumPopup(_MoldLayout);
 
                 EditorGUILayout.LabelField("Shader", EditorStyles.miniLabel);
-                _shaderVariant = (SceneBuilder.ShaderVariant)EditorGUILayout.EnumPopup(_shaderVariant);
+                _shaderVariant = (SceneBuilderModel.ShaderVariant)EditorGUILayout.EnumPopup(_shaderVariant);
 
                 _firstEmpty = EditorGUILayout.ToggleLeft("First Mold empty", _firstEmpty);
 
@@ -104,7 +104,7 @@ namespace PuzzleGame.Editor
                     {
                         EditorApplication.delayCall += () =>
                         {
-                            _buildOpts = SceneBuilder.All;
+                            _buildOpts = SceneBuilderModel.All;
                             BuildScene();
                         };
                     }
@@ -112,7 +112,7 @@ namespace PuzzleGame.Editor
                     {
                         EditorApplication.delayCall += () =>
                         {
-                            _buildOpts = SceneBuilder.Minimal;
+                            _buildOpts = SceneBuilderModel.Minimal;
                             BuildScene();
                         };
                     }
@@ -120,7 +120,7 @@ namespace PuzzleGame.Editor
                     {
                         EditorApplication.delayCall += () =>
                         {
-                            _buildOpts = SceneBuilder.All;
+                            _buildOpts = SceneBuilderModel.All;
                             _buildOpts.Molds = false;
                             BuildScene();
                         };
@@ -218,11 +218,11 @@ namespace PuzzleGame.Editor
                         colors = System.Array.Empty<Color>();
                     else
                     {
-                        var color = SceneBuilder.DefaultPalette[i % SceneBuilder.DefaultPalette.Length];
+                        var color = SceneBuilderModel.DefaultPalette[i % SceneBuilderModel.DefaultPalette.Length];
                         colors = new[] { color, color, color, color };
                     }
 
-                    SceneBuilder.CreateMold(SceneBuilder.MoldConfig.WithColors(
+                    SceneBuilder.CreateMold(SceneBuilderModel.MoldConfig.WithColors(
                         positions[i], colors, _shaderVariant, "Mold"));
                 }
                 _window.SetStatus($"Added {count} Molds ({(firstEmpty ? "1 empty, " : "")}{count - (firstEmpty ? 1 : 0)} filled).", MessageType.Info);

@@ -7,7 +7,8 @@
         "PuzzleGame.Domain",
         "PuzzleGame.Application",
         "PuzzleGame.Infrastructure",
-        "PuzzleGame.Composition"
+        "PuzzleGame.Composition",
+        "PuzzleGame.Editor"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

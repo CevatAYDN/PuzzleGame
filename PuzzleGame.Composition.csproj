@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\Presentation\WinLoseEvaluator.cs" />
+    <Compile Include="Assets\Scripts\Presentation\UI\SettingsSoundController.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldVisualSync.cs" />
     <Compile Include="Assets\Scripts\Presentation\CameraEffectsController.cs" />
     <Compile Include="Assets\Scripts\Presentation\OnboardingFlowController.cs" />
@@ -78,6 +79,7 @@
     <Compile Include="Assets\Scripts\Presentation\UI\HudPresenter.cs" />
     <Compile Include="Assets\Scripts\Installers\GameInstaller.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\DebugOverlayUI.cs" />
+    <Compile Include="Assets\Scripts\Presentation\LocalizationBootstrap.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldPoolInitializer.cs" />
   </ItemGroup>
   <ItemGroup>

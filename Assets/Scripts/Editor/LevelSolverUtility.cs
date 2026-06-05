@@ -22,7 +22,7 @@ namespace PuzzleGame.Editor
             if (level.autoGenerate)
             {
                 var generator = new DifficultyBasedLevelGenerator();
-                Color[] palette = levelConfig != null && levelConfig.palette.Length > 0 ? levelConfig.palette : SceneBuilder.DefaultPalette;
+                Color[] palette = levelConfig != null && levelConfig.palette.Length > 0 ? levelConfig.palette : SceneBuilderModel.DefaultPalette;
                 var domainPalette = new DomainColor[palette.Length];
                 for (int i = 0; i < palette.Length; i++)
                     domainPalette[i] = ColorAdapter.FromUnityStatic(palette[i]);

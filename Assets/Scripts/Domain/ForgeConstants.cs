@@ -54,5 +54,14 @@ namespace PuzzleGame.Domain
         public const int SolverMaxVisitedStates = 10000;
         /// <summary>Initial BFS depth (replaces the int.MaxValue sentinel).</summary>
         public const int SolverInitialDepth = 0;
+
+        // ── Memory Baseline Thresholds ──────────────────────────────────
+        /// <summary>Warning threshold for memory growth between snapshots (50 MB).
+        /// Used by <c>MemorySnapshotDiff</c> verdict — calibrated for soft-launch
+        /// baseline (50 levels × small per-level footprint).</summary>
+        public const long MemoryWarningDeltaBytes = 50L * 1024 * 1024;
+        /// <summary>Critical threshold for memory growth between snapshots (200 MB).
+        /// Triggers a <c>MemoryHealth.Critical</c> verdict — likely leak.</summary>
+        public const long MemoryCriticalDeltaBytes = 200L * 1024 * 1024;
     }
 }

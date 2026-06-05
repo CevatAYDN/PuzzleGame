@@ -54,6 +54,7 @@
     <Compile Include="Assets\Tests\Application\Services\ReactionServiceTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\GameHistoryManagerTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeGameStateMachine.cs" />
+    <Compile Include="Assets\Tests\Application\MemorySnapshotDiffTests.cs" />
     <Compile Include="Assets\Tests\Infrastructure\AudioServiceTests.cs" />
     <Compile Include="Assets\Tests\Application\AgeGateServiceTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeInputHandler.cs" />
@@ -69,11 +70,14 @@
     <Compile Include="Assets\Tests\Fakes\FakeCastService.cs" />
     <Compile Include="Assets\Tests\Infrastructure\NoOpAdServiceTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeSaveManager.cs" />
+    <Compile Include="Assets\Tests\Infrastructure\UnityMemorySnapshotServiceTests.cs" />
     <Compile Include="Assets\Tests\Presentation\DailyChallengeCountdownTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeMoldSelectionService.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeMoldValidator.cs" />
+    <Compile Include="Assets\Tests\Infrastructure\PourSystemControllerInterfaceSegregationTests.cs" />
     <Compile Include="Assets\Tests\Infrastructure\ColorAdapterTests.cs" />
     <Compile Include="Assets\Tests\Presentation\ErrorIndicatorBootstrapTests.cs" />
+    <Compile Include="Assets\Tests\Infrastructure\JsonTranslationProviderTests.cs" />
     <Compile Include="Assets\Tests\Infrastructure\Pool\GameObjectPoolTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\AnimationServiceTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeErrorIndicatorService.cs" />
@@ -93,13 +97,16 @@
     <Compile Include="Assets\Tests\Fakes\FakeHistoryManager.cs" />
     <Compile Include="Assets\Tests\Application\Services\ScriptableObjectLevelRepositoryTests.cs" />
     <Compile Include="Assets\Tests\Infrastructure\ShaderOptimizerTests.cs" />
+    <Compile Include="Assets\Tests\Application\AudioPreferencesTests.cs" />
     <Compile Include="Assets\Tests\Domain\Models\MoldStateTests.cs" />
     <Compile Include="Assets\Tests\Domain\Services\OreSortSolverTests.cs" />
     <Compile Include="Assets\Tests\Domain\MoldStateReplaceLayersTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\TutorialServiceTests.cs" />
     <Compile Include="Assets\Tests\Infrastructure\UpdateManagerTests.cs" />
+    <Compile Include="Assets\Tests\Application\EventAggregatorMemoryTests.cs" />
     <Compile Include="Assets\Tests\Domain\Services\MoldValidationServiceTests.cs" />
     <Compile Include="Assets\Tests\Application\BiomeArtCatalogTests.cs" />
+    <Compile Include="Assets\Tests\Editor\LevelDataBatchCreatorTests.cs" />
     <Compile Include="Assets\Tests\Domain\Services\LevelGeneratorTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeMoldView.cs" />
     <Compile Include="Assets\Tests\Events\EventAggregatorTests.cs" />
@@ -107,6 +114,7 @@
     <Compile Include="Assets\Tests\Fakes\FakeAnimationService.cs" />
     <Compile Include="Assets\Tests\Domain\Models\OreLayerTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\LevelValidationServiceTests.cs" />
+    <Compile Include="Assets\Tests\Infrastructure\PlayerPrefsAudioSettingsServiceTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Tests\PuzzleGame.Tests.asmdef" />
@@ -1178,6 +1186,7 @@
     <ProjectReference Include="PuzzleGame.Application.csproj" />
     <ProjectReference Include="PuzzleGame.Infrastructure.csproj" />
     <ProjectReference Include="PuzzleGame.Composition.csproj" />
+    <ProjectReference Include="PuzzleGame.Editor.csproj" />
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <ItemGroup>

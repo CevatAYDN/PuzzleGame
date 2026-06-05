@@ -79,8 +79,8 @@ namespace PuzzleGame.Editor
                 {
                     if (GUILayout.Button("Create Custom Range", GUILayout.Height(28)))
                         EditorApplication.delayCall += CreateCustomLevels;
-                    if (GUILayout.Button("Create 100 Levels (Progressive)", GUILayout.Height(28)))
-                        EditorApplication.delayCall += LevelDataBatchCreator.Create100Levels;
+                    if (GUILayout.Button("Create 50 Levels (GDD-aligned)", GUILayout.Height(28)))
+                        EditorApplication.delayCall += LevelDataBatchCreator.CreateAllLevels;
                 }
             }
 
@@ -493,7 +493,7 @@ namespace PuzzleGame.Editor
                             levelData.MoldCount,
                             levelData.maxLayersPerMold,
                             levelData.emptyMoldCount,
-                            LevelSolverUtility.ConvertPalette(levelConfig != null && levelConfig.palette.Length > 0 ? levelConfig.palette : SceneBuilder.DefaultPalette),
+                            LevelSolverUtility.ConvertPalette(levelConfig != null && levelConfig.palette.Length > 0 ? levelConfig.palette : SceneBuilderModel.DefaultPalette),
                             levelData.difficulty,
                             seed);
 
@@ -614,7 +614,7 @@ namespace PuzzleGame.Editor
             var assignments = LevelSolverUtility.GetLevelAssignments(level, levelConfig);
 
             int count = assignments.Count;
-            var layout = SceneBuilder.MoldLayout.Grid;
+            var layout = SceneBuilderModel.MoldLayout.Grid;
             Vector3 center = Vector3.zero;
             var positions = SceneBuilder.ComputePositions(layout, count, center);
 
@@ -625,10 +625,10 @@ namespace PuzzleGame.Editor
                 for (int j = 0; j < layers.Count; j++)
                     colors[j] = ColorAdapter.ToUnityStatic(layers[j].Color);
 
-                var MoldCfg = SceneBuilder.MoldConfig.WithLayers(
+                var MoldCfg = SceneBuilderModel.MoldConfig.WithLayers(
                     positions[i],
                     layers,
-                    SceneBuilder.ShaderVariant.Premium,
+                    SceneBuilderModel.ShaderVariant.Premium,
                     $"Mold_{i:D2}");
 
                 SceneBuilder.CreateMold(MoldCfg);

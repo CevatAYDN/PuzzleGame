@@ -58,20 +58,28 @@
     <Compile Include="Assets\Scripts\Infrastructure\Providers\ResourcesAssetProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\CorkConstants.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\UpdateManager.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Models\TranslationFile.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\InputHandlerDefaults.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Pool\GameObjectPool.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\ConsentManager.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\ParticleFactory.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Providers\AddressablesAssetProvider.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\StreamingAssetsJsonTranslationProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Pool\PoolManager.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\NoOpAdService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\PourSystemController.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\MoldInputRouter.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\JsonTranslationProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\RendererService.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\MoldLookupCache.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\StreamRenderer.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\HardcodedTranslationProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\FirebaseAnalyticsService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\MobileInputHandler.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\InputHandler.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\AdMobService.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\UnityMemorySnapshotService.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\PlayerPrefsAudioSettingsService.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Scripts\Infrastructure\PuzzleGame.Infrastructure.asmdef" />

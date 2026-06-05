@@ -14,6 +14,11 @@ namespace PuzzleGame.Presentation.UI
     /// Runtime debug overlay displaying mold states, active tweens, and VFX params.
     /// Toggle with backtick key (default). Shows in the top-right corner of the Game view.
     /// Attached to the HUD Canvas by GameManager on start.
+    ///
+    /// Sprint #13: All three text blocks now share a single StringBuilder (4096 capacity)
+    /// instead of string interpolation. Previous version allocated 6+ strings per frame
+    /// (one per interpolated segment plus concatenation intermediates) — now exactly 3
+    /// (one ToString per TMP.text assignment, which is unavoidable).
     /// </summary>
     public class DebugOverlayUI : MonoBehaviour
     {
@@ -29,7 +34,8 @@ namespace PuzzleGame.Presentation.UI
         private StreamVFXConfig _vfxConfig;
         private PourConfig _pourConfig;
 
-        private readonly StringBuilder _sb = new StringBuilder(2048);
+        // Capacity sized for max-mold level (ForgeConstants.MaxMoldsPerLevel = 16 × ~200 chars).
+        private readonly StringBuilder _sb = new StringBuilder(4096);
 
         private void Awake()
         {
@@ -76,7 +82,15 @@ namespace PuzzleGame.Presentation.UI
 
         private void RefreshDisplay()
         {
-            // ── Mold States ────────────────────────────────────────────────────
+            // Each block: _sb.Clear() → append → _xxxText.text = _sb.ToString().
+            // _sb is shared across blocks but cleared between, so mutations don't leak.
+            if (_moldStateText != null) RefreshMoldState();
+            if (_serviceText != null && _animationService != null) RefreshService();
+            if (_vfxText != null && _vfxConfig != null) RefreshVfx();
+        }
+
+        private void RefreshMoldState()
+        {
             _sb.Clear();
             if (_molds != null)
             {
@@ -86,41 +100,46 @@ namespace PuzzleGame.Presentation.UI
                     if (mold == null) continue;
 
                     var state = mold.State;
-                    _sb.Append($"[{i}] {mold.GameObject.name}\n");
-                    _sb.Append($"  Layers: {state.LayerCount}/{state.MaxLayers} | Full: {state.IsFull} | Empty: {state.IsEmpty}\n");
+                    _sb.Append('[').Append(i).Append("] ").Append(mold.GameObject.name).Append('\n');
+                    _sb.Append("  Layers: ").Append(state.LayerCount).Append('/').Append(state.MaxLayers)
+                       .Append(" | Full: ").Append(state.IsFull)
+                       .Append(" | Empty: ").Append(state.IsEmpty).Append('\n');
                     if (!state.IsEmpty)
                     {
                         var top = state.TopLayer;
                         if (top.HasValue)
                         {
                             var c = top.Value.Color;
-                            _sb.Append($"  Top: R:{c.R:F2} G:{c.G:F2} B:{c.B:F2} A:{c.A:F2} x{top.Value.Amount:F2}\n");
+                            _sb.Append("  Top: R:").AppendFormat("{0:F2}", c.R)
+                               .Append(" G:").AppendFormat("{0:F2}", c.G)
+                               .Append(" B:").AppendFormat("{0:F2}", c.B)
+                               .Append(" A:").AppendFormat("{0:F2}", c.A)
+                               .Append(" x").AppendFormat("{0:F2}", top.Value.Amount)
+                               .Append('\n');
                         }
                     }
-                    _sb.Append("\n");
+                    _sb.Append('\n');
                 }
             }
+            _moldStateText.text = _sb.ToString();
+        }
 
-            if (_moldStateText != null)
-                _moldStateText.text = _sb.ToString();
+        private void RefreshService()
+        {
+            _sb.Clear();
+            _sb.Append("Animation Active: ").Append(_animationService.IsAnimating).Append('\n');
+            _serviceText.text = _sb.ToString();
+        }
 
-            // ── Service Stats ──────────────────────────────────────────────────
-            if (_serviceText != null && _animationService != null)
-            {
-                _serviceText.text =
-                    $"Animation Active: {_animationService.IsAnimating}\n";
-            }
-
-            // ── VFX Config ────────────────────────────────────────────────────
-            if (_vfxText != null && _vfxConfig != null)
-            {
-                _vfxText.text =
-                    $"Flow Intensity: {_vfxConfig.flowIntensity:F2}\n" +
-                    $"Width Multiplier: {_vfxConfig.streamWidthMultiplier:F3}\n" +
-                    $"Color Boost: {_vfxConfig.colorIntensityBoost:F2}\n" +
-                    $"Trail: {(_vfxConfig.enableTrail ? "ON" : "OFF")}\n" +
-                    $"Particle Cap: {_vfxConfig.particleCapacity}";
-            }
+        private void RefreshVfx()
+        {
+            _sb.Clear();
+            _sb.Append("Flow Intensity: ").AppendFormat("{0:F2}", _vfxConfig.flowIntensity).Append('\n');
+            _sb.Append("Width Multiplier: ").AppendFormat("{0:F3}", _vfxConfig.streamWidthMultiplier).Append('\n');
+            _sb.Append("Color Boost: ").AppendFormat("{0:F2}", _vfxConfig.colorIntensityBoost).Append('\n');
+            _sb.Append("Trail: ").Append(_vfxConfig.enableTrail ? "ON" : "OFF").Append('\n');
+            _sb.Append("Particle Cap: ").Append(_vfxConfig.particleCapacity);
+            _vfxText.text = _sb.ToString();
         }
     }
 }

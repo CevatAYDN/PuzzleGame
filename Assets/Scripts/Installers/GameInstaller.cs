@@ -92,9 +92,27 @@ namespace PuzzleGame.Installers
             builder.Register<ILevelProgressService, SecureFileLevelProgressService>(Lifetime.Singleton);
             builder.Register<ILevelRepository, ScriptableObjectLevelRepository>(Lifetime.Singleton);
             builder.Register<ILevelGenerator, DifficultyBasedLevelGenerator>(Lifetime.Singleton);
-            builder.Register<ITranslationProvider, HardcodedTranslationProvider>(Lifetime.Singleton);
+            // Sprint #12 + #15: JsonTranslationProvider is the default sync loader
+            // (Editor + Standalone: File.ReadAllText works). On Android the
+            // StreamingAssets path lives inside the APK and requires UnityWebRequest,
+            // so the platform-specific async provider is registered instead and the
+            // LocalizationBootstrap MonoBehaviour is created to preload it.
+            builder.Register<ITranslationProvider, JsonTranslationProvider>(Lifetime.Singleton);
             builder.Register<ILocalizationService, LocalizationService>(Lifetime.Singleton)
                    .WithParameter(Domain.Models.SupportedLanguage.Turkish);
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+            // Android override: sync File.ReadAllText on StreamingAssets returns 0 bytes.
+            // The async provider caches the JSON via UnityWebRequest; LocalizationBootstrap
+            // awaits the load during Start() so the first GetString call finds data ready.
+            builder.Register<StreamingAssetsJsonTranslationProvider>(Lifetime.Singleton);
+            builder.Register<ITranslationProvider>(resolver =>
+                resolver.Resolve<StreamingAssetsJsonTranslationProvider>(), Lifetime.Singleton);
+            builder.Register<IAsyncTranslationProvider>(resolver =>
+                resolver.Resolve<StreamingAssetsJsonTranslationProvider>(), Lifetime.Singleton);
+            var bootstrapGo = new GameObject("LocalizationBootstrap");
+            builder.RegisterComponent(bootstrapGo.AddComponent<LocalizationBootstrap>());
+#endif
             builder.Register<ISaveManager, GameSaveManager>(Lifetime.Singleton);
 
             // Economy
@@ -120,6 +138,16 @@ namespace PuzzleGame.Installers
             builder.Register<IDailyChallengeService, DailyChallengeService>(Lifetime.Singleton);
             builder.Register<IStreakService, StreakService>(Lifetime.Singleton);
 
+            // Audio settings (persistent BGM/SFX enable + volume; survives restarts).
+            // IEventAggregator is auto-injected by VContainer; the constructor default
+            // (null) keeps persistence working even when aggregator is absent.
+            builder.Register<IAudioSettingsService, PlayerPrefsAudioSettingsService>(Lifetime.Singleton);
+
+            // Memory snapshot — Unity Profiler-backed (built-in, no package).
+            // Used for leak detection (e.g. capture before/after level load).
+            // Swap to Memory Profiler package-backed impl for deep snapshots.
+            builder.Register<IMemorySnapshotService, UnityMemorySnapshotService>(Lifetime.Singleton);
+
             // Application services
             builder.Register<IMoldSelectionService, MoldSelectionService>(Lifetime.Singleton);
             builder.Register<IAudioService, AudioService>(Lifetime.Singleton);
@@ -140,9 +168,22 @@ namespace PuzzleGame.Installers
             builder.Register<IReactionService, ReactionService>(Lifetime.Singleton);
             builder.Register<IInputHandlerService, InputHandlerService>(Lifetime.Singleton);
 
-            // Developer tools
+            // Input handler subsystem — composed from 3 focused services.
+            // Register the focused interfaces so consumers (MoldPoolInitializer,
+            // GameManager) can depend on the smallest contract they need.
+            builder.Register<IMoldLookupCache, MoldLookupCache>(Lifetime.Singleton);
+            builder.Register<IInputHandlerDefaults, InputHandlerDefaults>(Lifetime.Singleton);
+            builder.Register<IMoldInputRouter, MoldInputRouter>(Lifetime.Singleton);
+
+            // Developer tools — PourSystemController implements 3 focused
+            // interfaces (IPourSimulator / IPourHistoryService / IPourDebugController)
+            // plus the IPourSystemController facade. Register all 4 so consumers
+            // can depend on the smallest contract that fits their need.
             builder.Register<PourSystemController>(Lifetime.Singleton)
                    .As<IPourSystemController>()
+                   .As<IPourSimulator>()
+                   .As<IPourHistoryService>()
+                   .As<IPourDebugController>()
                    .AsSelf();
 
             // ErrorIndicator — bootstrap ensures it exists (auto-creates if scene is misconfigured)
@@ -170,6 +211,7 @@ namespace PuzzleGame.Installers
             builder.RegisterComponentInHierarchy<PuzzleGame.Presentation.UI.AgeGateModal>();
             builder.RegisterComponentInHierarchy<PuzzleGame.Presentation.UI.ConsentModal>();
             builder.RegisterComponentInHierarchy<PuzzleGame.Presentation.UI.SettingsPrivacyController>();
+            builder.RegisterComponentInHierarchy<PuzzleGame.Presentation.UI.SettingsSoundController>();
 
             // Main menu — entry point after onboarding; manages Play/Daily/Settings/Privacy buttons
             builder.RegisterComponentInHierarchy<PuzzleGame.Presentation.UI.MainMenuController>();

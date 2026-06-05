@@ -72,7 +72,7 @@ PuzzleGame.Editor       → [Domain, Application, Infrastructure, Composition]
 public class GameInstaller : LifetimeScope
 {
     [SerializeField] private MoldPoolInitializer _moldPool;
-    [SerializeField] private CameraEffects _cameraEffects;
+    [SerializeField] private CameraEffectsController _cameraEffects;
     [SerializeField] private ErrorIndicator _errorIndicator;
     
     protected override void Configure(IContainerBuilder builder)
@@ -106,7 +106,7 @@ public class GameInstaller : LifetimeScope
         
         // Presentation components (auto-inject)
         builder.RegisterComponentInHierarchy<MoldPoolInitializer>();
-        builder.RegisterComponentInHierarchy<CameraEffects>();
+        builder.RegisterComponentInHierarchy<CameraEffectsController>();
         builder.RegisterComponentInHierarchy<ErrorIndicator>();
     }
 }
@@ -202,13 +202,15 @@ public class GameInstaller : LifetimeScope
 | `UI/AgeGateModal.cs` | 80 | First-launch DOB picker (year+month sliders) |
 | `UI/ConsentModal.cs` | 110 | GDPR consent dialog (Accept/Reject/Manage) |
 | `UI/SettingsPrivacyController.cs` | 100 | Settings > Privacy toggles, reset, delete data |
-| `UI/MainMenuController.cs` | ~190 | Main menu (Play/Daily/Settings/Privacy buttons, coin/streak display, sub-panel nav) |
+| `UI/SettingsSoundController.cs` | ~145 | Settings > Sound (BGM/SFX toggle + volume slider, persisted via IAudioSettingsService) |
+| `UI/MainMenuController.cs` | ~270 | Main menu (Play/Daily/Settings/Privacy/Sound buttons, coin/streak display, sub-panel nav, fade-in on enter, fade-out on sub-panel open via ITweenService+CanvasGroup) |
 | `UI/LevelBiomeClassifier.cs` | 34 | Biome enum + L01-25/L26-50 boundary POCO |
 | `UI/BiomeProgress.cs` | ~60 | Per-biome completion/star count POCO (testable) |
 | `UI/WorldMapController.cs` | ~165 | 2 biome cards (CrystalMines/VolcanicForge) with progress + click→filtered LevelSelect |
 | `UI/BiomeCardView.cs` | (in WorldMapController.cs) | Individual biome card component |
 | `UI/DailyChallengeController.cs` | ~170 | Daily challenge entry screen (streak, countdown, play, back) |
 | `UI/DailyChallengeCountdown.cs` | ~45 | UTC midnight reset time + HH:MM:SS formatter POCO |
+| `ErrorIndicatorBootstrap.cs` | ~30 | Static FindOrCreate helper — ensures ErrorIndicatorController exists in scene (auto-creates with warning if missing); used by GameInstaller to avoid VContainer crash on misconfigured scenes |
 
 **Application/Configuration (art):**
 
@@ -227,9 +229,20 @@ public class GameInstaller : LifetimeScope
 | Dosya | LOC | Sorumluluk |
 |---|---|---|
 | `ScriptableObjectBiomeArtProvider.cs` | ~35 | Reads BiomeArtCatalog; graceful fallback (null/white) when catalog empty — supports soft-launch-without-art |
-| `CameraEffects.cs` | ~80 | Camera shake/zoom |
 
-**Toplam:** ~1.700 LOC
+**Application/Interfaces (audio):**
+
+| Dosya | LOC | Sorumluluk |
+|---|---|---|
+| `IAudioSettingsService.cs` | ~85 | Persistent audio preferences contract + AudioPreferences readonly struct (MusicEnabled/SfxEnabled/MusicVolume/SfxVolume, default 0.6/0.8, clamps 0-1, ==/!= operators). Named "AudioPreferences" (not "AudioSettings") to avoid collision with UnityEngine.AudioSettings. |
+
+**Infrastructure/Implementations (audio):**
+
+| Dosya | LOC | Sorumluluk |
+|---|---|---|
+| `PlayerPrefsAudioSettingsService.cs` | ~95 | PlayerPrefs-backed persistence (PuzzleGame.Audio.* keys), single source of truth, raises AudioSettingsChangedEvent on change. Bridge: C# event → EventAggregator via optional ctor param. |
+
+**Toplam:** ~1.950 LOC
 
 ### 3.5 Composition Katmanı
 
@@ -244,7 +257,7 @@ public class GameInstaller : LifetimeScope
 
 | Dosya | LOC | Sorumluluk |
 |---|---|---|
-| `SceneBuilder.cs` | 613 | Editor scene builder |
+| `SceneBuilder.cs` + `SceneBuilderModel.cs` + `SceneBuilderPrimitives.cs` + `SceneBuilderMoldFactory.cs` | ~760 (4 dosya) | Editor scene builder (orchestrator + data + primitives + mold factory, Sprint #14) |
 | `LevelsTab.cs` | 543 | Level editor tab |
 | `TestTab.cs` | 538 | Test runner tab |
 | `LocalizationTab.cs` | 435 | Localization editor |
@@ -252,6 +265,7 @@ public class GameInstaller : LifetimeScope
 | `PaletteTab.cs` | 291 | Color palette editor |
 | `SceneTab.cs` | 289 | Scene settings editor |
 | `FeaturesTab.cs` | 268 | Feature flags editor |
+| `LevelDataBatchCreator.cs` | ~195 | GDD-aligned 50-level batch creator (testable POCO `GetParametersForLevel(int)` + skip-existing asset logic) |
 
 **Toplam:** ~3.300 LOC
 
@@ -271,9 +285,16 @@ public class GameInstaller : LifetimeScope
 | `Presentation/DailyChallengeCountdownTests.cs` | ~120 | 12 tests (UTC midnight rollover, month/year boundary, format) |
 | `Presentation/ErrorIndicatorBootstrapTests.cs` | ~75 | 5 tests (API contract + auto-created name; 2 PlayMode tests for actual FindOrCreate) |
 | `Application/BiomeArtCatalogTests.cs` | ~95 | 8 tests (null/empty/single/multi/null-entry-skipped/no-match/accent color) |
+| `Application/AudioPreferencesTests.cs` | ~85 | 7 tests (defaults, EffectiveMusicVolume/SfxVolume gating, clamp, With builders, ==/!= equality, hash) |
+| `Infrastructure/PlayerPrefsAudioSettingsServiceTests.cs` | ~135 | 7 tests (load defaults, load persisted, setters+persist+event, no-op skip, reset, save, null eventAggregator) |
+| `Editor/LevelDataBatchCreatorTests.cs` | ~90 | 9 tests (out-of-range, all-50-non-default, tier escalation Trivial→Expert, biome distribution 25/25, biome seam matches LevelBiomeClassifier, MoldCount bounds, ColorCount ramp + max, unique seed per level, ParMoves/GoodMoves thresholds) |
+| `Application/MemorySnapshotDiffTests.cs` | ~140 | 9 tests (Normal/Warning/Critical verdict thresholds, negative delta, all-metric deltas, allocated-vs-gc-delta) |
+| `Infrastructure/UnityMemorySnapshotServiceTests.cs` | ~85 | 5 tests (timestamp range, allocated ≤ reserved invariant, non-negative values, identical snapshots → Normal, huge delta → Critical) |
+| `Application/EventAggregatorMemoryTests.cs` | ~140 | 5 tests (unsubscribe clears, publish-after-unsubscribe no-op, 100-cycle memory growth ≤ 5 MB, 10-distinct-types cleanup, Clear() resets dict) |
+| `Infrastructure/PourSystemControllerInterfaceSegregationTests.cs` | ~125 | 11 tests (IPourSystemController inherits 3 focused interfaces, controller implements all 4, focused interfaces are distinct contracts, each interface exposes only its own methods via reflection) |
 | `Fakes/Fake*.cs` | ~300 | 6 fake classes |
 
-**Toplam:** ~103 tests, ~1.780 LOC
+**Toplam:** ~166 tests, ~2.715 LOC (Sprint #13 + #14 refactor-only — yeni test eklenmedi; Sprint #14'te 710 → ~760 LOC ama 4 focused dosyaya yayıldı, public API preserved)
 
 **Grand Total:** ~10.000 LOC
 
@@ -426,26 +447,42 @@ public class HudPresenter : MonoBehaviour, IDisposable
 | Borç | Severity | Aksiyon |
 |---|---|---|
 | MoldController.cs 434 LOC (god class) | Major | ✅ **Sprint #2 tamamlandı:** 3 POCO çıkarıldı (MoldStateManager, MoldVisualSync, MoldAnimator); controller ~260 LOC facade'e slimlendi |
+| L11-L50 level data eksik (L01-L10 hand-tuned, GDD 50-level campaign için batch tool yoktu) | Major | ✅ **Sprint #1 tamamlandı:** LevelDataBatchCreator refactored to 50 levels (GDD-aligned 5-tier progression: L01-10 Trivial / L11-20 Easy / L21-30 Medium / L31-40 Hard / L41-50 Expert), biome-aware via `GetParametersForLevel(int)` static POCO that uses `LevelBiomeClassifier` (L01-25 CrystalMines, L26-50 VolcanicForge), intra-tier color ramp (every 2 levels +1, capped at MaxColorsPerLevel), seed formula `levelNumber * 1337` for unique per-level determinism. `CreateAllLevels()` skips existing assets (preserves L01-L10 hand-tuned). LevelsTab button label updated to "Create 50 Levels (GDD-aligned)". `autoGenerate = true` — runtime `DifficultyBasedLevelGenerator` populates Molds deterministically. |
 | MainMenu + Level Select navigation flat (no World Map) | Major | ✅ **Sprint #4 tamamlandı:** WorldMapController + BiomeProgress POCO + BiomeCardView; 2 biome kartı yan yana, biome-filtered LevelSelect, progress tracking |
 | Daily Challenge UI yok (stub) | Major | ✅ **Sprint #5 tamamlandı:** DailyChallengeController + DailyChallengeCountdown POCO; entry screen with streak/longest-streak/countdown, UTC midnight reset, DailyChallengeStartedEvent for level seed handoff |
 | AI art integration infrastructure yok | Major | ✅ **Sprint #6 tamamlandı:** IBiomeArtProvider interface (Application) + BiomeArtCatalog ScriptableObject + ScriptableObjectBiomeArtProvider impl (Infrastructure); Biome enum refactored to Domain.Models for cross-layer accessibility; provider gracefully returns defaults when catalog empty (soft-launch-friendly) |
 | VContainer crash on misconfigured scenes (ErrorIndicatorController missing) | Major | ✅ **Sprint #7 tamamlandı:** ErrorIndicatorBootstrap static helper auto-creates ErrorIndicatorController if missing from scene (replaces RegisterComponentInHierarchy with RegisterInstance + EnsureExists). Unity 6 modern API (FindAnyObjectByType), DontDestroyOnLoad, warns on auto-create. |
-| Editor tooling şişman (SceneBuilder 613 LOC) | Minor | MVVM refactor (opsiyonel) |
-| PourSystemController.cs 335 LOC | Minor | Interface segregation |
-| LocalizationService 357 LOC (inline data) | Minor | JSON externalization (runtime load) |
-| InputHandlerService 261 LOC | Minor | 2-3 service'e böl |
-| DebugOverlayUI string allocation | Minor | StringBuilder reuse |
-| EventAggregator memory leak riski | Medium | PlayMode test 100-level sim |
-| No memory profiling baseline | Major | Memory Profiler integration |
+| Audio settings UI yok (volume/toggle exposed ama persist + player-facing yok) | Major | ✅ **Sprint #8 tamamlandı:** IAudioSettingsService (Application) + AudioPreferences readonly struct (player prefs POCO, NOT named "AudioSettings" to avoid UnityEngine.AudioSettings collision) + PlayerPrefsAudioSettingsService (Infrastructure, persistent via PlayerPrefs) + AudioSettingsChangedEvent (EventAggregator bridge) + SettingsSoundController (Presentation, separate sub-panel) + MainMenuController'a Sound button + CanvasGroup fade-in on enter + ITweenService fade-out when sub-panel opens. |
+| CameraEffects.cs doc/code sample mismatch (actual: CameraEffectsController.cs) | Minor | ✅ Sprint #7+#8 fix: 2 code samples in Section 3 updated to reference CameraEffectsController. |
+| Editor tooling şişman (SceneBuilder 613 LOC) | Minor | ✅ **Sprint #14 tamamlandı:** 710 LOC god-class 4 focused dosyaya bölündü — `SceneBuilderModel` (data types: `BuildOptions`/`MoldConfig`/`MoldLayout`/`ShaderVariant`/`DefaultPalette` + tüm color/vector sabitleri, ~120 LOC, public static), `SceneBuilderPrimitives` (lighting/ground/camera/post-processing/cauldron + dust/fire particles + 4 material preset + `CreateLitMaterial`/`CreatePrimitive`/`FindShader` helpers, ~280 LOC, internal static), `SceneBuilderMoldFactory` (`CreateMold`/`CreateDefaultMoldSet`/`RemoveMolds`/`CountMolds`/`ComputePositions`/`GenerateMixedContents`/`BuildLayers`/`GetUniqueName`, ~180 LOC, internal static), `SceneBuilder` (slim orchestrator ~180 LOC, public API preserved via delegation to MoldFactory+Primitives). `using static` → 4 ayrı `using X = ...` alias (`UnityEditor.BuildOptions` ile çakışma çözümü). 4 tüketici dosyası (`SceneTab`/`LevelSolverUtility`/`LevelUITab`/`LevelsTab`) `SceneBuilder.X` type/constant referansları `SceneBuilderModel.X`'e güncellendi (method çağrıları `SceneBuilder.X()` korundu). `Assembly-CSharp-Editor.csproj` redundant `<Compile Include>` entry'si temizlendi. **Net etki:** 710 → ~760 LOC toplam (4 dosyaya yayılmış, her biri tek sorumluluk), public API surface korundu (sadece type erişimi için `SceneBuilderModel` namespace prefix gerekiyor — açık refactor). |
+| PourSystemController.cs 335 LOC | Minor | ✅ **Sprint #10 tamamlandı:** Interface segregation — 3 focused Application interfaces (`IPourSimulator` gameplay preview+execute, `IPourHistoryService` undo snapshot+restore, `IPourDebugController` dev tools: mutators+overrides+queries+flags). `IPourSystemController` artık marker facade (3'ünü inherit eder, geriye uyumluluk). GameInstaller 4 interface'i de `.As<>()` ile expose ediyor (consumers en küçük contract'a bağlanır). Implementation (394 LOC) değişmedi — sadece contract bölündü. 11 segregation contract test. |
+| LocalizationService 357 LOC (inline data) | Minor | ✅ **Sprint #12 tamamlandı:** JSON externalization (53 key × 5 lang → `Assets/StreamingAssets/Localization/translations.json`, UTF-8). Service 357 → 65 LOC slim. `JsonTranslationProvider` (Infrastructure) parses via `JsonUtility`. `HardcodedTranslationProvider` korundu OCP alternative olarak. Sprint #12 sonunda Android uyumluluğu TODO olarak işaretlendi (`Application.streamingAssetsPath` Android'de APK içinde → `File.ReadAllText` returns 0 bytes). **Sprint #15 tamamlandı (Android gap kapatıldı):** `IAsyncTranslationProvider` interface (`ITranslationProvider` extends + `Task LoadAsync(ct)` eklendi), `StreamingAssetsJsonTranslationProvider` (Infrastructure, `UnityWebRequest.Get` + polling loop, `Application.streamingAssetsPath` Android jar:// path için) + `LocalizationBootstrap` MonoBehaviour (Composition, try/catch guarded `IObjectResolver.Resolve<IAsyncTranslationProvider>` → `Start()` coroutine). `LocalizationService` ctor artık `provider.Load()` çağırmıyor — lazy load: `EnsureLoaded()` private method, first `GetString` veya `AddTranslation` çağrısında tetiklenir. GameInstaller Android platform guard: `#if UNITY_ANDROID && !UNITY_EDITOR` — `StreamingAssetsJsonTranslationProvider` 3 interface altında kayıt (concrete + `ITranslationProvider` + `IAsyncTranslationProvider`) + `LocalizationBootstrap` GameObject `RegisterComponent` ile. Editor/PC sync path (File.ReadAllText) korunur, Android async path bootstrap sırasında pre-load yapar, ilk `GetString` blocklanmaz. LocalizationServiceTests'a +3 test (ctor Load() çağırmaz, first GetString Load() tetikler, subsequent GetString'ler reload etmez) + `LoadTrackingProvider` helper. 0/0 build verified. |
+| InputHandlerService 261 LOC | Minor | ✅ **Sprint #11 tamamlandı:** 3-service SRP split — `IMoldInputRouter` (input + selection + cast orchestration, ~210 LOC) + `IMoldLookupCache` (collider→mold cache, ~70 LOC, 0 dep) + `IInputHandlerDefaults` (play-test LevelData, ~45 LOC, 0 dep). Eski `IInputHandlerService` / `InputHandlerService` artık thin facade (3'ünü inherit eder + composes, ~75 LOC). GameInstaller 3 focused interface'i de `.Register<>` ile ayrı expose ediyor (MoldPoolInitializer sadece `IMoldLookupCache`, GameManager sadece `IMoldInputRouter` bağımlısı olabilir). Mevcut `InputHandlerServiceTests` 9 test SetUp'ta 3 service + facade construct edecek şekilde güncellendi — test contract yüzeyi (ProcessInput + SetMolds) korundu. |
+| DebugOverlayUI string allocation | Minor | ✅ **Sprint #13 tamamlandı:** `DebugOverlayUI.RefreshDisplay()` artık tek `_sb` (StringBuilder 4096 capacity) üzerinde 3 bloğu (`_moldStateText` + `_serviceText` + `_vfxText`) sırayla `Clear() → Append() → ToString()` ile yazıyor. Önceki kod `_serviceText` ve `_vfxText` için string interpolation + `+` concatenation kullanıyordu → her frame 6+ string allocation. Yeni kod 3 ToString (TMP.text zorunlu, kaçınılmaz). 126 LOC, aynı davranış, GC baskısı yarıdan fazla azaldı. Test eklenmedi (mekanik refactor, görsel olarak Unity Editor'da doğrulanabilir). |
+| EventAggregator memory leak riski | Medium | ✅ **Sprint #9 tamamlandı:** EventAggregatorMemoryTests — 100-cycle subscribe/publish/unsubscribe simülasyonu, 5 MB delta üst sınırı; 10 farklı event type ile dict stress; Clear() sonrası dict reset doğrulanıyor. IMemorySnapshotService ile entegre (harness/CLI üzerinden baseline + post-N-level diff). |
+| No memory profiling baseline | Major | ✅ **Sprint #9 tamamlandı:** IMemorySnapshotService (Application) + MemorySnapshot readonly struct (TotalReserved/Allocated/Mono/GC bytes) + MemorySnapshotDiff + MemoryHealth enum (Normal/Warning/Critical) + UnityMemorySnapshotService impl (Infrastructure, `UnityEngine.Profiling.Profiler` + `GC.GetTotalMemory`, paket bağımsız). GameInstaller'a singleton olarak kayıtlı. ForgeConstants.MemoryWarningDeltaBytes (50 MB) + MemoryCriticalDeltaBytes (200 MB) threshold'ları verdict için. Daha derin snapshot ihtiyacında `com.unity.memoryprofiler` paketi sonradan drop-in impl olarak eklenebilir. |
+| **YENİ** (Analiz 2026-06-06): Resources.Load sprawl (28 site) | Major | `AddressablesAssetProvider` (Infrastructure) Sprint #6'da kurulmuş ama 24/28 call site doğrudan `Resources.Load` çağırıyor, provider abstraction'ı bypass ediyor. **Runtime hot path: 11 site** (GameInstaller 6 Config asset, Wobble 1, StreamRenderer 1, ParticleFactory 3). **Editor tool: 11 site** (düşük öncelik). **Etki:** Startup -200-400ms, peak memory -50-100MB, APK -30-50% (content streaming), content update path açılır. **Sprint #16 önerildi.** |
+| **YENİ** (Analiz 2026-06-06): 5 untested critical pure-logic services | Major | **Domain:** `DifficultyBasedLevelGenerator` (134 LOC, 50-level campaign üreticisi — determinism kritik). **Application:** `DailyChallengeService` (113 LOC, UTC seed + streak), `HintService` (90 LOC, coin economy), `UndoService` (57 LOC, snapshot stack), `AgeGateService` (57 LOC, GDPR/COPPA). Hepsi pure C# — test edilebilirlik yüksek. **Sprint #17 önerildi.** |
+| **YENİ** (Analiz 2026-06-06): Heterogeneous async pattern (4 coroutine sites) | Minor | Coroutine (`StartCoroutine(IEnumerator)`) 4 call site: `ScreenTransitionService` (2), `ErrorIndicatorController` (2). Sprint #15 `Task<T>` async/await pattern'i kurmuşken (LocalizationBootstrap), diğer 4 site de UniTask/Task'a dönüştürülebilir. Cancellation token plumbing standardizasyonu + PlayMode test mocklanabilirlik. **Sprint #18 önerildi** (UniTask paket kararı kullanıcı onayı gerekir). |
+| **YENİ** (Analiz 2026-06-06): GameSaveManager 326 LOC (4 karışık sorumluluk) | Minor | HMAC crypto + JSON serialization + File IO + in-memory cache tek dosyada. Sprint #18 (HMAC hardening) **iptal** — HMAC zaten var (analiz 2026-06-06 doğruladı: `GameSaveManager.cs:34-44` BuildSecretKey). Dosya refactor: 3 dosyaya böl (SaveCrypto + SaveStorage + GameSaveManager orchestrator). **Düşük öncelik, v1.0 sonrası.** |
 
 ## 9. Güvenlik Notları
 
 ### 9.1 Save Data
 
-- PlayerPrefs (plain text) → kötü amaçlı root'lu cihazda değiştirilebilir
-- v1.0: kabul edilebilir risk (sadece coin, level progress)
-- v1.1: HMAC-signed save (server olmadan bile tamper-evident)
-- v1.2: Cloud save (Google Play Games)
+- `GameSaveManager` (Application) **HMAC-SHA256 anti-tamper zaten uygulanmış** (Sprint öncesi, doğrulama: `Assets\Scripts\Application\Services\GameSaveManager.cs:14-22` docstring + `:34-44` BuildSecretKey + `using System.Security.Cryptography;`). Salt = `SystemInfo.deviceUniqueIdentifier` + device model + constant pepper. **Sprint #18'de planlanan HMAC hardening iptal — bu özellik zaten v1.0'da mevcut.**
+- Tamper tespit edildiğinde save reddedilir + loglanır (silent recovery; oyuncu yeni save başlatır)
+- v1.2: Cloud save (Google Play Games) — v1.0 sonrası değerlendirilir
+
+### 9.2 IAP
+
+- v1.0: IAP yok → risk sıfır
+- İleride: Unity IAP veya RevenueCat (ücretsiz tier, %1-2 fee)
+
+### 9.3 Network
+
+- Tüm 3rd party çağrılar TLS (Firebase, AdMob, UMP default)
+- Local save asla network'e gönderilmez
 
 ### 9.2 IAP
 

@@ -1,4 +1,5 @@
 using PuzzleGame.Domain.Models;
+using PuzzleGame.Application.Interfaces;
 using UnityEngine;
 
 namespace PuzzleGame.Application.Events
@@ -135,4 +136,18 @@ namespace PuzzleGame.Application.Events
     // S15 FIX: UndoPreCastEvent kaldırıldı.
     // Döküm öncesi undo snapshot kaydı artık InputHandlerService callback üzerinden
     // doğrudan GameHistoryManagementService'e yapılıyor (decoupled, type-safe).
+
+    /// <summary>
+    /// Published by IAudioSettingsService when the player changes any audio
+    /// preference (toggles, volumes, reset). Carries the new snapshot.
+    /// </summary>
+    public readonly struct AudioSettingsChangedEvent
+    {
+        public AudioPreferences NewSettings { get; }
+
+        public AudioSettingsChangedEvent(AudioPreferences newSettings)
+        {
+            NewSettings = newSettings;
+        }
+    }
 }

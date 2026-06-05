@@ -1,7 +1,7 @@
 using NUnit.Framework;
 using UnityEngine;
 using PuzzleGame.Application.Interfaces;
-using PuzzleGame.Application.Services;
+using PuzzleGame.Infrastructure.Implementations;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Events;
@@ -47,11 +47,19 @@ namespace PuzzleGame.Tests.Application.Services
             _animConfig.liftDuration = 0.4f;
             _animConfig.CastDuration = 0.6f;
 
-            _sut = new InputHandlerService(
+            // Sprint #11: InputHandlerService is now a thin facade composed
+            // of 3 focused services (MoldInputRouter, MoldLookupCache,
+            // InputHandlerDefaults). The test exercises the full facade
+            // surface (ProcessInput, SetMolds) which delegates to the router
+            // and cache respectively.
+            var lookup = new MoldLookupCache();
+            var defaults = new InputHandlerDefaults();
+            var router = new MoldInputRouter(
                 _inputHandler, Camera.main, _stateMachine,
                 _animationService, _selectionService, _validator,
                 _gameConfig, _animConfig, _audioService,
-                _historyManager, _CastService);
+                _historyManager, _CastService, lookup, defaults);
+            _sut = new InputHandlerService(router, lookup, defaults);
         }
 
         [TearDown]
