@@ -22,7 +22,7 @@ namespace PuzzleGame
     public class GameManager : MonoBehaviour, IUpdateable
     {
         [Header("UI References")]
-        [SerializeField] private LevelSelectUI levelSelectUI;
+        [SerializeField] private PuzzleGame.Presentation.UI.MainMenuController mainMenuController;
         [SerializeField] private HudPresenter hudPresenter;
 
         [Header("DI Failure UI")]
@@ -41,6 +41,7 @@ namespace PuzzleGame
         private IInputHandlerService _inputHandlerService;
         private IGameStateMachine _stateMachine;
         private LevelFlowController _levelFlow;
+        private OnboardingFlowController _onboardingFlow;
 
         private bool _isInitialized;
 
@@ -53,7 +54,8 @@ namespace PuzzleGame
             IUpdateManager updateManager,
             IInputHandlerService inputHandlerService,
             IGameStateMachine stateMachine,
-            LevelFlowController levelFlow)
+            LevelFlowController levelFlow,
+            OnboardingFlowController onboardingFlow)
         {
             _gameConfig = gameConfig;
             _audioConfig = audioConfig;
@@ -63,6 +65,7 @@ namespace PuzzleGame
             _inputHandlerService = inputHandlerService;
             _stateMachine = stateMachine;
             _levelFlow = levelFlow;
+            _onboardingFlow = onboardingFlow;
 
             _isInitialized = true;
         }
@@ -93,6 +96,8 @@ namespace PuzzleGame
             _events.Subscribe<GameStateChangedEvent>(OnGameStateChanged);
 
             _updateManager?.Register(this);
+
+            _onboardingFlow?.Run();
         }
 
         private void InitAudio()
@@ -105,13 +110,11 @@ namespace PuzzleGame
 
         private void OnGameStateChanged(GameStateChangedEvent e)
         {
-            if (e.Current == GameState.Menu)
+            // MainMenuController handles its own visibility via GameStateChangedEvent subscription.
+            // Kept here as fallback for cases where MainMenuController is not assigned in Inspector.
+            if (mainMenuController == null && e.Current == GameState.Menu)
             {
-                if (levelSelectUI != null) levelSelectUI.gameObject.SetActive(true);
-            }
-            else if (levelSelectUI != null)
-            {
-                levelSelectUI.gameObject.SetActive(false);
+                MoldLogger.LogWarning("MainMenuController not assigned — falling back to legacy LevelSelect-only flow.");
             }
         }
 

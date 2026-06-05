@@ -55,6 +55,7 @@
     <Compile Include="Assets\Scripts\Domain\Services\MoldValidationService.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\DomainColor.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\GameState.cs" />
+    <Compile Include="Assets\Scripts\Domain\Models\Biome.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\OreColor.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\LocalizationEntry.cs" />
     <Compile Include="Assets\Scripts\Domain\Services\OreSortSolver.cs" />

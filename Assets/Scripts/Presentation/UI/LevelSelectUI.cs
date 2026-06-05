@@ -27,19 +27,20 @@ namespace PuzzleGame.Presentation.UI
         [SerializeField] private GameObject levelButtonPrefab;
         [SerializeField] private RectTransform contentRect;
         [SerializeField] private ScrollRect scrollRect;
+        [SerializeField] private Button backButton;
 
         [Header("Layout")]
         [SerializeField] private int columns = 3;
         [SerializeField] private float buttonWidth = 100f;
         [SerializeField] private float buttonHeight = 100f;
         [SerializeField] private float spacing = 10f;
-        [SerializeField] private int maxLevelCount = 100;
 
         private ILevelRepository _repository;
         private ILevelProgressService _progress;
         private IEventAggregator _eventAggregator;
 
         private LevelButtonView[] _buttons;
+        private Biome _currentBiome = Biome.CrystalMines;
 
         [VContainer.Inject]
         public void Construct(ILevelRepository repository, ILevelProgressService progress, IEventAggregator eventAggregator)
@@ -52,19 +53,36 @@ namespace PuzzleGame.Presentation.UI
         private void Start()
         {
             _eventAggregator?.Subscribe<GameStateChangedEvent>(OnGameStateChanged);
+            _eventAggregator?.Subscribe<ShowLevelSelectRequestEvent>(OnShowLevelSelectRequested);
+            if (backButton != null) backButton.onClick.AddListener(OnBackClicked);
         }
 
         private void OnDestroy()
         {
             _eventAggregator?.Unsubscribe<GameStateChangedEvent>(OnGameStateChanged);
+            _eventAggregator?.Unsubscribe<ShowLevelSelectRequestEvent>(OnShowLevelSelectRequested);
+        }
+
+        private void OnShowLevelSelectRequested(ShowLevelSelectRequestEvent e)
+        {
+            _currentBiome = e.BiomeFilter;
+            gameObject.SetActive(true);
+            BuildGrid();
+        }
+
+        private void OnBackClicked()
+        {
+            gameObject.SetActive(false);
+            _eventAggregator?.Publish(new HideLevelSelectRequestEvent());
         }
 
         private void OnGameStateChanged(GameStateChangedEvent e)
         {
             if (e.Current == GameState.Menu)
             {
+                _currentBiome = Biome.CrystalMines;
                 gameObject.SetActive(true);
-                RefreshAll();
+                BuildGrid();
             }
         }
 
@@ -82,13 +100,15 @@ namespace PuzzleGame.Presentation.UI
             foreach (Transform child in buttonContainer)
                 Destroy(child.gameObject);
 
-            int rowCount = Mathf.CeilToInt(maxLevelCount / (float)columns);
+            int startLevel = BiomeProgress.GetStartLevel(_currentBiome);
+            int levelCount = BiomeProgress.GetTotalLevels(_currentBiome);
+            int rowCount = Mathf.CeilToInt(levelCount / (float)columns);
             float totalHeight = rowCount * (buttonHeight + spacing) + spacing;
             contentRect.sizeDelta = new Vector2(contentRect.sizeDelta.x, totalHeight);
 
-            _buttons = new LevelButtonView[maxLevelCount];
+            _buttons = new LevelButtonView[levelCount];
 
-            for (int i = 0; i < maxLevelCount; i++)
+            for (int i = 0; i < levelCount; i++)
             {
                 var go = Instantiate(levelButtonPrefab, buttonContainer);
                 var btn = go.GetComponent<LevelButtonView>();
@@ -105,7 +125,7 @@ namespace PuzzleGame.Presentation.UI
                     );
                 }
 
-                int levelNum = i + 1;
+                int levelNum = startLevel + i;
                 bool unlocked = _progress != null && _progress.IsUnlocked(levelNum);
                 int stars = unlocked ? (_progress?.GetStars(levelNum) ?? 0) : 0;
 
@@ -129,9 +149,10 @@ namespace PuzzleGame.Presentation.UI
         public void RefreshAll()
         {
             if (_buttons == null) return;
+            int startLevel = BiomeProgress.GetStartLevel(_currentBiome);
             for (int i = 0; i < _buttons.Length; i++)
             {
-                int levelNum = i + 1;
+                int levelNum = startLevel + i;
                 bool unlocked = _progress != null && _progress.IsUnlocked(levelNum);
                 int stars = unlocked ? (_progress?.GetStars(levelNum) ?? 0) : 0;
                 _buttons[i]?.Refresh(stars, unlocked);
@@ -141,9 +162,13 @@ namespace PuzzleGame.Presentation.UI
         /// <summary>Scroll to a specific level button.</summary>
         public void ScrollToLevel(int levelNumber)
         {
-            if (scrollRect == null || levelNumber < 1 || levelNumber > maxLevelCount) return;
+            if (scrollRect == null || levelNumber < 1) return;
 
-            int rowIndex = (levelNumber - 1) / columns;
+            int startLevel = BiomeProgress.GetStartLevel(_currentBiome);
+            int endLevel = BiomeProgress.GetEndLevel(_currentBiome);
+            if (levelNumber < startLevel || levelNumber > endLevel) return;
+
+            int rowIndex = (levelNumber - startLevel) / columns;
             float totalHeight = contentRect.sizeDelta.y;
             float viewportHeight = scrollRect.viewport.rect.height;
             float targetY = 1f - (rowIndex * (buttonHeight + spacing) + buttonHeight * 0.5f) / (totalHeight - viewportHeight);

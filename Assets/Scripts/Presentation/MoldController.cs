@@ -1,16 +1,24 @@
 using System;
 using System.Collections.Generic;
 using PuzzleGame.Application.Interfaces;
+using PuzzleGame.Application.Logging;
+using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
-using PuzzleGame.Application.Logging;
 using UnityEngine;
-using PuzzleGame.Application.Configuration;
-using PuzzleGame.Infrastructure;
 
 namespace PuzzleGame
 {
+    /// <summary>
+    /// MonoBehaviour facade for a single Mold. Composes 3 focused POCOs:
+    ///   - <see cref="MoldStateManager"/>: state lifecycle + editor preview
+    ///   - <see cref="MoldVisualSync"/>: visual layer list + cast progress
+    ///   - <see cref="MoldAnimator"/>: completion flash, settle bounce, wobble
+    /// Plus pre-extracted <see cref="MoldVisualRenderer"/> (material/highlight) and
+    /// <see cref="MoldCorkController"/> (cork lifecycle).
+    /// SRP: this class only orchestrates component lifecycle and exposes IMoldView.
+    /// </summary>
     [RequireComponent(typeof(Renderer))]
     [RequireComponent(typeof(Wobble))]
     public class MoldController : MonoBehaviour, IMoldView
@@ -20,7 +28,7 @@ namespace PuzzleGame
         public Material OreMaterial;
 
         [Header("Configuration")]
-        public Application.Configuration.MoldVisualConfig visualConfig;
+        public MoldVisualConfig visualConfig;
 
         public GameObject corkObject;
 
@@ -29,64 +37,55 @@ namespace PuzzleGame
 
         [SerializeField] private List<LevelLayerData> _serializedLayers = new List<LevelLayerData>();
 
-        public MoldState State
-        {
-            get
-            {
-                if (_state == null)
-                {
-                    RestoreStateFromSerialized();
-                }
-                return _state;
-            }
-            private set => _state = value;
-        }
-        private MoldState _state;
+        public int MoldIndex { get; set; }
 
-        public IReadOnlyList<OreLayer> VisualLayers => _visualLayers;
-        public float VisualTotalFill => _visualTotalFill;
-        public float Height => _meshGenerator != null ? _meshGenerator.height : visualConfig != null ? visualConfig.moldHeight : 2.4f;
+        public MoldState State => _stateManager?.State;
+        public IReadOnlyList<OreLayer> VisualLayers => _visualSync?.VisualLayers;
+        public float VisualTotalFill => _visualSync?.VisualTotalFill ?? 0f;
+        public bool IsEmpty => State?.IsEmpty ?? true;
+        public bool IsFull() => State?.IsFull ?? false;
         public bool IsCapped => _corkController != null && _corkController.IsCapped;
         public Transform Transform => transform;
         public GameObject GameObject => gameObject;
+        public float Height => _meshGenerator != null
+            ? _meshGenerator.height
+            : visualConfig != null
+                ? visualConfig.moldHeight
+                : 2.4f;
 
-        /// <summary>
-        /// Pool-assigned index set by MoldPoolInitializer.
-        /// Replaces the fragile GameObject.name-parsing approach in CastService.
-        /// </summary>
-        public int MoldIndex { get; set; }
-
-        private readonly List<OreLayer> _visualLayers = new List<OreLayer>();
-        private float _visualTotalFill = 0f;
-
-        private IRendererService _rendererService;
-        private IMoldValidator _validator;
-        private IAnimationService _animationService;
-        private ITweenService _tweenService;
+        private MoldStateManager _stateManager;
+        private MoldVisualSync _visualSync;
+        private MoldAnimator _animator;
         private MoldVisualRenderer _visualRenderer;
         private MoldCorkController _corkController;
         private MoldMeshGenerator _meshGenerator;
         private Renderer _renderer;
         private Wobble _wobble;
 
+        private IRendererService _rendererService;
+        private IMoldValidator _validator;
+        private IAnimationService _animationService;
+        private ITweenService _tweenService;
+
         public void Initialize(IRendererService rendererService,
-                               IMoldValidator  validator,
+                               IMoldValidator validator,
                                IAnimationService animationService,
                                List<OreLayer> initialLayers,
-                               Application.Configuration.MoldVisualConfig visualConfigOverride = null,
+                               MoldVisualConfig visualConfigOverride = null,
                                ITweenService tweenService = null)
         {
             if (rendererService == null) throw new ArgumentNullException(nameof(rendererService));
-            if (validator == null)       throw new ArgumentNullException(nameof(validator));
-            if (initialLayers == null)    throw new ArgumentNullException(nameof(initialLayers));
+            if (validator == null) throw new ArgumentNullException(nameof(validator));
+            if (initialLayers == null) throw new ArgumentNullException(nameof(initialLayers));
 
             _rendererService = rendererService;
-            _validator       = validator;
+            _validator = validator;
             _animationService = animationService;
-            _tweenService    = tweenService;
-            _meshGenerator   = GetComponent<MoldMeshGenerator>();
-            _renderer        = GetComponent<Renderer>();
-            _wobble          = GetComponent<Wobble>();
+            _tweenService = tweenService;
+
+            _meshGenerator = GetComponent<MoldMeshGenerator>();
+            _renderer = GetComponent<Renderer>();
+            _wobble = GetComponent<Wobble>();
 
             if (visualConfig == null)
             {
@@ -97,7 +96,7 @@ namespace PuzzleGame
                         "[MoldController] MoldVisualConfig not injected on " +
                         gameObject.name + ". Using default SO.",
                         this);
-                    visualConfig = ScriptableObject.CreateInstance<Application.Configuration.MoldVisualConfig>();
+                    visualConfig = ScriptableObject.CreateInstance<MoldVisualConfig>();
                     visualConfig.name = "MoldVisualConfig_Fallback";
                 }
             }
@@ -115,9 +114,18 @@ namespace PuzzleGame
                     "Height calculations will rely on config default.");
             }
 
+            int maxLayers = visualConfig != null ? visualConfig.maxLayers : ForgeConstants.DefaultLayerCapacity;
+
+            _stateManager = new MoldStateManager(_serializedLayers);
+            _stateManager.Initialize(maxLayers, initialLayers);
+
+            _visualSync = new MoldVisualSync();
+            _visualSync.BindStateTotalFillProvider(() => _stateManager.State?.TotalFill ?? 0f);
+
             _visualRenderer = new MoldVisualRenderer(
                 _renderer, _rendererService, visualConfig,
-                () => _visualLayers, () => _visualTotalFill);
+                () => _visualSync != null ? (List<OreLayer>)_visualSync.VisualLayers : new List<OreLayer>(),
+                () => _visualSync != null ? _visualSync.VisualTotalFill : 0f);
 
             _corkController = new MoldCorkController(
                 transform, _animationService,
@@ -126,31 +134,13 @@ namespace PuzzleGame
                 corkObject);
             _corkController.EnsureCork();
             corkObject = _corkController.CorkObject;
+
+            _animator = new MoldAnimator(_renderer, _animationService, (PuzzleGame.Wobble)_wobble, (PuzzleGame.Application.Configuration.MoldVisualConfig)visualConfig, (PuzzleGame.MoldCorkController)_corkController);
+
+            _visualSync.CopyFromState(_stateManager.State);
             SetSelectionHighlight(false);
 
-            int maxLayers = visualConfig != null ? visualConfig.maxLayers : ForgeConstants.DefaultLayerCapacity;
-            if (_state == null || _state.MaxLayers != maxLayers)
-            {
-                _state = new MoldState(maxLayers);
-            }
-            else
-            {
-                _state.Clear();
-            }
-            _visualLayers.Clear();
-            _serializedLayers.Clear();
-            
-            int initialCount = initialLayers.Count;
-            for (int i = 0; i < initialCount; i++)
-            {
-                var layer = initialLayers[i];
-                _state.AddLayer(layer);
-                _visualLayers.Add(layer);
-                _serializedLayers.Add(new LevelLayerData { color = ColorAdapter.ToUnityStatic(layer.Color), amount = layer.Amount });
-            }
-            _visualTotalFill = _state.TotalFill;
-
-            MoldLogger.LogDebug($"Mold '{name}' initialized with {initialCount} layers.");
+            MoldLogger.LogDebug($"Mold '{name}' initialized with {initialLayers.Count} layers.");
             UpdateVisuals();
 
 #if UNITY_EDITOR
@@ -164,6 +154,16 @@ namespace PuzzleGame
             }
 #endif
         }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (UnityEngine.Application.isPlaying) return;
+            RestoreStateFromSerialized(true);
+            if (_meshGenerator != null) _meshGenerator.BuildMesh();
+            UpdateVisuals();
+        }
+#endif
 
         private void RestoreStateFromSerialized(bool isFromOnValidate = false)
         {
@@ -181,72 +181,48 @@ namespace PuzzleGame
             _renderer = GetComponent<Renderer>();
             _wobble = GetComponent<Wobble>();
 
-            _visualRenderer = _rendererService != null
-                ? new MoldVisualRenderer(_renderer, _rendererService, visualConfig,
-                    () => _visualLayers, () => _visualTotalFill)
-                : null;
+            int maxLayers = visualConfig != null ? visualConfig.maxLayers : ForgeConstants.DefaultLayerCapacity;
+            if (_stateManager == null) _stateManager = new MoldStateManager(_serializedLayers);
+            _stateManager.Initialize(maxLayers, _stateManager.RebuildFromSerialized());
 
-            _corkController = new MoldCorkController(
-                transform, _animationService,
-                () => Height,
-                () => _meshGenerator != null ? _meshGenerator.neckRadius : PuzzleGame.Infrastructure.CorkConstants.Radius,
-                corkObject);
+            if (_visualSync == null) _visualSync = new MoldVisualSync();
+            _visualSync.BindStateTotalFillProvider(() => _stateManager.State?.TotalFill ?? 0f);
 
+            if (_corkController == null)
+            {
+                _corkController = new MoldCorkController(
+                    transform, _animationService,
+                    () => Height,
+                    () => _meshGenerator != null ? _meshGenerator.neckRadius : PuzzleGame.Infrastructure.CorkConstants.Radius,
+                    corkObject);
+            }
             _corkController.EnsureCork(isFromOnValidate);
             corkObject = _corkController.CorkObject;
 
-            int maxLayers = visualConfig != null ? visualConfig.maxLayers : ForgeConstants.DefaultLayerCapacity;
-            _state = new MoldState(maxLayers);
-            _visualLayers.Clear();
-            if (_serializedLayers != null)
+            if (_visualRenderer == null && _renderer != null)
             {
-                int count = _serializedLayers.Count;
-                for (int i = 0; i < count; i++)
-                {
-                    var layerData = _serializedLayers[i];
-                    var layer = new OreLayer(ColorAdapter.FromUnityStatic(layerData.color), layerData.amount);
-                    _state.AddLayer(layer);
-                    _visualLayers.Add(layer);
-                }
+                _visualRenderer = new MoldVisualRenderer(
+                    _renderer, _rendererService, visualConfig,
+                    () => _visualSync != null ? (List<OreLayer>)_visualSync.VisualLayers : new List<OreLayer>(),
+                    () => _visualSync != null ? _visualSync.VisualTotalFill : 0f);
             }
-            _visualTotalFill = _state.TotalFill;
 
-            if (_visualRenderer != null) _visualRenderer.Update();
+            _visualSync.CopyFromState(_stateManager.State);
+            _visualRenderer?.Update();
         }
 
-        // Property-based injection for non-DI scenarios (Editor preview)
-        public IRendererService RendererService
-        {
-            set => _rendererService = value;
-        }
+        public IRendererService RendererService { set => _rendererService = value; }
+        public IMoldValidator MoldValidator { set => _validator = value; }
 
-        public IMoldValidator MoldValidator
-        {
-            set => _validator = value;
-        }
- 
-        public bool IsEmpty => State?.IsEmpty ?? true;
-        public bool IsFull()  => State?.IsFull  ?? false;
- 
         public void AddWobbleImpulse(Vector3 direction, float strength)
         {
-            _wobble?.AddImpulse(direction, strength);
+            _animator?.AddWobbleImpulse(direction, strength);
         }
 
         public void SetVisualState(IReadOnlyList<OreLayer> layers, float totalFill)
         {
-            _visualLayers.Clear();
-            _serializedLayers.Clear();
-            if (layers != null)
-            {
-                int count = layers.Count;
-                for (int i = 0; i < count; i++)
-                {
-                    _visualLayers.Add(layers[i]);
-                    _serializedLayers.Add(new LevelLayerData { color = ColorAdapter.ToUnityStatic(layers[i].Color), amount = layers[i].Amount });
-                }
-            }
-            _visualTotalFill = totalFill;
+            _visualSync?.SetVisualState(layers, totalFill);
+            _stateManager?.SyncSerializedFromLayers(layers);
             UpdateVisuals();
 
 #if UNITY_EDITOR
@@ -263,98 +239,15 @@ namespace PuzzleGame
 
         public void SetVisualCastProgress(LayerSnapshot startLayers, float t, bool isSource, OreLayer CastedLayer)
         {
-            _visualLayers.Clear();
-            
-            float startTotalFill = 0f;
-            int startCount = startLayers.Count;
-            for (int i = 0; i < startCount; i++)
-            {
-                startTotalFill += startLayers.Get(i).Amount;
-            }
-
-            if (isSource)
-            {
-                float totalVolumeToCast = Mathf.Max(0f, startTotalFill - State.TotalFill);
-                float volumeToRemove = totalVolumeToCast * t;
-
-                for (int i = 0; i < startCount; i++)
-                {
-                    _visualLayers.Add(startLayers.Get(i));
-                }
-
-                for (int i = _visualLayers.Count - 1; i >= 0 && volumeToRemove > 0f; i--)
-                {
-                    var layer = _visualLayers[i];
-                    if (layer.Amount <= volumeToRemove)
-                    {
-                        volumeToRemove -= layer.Amount;
-                        _visualLayers.RemoveAt(i);
-                    }
-                    else
-                    {
-                        _visualLayers[i] = layer.WithAmount(layer.Amount - volumeToRemove);
-                        volumeToRemove = 0f;
-                    }
-                }
-
-                float totalFill = 0f;
-                for (int i = _visualLayers.Count - 1; i >= 0; i--)
-                {
-                    var layer = _visualLayers[i];
-                    if (layer.Amount <= ForgeConstants.LayerAmountEpsilon)
-                    {
-                        _visualLayers.RemoveAt(i);
-                    }
-                    else
-                    {
-                        totalFill += layer.Amount;
-                    }
-                }
-                _visualTotalFill = totalFill;
-            }
-            else
-            {
-                float totalVolumeToCast = Mathf.Max(0f, State.TotalFill - startTotalFill);
-                float volumeToAdd = totalVolumeToCast * t;
-
-                float totalFill = 0f;
-                for (int i = 0; i < startCount; i++)
-                {
-                    var layer = startLayers.Get(i);
-                    _visualLayers.Add(layer);
-                    totalFill += layer.Amount;
-                }
-
-                if (volumeToAdd > ForgeConstants.LayerAmountEpsilon)
-                {
-                    _visualLayers.Add(CastedLayer.WithAmount(volumeToAdd));
-                    totalFill += volumeToAdd;
-                }
-                _visualTotalFill = totalFill;
-            }
-
+            _visualSync?.SetVisualCastProgress(startLayers, t, isSource, CastedLayer);
             UpdateVisuals();
         }
 
         public void UpdateVisualsFromState()
         {
             if (State == null) return;
-            _visualLayers.Clear();
-            
-            // Fix: Loop directly on IReadOnlyList using standard for loop to avoid IEnumerable boxing allocations
-            var layers = State.Layers;
-            int count = layers.Count;
-            for (int i = 0; i < count; i++)
-            {
-                _visualLayers.Add(layers[i]);
-            }
-            _visualTotalFill = State.TotalFill;
-            _serializedLayers.Clear();
-            for (int i = 0; i < count; i++)
-            {
-                var layer = layers[i];
-                _serializedLayers.Add(new LevelLayerData { color = ColorAdapter.ToUnityStatic(layer.Color), amount = layer.Amount });
-            }
+            _visualSync?.CopyFromState(State);
+            _stateManager?.SyncSerializedFromLayers(_visualSync.VisualLayers);
             UpdateVisuals();
 
 #if UNITY_EDITOR
@@ -386,48 +279,19 @@ namespace PuzzleGame
 
         public void AnimateCompletion()
         {
-            if (IsCapped) return;
-            _corkController?.AnimateDrop();
-
-            int oreIndex = visualConfig != null ? visualConfig.oreMaterialIndex : 1;
-            if (_renderer != null && _renderer.sharedMaterials.Length > oreIndex && _animationService != null)
-            {
-                float intensity = visualConfig != null ? visualConfig.completionFlashIntensity : 4.0f;
-                float duration = visualConfig != null ? visualConfig.completionFlashDuration : 0.6f;
-                _animationService.AnimateOreFlash(
-                    _renderer, oreIndex,
-                    intensity,
-                    duration,
-                    onComplete: null);
-            }
+            _animator?.AnimateCompletion();
         }
 
         public void PlaySettleBounce()
         {
-            float duration = visualConfig != null ? visualConfig.settleBounceDuration : 0.6f;
-            _animationService?.AnimateSettleBounce(this, duration, onComplete: null);
+            _animator?.PlaySettleBounce(this);
         }
-
-#if UNITY_EDITOR
-        private void OnValidate()
-        {
-            if (UnityEngine.Application.isPlaying) return;
-            RestoreStateFromSerialized(true);
-            if (_meshGenerator != null)
-            {
-                _meshGenerator.BuildMesh();
-            }
-            UpdateVisuals();
-        }
-#endif
 
         private void OnDestroy()
         {
             _tweenService?.StopAll(transform);
             if (corkObject != null) _tweenService?.StopAll(corkObject.transform);
-
             _corkController?.DisposeResources();
-
             _visualRenderer = null;
         }
     }

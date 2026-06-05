@@ -109,6 +109,13 @@ namespace PuzzleGame.Installers
             builder.Register<IHapticFeedbackService, HapticFeedbackService>(Lifetime.Singleton);
             builder.Register<IAnalyticsService, NoOpAnalyticsService>(Lifetime.Singleton);
 
+            // Ads (NoOp in editor/CI; swap to AdMobService once package installed)
+            builder.Register<IAdService, NoOpAdService>(Lifetime.Singleton);
+
+            // GDPR consent + COPPA age gate
+            builder.Register<IAgeVerificationService, AgeGateService>(Lifetime.Singleton);
+            builder.Register<IConsentManager, ConsentManager>(Lifetime.Singleton);
+
             // Daily challenge + streak (retention)
             builder.Register<IDailyChallengeService, DailyChallengeService>(Lifetime.Singleton);
             builder.Register<IStreakService, StreakService>(Lifetime.Singleton);
@@ -138,7 +145,10 @@ namespace PuzzleGame.Installers
                    .As<IPourSystemController>()
                    .AsSelf();
 
-            builder.RegisterComponentInHierarchy<PuzzleGame.Presentation.ErrorIndicatorController>()
+            // ErrorIndicator — bootstrap ensures it exists (auto-creates if scene is misconfigured)
+            var errorIndicator = PuzzleGame.Presentation.ErrorIndicatorBootstrap.EnsureExists();
+            builder.RegisterInstance(errorIndicator)
+                .AsSelf()
                 .As<IErrorIndicatorService>();
 
             builder.RegisterComponentInHierarchy<CameraEffectsController>();
@@ -155,6 +165,26 @@ namespace PuzzleGame.Installers
 
             // HUD presenter — must be a MonoBehaviour to serialize inspector references
             builder.RegisterComponentInHierarchy<HudPresenter>();
+
+            // Consent flow UI — MonoBehaviours live on the consent scene prefab
+            builder.RegisterComponentInHierarchy<PuzzleGame.Presentation.UI.AgeGateModal>();
+            builder.RegisterComponentInHierarchy<PuzzleGame.Presentation.UI.ConsentModal>();
+            builder.RegisterComponentInHierarchy<PuzzleGame.Presentation.UI.SettingsPrivacyController>();
+
+            // Main menu — entry point after onboarding; manages Play/Daily/Settings/Privacy buttons
+            builder.RegisterComponentInHierarchy<PuzzleGame.Presentation.UI.MainMenuController>();
+
+            // World map — shows 2 biome cards (Crystal Mines + Volcanic Forge) with progress
+            builder.RegisterComponentInHierarchy<PuzzleGame.Presentation.UI.WorldMapController>();
+
+            // Daily challenge — entry screen with streak/countdown/play
+            builder.RegisterComponentInHierarchy<PuzzleGame.Presentation.UI.DailyChallengeController>();
+
+            // AI art provider — reads from BiomeArtCatalog ScriptableObject (optional, returns defaults if empty)
+            builder.Register<PuzzleGame.Application.Interfaces.IBiomeArtProvider, PuzzleGame.Infrastructure.ScriptableObjectBiomeArtProvider>(Lifetime.Singleton);
+
+            // Onboarding orchestrator — POCO, owned by container; runs Splash → AgeGate → Consent → MainMenu
+            builder.Register<OnboardingFlowController>(Lifetime.Singleton);
 
             MoldLogger.LogInfo("GameInstaller configured — all services registered.");
         }

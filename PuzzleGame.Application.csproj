@@ -61,6 +61,7 @@
     <Compile Include="Assets\Scripts\Application\Interfaces\ITutorialService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\UndoService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\ScriptableObjectLevelRepository.cs" />
+    <Compile Include="Assets\Scripts\Application\Interfaces\IAgeVerificationService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IHintService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IErrorIndicatorService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IGameObjectPool.cs" />
@@ -75,9 +76,11 @@
     <Compile Include="Assets\Scripts\Application\Interfaces\IPoolManager.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\LevelConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Services\InputHandlerService.cs" />
+    <Compile Include="Assets\Scripts\Application\Interfaces\IBiomeArtProvider.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\AnimationConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Services\LevelValidationService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\ILevelValidationService.cs" />
+    <Compile Include="Assets\Scripts\Application\Configuration\BiomeArtCatalog.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IColorAdapter.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IDailyChallengeService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IMoldSelectionService.cs" />
@@ -106,6 +109,7 @@
     <Compile Include="Assets\Scripts\Application\Services\AnimationService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IAudioService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\HapticFeedbackService.cs" />
+    <Compile Include="Assets\Scripts\Application\Services\AgeGateService.cs" />
     <Compile Include="Assets\Scripts\Application\Events\LevelEvents.cs" />
     <Compile Include="Assets\Scripts\Application\Services\ScreenTransitionService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IActiveMoldsProvider.cs" />
@@ -114,9 +118,11 @@
     <Compile Include="Assets\Scripts\Application\Services\DailyChallengeService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IStreamTrailController.cs" />
     <Compile Include="Assets\Scripts\Application\Events\GameEvents.cs" />
+    <Compile Include="Assets\Scripts\Application\Interfaces\IConsentManager.cs" />
     <Compile Include="Assets\Scripts\Application\Services\CastAnimationState.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\ILevelRepository.cs" />
     <Compile Include="Assets\Scripts\Application\Services\LevelSetupService.cs" />
+    <Compile Include="Assets\Scripts\Application\Interfaces\IAdService.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\GameConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\WobbleConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\MoldVisualConfig.cs" />
