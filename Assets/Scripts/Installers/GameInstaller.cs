@@ -102,8 +102,9 @@ namespace PuzzleGame.Installers
             builder.Register<IAudioService, AudioService>(Lifetime.Singleton);
 #if ENABLE_ADDRESSABLES
             builder.Register<IAssetProvider, AddressablesAssetProvider>(Lifetime.Singleton);
-            // Register a factory that Initialize()s the provider on first use (VContainer calls
-            // the factory lazily, after Configure() completes, so Addressables is ready by then).
+            builder.RegisterBuildCallback(resolver => resolver.Resolve<IAssetProvider>().Initialize());
+#else
+            builder.Register<IAssetProvider, ResourcesAssetProvider>(Lifetime.Singleton);
             builder.RegisterBuildCallback(resolver => resolver.Resolve<IAssetProvider>().Initialize());
 #endif
             builder.Register<IParticleFactory, ParticleFactory>(Lifetime.Singleton);
