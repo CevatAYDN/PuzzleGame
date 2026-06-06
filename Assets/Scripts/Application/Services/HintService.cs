@@ -54,11 +54,6 @@ namespace PuzzleGame.Application.Services
                 MoldLogger.LogInfo($"{LogTag} Daily hint limit reached for this level.");
                 return false;
             }
-            if (!_wallet.TrySpend(Cost, "hint"))
-            {
-                MoldLogger.LogInfo($"{LogTag} Insufficient coins for hint.");
-                return false;
-            }
 
             var molds = _molds?.Molds;
             if (molds == null || molds.Length < 2) return false;
@@ -68,6 +63,12 @@ namespace PuzzleGame.Application.Services
             if (!result.IsSolvable || result.SolutionPath == null || result.SolutionPath.Count == 0)
             {
                 MoldLogger.LogInfo($"{LogTag} No solution found — puzzle may already be solved.");
+                return false;
+            }
+
+            if (!_wallet.TrySpend(Cost, "hint"))
+            {
+                MoldLogger.LogInfo($"{LogTag} Insufficient coins for hint.");
                 return false;
             }
 

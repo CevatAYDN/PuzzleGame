@@ -103,6 +103,7 @@ namespace PuzzleGame.Application.Services
                 return false;
             }
 
+            _historyManager.RecordUndoSnapshot();
             OreLayer layer = source.State.PopTopLayer();
 
             try
@@ -123,6 +124,8 @@ namespace PuzzleGame.Application.Services
         {
             int castCount = GetCastLayerCount(source, target, levelData);
             if (castCount == 0) return false;
+
+            _historyManager.RecordUndoSnapshot();
 
             int casted = 0;
             _rollbackBuffer.Clear();
@@ -174,7 +177,6 @@ namespace PuzzleGame.Application.Services
 
         private void FinalizeCast(IMoldView source, IMoldView target, IMoldView[] activeMolds, int count)
         {
-            _historyManager.RecordUndoSnapshot();
             _historyManager.IncrementMoveCount();
 
             _eventAggregator.Publish(new CastCompletedEvent(source.State, target.State));

@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
   <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->
   <PropertyGroup>
     <BaseIntermediateOutputPath>Temp\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
@@ -115,6 +115,7 @@
     <Compile Include="Assets\Tests\Domain\Models\OreLayerTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\LevelValidationServiceTests.cs" />
     <Compile Include="Assets\Tests\Infrastructure\PlayerPrefsAudioSettingsServiceTests.cs" />
+    <Compile Include="Assets\Tests\Fakes\FakeActiveMoldsProvider.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Tests\PuzzleGame.Tests.asmdef" />

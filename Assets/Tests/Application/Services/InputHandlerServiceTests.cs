@@ -24,6 +24,7 @@ namespace PuzzleGame.Tests.Application.Services
         private FakeCastService _CastService;
         private GameConfig _gameConfig;
         private AnimationConfig _animConfig;
+        private FakeActiveMoldsProvider _activeMoldsProvider;
 
         [SetUp]
         public void SetUp()
@@ -54,11 +55,12 @@ namespace PuzzleGame.Tests.Application.Services
             // and cache respectively.
             var lookup = new MoldLookupCache();
             var defaults = new InputHandlerDefaults();
+            _activeMoldsProvider = new FakeActiveMoldsProvider();
             var router = new MoldInputRouter(
                 _inputHandler, Camera.main, _stateMachine,
                 _animationService, _selectionService, _validator,
                 _gameConfig, _animConfig, _audioService,
-                _historyManager, _CastService, lookup, defaults);
+                _historyManager, _CastService, lookup, defaults, _activeMoldsProvider);
             _sut = new InputHandlerService(router, lookup, defaults);
         }
 
@@ -114,7 +116,7 @@ namespace PuzzleGame.Tests.Application.Services
             _stateMachine.TransitionTo(GameState.Playing);
             var Mold = CreateMoldView();
             Mold.State.AddLayer(new OreLayer(new DomainColor(1f, 0.2f, 0.2f), 1f));
-            _sut.SetMolds(new[] { Mold });
+            SetMolds(new[] { Mold });
             _selectionService.Select(Mold.State);
 
             _inputHandler.SimulateClick(Vector2.zero, raycastSuccess: false);
@@ -133,7 +135,7 @@ namespace PuzzleGame.Tests.Application.Services
             _stateMachine.TransitionTo(GameState.Playing);
             var Mold = CreateMoldView();
             Mold.State.AddLayer(new OreLayer(new DomainColor(1f, 0.2f, 0.2f), 1f));
-            _sut.SetMolds(new IMoldView[] { Mold });
+            SetMolds(new IMoldView[] { Mold });
 
             SetupRaycastHit(Mold);
 
@@ -149,7 +151,7 @@ namespace PuzzleGame.Tests.Application.Services
             _stateMachine.TransitionTo(GameState.Playing);
             var Mold = CreateMoldView();
             Mold.IsCapped = true;
-            _sut.SetMolds(new IMoldView[] { Mold });
+            SetMolds(new IMoldView[] { Mold });
 
             SetupRaycastHit(Mold);
 
@@ -163,7 +165,7 @@ namespace PuzzleGame.Tests.Application.Services
         {
             _stateMachine.TransitionTo(GameState.Playing);
             var Mold = CreateMoldView(); // Already empty
-            _sut.SetMolds(new IMoldView[] { Mold });
+            SetMolds(new IMoldView[] { Mold });
 
             SetupRaycastHit(Mold);
 
@@ -181,7 +183,7 @@ namespace PuzzleGame.Tests.Application.Services
             var sourceMold = CreateMoldView();
             sourceMold.State.AddLayer(new OreLayer(new DomainColor(1f, 0.2f, 0.2f), 1f));
             var targetMold = CreateMoldView();
-            _sut.SetMolds(new IMoldView[] { sourceMold, targetMold });
+            SetMolds(new IMoldView[] { sourceMold, targetMold });
 
             // First click: select source
             SetupRaycastHit(sourceMold);
@@ -205,7 +207,7 @@ namespace PuzzleGame.Tests.Application.Services
             var sourceMold = CreateMoldView();
             sourceMold.State.AddLayer(new OreLayer(new DomainColor(1f, 0.2f, 0.2f), 1f));
             var targetMold = CreateMoldView();
-            _sut.SetMolds(new IMoldView[] { sourceMold, targetMold });
+            SetMolds(new IMoldView[] { sourceMold, targetMold });
 
             SetupRaycastHit(sourceMold);
             _sut.ProcessInput();
@@ -227,7 +229,7 @@ namespace PuzzleGame.Tests.Application.Services
             _stateMachine.TransitionTo(GameState.Playing);
             var Mold = CreateMoldView();
             Mold.State.AddLayer(new OreLayer(new DomainColor(1f, 0.2f, 0.2f), 1f));
-            _sut.SetMolds(new IMoldView[] { Mold });
+            SetMolds(new IMoldView[] { Mold });
 
             SetupRaycastHit(Mold);
             _sut.ProcessInput();
@@ -241,6 +243,12 @@ namespace PuzzleGame.Tests.Application.Services
         }
 
         // ── Helpers ────────────────────────────────────────────────────────────
+
+        private void SetMolds(IMoldView[] molds)
+        {
+            _sut.SetMolds(molds);
+            _activeMoldsProvider.Molds = molds;
+        }
 
         private FakeMoldView CreateMoldView()
         {

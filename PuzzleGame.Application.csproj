@@ -137,6 +137,7 @@
     <Compile Include="Assets\Scripts\Application\Configuration\MoldVisualConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\LevelData.cs" />
     <Compile Include="Assets\Scripts\Application\Services\ReactionService.cs" />
+    <Compile Include="Assets\Scripts\Application\Services\StreakService.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Scripts\Application\PuzzleGame.Application.asmdef" />

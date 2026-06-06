@@ -129,7 +129,7 @@ namespace PuzzleGame.Presentation
         {
             _stateMachine.TransitionTo(GameState.LevelLoading);
 
-            if (!_levelValidation.ValidateLevel(level, _pool.Molds?.Length ?? 0))
+            if (!_levelValidation.ValidateLevel(level, _pool.MaxGameplayMolds))
             {
                 MoldLogger.LogError($"Level {level.levelNumber} failed validation.");
                 _stateMachine.TransitionTo(GameState.Menu);

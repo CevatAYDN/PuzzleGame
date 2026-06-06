@@ -78,7 +78,7 @@ namespace PuzzleGame.Presentation
             {
                 _analyticsService.IsEnabled = false;
                 _adService.IsPersonalizedAdsEnabled = false;
-                MoldLogger.LogInfo($"{LogTag} User is under 13 — analytics disabled, ads disabled.");
+                MoldLogger.LogInfo($"{LogTag} User is under 13 — analytics disabled, personalized ads disabled.");
                 ProceedToMainMenu();
                 return;
             }

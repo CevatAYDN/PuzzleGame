@@ -34,6 +34,15 @@ namespace PuzzleGame
 
         public IMoldView[] Molds => _Molds;
 
+        public int MaxGameplayMolds
+        {
+            get
+            {
+                if (_gameplayMoldsPool.Count == 0 && _optionalMoldsPool.Count == 0) CacheMolds();
+                return _gameplayMoldsPool.Count;
+            }
+        }
+
         public MoldPoolInitializer(
             ILevelSetupService levelSetupService,
             IRendererService rendererService,

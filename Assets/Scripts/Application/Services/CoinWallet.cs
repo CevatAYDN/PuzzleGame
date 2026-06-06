@@ -49,6 +49,10 @@ namespace PuzzleGame.Application.Services
             return true;
         }
 
-        private void Persist() => PlayerPrefs.SetInt(PrefsKey, _balance);
+        private void Persist()
+        {
+            PlayerPrefs.SetInt(PrefsKey, _balance);
+            PlayerPrefs.Save();
+        }
     }
 }

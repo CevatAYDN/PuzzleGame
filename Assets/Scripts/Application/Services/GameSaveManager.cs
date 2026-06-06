@@ -24,7 +24,7 @@ namespace PuzzleGame.Application.Services
     {
         private const string SaveFileName = "puzzlegame_save.json";
         private const int CurrentVersion = 1;
-        private const int MaxLevelsInMemory = 64;
+        private const int MaxLevelsInMemory = 1000;
 
         private readonly string SecretKey = BuildSecretKey();
 

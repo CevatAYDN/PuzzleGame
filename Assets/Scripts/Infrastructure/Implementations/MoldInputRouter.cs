@@ -32,6 +32,7 @@ namespace PuzzleGame.Infrastructure.Implementations
         private readonly ICastService _castService;
         private readonly IMoldLookupCache _lookup;
         private readonly IInputHandlerDefaults _defaults;
+        private readonly IActiveMoldsProvider _moldsProvider;
 
         private LevelData _currentLevelData;
         private Vector3 _selectedOriginalPos;
@@ -49,7 +50,8 @@ namespace PuzzleGame.Infrastructure.Implementations
             IGameHistoryManager historyManager,
             ICastService castService,
             IMoldLookupCache lookup,
-            IInputHandlerDefaults defaults)
+            IInputHandlerDefaults defaults,
+            IActiveMoldsProvider moldsProvider)
         {
             _inputHandler = inputHandler ?? throw new ArgumentNullException(nameof(inputHandler));
             _camera = camera;
@@ -64,6 +66,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             _castService = castService;
             _lookup = lookup ?? throw new ArgumentNullException(nameof(lookup));
             _defaults = defaults ?? throw new ArgumentNullException(nameof(defaults));
+            _moldsProvider = moldsProvider ?? throw new ArgumentNullException(nameof(moldsProvider));
         }
 
         public void ProcessInput()
@@ -207,7 +210,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             var activeLevelData = _defaults.GetActiveLevelData(_currentLevelData);
             int castCount = _castService.GetCastLayerCount(source, target, activeLevelData);
 
-            if (_castService.TryCast(source, target, activeLevelData, null))
+            if (_castService.TryCast(source, target, activeLevelData, _moldsProvider.Molds))
             {
                 if (MoldLogger.IsInfoEnabled)
                     MoldLogger.LogInfo($"Cast succeeded ({castCount} layers).");
