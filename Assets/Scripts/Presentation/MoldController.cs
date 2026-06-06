@@ -165,7 +165,7 @@ namespace PuzzleGame
         }
 #endif
 
-        private void RestoreStateFromSerialized(bool isFromOnValidate = false)
+        public void RestoreStateFromSerialized(bool isFromOnValidate = false)
         {
             if (_rendererService == null || _validator == null)
             {

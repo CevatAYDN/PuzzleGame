@@ -258,14 +258,18 @@ public class GameInstaller : LifetimeScope
 | Dosya | LOC | Sorumluluk |
 |---|---|---|
 | `SceneBuilder.cs` + `SceneBuilderModel.cs` + `SceneBuilderPrimitives.cs` + `SceneBuilderMoldFactory.cs` | ~760 (4 dosya) | Editor scene builder (orchestrator + data + primitives + mold factory, Sprint #14) |
-| `LevelsTab.cs` | 543 | Level editor tab |
+| `LevelsTab.cs` | 543 | Level editor tab (Solution Playback Engine entegrasyonu: OreSortSolver çözümlerini sahne üzerinde oynatma/adım adım izleme) |
 | `TestTab.cs` | 538 | Test runner tab |
-| `LocalizationTab.cs` | 435 | Localization editor |
+| `LocalizationTab.cs` | 435 | Localization editor (JSON serialization & DTO sync) |
 | `LevelUITab.cs` | 320 | Level UI editor |
 | `PaletteTab.cs` | 291 | Color palette editor |
-| `SceneTab.cs` | 289 | Scene settings editor |
+| `SceneTab.cs` | 289 | Scene settings editor (Visual Scene View Painter entegrasyonu: Scene View içinde doğrudan katman ekleme/çıkarma/temizleme) |
 | `FeaturesTab.cs` | 268 | Feature flags editor |
 | `LevelDataBatchCreator.cs` | ~195 | GDD-aligned 50-level batch creator (testable POCO `GetParametersForLevel(int)` + skip-existing asset logic) |
+
+**Temel Editor Araçları ve Yeni Özellikler:**
+1. **Visual Scene View Painter (`SceneTab.cs`):** Editörlerin/tasarımcıların Unity Scene View içerisinde doğrudan mold'ları boyamasını sağlar. Ekran alanında yüzen renk paleti, katman ekleme (push), katman geri alma (pop) ve tüm katmanları temizleme (clear) butonları sunar.
+2. **Solution Playback Engine (`LevelsTab.cs`):** Bölümlerin çözülebilirliğini test etmek için `OreSortSolver` tarafından üretilen çözüm adımlarını sahne üzerinde adım adım (Play, Step Forward, Step Backward, Stop) oynatır ve animasyonlu olarak doğrulamayı sağlar.
 
 **Toplam:** ~3.300 LOC
 
@@ -447,6 +451,7 @@ public class HudPresenter : MonoBehaviour, IDisposable
 | Borç | Severity | Aksiyon |
 |---|---|---|
 | MoldController.cs 434 LOC (god class) | Major | ✅ **Sprint #2 tamamlandı:** 3 POCO çıkarıldı (MoldStateManager, MoldVisualSync, MoldAnimator); controller ~260 LOC facade'e slimlendi |
+| MoldController.cs editor-time refresh reflection dependency | Medium | ✅ **Sprint #15/16 tamamlandı:** Editör araçlarında (`LevelsTab` ve `SceneTab`) `MoldController`'ın editor-time görsel yenilemesi için kullanılan `RestoreStateFromSerialized` metodu public yapılarak reflection (GetMethod) bağımlılığı tamamen kaldırıldı ve doğrudan/tip güvenli çağrılara dönüştürüldü. |
 | L11-L50 level data eksik (L01-L10 hand-tuned, GDD 50-level campaign için batch tool yoktu) | Major | ✅ **Sprint #1 tamamlandı:** LevelDataBatchCreator refactored to 50 levels (GDD-aligned 5-tier progression: L01-10 Trivial / L11-20 Easy / L21-30 Medium / L31-40 Hard / L41-50 Expert), biome-aware via `GetParametersForLevel(int)` static POCO that uses `LevelBiomeClassifier` (L01-25 CrystalMines, L26-50 VolcanicForge), intra-tier color ramp (every 2 levels +1, capped at MaxColorsPerLevel), seed formula `levelNumber * 1337` for unique per-level determinism. `CreateAllLevels()` skips existing assets (preserves L01-L10 hand-tuned). LevelsTab button label updated to "Create 50 Levels (GDD-aligned)". `autoGenerate = true` — runtime `DifficultyBasedLevelGenerator` populates Molds deterministically. |
 | MainMenu + Level Select navigation flat (no World Map) | Major | ✅ **Sprint #4 tamamlandı:** WorldMapController + BiomeProgress POCO + BiomeCardView; 2 biome kartı yan yana, biome-filtered LevelSelect, progress tracking |
 | Daily Challenge UI yok (stub) | Major | ✅ **Sprint #5 tamamlandı:** DailyChallengeController + DailyChallengeCountdown POCO; entry screen with streak/longest-streak/countdown, UTC midnight reset, DailyChallengeStartedEvent for level seed handoff |

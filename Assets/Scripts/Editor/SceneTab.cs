@@ -313,12 +313,7 @@ namespace PuzzleGame.Editor
             mold.gameObject.name = $"Mold_{mold.MoldIndex:D2}";
             
             EditorUtility.SetDirty(mold);
-            var method = mold.GetType().GetMethod("RestoreStateFromSerialized", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (method != null)
-            {
-                method.Invoke(mold, new object[] { false });
-            }
+            mold.RestoreStateFromSerialized(false);
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(mold.gameObject.scene);
         }
 
@@ -333,12 +328,7 @@ namespace PuzzleGame.Editor
             so.ApplyModifiedProperties();
             
             EditorUtility.SetDirty(mold);
-            var method = mold.GetType().GetMethod("RestoreStateFromSerialized", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (method != null)
-            {
-                method.Invoke(mold, new object[] { false });
-            }
+            mold.RestoreStateFromSerialized(false);
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(mold.gameObject.scene);
         }
 
@@ -353,12 +343,7 @@ namespace PuzzleGame.Editor
             so.ApplyModifiedProperties();
             
             EditorUtility.SetDirty(mold);
-            var method = mold.GetType().GetMethod("RestoreStateFromSerialized", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (method != null)
-            {
-                method.Invoke(mold, new object[] { false });
-            }
+            mold.RestoreStateFromSerialized(false);
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(mold.gameObject.scene);
         }
 

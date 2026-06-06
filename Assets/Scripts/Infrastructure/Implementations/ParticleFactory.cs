@@ -23,6 +23,8 @@ namespace PuzzleGame.Infrastructure.Implementations
         private const string BubblePrefabAddress = "Particles/BubbleParticle";
 
         private readonly IAssetProvider _assetProvider;
+        private ParticleSystem _cachedSplashPrefab;
+        private ParticleSystem _cachedBubblePrefab;
 
         private Material _splashMaterial;
         private Material _bubbleMaterial;
@@ -34,6 +36,27 @@ namespace PuzzleGame.Infrastructure.Implementations
             // IAssetProvider is optional — when null, LoadPrefabSync falls back to Resources.
             // This keeps non-Addressables builds working without requiring a stub provider.
             _assetProvider = assetProvider;
+
+            if (_assetProvider != null)
+            {
+                _assetProvider.LoadAssetAsync<ParticleSystem>(SplashPrefabAddress, prefab =>
+                {
+                    _cachedSplashPrefab = prefab;
+                    if (prefab != null)
+                    {
+                        MoldLogger.LogInfo("Splash particle prefab preloaded asynchronously via IAssetProvider.");
+                    }
+                });
+
+                _assetProvider.LoadAssetAsync<ParticleSystem>(BubblePrefabAddress, prefab =>
+                {
+                    _cachedBubblePrefab = prefab;
+                    if (prefab != null)
+                    {
+                        MoldLogger.LogInfo("Bubble particle prefab preloaded asynchronously via IAssetProvider.");
+                    }
+                });
+            }
         }
 
         public ParticleSystem CreateSplash()
@@ -141,19 +164,37 @@ namespace PuzzleGame.Infrastructure.Implementations
         // synchronous for callers while still preferring the Addressables pipeline.
         private ParticleSystem LoadPrefabSync(string address, string resourcePath)
         {
+            if (address == SplashPrefabAddress && _cachedSplashPrefab != null)
+            {
+                return _cachedSplashPrefab;
+            }
+            if (address == BubblePrefabAddress && _cachedBubblePrefab != null)
+            {
+                return _cachedBubblePrefab;
+            }
+
 #if ENABLE_ADDRESSABLES
             if (_assetProvider != null)
             {
                 var handle = Addressables.LoadAssetAsync<ParticleSystem>(address);
                 if (handle.IsDone)
                 {
-                    return handle.Status == AsyncOperationStatus.Succeeded ? handle.Result : Resources.Load<ParticleSystem>(resourcePath);
+                    var result = handle.Status == AsyncOperationStatus.Succeeded ? handle.Result : Resources.Load<ParticleSystem>(resourcePath);
+                    if (address == SplashPrefabAddress) _cachedSplashPrefab = result;
+                    if (address == BubblePrefabAddress) _cachedBubblePrefab = result;
+                    return result;
                 }
                 handle.WaitForCompletion();
-                return handle.Status == AsyncOperationStatus.Succeeded ? handle.Result : Resources.Load<ParticleSystem>(resourcePath);
+                var resolved = handle.Status == AsyncOperationStatus.Succeeded ? handle.Result : Resources.Load<ParticleSystem>(resourcePath);
+                if (address == SplashPrefabAddress) _cachedSplashPrefab = resolved;
+                if (address == BubblePrefabAddress) _cachedBubblePrefab = resolved;
+                return resolved;
             }
 #endif
-            return Resources.Load<ParticleSystem>(resourcePath);
+            var fallback = Resources.Load<ParticleSystem>(resourcePath);
+            if (address == SplashPrefabAddress) _cachedSplashPrefab = fallback;
+            if (address == BubblePrefabAddress) _cachedBubblePrefab = fallback;
+            return fallback;
         }
 
         // ── Material caching logic (from ParticleMaterialFactory) ─────────────────

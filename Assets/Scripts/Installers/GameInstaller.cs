@@ -36,6 +36,7 @@ namespace PuzzleGame.Installers
         [SerializeField] public AudioConfig audioConfig;
         [SerializeField] public StreamVFXConfig streamVFXConfig;
         [SerializeField] public EconomyConfig economyConfig;
+        [SerializeField] public WobbleConfig wobbleConfig;
         [SerializeField] public LevelData[] levelCatalog;
 
         protected override void Configure(IContainerBuilder builder)
@@ -50,6 +51,7 @@ namespace PuzzleGame.Installers
             builder.RegisterInstance(audioConfig);
             builder.RegisterInstance(streamVFXConfig);
             builder.RegisterInstance(economyConfig);
+            builder.RegisterInstance(wobbleConfig);
             builder.RegisterInstance(levelCatalog);
 
             builder.Register<Camera>(resolver =>
@@ -276,6 +278,13 @@ namespace PuzzleGame.Installers
                 MoldLogger.LogWarning("EconomyConfig asset missing at Resources/Data/EconomyConfig. " +
                     "Using defaults — create it via Tools > PuzzleGame > Open Editor > Data tab.");
                 economyConfig = ScriptableObject.CreateInstance<EconomyConfig>();
+            }
+
+            if (wobbleConfig == null) wobbleConfig = Resources.Load<WobbleConfig>("Data/WobbleConfig");
+            if (wobbleConfig == null)
+            {
+                throw new System.InvalidOperationException(
+                    "WobbleConfig asset missing at Resources/Data/WobbleConfig.");
             }
 
             // OnValidate the values the inspector might have corrupted

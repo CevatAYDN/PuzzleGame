@@ -25,6 +25,7 @@ Sprint #1-15 boyunca defalarca kontrol edilen ama her analizde yeniden doğrulan
 | **Unity 6 deprecated API (FindObjectOfType) tamamen temizlenmiş** | ✅ Verified | `Select-String FindObjectOfType` → 0 sonuç (tüm geçişler FindAnyObjectByType'e) |
 | **TODO/FIXME/HACK inline comment yok** | ✅ Verified | `Select-String 'TODO\|FIXME\|HACK\|XXX\|NotImplemented'` → 0 sonuç (4 false positive: `ToDomainColor` içindeki "ToDo" substring) |
 | **GameSaveManager HMAC-SHA256 zaten uygulanmış** | ✅ Verified | `GameSaveManager.cs:14-22` docstring + `:34-44` BuildSecretKey + `using System.Security.Cryptography;` — Sprint #18 (HMAC hardening) **iptal** |
+| **Editor araçlarında reflection ile private metot çağrımı** | ✅ Verified | `LevelsTab` ve `SceneTab` içindeki `RestoreStateFromSerialized` reflection çağrıları kaldırıldı, metot public yapılarak doğrudan çağrıya dönüştürüldü. |
 
 ### 2.1 MonoBehaviour Dağılımı (22 adet)
 

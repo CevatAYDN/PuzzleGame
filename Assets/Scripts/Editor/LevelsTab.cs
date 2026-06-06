@@ -799,12 +799,7 @@ namespace PuzzleGame.Editor
                     
                     EditorUtility.SetDirty(ctrl);
                     
-                    var method = ctrl.GetType().GetMethod("RestoreStateFromSerialized", 
-                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                    if (method != null)
-                    {
-                        method.Invoke(ctrl, new object[] { false });
-                    }
+                    ctrl.RestoreStateFromSerialized(false);
                 }
             }
             

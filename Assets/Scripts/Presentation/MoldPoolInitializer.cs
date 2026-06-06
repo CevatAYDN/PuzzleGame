@@ -6,7 +6,6 @@ using PuzzleGame.Domain;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Logging;
-// IRendererService now in PuzzleGame.Application.Interfaces
 using UnityEngine;
 
 namespace PuzzleGame
@@ -16,23 +15,24 @@ namespace PuzzleGame
     /// and wires them into the game systems (history, input, level setup, camera).
     /// Extracted from GameManager for SRP (single responsibility = Mold pool initialization).
     /// </summary>
-public sealed class MoldPoolInitializer : IActiveMoldsProvider
-{
-    private readonly ILevelSetupService _levelSetupService;
-    private readonly IRendererService _rendererService;
-    private readonly IMoldValidator _validator;
-    private readonly IAnimationService _animationService;
-    private readonly IInputHandlerService _inputHandlerService;
-    private readonly IGameHistoryManager _historyManager;
-    private readonly IUpdateManager _updateManager;
-    private readonly Camera _camera;
-    private readonly IErrorIndicatorService _errorIndicator;
+    public sealed class MoldPoolInitializer : IActiveMoldsProvider
+    {
+        private readonly ILevelSetupService _levelSetupService;
+        private readonly IRendererService _rendererService;
+        private readonly IMoldValidator _validator;
+        private readonly IAnimationService _animationService;
+        private readonly IInputHandlerService _inputHandlerService;
+        private readonly IGameHistoryManager _historyManager;
+        private readonly IUpdateManager _updateManager;
+        private readonly Camera _camera;
+        private readonly IErrorIndicatorService _errorIndicator;
+        private readonly WobbleConfig _wobbleConfig;
 
-    private readonly List<MoldController> _gameplayMoldsPool = new List<MoldController>();
-    private readonly List<MoldController> _optionalMoldsPool = new List<MoldController>();
-    private IMoldView[] _Molds;
+        private readonly List<MoldController> _gameplayMoldsPool = new List<MoldController>();
+        private readonly List<MoldController> _optionalMoldsPool = new List<MoldController>();
+        private IMoldView[] _Molds;
 
-    public IMoldView[] Molds => _Molds;
+        public IMoldView[] Molds => _Molds;
 
         public MoldPoolInitializer(
             ILevelSetupService levelSetupService,
@@ -43,7 +43,8 @@ public sealed class MoldPoolInitializer : IActiveMoldsProvider
             IGameHistoryManager historyManager,
             IUpdateManager updateManager,
             Camera camera,
-            IErrorIndicatorService errorIndicator)
+            IErrorIndicatorService errorIndicator,
+            WobbleConfig wobbleConfig)
         {
             _levelSetupService = levelSetupService;
             _rendererService = rendererService;
@@ -54,6 +55,7 @@ public sealed class MoldPoolInitializer : IActiveMoldsProvider
             _updateManager = updateManager;
             _camera = camera;
             _errorIndicator = errorIndicator;
+            _wobbleConfig = wobbleConfig;
         }
 
         /// <summary>
@@ -109,12 +111,15 @@ public sealed class MoldPoolInitializer : IActiveMoldsProvider
                 }
             }
 
-            // Wire Wobble components to the update manager
+            // Wire Wobble components to the update manager and inject WobbleConfig
             for (int i = 0; i < _gameplayMoldsPool.Count; i++)
             {
                 var wobble = _gameplayMoldsPool[i]?.GetComponent<Wobble>();
                 if (wobble != null)
+                {
+                    wobble.config = _wobbleConfig;
                     wobble.SetUpdateManager(_updateManager);
+                }
             }
 
             _historyManager.Initialize(_Molds);
@@ -152,7 +157,10 @@ public sealed class MoldPoolInitializer : IActiveMoldsProvider
                     
                     var wobble = mold.GetComponent<Wobble>();
                     if (wobble != null)
+                    {
+                        wobble.config = _wobbleConfig;
                         wobble.SetUpdateManager(_updateManager);
+                    }
 
                     combinedActiveMolds.Add(mold);
 

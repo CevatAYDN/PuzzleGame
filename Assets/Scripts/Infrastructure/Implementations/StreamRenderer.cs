@@ -2,6 +2,7 @@ using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Events;
 using PuzzleGame.Application.Logging;
+using PuzzleGame.Infrastructure.Providers;
 using UnityEngine;
 using UnityEngine.VFX;
 
@@ -16,12 +17,27 @@ namespace PuzzleGame.Infrastructure.Implementations
     {
         private readonly StreamVFXConfig _config;
         private readonly IEventAggregator _eventAggregator;
+        private readonly IAssetProvider _assetProvider;
+        private VisualEffectAsset _cachedAsset;
         private int _frameCounter;
 
-        public StreamRenderer(StreamVFXConfig config, IEventAggregator eventAggregator)
+        public StreamRenderer(StreamVFXConfig config, IEventAggregator eventAggregator, IAssetProvider assetProvider)
         {
             _config = config ?? throw new System.ArgumentNullException(nameof(config));
             _eventAggregator = eventAggregator;
+            _assetProvider = assetProvider;
+
+            if (_assetProvider != null)
+            {
+                _assetProvider.LoadAssetAsync<VisualEffectAsset>("MagmaFlow", asset =>
+                {
+                    _cachedAsset = asset;
+                    if (asset != null)
+                    {
+                        MoldLogger.LogInfo("MagmaFlow.vfx preloaded asynchronously via IAssetProvider.");
+                    }
+                });
+            }
         }
 
         public VisualEffect EnsureEffect(GameObject owner)
@@ -30,19 +46,29 @@ namespace PuzzleGame.Infrastructure.Implementations
             if (vfx == null)
             {
                 vfx = owner.AddComponent<VisualEffect>();
-                var asset = Resources.Load<VisualEffectAsset>("MagmaFlow");
-                if (asset != null)
+                if (_cachedAsset != null)
                 {
-                    vfx.visualEffectAsset = asset;
-                    MoldLogger.LogDebug("MagmaFlow.vfx loaded successfully.");
+                    vfx.visualEffectAsset = _cachedAsset;
+                    MoldLogger.LogDebug("MagmaFlow.vfx applied from preloaded cache.");
                 }
                 else
                 {
-                    MoldLogger.LogError(
-                        "[StreamRenderer] MagmaFlow.vfx not found in Resources folder. " +
-                        "Stream rendering will not work. Please create or import MagmaFlow.vfx.",
-                        owner);
-                    _eventAggregator?.Publish(VFXStatusEvent.Missing(vfx.GetEntityId()));
+                    // Fallback to synchronous load if not loaded yet
+                    var asset = Resources.Load<VisualEffectAsset>("MagmaFlow");
+                    if (asset != null)
+                    {
+                        vfx.visualEffectAsset = asset;
+                        _cachedAsset = asset;
+                        MoldLogger.LogWarning("MagmaFlow.vfx loaded synchronously as fallback in EnsureEffect.");
+                    }
+                    else
+                    {
+                        MoldLogger.LogError(
+                            "[StreamRenderer] MagmaFlow.vfx not found in Resources folder. " +
+                            "Stream rendering will not work. Please create or import MagmaFlow.vfx.",
+                            owner);
+                        _eventAggregator?.Publish(VFXStatusEvent.Missing(vfx.GetEntityId()));
+                    }
                 }
             }
             return vfx;
