@@ -9,6 +9,7 @@ using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Configuration.FeatureSystem;
 using PuzzleGame.Domain.Services;
 using PuzzleGame.Infrastructure;
+using PuzzleGame.Infrastructure.Models;
 using PuzzleGame.Application.Services;
 
 namespace PuzzleGame.Editor
@@ -20,7 +21,7 @@ namespace PuzzleGame.Editor
 
         private Vector2 _localizationScroll;
         private SupportedLanguage _selectedLanguage = SupportedLanguage.Turkish;
-        private string _localizationPath = "Assets/Resources/Localization/";
+        private string _localizationPath = "Assets/StreamingAssets/Localization/";
         private List<LocalizationEntry> _localizationEntries = new List<LocalizationEntry>();
         private string _newKeyName = "";
         private string _newTranslationTR = "";
@@ -104,9 +105,10 @@ namespace PuzzleGame.Editor
                     languageNames[i] = languages.GetValue(i).ToString();
                 }
 
+                int langIdx = Mathf.Clamp((int)_selectedLanguage, 0, languages.Length - 1);
                 _selectedLanguage = (SupportedLanguage)EditorGUILayout.Popup(
                     "Current Language", 
-                    (int)_selectedLanguage, 
+                    langIdx, 
                     languageNames);
 
                 EditorGUILayout.Space(4);
@@ -386,38 +388,31 @@ namespace PuzzleGame.Editor
         {
             try
             {
-                // Try to load from Resources
-                var textAsset = Resources.Load<TextAsset>("localization");
-                if (textAsset != null)
+                // Try file path
+                string fullPath = Path.Combine(UnityEngine.Application.dataPath, _localizationPath.Replace("Assets/", ""));
+                string filePath = Path.Combine(fullPath, "translations.json");
+                if (File.Exists(filePath))
                 {
-                    var wrapper = JsonUtility.FromJson<LocalizationWrapper>(textAsset.text);
-                    _localizationEntries = wrapper?.entries ?? new List<LocalizationEntry>();
+                    string json = File.ReadAllText(filePath);
+                    var wrapper = JsonUtility.FromJson<TranslationFile>(json);
+                    _localizationEntries = FromTranslationFile(wrapper);
                     _window.SetStatus($"Loaded {_localizationEntries.Count} translation keys", MessageType.Info);
                     return;
                 }
 
-                // Try file path
-                string fullPath = Path.Combine(UnityEngine.Application.dataPath, _localizationPath.Replace("Assets/", ""));
-                if (Directory.Exists(fullPath))
+                // Try to load from Resources as fallback
+                var textAsset = Resources.Load<TextAsset>("localization");
+                if (textAsset != null)
                 {
-                    var files = Directory.GetFiles(fullPath, "*.json");
-                    foreach (var file in files)
-                    {
-                        string json = File.ReadAllText(file);
-                        var wrapper = JsonUtility.FromJson<LocalizationWrapper>(json);
-                        if (wrapper?.entries != null)
-                        {
-                            _localizationEntries.AddRange(wrapper.entries);
-                        }
-                    }
+                    var wrapper = JsonUtility.FromJson<TranslationFile>(textAsset.text);
+                    _localizationEntries = FromTranslationFile(wrapper);
                     _window.SetStatus($"Loaded {_localizationEntries.Count} translation keys", MessageType.Info);
+                    return;
                 }
-                else
-                {
-                    // Generate default keys
-                    _localizationEntries = GetDefaultLocalizationEntries();
-                    _window.SetStatus("Created default localization keys", MessageType.Info);
-                }
+
+                // Generate default keys
+                _localizationEntries = GetDefaultLocalizationEntries();
+                _window.SetStatus("Created default localization keys", MessageType.Info);
             }
             catch (Exception ex)
             {
@@ -436,7 +431,7 @@ namespace PuzzleGame.Editor
                     Directory.CreateDirectory(fullPath);
                 }
 
-                var wrapper = new LocalizationWrapper { entries = _localizationEntries };
+                var wrapper = ToTranslationFile(_localizationEntries);
                 string json = JsonUtility.ToJson(wrapper, true);
                 string filePath = Path.Combine(fullPath, "translations.json");
                 
@@ -456,7 +451,7 @@ namespace PuzzleGame.Editor
             string path = EditorUtility.SaveFilePanel("Export Localization", "Assets/", "localization.json", "json");
             if (!string.IsNullOrEmpty(path))
             {
-                var wrapper = new LocalizationWrapper { entries = _localizationEntries };
+                var wrapper = ToTranslationFile(_localizationEntries);
                 string json = JsonUtility.ToJson(wrapper, true);
                 File.WriteAllText(path, json);
                 _window.SetStatus($"Exported to {path}", MessageType.Info);
@@ -471,10 +466,10 @@ namespace PuzzleGame.Editor
                 try
                 {
                     string json = File.ReadAllText(path);
-                    var wrapper = JsonUtility.FromJson<LocalizationWrapper>(json);
+                    var wrapper = JsonUtility.FromJson<TranslationFile>(json);
                     if (wrapper?.entries != null)
                     {
-                        _localizationEntries = wrapper.entries;
+                        _localizationEntries = FromTranslationFile(wrapper);
                         _window.SetStatus($"Imported {wrapper.entries.Count} keys", MessageType.Info);
                     }
                 }
@@ -502,10 +497,47 @@ namespace PuzzleGame.Editor
             };
         }
 
-        [Serializable]
-        private class LocalizationWrapper
+        private TranslationFile ToTranslationFile(List<LocalizationEntry> entries)
         {
-            public List<LocalizationEntry> entries;
+            var file = new TranslationFile { entries = new List<TranslationEntry>() };
+            foreach (var entry in entries)
+            {
+                var te = new TranslationEntry();
+                te.key = entry.Key;
+                if (entry.Translations != null)
+                {
+                    entry.Translations.TryGetValue(SupportedLanguage.Turkish, out te.tr);
+                    entry.Translations.TryGetValue(SupportedLanguage.English, out te.en);
+                    entry.Translations.TryGetValue(SupportedLanguage.German, out te.de);
+                    entry.Translations.TryGetValue(SupportedLanguage.Spanish, out te.es);
+                    entry.Translations.TryGetValue(SupportedLanguage.French, out te.fr);
+                }
+                file.entries.Add(te);
+            }
+            return file;
+        }
+
+        private List<LocalizationEntry> FromTranslationFile(TranslationFile file)
+        {
+            var list = new List<LocalizationEntry>();
+            if (file?.entries != null)
+            {
+                foreach (var entry in file.entries)
+                {
+                    var le = new LocalizationEntry
+                    {
+                        Key = entry.key,
+                        Translations = new Dictionary<SupportedLanguage, string>()
+                    };
+                    if (!string.IsNullOrEmpty(entry.tr)) le.Translations[SupportedLanguage.Turkish] = entry.tr;
+                    if (!string.IsNullOrEmpty(entry.en)) le.Translations[SupportedLanguage.English] = entry.en;
+                    if (!string.IsNullOrEmpty(entry.de)) le.Translations[SupportedLanguage.German] = entry.de;
+                    if (!string.IsNullOrEmpty(entry.es)) le.Translations[SupportedLanguage.Spanish] = entry.es;
+                    if (!string.IsNullOrEmpty(entry.fr)) le.Translations[SupportedLanguage.French] = entry.fr;
+                    list.Add(le);
+                }
+            }
+            return list;
         }
     }
 }

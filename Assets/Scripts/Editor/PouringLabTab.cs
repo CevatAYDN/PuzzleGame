@@ -65,7 +65,12 @@ namespace PuzzleGame.Editor
             }
 
             // Refresh mold references
-            if (_labMolds == null || _labMolds.Length == 0 || GUILayout.Button("Refresh Molds"))
+            if (_labMolds == null || _labMolds.Length == 0)
+            {
+                RefreshLabMolds();
+            }
+
+            if (GUILayout.Button("Refresh Molds"))
             {
                 RefreshLabMolds();
             }
@@ -127,6 +132,7 @@ namespace PuzzleGame.Editor
                         vfxConfig.colorIntensityBoost = _labPreviewColorBoost;
                         vfxConfig.streamColorHint = _labPreviewColor;
                         EditorUtility.SetDirty(vfxConfig);
+                        AssetDatabase.SaveAssets();
                         _labStatus = "VFX config updated.";
                     }
                     else

@@ -251,7 +251,7 @@ namespace PuzzleGame.Editor
             {
                 return;
             }
-            var results = DataAssetCreator.CreateAllDefaults(_ => true);
+            var results = DataAssetCreator.CreateAllDefaults(name => name == fileName);
             _window.SetStatus($"Reset {fileName}.asset to defaults.", MessageType.Info);
             RefreshDataPresence();
         }

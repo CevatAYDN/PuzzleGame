@@ -26,6 +26,7 @@ namespace PuzzleGame.Editor
         private int _levelPar = 10;
         private int _levelGood = 15;
         private Vector2 _levelsScroll;
+        private Vector2 _listScroll;
         private List<LevelInfo> _existingLevels = new List<LevelInfo>();
 
         private struct LevelInfo
@@ -43,10 +44,12 @@ namespace PuzzleGame.Editor
         {
             _window = window;
             RefreshLevelList();
+            EditorApplication.update += UpdatePlaybackLoop;
         }
 
         public void OnDisable()
         {
+            EditorApplication.update -= UpdatePlaybackLoop;
         }
 
         public void OnGUI()
@@ -55,6 +58,64 @@ namespace PuzzleGame.Editor
             EditorGUILayout.Space(4);
 
             _levelsScroll = EditorGUILayout.BeginScrollView(_levelsScroll);
+
+            // ── Solution Playback Section ─────────────────────────────────
+            if (_playbackStates != null && _playbackStates.Count > 0 && _playbackLevelData != null)
+            {
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                {
+                    EditorGUILayout.LabelField($"🎬 Solution Playback - Level {_playbackLevelData.levelNumber}", EditorStyles.miniBoldLabel);
+                    
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        if (GUILayout.Button("◀◀ Reset", GUILayout.Width(70)))
+                        {
+                            _isPlayingPlayback = false;
+                            _playbackStep = 0;
+                            ApplyPlaybackState(0);
+                        }
+                        if (GUILayout.Button("◀ Prev", GUILayout.Width(60)))
+                        {
+                            _isPlayingPlayback = false;
+                            if (_playbackStep > 0)
+                            {
+                                _playbackStep--;
+                                ApplyPlaybackState(_playbackStep);
+                            }
+                        }
+                        
+                        string playBtnText = _isPlayingPlayback ? "⏸ Pause" : "▶ Play";
+                        if (GUILayout.Button(playBtnText, GUILayout.Width(70)))
+                        {
+                            _isPlayingPlayback = !_isPlayingPlayback;
+                            _lastPlaybackUpdateTime = EditorApplication.timeSinceStartup;
+                        }
+                        
+                        if (GUILayout.Button("Next ▶", GUILayout.Width(60)))
+                        {
+                            _isPlayingPlayback = false;
+                            if (_playbackStep < _playbackStates.Count - 1)
+                            {
+                                _playbackStep++;
+                                ApplyPlaybackState(_playbackStep);
+                            }
+                        }
+                    }
+                    
+                    EditorGUILayout.Space(2);
+                    EditorGUI.BeginChangeCheck();
+                    int newStep = EditorGUILayout.IntSlider("Step", _playbackStep, 0, _playbackStates.Count - 1);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        _isPlayingPlayback = false;
+                        _playbackStep = newStep;
+                        ApplyPlaybackState(_playbackStep);
+                    }
+                    
+                    _playbackSpeed = EditorGUILayout.Slider("Step Delay (sec)", _playbackSpeed, 0.1f, 3f);
+                }
+                EditorGUILayout.Space(6);
+            }
 
             // ── Batch Create ─────────────────────────────────────────────
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
@@ -107,7 +168,7 @@ namespace PuzzleGame.Editor
 
                 EditorGUILayout.Space(4);
 
-                _levelsScroll = EditorGUILayout.BeginScrollView(_levelsScroll, GUILayout.Height(350));
+                _listScroll = EditorGUILayout.BeginScrollView(_listScroll, GUILayout.Height(350));
                 for (int i = 0; i < _existingLevels.Count; i++)
                 {
                     var lvl = _existingLevels[i];
@@ -328,6 +389,7 @@ namespace PuzzleGame.Editor
             if (result.IsSolvable)
             {
                 _window.SetStatus($"Level {lvl.number:D2}: Solvable in {result.SolutionPath.Count} moves.", MessageType.Info);
+                InitPlayback(levelData);
             }
             else
             {
@@ -631,12 +693,183 @@ namespace PuzzleGame.Editor
                     SceneBuilderModel.ShaderVariant.Premium,
                     $"Mold_{i:D2}");
 
-                SceneBuilder.CreateMold(MoldCfg);
+                var go = SceneBuilder.CreateMold(MoldCfg);
+                var ctrl = go != null ? go.GetComponent<MoldController>() : null;
+                if (ctrl != null) ctrl.MoldIndex = i;
             }
 
             Undo.CollapseUndoOperations(undoGroup);
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene());
             _window.SetStatus($"Loaded Level {level.levelNumber} into active scene ({count} Molds).", MessageType.Info);
+        }
+
+        // ── Solution Playback Engine ─────────────────────────────────
+        private List<OreSortSolver.Move> _playbackMoves = new List<OreSortSolver.Move>();
+        private List<List<List<OreLayer>>> _playbackStates = new List<List<List<OreLayer>>>();
+        private int _playbackStep = 0;
+        private bool _isPlayingPlayback = false;
+        private double _lastPlaybackUpdateTime = 0;
+        private float _playbackSpeed = 1.0f;
+        private LevelData _playbackLevelData;
+
+        private void UpdatePlaybackLoop()
+        {
+            if (!_isPlayingPlayback) return;
+
+            double time = EditorApplication.timeSinceStartup;
+            if (time - _lastPlaybackUpdateTime >= _playbackSpeed)
+            {
+                _lastPlaybackUpdateTime = time;
+                if (_playbackStates != null && _playbackStates.Count > 0)
+                {
+                    if (_playbackStep < _playbackStates.Count - 1)
+                    {
+                        _playbackStep++;
+                        ApplyPlaybackState(_playbackStep);
+                        _window.Repaint();
+                    }
+                    else
+                    {
+                        _isPlayingPlayback = false;
+                        _window.SetStatus("Playback completed.", MessageType.Info);
+                        _window.Repaint();
+                    }
+                }
+            }
+        }
+
+        private void InitPlayback(LevelData level)
+        {
+            if (level == null) return;
+            
+            var levelConfig = AssetDatabase.LoadAssetAtPath<LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
+            var initial = LevelSolverUtility.GetLevelAssignments(level, levelConfig);
+            
+            var result = LevelSolverUtility.SolveLevel(level, levelConfig);
+            if (!result.IsSolvable)
+            {
+                _window.SetStatus($"Cannot start playback: Level {level.levelNumber} is unsolvable.", MessageType.Warning);
+                return;
+            }
+            
+            _playbackLevelData = level;
+            _playbackMoves = result.SolutionPath;
+            
+            int maxLayers = level.autoGenerate ? level.maxLayersPerMold : 4;
+            if (maxLayers < 4) maxLayers = 4;
+            
+            _playbackStates = GeneratePlaybackStates(initial, _playbackMoves, maxLayers, level.enableMultiLayerCast);
+            _playbackStep = 0;
+            _isPlayingPlayback = false;
+            
+            LoadLevelIntoScene(level);
+            ApplyPlaybackState(0);
+        }
+
+        private void ApplyPlaybackState(int step)
+        {
+            if (_playbackStates == null || step < 0 || step >= _playbackStates.Count) return;
+            
+            var state = _playbackStates[step];
+            var controllers = UnityEngine.Object.FindObjectsByType<MoldController>(FindObjectsInactive.Include);
+            
+            foreach (var ctrl in controllers)
+            {
+                if (ctrl == null) continue;
+                int idx = ctrl.MoldIndex;
+                if (idx >= 0 && idx < state.Count)
+                {
+                    var layers = state[idx];
+                    
+                    Undo.RecordObject(ctrl, "Playback Step Change");
+                    SerializedObject so = new SerializedObject(ctrl);
+                    SerializedProperty layersProp = so.FindProperty("_serializedLayers");
+                    if (layersProp != null)
+                    {
+                        layersProp.ClearArray();
+                        for (int i = 0; i < layers.Count; i++)
+                        {
+                            layersProp.InsertArrayElementAtIndex(i);
+                            SerializedProperty element = layersProp.GetArrayElementAtIndex(i);
+                            element.FindPropertyRelative("color").colorValue = ColorAdapter.ToUnityStatic(layers[i].Color);
+                            element.FindPropertyRelative("amount").floatValue = layers[i].Amount;
+                        }
+                        so.ApplyModifiedProperties();
+                    }
+                    
+                    EditorUtility.SetDirty(ctrl);
+                    
+                    var method = ctrl.GetType().GetMethod("RestoreStateFromSerialized", 
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (method != null)
+                    {
+                        method.Invoke(ctrl, new object[] { false });
+                    }
+                }
+            }
+            
+            string moveMsg = "";
+            if (step > 0 && step - 1 < _playbackMoves.Count)
+            {
+                var move = _playbackMoves[step - 1];
+                moveMsg = $" (Move: Mold {move.FromIndex} ➔ Mold {move.ToIndex})";
+            }
+            _window.SetStatus($"Playback Step {step}/{_playbackStates.Count - 1}{moveMsg}", MessageType.Info);
+        }
+
+        private List<List<OreLayer>> CloneState(List<List<OreLayer>> state)
+        {
+            return state.Select(m => m.Select(l => new OreLayer(l.Color, l.Amount)).ToList()).ToList();
+        }
+
+        private List<List<List<OreLayer>>> GeneratePlaybackStates(List<List<OreLayer>> initial, List<OreSortSolver.Move> moves, int maxLayers, bool enableMultiLayerCast)
+        {
+            var states = new List<List<List<OreLayer>>>();
+            var current = CloneState(initial);
+            states.Add(CloneState(current));
+
+            foreach (var move in moves)
+            {
+                int from = move.FromIndex;
+                int to = move.ToIndex;
+                
+                var src = current[from];
+                var tgt = current[to];
+                
+                if (src.Count > 0)
+                {
+                    var top = src[src.Count - 1];
+                    int countToCast = 0;
+                    int idx = src.Count - 1;
+                    if (!enableMultiLayerCast)
+                    {
+                        if (tgt.Count < maxLayers)
+                            countToCast = 1;
+                    }
+                    else
+                    {
+                        while (idx >= 0 && src[idx].Color.Equals(top.Color) && (tgt.Count + countToCast) < maxLayers)
+                        {
+                            countToCast++;
+                            idx--;
+                        }
+                    }
+                    
+                    if (countToCast > 0)
+                    {
+                        var toAdd = new List<OreLayer>();
+                        for (int c = 0; c < countToCast; c++)
+                        {
+                            toAdd.Add(src[src.Count - 1]);
+                            src.RemoveAt(src.Count - 1);
+                        }
+                        toAdd.Reverse();
+                        tgt.AddRange(toAdd);
+                    }
+                }
+                states.Add(CloneState(current));
+            }
+            return states;
         }
     }
 }

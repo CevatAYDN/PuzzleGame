@@ -589,8 +589,8 @@ namespace PuzzleGame.Editor
 
         private void LogConfigInfo()
         {
-            var gameConfig = Resources.Load<GameConfig>("GameConfig");
-            var levelConfig = Resources.Load<LevelConfig>("LevelConfig");
+            var gameConfig = Resources.Load<GameConfig>("Data/GameConfig");
+            var levelConfig = Resources.Load<LevelConfig>("Data/LevelConfig");
 
             Debug.Log($"[DEBUG] GameConfig: {(gameConfig != null ? "Loaded" : "NULL")}");
             Debug.Log($"[DEBUG] LevelConfig: {(levelConfig != null ? "Loaded" : "NULL")}");

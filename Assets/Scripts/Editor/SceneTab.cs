@@ -20,6 +20,9 @@ namespace PuzzleGame.Editor
         private bool _firstEmpty = true;
         private Vector2 _sceneScroll;
         private LevelData _stageLevelAsset;
+        private bool _paintMode = false;
+        private Color _paintColor = Color.red;
+        private float _paintAmount = 0.25f;
 
         public void OnEnable(ForgeEditorWindow window)
         {
@@ -34,6 +37,29 @@ namespace PuzzleGame.Editor
         {
             EditorGUILayout.LabelField("Scene Builder", EditorStyles.boldLabel);
             _sceneScroll = EditorGUILayout.BeginScrollView(_sceneScroll);
+
+            // ── Paint Mode Section ──────────────────────────────────────────
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("🎨 Scene Paint Mode", EditorStyles.miniBoldLabel);
+                EditorGUI.BeginChangeCheck();
+                _paintMode = EditorGUILayout.ToggleLeft("Enable Visual Painter in Scene View", _paintMode);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    SceneView.RepaintAll();
+                }
+
+                if (_paintMode)
+                {
+                    EditorGUILayout.HelpBox(
+                        "Paint Mode is ACTIVE. Go to the Scene View to visually paint colors, push/pop layers, and clear molds.",
+                        MessageType.Info);
+                    _paintColor = EditorGUILayout.ColorField("Current Paint Color", _paintColor);
+                    _paintAmount = EditorGUILayout.Slider("Layer Fill Amount", _paintAmount, 0.05f, 1f);
+                }
+            }
+
+            EditorGUILayout.Space(4);
 
             // ── Environment section ─────────────────────────────────────────
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
@@ -184,6 +210,44 @@ namespace PuzzleGame.Editor
         public void OnSceneGUI(SceneView sceneView)
         {
             var Molds = Object.FindObjectsByType<MoldController>(FindObjectsInactive.Include);
+            
+            // Draw floating palette overlay in Scene View
+            if (_paintMode)
+            {
+                Handles.BeginGUI();
+                var rect = new Rect(10, 10, 240, 150);
+                GUILayout.BeginArea(rect, "Mold Painter Palette", GUI.skin.window);
+                using (new GUILayout.VerticalScope())
+                {
+                    _paintMode = GUILayout.Toggle(_paintMode, " Painter Active", GUI.skin.button);
+                    if (!_paintMode) SceneView.RepaintAll();
+
+                    EditorGUILayout.Space(2);
+                    _paintColor = EditorGUILayout.ColorField("Color", _paintColor);
+                    _paintAmount = GUILayout.HorizontalSlider(_paintAmount, 0.05f, 1f);
+                    GUILayout.Label($"Fill: {_paintAmount:F2}", EditorStyles.miniLabel);
+
+                    EditorGUILayout.Space(2);
+                    GUILayout.Label("Quick Palette:", EditorStyles.miniBoldLabel);
+                    using (new GUILayout.HorizontalScope())
+                    {
+                        var quickColors = new[] { Color.red, Color.blue, Color.green, Color.yellow, Color.magenta, Color.cyan };
+                        foreach (var qc in quickColors)
+                        {
+                            var oldBg = GUI.backgroundColor;
+                            GUI.backgroundColor = qc;
+                            if (GUILayout.Button("", GUILayout.Width(22), GUILayout.Height(22)))
+                            {
+                                _paintColor = qc;
+                            }
+                            GUI.backgroundColor = oldBg;
+                        }
+                    }
+                }
+                GUILayout.EndArea();
+                Handles.EndGUI();
+            }
+
             foreach (var Mold in Molds)
             {
                 if (Mold == null || Mold.transform == null) continue;
@@ -198,10 +262,104 @@ namespace PuzzleGame.Editor
                 }
 
                 // Info Label Overlay
-                Handles.Label(Mold.transform.position + Vector3.up * 2f, 
+                Handles.Label(Mold.transform.position + Vector3.up * 2.2f, 
                     $"{Mold.name}\nLayers: {(Mold.State != null ? Mold.State.LayerCount : 0)}", 
                     EditorStyles.boldLabel);
+
+                // Draw clickable 2D buttons over each Mold in Scene View
+                if (_paintMode)
+                {
+                    Vector2 screenPos = HandleUtility.WorldToGUIPoint(Mold.transform.position + Vector3.up * 1f);
+                    Handles.BeginGUI();
+                    GUILayout.BeginArea(new Rect(screenPos.x - 45, screenPos.y - 30, 90, 60));
+                    using (new GUILayout.VerticalScope(GUI.skin.box))
+                    {
+                        GUILayout.Label($"Mold #{Mold.MoldIndex:D2}", EditorStyles.miniBoldLabel);
+                        using (new GUILayout.HorizontalScope())
+                        {
+                            GUI.backgroundColor = new Color(0.3f, 0.8f, 0.3f);
+                            if (GUILayout.Button("+", GUILayout.Width(22))) { AddLayerToMold(Mold, _paintColor, _paintAmount); }
+                            GUI.backgroundColor = new Color(0.9f, 0.5f, 0.5f);
+                            if (GUILayout.Button("-", GUILayout.Width(22))) { PopLayerFromMold(Mold); }
+                            GUI.backgroundColor = new Color(0.5f, 0.5f, 0.5f);
+                            if (GUILayout.Button("C", GUILayout.Width(22))) { ClearMoldLayers(Mold); }
+                            GUI.backgroundColor = Color.white;
+                        }
+                    }
+                    GUILayout.EndArea();
+                    Handles.EndGUI();
+                }
             }
+        }
+
+        private void AddLayerToMold(MoldController mold, Color color, float amount)
+        {
+            Undo.RecordObject(mold, "Add Layer");
+            SerializedObject so = new SerializedObject(mold);
+            SerializedProperty layersProp = so.FindProperty("_serializedLayers");
+            if (layersProp == null) return;
+            
+            int nextIndex = layersProp.arraySize;
+            if (nextIndex >= 4) return; // cap at 4 layers
+            
+            layersProp.InsertArrayElementAtIndex(nextIndex);
+            SerializedProperty newElement = layersProp.GetArrayElementAtIndex(nextIndex);
+            newElement.FindPropertyRelative("color").colorValue = color;
+            newElement.FindPropertyRelative("amount").floatValue = amount;
+            
+            so.ApplyModifiedProperties();
+            
+            // Auto sync name and dirty
+            mold.gameObject.name = $"Mold_{mold.MoldIndex:D2}";
+            
+            EditorUtility.SetDirty(mold);
+            var method = mold.GetType().GetMethod("RestoreStateFromSerialized", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (method != null)
+            {
+                method.Invoke(mold, new object[] { false });
+            }
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(mold.gameObject.scene);
+        }
+
+        private void PopLayerFromMold(MoldController mold)
+        {
+            Undo.RecordObject(mold, "Pop Layer");
+            SerializedObject so = new SerializedObject(mold);
+            SerializedProperty layersProp = so.FindProperty("_serializedLayers");
+            if (layersProp == null || layersProp.arraySize == 0) return;
+            
+            layersProp.DeleteArrayElementAtIndex(layersProp.arraySize - 1);
+            so.ApplyModifiedProperties();
+            
+            EditorUtility.SetDirty(mold);
+            var method = mold.GetType().GetMethod("RestoreStateFromSerialized", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (method != null)
+            {
+                method.Invoke(mold, new object[] { false });
+            }
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(mold.gameObject.scene);
+        }
+
+        private void ClearMoldLayers(MoldController mold)
+        {
+            Undo.RecordObject(mold, "Clear Mold Layers");
+            SerializedObject so = new SerializedObject(mold);
+            SerializedProperty layersProp = so.FindProperty("_serializedLayers");
+            if (layersProp == null) return;
+            
+            layersProp.ClearArray();
+            so.ApplyModifiedProperties();
+            
+            EditorUtility.SetDirty(mold);
+            var method = mold.GetType().GetMethod("RestoreStateFromSerialized", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (method != null)
+            {
+                method.Invoke(mold, new object[] { false });
+            }
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(mold.gameObject.scene);
         }
 
         private void AddMolds(int count, bool firstEmpty)
@@ -273,7 +431,14 @@ namespace PuzzleGame.Editor
 
             level.autoGenerate = false;
             level.MoldCount = sortedMolds.Length;
-            level.Molds.Clear();
+            if (level.Molds == null)
+            {
+                level.Molds = new List<LevelMoldData>();
+            }
+            else
+            {
+                level.Molds.Clear();
+            }
 
             int emptyCount = 0;
 

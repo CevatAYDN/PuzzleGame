@@ -62,6 +62,7 @@ namespace PuzzleGame.Editor
 
                 int currentIndex = _selectedLevelForUI != null ? 
                     levelPaths.FindIndex(p => p != null && AssetDatabase.GetAssetPath(_selectedLevelForUI).Contains(p)) : 0;
+                if (currentIndex < 0) currentIndex = 0;
                 
                 EditorGUILayout.Space(4);
                 int selected = EditorGUILayout.Popup("Level", currentIndex, levelOptions.ToArray());

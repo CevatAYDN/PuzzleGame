@@ -16,6 +16,8 @@ namespace PuzzleGame.Editor
 
         private LevelData _selectedLevelForEdit;
         private Vector2 _paletteScroll;
+        private float _batchStart = 1;
+        private float _batchEnd = 10;
         private const int MaxPaletteColors = 16;
 
         public void OnEnable(ForgeEditorWindow window)
@@ -138,6 +140,48 @@ namespace PuzzleGame.Editor
                     EditorGUILayout.Space(4);
                     DrawLevelEditor(_selectedLevelForEdit);
                 }
+            }
+
+            EditorGUILayout.Space(8);
+
+            // ── Batch Delete ─────────────────────────────────────────────────
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Batch Operations", EditorStyles.miniBoldLabel);
+                EditorGUILayout.HelpBox(
+                    "Delete multiple levels at once. Use with caution!",
+                    MessageType.Warning);
+
+                EditorGUILayout.Space(4);
+                EditorGUILayout.MinMaxSlider("Delete Range", ref _batchStart, ref _batchEnd, 1, 100);
+                EditorGUILayout.LabelField($"Range: {(int)_batchStart} — {(int)_batchEnd}");
+
+                EditorGUILayout.Space(6);
+                GUI.backgroundColor = new Color(0.9f, 0.3f, 0.3f);
+                if (GUILayout.Button($"Delete Levels {(int)_batchStart}-{(int)_batchEnd}", GUILayout.Height(28)))
+                {
+                    int start = (int)_batchStart;
+                    int end = (int)_batchEnd;
+
+                    if (EditorUtility.DisplayDialog("Batch Delete?",
+                        $"This will delete levels {start} through {end}. This cannot be undone!",
+                        "Delete All", "Cancel"))
+                    {
+                        int deleted = 0;
+                        for (int i = start; i <= end; i++)
+                        {
+                            string path = $"{LevelDataBatchCreator.LevelPath}/Level_{i:D2}.asset";
+                            if (AssetDatabase.LoadAssetAtPath<LevelData>(path) != null)
+                            {
+                                if (AssetDatabase.DeleteAsset(path)) deleted++;
+                            }
+                        }
+                        AssetDatabase.Refresh();
+                        _window.SetStatus($"Deleted {deleted} levels.", MessageType.Info);
+                        _window.RefreshLevelList();
+                    }
+                }
+                GUI.backgroundColor = Color.white;
             }
 
             EditorGUILayout.EndScrollView();
@@ -298,47 +342,6 @@ namespace PuzzleGame.Editor
                             _window.SetStatus("Level deleted.", MessageType.Info);
                             _window.RefreshLevelList();
                         }
-                    }
-                }
-                GUI.backgroundColor = Color.white;
-            }
-
-            // ── Batch Delete ─────────────────────────────────────────────────
-            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
-            {
-                EditorGUILayout.LabelField("Batch Operations", EditorStyles.miniBoldLabel);
-                EditorGUILayout.HelpBox(
-                    "Delete multiple levels at once. Use with caution!",
-                    MessageType.Warning);
-
-                EditorGUILayout.Space(4);
-                float batchStart = 1, batchEnd = 10;
-                EditorGUILayout.MinMaxSlider("Delete Range", ref batchStart, ref batchEnd, 1, 100);
-                EditorGUILayout.LabelField($"Range: {(int)batchStart} — {(int)batchEnd}");
-
-                EditorGUILayout.Space(6);
-                GUI.backgroundColor = new Color(0.9f, 0.3f, 0.3f);
-                if (GUILayout.Button($"Delete Levels {(int)batchStart}-{(int)batchEnd}", GUILayout.Height(28)))
-                {
-                    int start = (int)batchStart;
-                    int end = (int)batchEnd;
-
-                    if (EditorUtility.DisplayDialog("Batch Delete?",
-                        $"This will delete levels {start} through {end}. This cannot be undone!",
-                        "Delete All", "Cancel"))
-                    {
-                        int deleted = 0;
-                        for (int i = start; i <= end; i++)
-                        {
-                            string path = $"{LevelDataBatchCreator.LevelPath}/Level_{i:D2}.asset";
-                            if (AssetDatabase.LoadAssetAtPath<LevelData>(path) != null)
-                            {
-                                if (AssetDatabase.DeleteAsset(path)) deleted++;
-                            }
-                        }
-                        AssetDatabase.Refresh();
-                        _window.SetStatus($"Deleted {deleted} levels.", MessageType.Info);
-                        _window.RefreshLevelList();
                     }
                 }
                 GUI.backgroundColor = Color.white;
