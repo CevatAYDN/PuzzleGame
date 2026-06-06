@@ -78,6 +78,9 @@ namespace PuzzleGame.Editor
                     c.maxLayersPerMold = 4;
                     c.saturationBoost = 1.35f;
                     c.brightnessBoost = 1.2f;
+                    c.enableAds = true;
+                    c.interstitialInterval = 3;
+                    c.adRetryDelay = 30f;
                 }, overridePerAsset("GameConfig")),
 
                 Ensure<AnimationConfig>("AnimationConfig", a => {

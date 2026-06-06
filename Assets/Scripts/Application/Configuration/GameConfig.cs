@@ -34,6 +34,18 @@ namespace PuzzleGame.Application.Configuration
         [Min(100)]
         public int solverMaxVisitedStates = ForgeConstants.SolverMaxVisitedStates;
 
+        [Header("Ads Settings")]
+        [Tooltip("Enable or disable ads completely in the game.")]
+        public bool enableAds = true;
+
+        [Tooltip("Show an interstitial ad every N completed levels.")]
+        [Range(1, 10)]
+        public int interstitialInterval = 3;
+
+        [Tooltip("Delay in seconds before retrying to load an ad after a failure.")]
+        [Min(5f)]
+        public float adRetryDelay = 30f;
+
         private void OnValidate()
         {
             if (colorMatchTolerance <= 0f)
@@ -42,6 +54,8 @@ namespace PuzzleGame.Application.Configuration
                 maxLayersPerMold = 1;
             if (maxLayersPerMold > ForgeConstants.MaxLayers)
                 maxLayersPerMold = ForgeConstants.MaxLayers;
+            if (adRetryDelay < 5f)
+                adRetryDelay = 5f;
         }
     }
 }

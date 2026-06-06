@@ -74,12 +74,12 @@ namespace PuzzleGame.Tests.Application
         public void ReVerify_OverwritesPreviousDate()
         {
             var service = new AgeGateService();
-            service.Verify(new DateTime(2010, 1, 1));
+            service.Verify(DateTime.UtcNow.AddYears(-10));
             Assert.IsTrue(service.IsUnder13);
 
-            service.ReVerify(new DateTime(1990, 1, 1));
+            service.ReVerify(DateTime.UtcNow.AddYears(-20));
             Assert.IsFalse(service.IsUnder13);
-            Assert.AreEqual(1990, service.BirthDate.Value.Year);
+            Assert.AreEqual(DateTime.UtcNow.AddYears(-20).Year, service.BirthDate.Value.Year);
         }
 
         [Test]

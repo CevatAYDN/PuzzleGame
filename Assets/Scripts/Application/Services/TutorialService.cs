@@ -21,7 +21,7 @@ namespace PuzzleGame.Application.Services
         private TutorialStep _currentStep = TutorialStep.Inactive;
 
         public TutorialStep CurrentStep => _currentStep;
-        public bool IsActive => _currentStep != TutorialStep.Inactive;
+        public bool IsActive => _currentStep != TutorialStep.Inactive && _currentStep != TutorialStep.LevelComplete;
         public string CurrentMessageKey => _currentStep switch
         {
             TutorialStep.Welcome => "tutorial_welcome",
@@ -60,6 +60,7 @@ namespace PuzzleGame.Application.Services
             if (!IsActive) return;
             MoldLogger.LogInfo($"{LogTag} Skipped at step {_currentStep}.");
             Complete();
+            SetStep(TutorialStep.Inactive);
         }
 
         public void Reset()
@@ -68,7 +69,13 @@ namespace PuzzleGame.Application.Services
             _currentStep = TutorialStep.Inactive;
         }
 
-        private void OnLevelSelected(LevelSelectedEvent _) { }
+        private void OnLevelSelected(LevelSelectedEvent _)
+        {
+            if (_currentStep == TutorialStep.LevelComplete)
+            {
+                SetStep(TutorialStep.Inactive);
+            }
+        }
 
         private void OnMoldSelected(Domain.Models.MoldState _)
         {
@@ -105,7 +112,6 @@ namespace PuzzleGame.Application.Services
         {
             PlayerPrefs.SetInt(CompletedKey, 1);
             PlayerPrefs.Save();
-            _currentStep = TutorialStep.Inactive;
             OnTutorialCompleted?.Invoke();
         }
     }

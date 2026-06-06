@@ -42,6 +42,12 @@ namespace PuzzleGame.Tests.Fakes
             DomainColor[] colorPalette, Difficulty difficulty, int seed, int maxAttempts)
         {
             GenerateCallCount++;
+            LastMoldCount = MoldCount;
+            LastMaxLayers = maxLayers;
+            LastEmptyMoldCount = emptyMoldCount;
+            LastPalette = colorPalette;
+            LastDifficulty = difficulty;
+            LastSeed = seed;
             return (GenerateResult, GenerateSolvableFlag);
         }
 

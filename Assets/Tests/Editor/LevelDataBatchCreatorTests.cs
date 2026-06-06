@@ -17,10 +17,10 @@ namespace PuzzleGame.Tests.Editor
         [Test]
         public void GetParametersForLevel_OutOfRange_ReturnsDefault()
         {
-            Assert.AreEqual(default, LevelDataBatchCreator.GetParametersForLevel(0));
-            Assert.AreEqual(default, LevelDataBatchCreator.GetParametersForLevel(-1));
-            Assert.AreEqual(default, LevelDataBatchCreator.GetParametersForLevel(51));
-            Assert.AreEqual(default, LevelDataBatchCreator.GetParametersForLevel(100));
+            Assert.AreEqual(default(LevelParameters), LevelDataBatchCreator.GetParametersForLevel(0));
+            Assert.AreEqual(default(LevelParameters), LevelDataBatchCreator.GetParametersForLevel(-1));
+            Assert.AreEqual(default(LevelParameters), LevelDataBatchCreator.GetParametersForLevel(51));
+            Assert.AreEqual(default(LevelParameters), LevelDataBatchCreator.GetParametersForLevel(100));
         }
 
         [Test]

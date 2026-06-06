@@ -35,8 +35,11 @@ namespace PuzzleGame.Infrastructure.Implementations
         private InterstitialAd _interstitialAd;
 #endif
 
-        public AdMobService(string rewardedAdUnitId = null, string interstitialAdUnitId = null)
+        private readonly GameConfig _gameConfig;
+
+        public AdMobService(GameConfig gameConfig = null, string rewardedAdUnitId = null, string interstitialAdUnitId = null)
         {
+            _gameConfig = gameConfig;
             _rewardedAdUnitId = rewardedAdUnitId;
             _interstitialAdUnitId = interstitialAdUnitId;
         }
@@ -193,14 +196,28 @@ namespace PuzzleGame.Infrastructure.Implementations
             MoldLogger.LogInfo($"{LogTag} Consent applied. Personalized={IsPersonalizedAdsEnabled} State={ConsentState}");
         }
 
-        private void RetryLoadRewarded()
+        private async void RetryLoadRewarded()
         {
-            MoldLogger.LogWarning($"{LogTag} Rewarded retry scheduled (handled by next PreloadAds).");
+            float delay = _gameConfig != null ? _gameConfig.adRetryDelay : 30f;
+            MoldLogger.LogWarning($"{LogTag} Rewarded retry scheduled in {delay}s.");
+            await System.Threading.Tasks.Task.Delay((int)(delay * 1000));
+            if (IsInitialized)
+            {
+                MoldLogger.LogInfo($"{LogTag} Retrying rewarded ad load...");
+                LoadRewardedAd();
+            }
         }
 
-        private void RetryLoadInterstitial()
+        private async void RetryLoadInterstitial()
         {
-            MoldLogger.LogWarning($"{LogTag} Interstitial retry scheduled (handled by next PreloadAds).");
+            float delay = _gameConfig != null ? _gameConfig.adRetryDelay : 30f;
+            MoldLogger.LogWarning($"{LogTag} Interstitial retry scheduled in {delay}s.");
+            await System.Threading.Tasks.Task.Delay((int)(delay * 1000));
+            if (IsInitialized)
+            {
+                MoldLogger.LogInfo($"{LogTag} Retrying interstitial ad load...");
+                LoadInterstitialAd();
+            }
         }
 #endif
     }

@@ -127,8 +127,8 @@ namespace PuzzleGame.Installers
             builder.Register<IHapticFeedbackService, HapticFeedbackService>(Lifetime.Singleton);
             builder.Register<IAnalyticsService, NoOpAnalyticsService>(Lifetime.Singleton);
 
-            // Ads (NoOp in editor/CI; swap to AdMobService once package installed)
-            builder.Register<IAdService, NoOpAdService>(Lifetime.Singleton);
+            // Ads (falls back to safe no-op inside AdMobService when SDK is missing)
+            builder.Register<IAdService>(resolver => new AdMobService(resolver.Resolve<GameConfig>(), null, null), Lifetime.Singleton);
 
             // GDPR consent + COPPA age gate
             builder.Register<IAgeVerificationService, AgeGateService>(Lifetime.Singleton);

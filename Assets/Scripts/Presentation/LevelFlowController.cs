@@ -25,6 +25,10 @@ namespace PuzzleGame.Presentation
         private readonly IAudioService _audio;
         private readonly MoldPoolInitializer _pool;
         private readonly IEventAggregator _events;
+        private readonly IAdService _adService;
+        private readonly GameConfig _gameConfig;
+
+        private int _levelsPlayedSinceLastAd;
 
         public LevelFlowController(
             IGameStateMachine stateMachine,
@@ -35,7 +39,9 @@ namespace PuzzleGame.Presentation
             IGameHistoryManager history,
             IAudioService audio,
             MoldPoolInitializer pool,
-            IEventAggregator events)
+            IEventAggregator events,
+            IAdService adService,
+            GameConfig gameConfig)
         {
             _stateMachine = stateMachine;
             _levelRepository = levelRepository;
@@ -46,6 +52,8 @@ namespace PuzzleGame.Presentation
             _audio = audio;
             _pool = pool;
             _events = events;
+            _adService = adService;
+            _gameConfig = gameConfig;
 
             _events.Subscribe<LevelSelectedEvent>(OnLevelSelected);
         }
@@ -93,11 +101,37 @@ namespace PuzzleGame.Presentation
                 return;
             }
 
+            if (_stateMachine.IsInState(GameState.LevelComplete))
+            {
+                bool adsEnabled = _gameConfig == null || _gameConfig.enableAds;
+                int interval = _gameConfig != null ? _gameConfig.interstitialInterval : 3;
+
+                if (adsEnabled)
+                {
+                    _levelsPlayedSinceLastAd++;
+                    if (_levelsPlayedSinceLastAd >= interval)
+                    {
+                        _levelsPlayedSinceLastAd = 0;
+                        if (_adService != null && _adService.IsInterstitialReady())
+                        {
+                            MoldLogger.LogInfo("[AdFlow] Showing interstitial ad before loading level.");
+                            _adService.ShowInterstitialAd(() => LoadLevelInternal(level));
+                            return;
+                        }
+                    }
+                }
+            }
+
+            LoadLevelInternal(level);
+        }
+
+        private void LoadLevelInternal(LevelData level)
+        {
             _stateMachine.TransitionTo(GameState.LevelLoading);
 
             if (!_levelValidation.ValidateLevel(level, _pool.Molds?.Length ?? 0))
             {
-                MoldLogger.LogError($"Level {e.LevelNumber} failed validation.");
+                MoldLogger.LogError($"Level {level.levelNumber} failed validation.");
                 _stateMachine.TransitionTo(GameState.Menu);
                 return;
             }
