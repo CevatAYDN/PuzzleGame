@@ -25,13 +25,16 @@ namespace PuzzleGame.Application.Events
         private class Subscription<T> : ISubscription
         {
             private readonly Action<T> _delegate;
+            private readonly WeakReference _targetRef;
 
             public Subscription(Action<T> action)
             {
                 _delegate = action ?? throw new ArgumentNullException(nameof(action));
+                // Store a weak reference to the target object so GC can collect it
+                _targetRef = new WeakReference(action.Target);
             }
 
-            public bool IsAlive => true;
+            public bool IsAlive => _targetRef.IsAlive;
 
             public bool Matches(Delegate d)
             {
@@ -40,6 +43,11 @@ namespace PuzzleGame.Application.Events
 
             public void Invoke(object eventArgs)
             {
+                if (!IsAlive)
+                {
+                    // Target object was garbage collected, skip invocation
+                    return;
+                }
                 _delegate((T)eventArgs);
             }
         }

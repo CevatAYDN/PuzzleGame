@@ -158,44 +158,22 @@ namespace PuzzleGame.Infrastructure.Implementations
             return ps;
         }
 
-        // Load through Addressables when available (synchronous WaitForCompletion bridge
-        // for boot-time prefab resolution) and fall back to Resources when the asset is
-        // only available via the legacy path. This keeps CreateSplash/CreateBubble
-        // synchronous for callers while still preferring the Addressables pipeline.
-        private ParticleSystem LoadPrefabSync(string address, string resourcePath)
-        {
-            if (address == SplashPrefabAddress && _cachedSplashPrefab != null)
+            private ParticleSystem LoadPrefabSync(string address, string resourcePath)
             {
-                return _cachedSplashPrefab;
-            }
-            if (address == BubblePrefabAddress && _cachedBubblePrefab != null)
-            {
-                return _cachedBubblePrefab;
-            }
-
-#if ENABLE_ADDRESSABLES
-            if (_assetProvider != null)
-            {
-                var handle = Addressables.LoadAssetAsync<ParticleSystem>(address);
-                if (handle.IsDone)
+                if (address == SplashPrefabAddress && _cachedSplashPrefab != null)
                 {
-                    var result = handle.Status == AsyncOperationStatus.Succeeded ? handle.Result : Resources.Load<ParticleSystem>(resourcePath);
-                    if (address == SplashPrefabAddress) _cachedSplashPrefab = result;
-                    if (address == BubblePrefabAddress) _cachedBubblePrefab = result;
-                    return result;
+                    return _cachedSplashPrefab;
                 }
-                handle.WaitForCompletion();
-                var resolved = handle.Status == AsyncOperationStatus.Succeeded ? handle.Result : Resources.Load<ParticleSystem>(resourcePath);
-                if (address == SplashPrefabAddress) _cachedSplashPrefab = resolved;
-                if (address == BubblePrefabAddress) _cachedBubblePrefab = resolved;
-                return resolved;
+                if (address == BubblePrefabAddress && _cachedBubblePrefab != null)
+                {
+                    return _cachedBubblePrefab;
+                }
+
+                var fallback = Resources.Load<ParticleSystem>(resourcePath);
+                if (address == SplashPrefabAddress) _cachedSplashPrefab = fallback;
+                if (address == BubblePrefabAddress) _cachedBubblePrefab = fallback;
+                return fallback;
             }
-#endif
-            var fallback = Resources.Load<ParticleSystem>(resourcePath);
-            if (address == SplashPrefabAddress) _cachedSplashPrefab = fallback;
-            if (address == BubblePrefabAddress) _cachedBubblePrefab = fallback;
-            return fallback;
-        }
 
         // ── Material caching logic (from ParticleMaterialFactory) ─────────────────
 

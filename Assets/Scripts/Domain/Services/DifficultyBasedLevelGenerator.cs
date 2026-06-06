@@ -32,7 +32,7 @@ namespace PuzzleGame.Domain.Services
             if (numColors < 1)
                 return result;
 
-            var rng = seed == 0 ? new Random() : new Random(seed);
+            var rng = new Random(seed);
             float amountPerLayer = 1f / maxLayers;
 
             // Map Difficulty enum to a float difficulty index (0.0 to 1.0)

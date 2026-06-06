@@ -92,13 +92,16 @@ namespace PuzzleGame.Application.Services
             }
             _activeTweens.Clear();
 
-            if (_splashPrefab != null)
+            if (UnityEngine.Application.isPlaying)
             {
-                UnityEngine.Object.Destroy(_splashPrefab.gameObject);
-            }
-            if (_bubblePrefab != null)
-            {
-                UnityEngine.Object.Destroy(_bubblePrefab.gameObject);
+                if (_splashPrefab != null)
+                {
+                    UnityEngine.Object.Destroy(_splashPrefab.gameObject);
+                }
+                if (_bubblePrefab != null)
+                {
+                    UnityEngine.Object.Destroy(_bubblePrefab.gameObject);
+                }
             }
 
             _poolManager.RemovePool<ParticleSystem>("SplashPool");

@@ -27,11 +27,16 @@ namespace PuzzleGame.Application.Services
         public DailyChallengeState GetTodayChallenge()
         {
             var today = DateTime.UtcNow.Date;
-            var stored = PlayerPrefs.GetString(IssuedKey, string.Empty);
-            if (!DateTime.TryParse(stored, null, System.Globalization.DateTimeStyles.RoundtripKind, out var issued) || issued.Date != today)
+            var storedUnix = PlayerPrefs.GetString(IssuedKey, string.Empty);
+            
+            long issuedUnix = 0;
+            bool hasStored = !string.IsNullOrEmpty(storedUnix) && long.TryParse(storedUnix, out issuedUnix);
+            var issued = hasStored ? DateTimeOffset.FromUnixTimeSeconds(issuedUnix).UtcDateTime.Date : (DateTime?)null;
+            
+            if (!issued.HasValue || issued.Value != today)
             {
                 int newSeed = unchecked((int)today.ToBinary());
-                PlayerPrefs.SetString(IssuedKey, today.ToString("o"));
+                PlayerPrefs.SetString(IssuedKey, new DateTimeOffset(today).ToUnixTimeSeconds().ToString());
                 PlayerPrefs.SetInt(SeedKey, newSeed);
                 PlayerPrefs.SetInt(CompletedKey, 0);
                 PlayerPrefs.Save();
@@ -49,7 +54,7 @@ namespace PuzzleGame.Application.Services
             {
                 HasChallenge = true,
                 Seed = PlayerPrefs.GetInt(SeedKey, 0),
-                IssuedAtUtc = issued,
+                IssuedAtUtc = issued.Value,
                 Completed = PlayerPrefs.GetInt(CompletedKey, 0) == 1
             };
         }
