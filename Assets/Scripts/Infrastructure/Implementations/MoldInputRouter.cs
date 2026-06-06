@@ -68,12 +68,38 @@ namespace PuzzleGame.Infrastructure.Implementations
 
         public void ProcessInput()
         {
-            if (_stateMachine == null || (!_stateMachine.IsInState(GameState.Playing) && !_stateMachine.IsInState(GameState.OptionalCasting))) return;
-            if (_animationService == null || _animationService.IsAnimating) return;
-            if (_inputHandler == null) return;
+            if (_stateMachine == null)
+            {
+                MoldLogger.LogWarning("[MoldInputRouter] ProcessInput skipped: _stateMachine is null.");
+                return;
+            }
+            if (!_stateMachine.IsInState(GameState.Playing) && !_stateMachine.IsInState(GameState.OptionalCasting))
+            {
+                // Comment out to avoid spamming the log, but keep track of it if needed
+                // MoldLogger.LogDebug($"[MoldInputRouter] ProcessInput skipped: current state is {_stateMachine.Current}");
+                return;
+            }
+            if (_animationService == null)
+            {
+                MoldLogger.LogWarning("[MoldInputRouter] ProcessInput skipped: _animationService is null.");
+                return;
+            }
+            if (_animationService.IsAnimating)
+            {
+                MoldLogger.LogWarning("[MoldInputRouter] ProcessInput skipped: _animationService.IsAnimating is true.");
+                return;
+            }
+            if (_inputHandler == null)
+            {
+                MoldLogger.LogWarning("[MoldInputRouter] ProcessInput skipped: _inputHandler is null.");
+                return;
+            }
 
             if (_inputHandler.GetPointerDown(out Vector2 screenPos))
+            {
+                MoldLogger.LogInfo($"[MoldInputRouter] Pointer down detected at {screenPos}. Invoking HandleInput.");
                 HandleInput(screenPos);
+            }
         }
 
         public void SetLevelData(LevelData levelData)

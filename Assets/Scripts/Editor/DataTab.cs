@@ -2,6 +2,7 @@ using UnityEditor;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using PuzzleGame.Application.Configuration;
 
 namespace PuzzleGame.Editor
 {
@@ -77,11 +78,47 @@ namespace PuzzleGame.Editor
             }
 
             EditorGUILayout.Space(12);
+            DrawAdsSettingsSection(AssetDatabase.LoadAssetAtPath<GameConfig>($"{DataAssetCreator.DataPath}/GameConfig.asset"));
+
+            EditorGUILayout.Space(12);
             DrawPlayerSaveSection();
         }
 
         public void OnSceneGUI(SceneView sceneView)
         {
+        }
+
+        private void DrawAdsSettingsSection(GameConfig gameConfig)
+        {
+            EditorGUILayout.LabelField("Ads & SDK Configuration", EditorStyles.boldLabel);
+            EditorGUILayout.Space(4);
+
+            if (gameConfig == null)
+            {
+                EditorGUILayout.HelpBox("GameConfig.asset not found. Please create it first in Asset Status above.", MessageType.Warning);
+                return;
+            }
+
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Settings", EditorStyles.miniBoldLabel);
+
+                EditorGUI.BeginChangeCheck();
+                bool enableAds = EditorGUILayout.ToggleLeft("Enable Ads completely", gameConfig.enableAds);
+                int interval = EditorGUILayout.IntSlider("Interstitial Level Interval", gameConfig.interstitialInterval, 1, 10);
+                float retryDelay = EditorGUILayout.Slider("Ad Retry Delay (seconds)", gameConfig.adRetryDelay, 5f, 120f);
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(gameConfig, "Modify Ads Config");
+                    gameConfig.enableAds = enableAds;
+                    gameConfig.interstitialInterval = interval;
+                    gameConfig.adRetryDelay = retryDelay;
+                    EditorUtility.SetDirty(gameConfig);
+                    AssetDatabase.SaveAssets();
+                    _window.SetStatus("Ads configuration updated.", MessageType.Info);
+                }
+            }
         }
 
         private void DrawPlayerSaveSection()

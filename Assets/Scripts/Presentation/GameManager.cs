@@ -42,6 +42,7 @@ namespace PuzzleGame
         private IGameStateMachine _stateMachine;
         private LevelFlowController _levelFlow;
         private OnboardingFlowController _onboardingFlow;
+        private MoldPoolInitializer _moldPoolInitializer;
 
         private bool _isInitialized;
 
@@ -55,7 +56,8 @@ namespace PuzzleGame
             IInputHandlerService inputHandlerService,
             IGameStateMachine stateMachine,
             LevelFlowController levelFlow,
-            OnboardingFlowController onboardingFlow)
+            OnboardingFlowController onboardingFlow,
+            MoldPoolInitializer moldPoolInitializer)
         {
             _gameConfig = gameConfig;
             _audioConfig = audioConfig;
@@ -66,6 +68,7 @@ namespace PuzzleGame
             _stateMachine = stateMachine;
             _levelFlow = levelFlow;
             _onboardingFlow = onboardingFlow;
+            _moldPoolInitializer = moldPoolInitializer;
 
             _isInitialized = true;
         }
@@ -97,7 +100,63 @@ namespace PuzzleGame
 
             _updateManager?.Register(this);
 
-            _onboardingFlow?.Run();
+            // Check if we are in play-test mode (no real Main Menu in scene, but Molds exist)
+            bool isFallbackMenu = mainMenuController == null || mainMenuController.gameObject.name.Contains("[Fallback]");
+            var moldsInScene = FindObjectsByType<MoldController>(FindObjectsInactive.Exclude);
+            bool isPlayTest = isFallbackMenu && moldsInScene.Length > 0;
+
+            if (isPlayTest)
+            {
+                MoldLogger.LogInfo("[PlayTest] Fallback Menu detected with Molds in scene. Initializing Play-Test mode directly, skipping onboarding.");
+                if (_moldPoolInitializer != null)
+                {
+                    _moldPoolInitializer.InitializeForLevel(null);
+                }
+                _stateMachine?.TransitionTo(GameState.Playing);
+            }
+            else
+            {
+                if (_onboardingFlow != null)
+                {
+                    _onboardingFlow.OnCompletedFlow += OnOnboardingCompleted;
+                    _onboardingFlow.Run();
+                }
+                else
+                {
+                    _stateMachine?.TransitionTo(GameState.Menu);
+                }
+            }
+        }
+
+        private void OnOnboardingCompleted()
+        {
+            if (_onboardingFlow != null)
+            {
+                _onboardingFlow.OnCompletedFlow -= OnOnboardingCompleted;
+            }
+
+            // Check if we are in play-test mode (no real Main Menu in scene, but Molds exist)
+            bool isFallbackMenu = mainMenuController == null || mainMenuController.gameObject.name.Contains("[Fallback]");
+            var moldsInScene = FindObjectsByType<MoldController>(FindObjectsInactive.Exclude);
+
+            if (isFallbackMenu && moldsInScene.Length > 0)
+            {
+                MoldLogger.LogInfo("[PlayTest] Fallback Menu detected with Molds in scene. Initializing Play-Test mode.");
+                
+                // Initialize the mold pool for playtesting (with null level, which triggers play-test initialization)
+                if (_moldPoolInitializer != null)
+                {
+                    _moldPoolInitializer.InitializeForLevel(null);
+                }
+
+                // Transition state machine directly to Playing so inputs work
+                _stateMachine?.TransitionTo(GameState.Playing);
+            }
+            else
+            {
+                // Normal flow: transition to Menu state
+                _stateMachine?.TransitionTo(GameState.Menu);
+            }
         }
 
         private void InitAudio()
@@ -123,6 +182,10 @@ namespace PuzzleGame
             _updateManager?.Unregister(this);
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
             _events?.Unsubscribe<GameStateChangedEvent>(OnGameStateChanged);
+            if (_onboardingFlow != null)
+            {
+                _onboardingFlow.OnCompletedFlow -= OnOnboardingCompleted;
+            }
         }
 
         private void OnSceneUnloaded(Scene scene)

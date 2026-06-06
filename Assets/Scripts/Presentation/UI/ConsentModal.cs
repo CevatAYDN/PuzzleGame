@@ -69,6 +69,13 @@ namespace PuzzleGame.Presentation.UI
 
         public void Show()
         {
+            MoldLogger.LogInfo($"{LogTag} Show called. _acceptAllButton={(_acceptAllButton != null ? _acceptAllButton.name : "null")}");
+            if (_acceptAllButton == null)
+            {
+                MoldLogger.LogWarning($"{LogTag} Fallback consent modal detected (no UI buttons assigned). Auto-completing GDPR consent.", this);
+                Apply(AdConsentState.Accepted, true);
+                return;
+            }
             gameObject.SetActive(true);
             if (_under13Notice != null) _under13Notice.gameObject.SetActive(_ageService.IsUnder13);
             if (_mainPanel != null) _mainPanel.SetActive(true);

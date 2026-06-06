@@ -42,9 +42,24 @@ namespace PuzzleGame.Presentation.UI
 
         public void Show()
         {
+            MoldLogger.LogInfo($"{LogTag} Show called. IsVerified={(_ageService != null && _ageService.IsVerified)}, _modalPanel={(_modalPanel != null ? _modalPanel.name : "null")}");
             if (_ageService != null && _ageService.IsVerified)
             {
+                MoldLogger.LogInfo($"{LogTag} Already verified, invoking OnCompleted.");
                 OnCompleted?.Invoke(_ageService.BirthDate ?? DateTime.UtcNow.AddYears(-20));
+                return;
+            }
+            if (_modalPanel == null)
+            {
+                MoldLogger.LogWarning($"{LogTag} Fallback modal detected (no UI panel assigned). Auto-completing age verification.", this);
+                DateTime defaultBirthDate = DateTime.UtcNow.AddYears(-20);
+                if (_ageService != null)
+                {
+                    MoldLogger.LogInfo($"{LogTag} Verifying default age.");
+                    _ageService.Verify(defaultBirthDate);
+                }
+                MoldLogger.LogInfo($"{LogTag} Invoking OnCompleted with default birth date.");
+                OnCompleted?.Invoke(defaultBirthDate);
                 return;
             }
             gameObject.SetActive(true);

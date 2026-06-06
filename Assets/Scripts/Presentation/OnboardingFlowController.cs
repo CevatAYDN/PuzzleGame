@@ -26,6 +26,8 @@ namespace PuzzleGame.Presentation
 
         private bool _disposed;
 
+        public event Action OnCompletedFlow;
+
         public OnboardingFlowController(
             IAgeVerificationService ageService,
             IConsentManager consentManager,
@@ -52,12 +54,15 @@ namespace PuzzleGame.Presentation
         {
             MoldLogger.LogInfo($"{LogTag} Starting onboarding flow.");
 
+            MoldLogger.LogInfo($"{LogTag} Checking if age is verified... IsVerified={_ageService.IsVerified}");
             if (_ageService.IsVerified)
             {
+                MoldLogger.LogInfo($"{LogTag} Age is already verified. Invoking OnAgeGateCompleted.");
                 OnAgeGateCompleted(_ageService.BirthDate ?? DateTime.UtcNow.AddYears(-20));
             }
             else
             {
+                MoldLogger.LogInfo($"{LogTag} Age is NOT verified. Invoking _ageGateModal.Show().");
                 _ageGateModal.Show();
             }
         }
@@ -91,6 +96,7 @@ namespace PuzzleGame.Presentation
         {
             _adService.PreloadAds();
             MoldLogger.LogInfo($"{LogTag} Onboarding complete — proceeding to Main Menu.");
+            OnCompletedFlow?.Invoke();
         }
 
         public void Dispose()

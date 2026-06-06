@@ -21,8 +21,9 @@ MonoBehaviour:
   randomSeed: 2000
   autoGenerate: 1
   Molds: []
-  parMoves: 4
-  goodMoves: 6
+  optionalTargets: []
+  parMoves: 6
+  goodMoves: 8
   previewImage: {fileID: 0}
   enableMultiLayerCast: 1
   enableReactionSystem: 0

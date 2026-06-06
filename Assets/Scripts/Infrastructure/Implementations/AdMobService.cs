@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Logging;
+using PuzzleGame.Application.Configuration;
 
 #if HAS_GOOGLE_MOBILE_ADS
 using GoogleMobileAds.Api;

@@ -18,11 +18,12 @@ MonoBehaviour:
   emptyMoldCount: 1
   colorCount: 4
   maxLayersPerMold: 4
-  randomSeed: 3000
+  randomSeed: 4337
   autoGenerate: 1
   Molds: []
-  parMoves: 5
-  goodMoves: 8
+  optionalTargets: []
+  parMoves: 7
+  goodMoves: 10
   previewImage: {fileID: 0}
   enableMultiLayerCast: 1
   enableReactionSystem: 0
