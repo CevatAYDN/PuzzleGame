@@ -24,9 +24,10 @@ namespace PuzzleGame.Presentation
         {
             if (_resolver == null) yield break;
 
-            IAsyncTranslationProvider async;
-            try { async = _resolver.Resolve<IAsyncTranslationProvider>(); }
-            catch { yield break; }
+            if (!_resolver.TryResolve<IAsyncTranslationProvider>(out var async))
+            {
+                yield break;
+            }
 
             var task = async.LoadAsync();
             while (!task.IsCompleted) yield return null;

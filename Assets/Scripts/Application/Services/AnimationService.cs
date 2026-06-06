@@ -88,8 +88,7 @@ namespace PuzzleGame.Application.Services
         {
             foreach (var tween in _activeTweens)
             {
-                try { tween?.Kill(); }
-                catch (Exception ex) { MoldLogger.LogDebug($"Error killing tween on dispose: {ex.Message}"); }
+                tween?.Kill();
             }
             _activeTweens.Clear();
 

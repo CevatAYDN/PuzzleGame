@@ -224,7 +224,10 @@ namespace PuzzleGame.Application.Services
                 {
                     if (File.Exists(FilePath)) return new FileInfo(FilePath).Length;
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    MoldLogger.LogWarning($"[GameSaveManager] FileSizeBytes failed: {ex.Message}");
+                }
                 return 0;
             }
         }
@@ -323,7 +326,14 @@ namespace PuzzleGame.Application.Services
             catch (Exception ex)
             {
                 MoldLogger.LogError($"[GameSaveManager] Save failed: {ex.Message}");
-                try { if (File.Exists(TempPath)) File.Delete(TempPath); } catch { }
+                try 
+                { 
+                    if (File.Exists(TempPath)) File.Delete(TempPath); 
+                } 
+                catch (Exception deleteEx)
+                {
+                    MoldLogger.LogWarning($"[GameSaveManager] Temp file delete failed: {deleteEx.Message}");
+                }
                 return false;
             }
         }
