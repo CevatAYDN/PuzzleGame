@@ -59,17 +59,6 @@ namespace PuzzleGame
 
         private void Start()
         {
-            if (config == null)
-            {
-                MoldLogger.LogError(
-                    "[Wobble] WobbleConfig is null on " + gameObject.name + ". " +
-                    "Wobble effect disabled — config must be assigned via MoldPoolInitializer.",
-                    this);
-                enabled = false;
-                return;
-            }
-
-            _OreMatIndex = config.OreMaterialIndex;
             _previousPosition = transform.position;
             _previousRotation = transform.rotation.eulerAngles;
             _hasOreMaterial = false; // Resolved dynamically via HasOreMaterial() to prevent start-order race conditions
@@ -77,8 +66,10 @@ namespace PuzzleGame
 
         private bool HasOreMaterial()
         {
+            if (config == null) return false;
             if (!_hasOreMaterial && _renderer != null)
             {
+                _OreMatIndex = config.OreMaterialIndex;
                 var sharedMats = _renderer.sharedMaterials;
                 _hasOreMaterial = sharedMats != null && sharedMats.Length > _OreMatIndex;
             }

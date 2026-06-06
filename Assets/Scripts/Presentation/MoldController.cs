@@ -67,6 +67,14 @@ namespace PuzzleGame
         private IAnimationService _animationService;
         private ITweenService _tweenService;
 
+        private void Awake()
+        {
+            if (_stateManager == null && _serializedLayers != null && _serializedLayers.Count > 0)
+            {
+                RestoreStateFromSerialized();
+            }
+        }
+
         public void Initialize(IRendererService rendererService,
                                IMoldValidator validator,
                                IAnimationService animationService,
@@ -92,12 +100,16 @@ namespace PuzzleGame
                 visualConfig = visualConfigOverride;
                 if (visualConfig == null)
                 {
-                    MoldLogger.LogWarning(
-                        "[MoldController] MoldVisualConfig not injected on " +
-                        gameObject.name + ". Using default SO.",
-                        this);
-                    visualConfig = ScriptableObject.CreateInstance<MoldVisualConfig>();
-                    visualConfig.name = "MoldVisualConfig_Fallback";
+                    visualConfig = Resources.Load<MoldVisualConfig>("Data/MoldVisualConfig");
+                    if (visualConfig == null)
+                    {
+                        MoldLogger.LogWarning(
+                            "[MoldController] MoldVisualConfig not injected on " +
+                            gameObject.name + ". And default not found in 'Resources/Data/MoldVisualConfig'. Using fallback SO.",
+                            this);
+                        visualConfig = ScriptableObject.CreateInstance<MoldVisualConfig>();
+                        visualConfig.name = "MoldVisualConfig_Fallback";
+                    }
                 }
             }
             if (_renderer == null)
@@ -167,6 +179,20 @@ namespace PuzzleGame
 
         public void RestoreStateFromSerialized(bool isFromOnValidate = false)
         {
+#if UNITY_EDITOR
+            if (!UnityEngine.Application.isPlaying)
+            {
+                if (_rendererService == null)
+                {
+                    _rendererService = new PuzzleGame.Infrastructure.Implementations.RendererService();
+                }
+                if (_validator == null)
+                {
+                    _validator = new PuzzleGame.Domain.Services.MoldValidationService();
+                }
+            }
+#endif
+
             if (_rendererService == null || _validator == null)
             {
 #if UNITY_EDITOR
@@ -181,6 +207,10 @@ namespace PuzzleGame
             _renderer = GetComponent<Renderer>();
             _wobble = GetComponent<Wobble>();
 
+            if (visualConfig == null)
+            {
+                visualConfig = Resources.Load<MoldVisualConfig>("Data/MoldVisualConfig");
+            }
             int maxLayers = visualConfig != null ? visualConfig.maxLayers : ForgeConstants.DefaultLayerCapacity;
             if (_stateManager == null) _stateManager = new MoldStateManager(_serializedLayers);
             _stateManager.Initialize(maxLayers, _stateManager.RebuildFromSerialized());

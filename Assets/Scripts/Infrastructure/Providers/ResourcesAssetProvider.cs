@@ -20,7 +20,7 @@ namespace PuzzleGame.Infrastructure.Providers
             var asset = Resources.Load<T>(address);
             if (asset == null)
             {
-                MoldLogger.LogError($"[ResourcesAssetProvider] Failed to load '{address}' from Resources.");
+                MoldLogger.LogWarning($"[ResourcesAssetProvider] Failed to load optional asset '{address}' from Resources. Fallbacks will be used.");
             }
             onComplete?.Invoke(asset);
         }
@@ -35,7 +35,7 @@ namespace PuzzleGame.Infrastructure.Providers
             var prefab = Resources.Load<GameObject>(address);
             if (prefab == null)
             {
-                MoldLogger.LogError($"[ResourcesAssetProvider] Failed to load prefab '{address}' from Resources.");
+                MoldLogger.LogWarning($"[ResourcesAssetProvider] Failed to load optional prefab '{address}' from Resources. Fallbacks will be used.");
                 onComplete?.Invoke(null);
                 return;
             }

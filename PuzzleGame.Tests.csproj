@@ -67,8 +67,8 @@
     <Compile Include="Assets\Tests\Infrastructure\RendererServiceTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\CoinWalletTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeParticleFactory.cs" />
-    <Compile Include="Assets\Tests\Fakes\FakeCastService.cs" />
     <Compile Include="Assets\Tests\Infrastructure\NoOpAdServiceTests.cs" />
+    <Compile Include="Assets\Tests\Fakes\FakeCastService.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeSaveManager.cs" />
     <Compile Include="Assets\Tests\Infrastructure\UnityMemorySnapshotServiceTests.cs" />
     <Compile Include="Assets\Tests\Presentation\DailyChallengeCountdownTests.cs" />

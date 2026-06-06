@@ -39,7 +39,11 @@ namespace PuzzleGame.Editor
             if (opts.camera)     SceneBuilderPrimitives.SetupCamera();
             if (opts.postProcessing) SceneBuilderPrimitives.SetupPostProcessing();
             if (opts.cauldron)   SceneBuilderPrimitives.CreateCauldron();
-            if (opts.gameManager) CreateGameManager();
+            if (opts.gameManager)
+            {
+                CreateGameManager();
+                CreateGameInstaller();
+            }
             if (opts.Molds)    SceneBuilderMoldFactory.CreateDefaultMoldSet();
 
             Undo.CollapseUndoOperations(undoGroup);
