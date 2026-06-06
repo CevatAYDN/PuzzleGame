@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
   <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->
   <PropertyGroup>
     <BaseIntermediateOutputPath>Temp\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
@@ -82,6 +82,8 @@
     <Compile Include="Assets\Scripts\Presentation\UI\DebugOverlayUI.cs" />
     <Compile Include="Assets\Scripts\Presentation\LocalizationBootstrap.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldPoolInitializer.cs" />
+    <Compile Include="Assets\Scripts\Presentation\CameraResolutionAdapter.cs" />
+    <Compile Include="Assets\Scripts\Presentation\HapticObserver.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Scripts\PuzzleGame.Composition.asmdef" />

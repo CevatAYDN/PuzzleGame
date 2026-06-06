@@ -43,6 +43,7 @@ namespace PuzzleGame
         private LevelFlowController _levelFlow;
         private OnboardingFlowController _onboardingFlow;
         private MoldPoolInitializer _moldPoolInitializer;
+        private HapticObserver _hapticObserver;
 
         private bool _isInitialized;
 
@@ -57,7 +58,8 @@ namespace PuzzleGame
             IGameStateMachine stateMachine,
             LevelFlowController levelFlow,
             OnboardingFlowController onboardingFlow,
-            MoldPoolInitializer moldPoolInitializer)
+            MoldPoolInitializer moldPoolInitializer,
+            HapticObserver hapticObserver)
         {
             _gameConfig = gameConfig;
             _audioConfig = audioConfig;
@@ -69,6 +71,7 @@ namespace PuzzleGame
             _levelFlow = levelFlow;
             _onboardingFlow = onboardingFlow;
             _moldPoolInitializer = moldPoolInitializer;
+            _hapticObserver = hapticObserver;
 
             _isInitialized = true;
         }

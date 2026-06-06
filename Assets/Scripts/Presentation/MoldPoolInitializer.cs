@@ -227,6 +227,13 @@ namespace PuzzleGame
             if (_camera == null) return;
             _camera.backgroundColor = new Color(0.08f, 0.05f, 0.16f, 1.0f);
             _camera.clearFlags = CameraClearFlags.SolidColor;
+
+            var adapter = _camera.GetComponent<PuzzleGame.Presentation.CameraResolutionAdapter>();
+            if (adapter == null)
+            {
+                adapter = _camera.gameObject.AddComponent<PuzzleGame.Presentation.CameraResolutionAdapter>();
+            }
+            adapter.Initialize(this);
         }
 
         private class MoldNameComparer : IComparer<MoldController>

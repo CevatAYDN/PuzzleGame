@@ -155,14 +155,20 @@ namespace PuzzleGame.Infrastructure.Implementations
             var adUnitId = string.IsNullOrEmpty(_rewardedAdUnitId) ? "ca-app-pub-3940256099942544/5224354917" : _rewardedAdUnitId;
             var adRequest = CreateAdRequest();
             _rewardedAd?.Destroy();
-            _rewardedAd = new RewardedAd(adUnitId);
-            _rewardedAd.OnAdLoaded += (sender, args) => MoldLogger.LogInfo($"{LogTag} Rewarded ad loaded.");
-            _rewardedAd.OnAdFailedToLoad += (sender, args) =>
+            _rewardedAd = null;
+
+            RewardedAd.Load(adUnitId, adRequest, (RewardedAd ad, LoadAdError error) =>
             {
-                MoldLogger.LogError($"{LogTag} Rewarded ad failed to load: {args.LoadAdError}");
-                RetryLoadRewarded();
-            };
-            _rewardedAd.LoadAd(adRequest);
+                if (error != null)
+                {
+                    MoldLogger.LogError($"{LogTag} Rewarded ad failed to load: {error}");
+                    RetryLoadRewarded();
+                    return;
+                }
+
+                _rewardedAd = ad;
+                MoldLogger.LogInfo($"{LogTag} Rewarded ad loaded.");
+            });
         }
 
         private void LoadInterstitialAd()
@@ -170,14 +176,20 @@ namespace PuzzleGame.Infrastructure.Implementations
             var adUnitId = string.IsNullOrEmpty(_interstitialAdUnitId) ? "ca-app-pub-3940256099942544/1033173712" : _interstitialAdUnitId;
             var adRequest = CreateAdRequest();
             _interstitialAd?.Destroy();
-            _interstitialAd = new InterstitialAd(adUnitId);
-            _interstitialAd.OnAdLoaded += (sender, args) => MoldLogger.LogInfo($"{LogTag} Interstitial loaded.");
-            _interstitialAd.OnAdFailedToLoad += (sender, args) =>
+            _interstitialAd = null;
+
+            InterstitialAd.Load(adUnitId, adRequest, (InterstitialAd ad, LoadAdError error) =>
             {
-                MoldLogger.LogError($"{LogTag} Interstitial failed to load: {args.LoadAdError}");
-                RetryLoadInterstitial();
-            };
-            _interstitialAd.LoadAd(adRequest);
+                if (error != null)
+                {
+                    MoldLogger.LogError($"{LogTag} Interstitial failed to load: {error}");
+                    RetryLoadInterstitial();
+                    return;
+                }
+
+                _interstitialAd = ad;
+                MoldLogger.LogInfo($"{LogTag} Interstitial loaded.");
+            });
         }
 
         private AdRequest CreateAdRequest()

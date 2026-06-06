@@ -33,6 +33,7 @@ namespace PuzzleGame.Infrastructure.Implementations
         private readonly IMoldLookupCache _lookup;
         private readonly IInputHandlerDefaults _defaults;
         private readonly IActiveMoldsProvider _moldsProvider;
+        private readonly IHapticFeedbackService _hapticService;
 
         private LevelData _currentLevelData;
         private Vector3 _selectedOriginalPos;
@@ -51,7 +52,8 @@ namespace PuzzleGame.Infrastructure.Implementations
             ICastService castService,
             IMoldLookupCache lookup,
             IInputHandlerDefaults defaults,
-            IActiveMoldsProvider moldsProvider)
+            IActiveMoldsProvider moldsProvider,
+            IHapticFeedbackService hapticService)
         {
             _inputHandler = inputHandler ?? throw new ArgumentNullException(nameof(inputHandler));
             _camera = camera;
@@ -67,6 +69,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             _lookup = lookup ?? throw new ArgumentNullException(nameof(lookup));
             _defaults = defaults ?? throw new ArgumentNullException(nameof(defaults));
             _moldsProvider = moldsProvider ?? throw new ArgumentNullException(nameof(moldsProvider));
+            _hapticService = hapticService ?? throw new ArgumentNullException(nameof(hapticService));
         }
 
         public void ProcessInput()
@@ -183,6 +186,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             _selectedOriginalPos = mold.Transform.position;
             _selectionService.Select(mold.State);
             mold.SetSelectionHighlight(true);
+            _hapticService.Trigger(HapticIntensity.Selection);
             _animationService.AnimateMoldLift(
                 mold.Transform,
                 _animConfig.liftHeight, _animConfig.liftDuration,
@@ -247,6 +251,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             if (selected != null)
             {
                 selected.SetSelectionHighlight(false);
+                _hapticService.Trigger(HapticIntensity.Selection);
                 _animationService.AnimateMoldLower(
                     selected.Transform,
                     _selectedOriginalPos, _animConfig.liftDuration);

@@ -30,33 +30,55 @@ namespace PuzzleGame.Application.Services
         }
 
 #if UNITY_ANDROID && !UNITY_EDITOR
-        private static AndroidJavaClass GetVibrator()
-        {
-            using var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
-            using var activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
-            return new AndroidJavaClass("com.puzzlegame.haptics.HapticBridge").CallStatic<AndroidJavaClass>("getInstance", activity);
-        }
-
         private static void TriggerAndroid(HapticIntensity intensity)
         {
             try
             {
                 int ms = intensity switch
                 {
-                    HapticIntensity.Light => 10,
-                    HapticIntensity.Medium => 20,
-                    HapticIntensity.Heavy => 40,
-                    HapticIntensity.Selection => 5,
-                    HapticIntensity.Success => 30,
-                    HapticIntensity.Warning => 35,
-                    HapticIntensity.Error => 50,
-                    _ => 15
+                    HapticIntensity.Light => 15,
+                    HapticIntensity.Medium => 30,
+                    HapticIntensity.Heavy => 60,
+                    HapticIntensity.Selection => 10,
+                    HapticIntensity.Success => 45,
+                    HapticIntensity.Warning => 50,
+                    HapticIntensity.Error => 80,
+                    _ => 25
                 };
-                Handheld.Vibrate();
+
+                using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+                using (var currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
+                using (var vibrator = currentActivity.Call<AndroidJavaObject>("getSystemService", "vibrator"))
+                {
+                    if (vibrator != null && vibrator.Call<bool>("hasVibrator"))
+                    {
+                        using (var buildVersion = new AndroidJavaClass("android.os.Build$VERSION"))
+                        {
+                            int sdkInt = buildVersion.GetStatic<int>("SDK_INT");
+                            if (sdkInt >= 26)
+                            {
+                                using (var vibrationEffectClass = new AndroidJavaClass("android.os.VibrationEffect"))
+                                using (var effect = vibrationEffectClass.CallStatic<AndroidJavaObject>("createOneShot", (long)ms, -1))
+                                {
+                                    vibrator.Call("vibrate", effect);
+                                }
+                            }
+                            else
+                            {
+                                vibrator.Call("vibrate", (long)ms);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Handheld.Vibrate();
+                    }
+                }
             }
             catch (System.Exception e)
             {
                 MoldLogger.LogWarning($"{LogTag} Android vibrate failed: {e.Message}");
+                Handheld.Vibrate();
             }
         }
 #endif

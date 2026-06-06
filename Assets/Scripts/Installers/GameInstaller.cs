@@ -127,6 +127,7 @@ namespace PuzzleGame.Installers
 
             // Haptics + analytics (mobile platform hooks; no-op by default)
             builder.Register<IHapticFeedbackService, HapticFeedbackService>(Lifetime.Singleton);
+            builder.Register<HapticObserver>(Lifetime.Singleton);
             builder.Register<IAnalyticsService, NoOpAnalyticsService>(Lifetime.Singleton);
 
             // Ads (falls back to safe no-op inside AdMobService when SDK is missing)
