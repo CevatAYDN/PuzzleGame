@@ -9,7 +9,8 @@
         "PrimeTween.Runtime",
         "Unity.TextMeshPro",
         "Unity.InputSystem",
-        "Unity.RenderPipelines.Universal.Runtime"
+        "Unity.RenderPipelines.Universal.Runtime",
+        "UniTask"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

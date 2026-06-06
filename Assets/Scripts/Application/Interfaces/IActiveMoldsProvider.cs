@@ -1,3 +1,5 @@
+using PuzzleGame.Application.Configuration;
+
 namespace PuzzleGame.Application.Interfaces
 {
     /// <summary>
@@ -7,5 +9,12 @@ namespace PuzzleGame.Application.Interfaces
     public interface IActiveMoldsProvider
     {
         IMoldView[] Molds { get; }
+
+        /// <summary>
+        /// Activates the optional mold slots declared by the level, appends them
+        /// to <see cref="Molds"/>, and re-wires input/history/error indicators.
+        /// No-op when the level has no optional targets.
+        /// </summary>
+        void ActivateOptionalMolds(LevelData level);
     }
 }

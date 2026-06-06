@@ -1,4 +1,4 @@
-<Project>
+﻿<Project>
   <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->
   <PropertyGroup>
     <BaseIntermediateOutputPath>Temp\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
@@ -57,6 +57,7 @@
     <Compile Include="Assets\Scripts\Presentation\UI\LevelBiomeClassifier.cs" />
     <Compile Include="Assets\Scripts\Presentation\ErrorIndicatorBootstrap.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldController.cs" />
+    <Compile Include="Assets\Scripts\Presentation\CameraResolutionAdapter.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldMeshGenerator.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\DailyChallengeController.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\DailyChallengeCountdown.cs" />
@@ -67,6 +68,7 @@
     <Compile Include="Assets\Scripts\Presentation\UI\LevelSelectUI.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldCorkController.cs" />
     <Compile Include="Assets\Scripts\Presentation\URPConfigHelper.cs" />
+    <Compile Include="Assets\Scripts\Presentation\HapticObserver.cs" />
     <Compile Include="Assets\Scripts\Presentation\CameraEffectsBootstrap.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\ConsentModal.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldStateManager.cs" />
@@ -82,8 +84,6 @@
     <Compile Include="Assets\Scripts\Presentation\UI\DebugOverlayUI.cs" />
     <Compile Include="Assets\Scripts\Presentation\LocalizationBootstrap.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldPoolInitializer.cs" />
-    <Compile Include="Assets\Scripts\Presentation\CameraResolutionAdapter.cs" />
-    <Compile Include="Assets\Scripts\Presentation\HapticObserver.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Scripts\PuzzleGame.Composition.asmdef" />
@@ -1231,6 +1231,10 @@
     </Reference>
     <Reference Include="Unity.RenderPipelines.Universal.Runtime">
       <HintPath>Library\ScriptAssemblies\Unity.RenderPipelines.Universal.Runtime.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UniTask">
+      <HintPath>Library\ScriptAssemblies\UniTask.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEditor.UI">

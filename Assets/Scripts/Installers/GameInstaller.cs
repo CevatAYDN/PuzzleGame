@@ -115,6 +115,8 @@ namespace PuzzleGame.Installers
             var bootstrapGo = new GameObject("LocalizationBootstrap");
             builder.RegisterComponent(bootstrapGo.AddComponent<LocalizationBootstrap>());
 #endif
+            builder.Register<ISaveCrypto, SaveCrypto>(Lifetime.Singleton);
+            builder.Register<ISaveStorage, SaveStorage>(Lifetime.Singleton);
             builder.Register<ISaveManager, GameSaveManager>(Lifetime.Singleton);
 
             // Economy

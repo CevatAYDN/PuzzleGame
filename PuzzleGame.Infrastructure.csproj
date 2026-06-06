@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\Infrastructure\Providers\IAssetProvider.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\SaveCrypto.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\ColorAdapter.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\AudioService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\StreamTrailController.cs" />
@@ -79,6 +80,7 @@
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\InputHandler.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\AdMobService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\UnityMemorySnapshotService.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\SaveStorage.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\PlayerPrefsAudioSettingsService.cs" />
   </ItemGroup>
   <ItemGroup>

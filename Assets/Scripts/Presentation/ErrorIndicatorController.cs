@@ -1,7 +1,9 @@
+using System.Collections.Generic;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Configuration;
-using System.Collections.Generic;
 using VContainer;
 
 namespace PuzzleGame.Presentation
@@ -10,6 +12,7 @@ namespace PuzzleGame.Presentation
     /// Visual error indicator — red ring flash on mold + temporal X icon.
     /// Uses MaterialPropertyBlock to set rim color directly, avoiding per-mold overhead.
     /// Attached to a shared indicator pool GameObject by GameManager.
+    /// Migrated from coroutine to UniTask (Sprint #18) for cancellation-on-destroy safety.
     /// </summary>
     public class ErrorIndicatorController : MonoBehaviour, IErrorIndicatorService
     {
@@ -20,6 +23,7 @@ namespace PuzzleGame.Presentation
         private IMoldView[] _moldViews;
         private readonly Dictionary<int, GameObject> _activeIndicators = new Dictionary<int, GameObject>();
         private readonly Queue<GameObject> _indicatorPool = new Queue<GameObject>();
+        private CancellationToken _lifetimeToken;
 
         private static readonly int RimColorID = Shader.PropertyToID("_RimColor");
         private static readonly int RimIntensityID = Shader.PropertyToID("_RimIntensity");
@@ -29,6 +33,11 @@ namespace PuzzleGame.Presentation
         public void Construct(AnimationConfig animConfig)
         {
             _animConfig = animConfig;
+        }
+
+        private void Awake()
+        {
+            _lifetimeToken = this.GetCancellationTokenOnDestroy();
         }
 
         public void Initialize(IMoldView[] moldViews)
@@ -57,8 +66,8 @@ namespace PuzzleGame.Presentation
                 mpb.SetFloat(RimIntensityID, 3f);
                 renderer.SetPropertyBlock(mpb, 0);
 
-                // Schedule clear after duration
-                StartCoroutine(ClearRimAfterDelay(renderer, _indicatorDuration));
+                // Schedule clear after duration (fire-and-forget, token cancels on destroy)
+                ClearRimAfterDelayAsync(renderer).Forget();
             }
 
             // Spawn X indicator at mold position
@@ -69,7 +78,7 @@ namespace PuzzleGame.Presentation
                 indicator.SetActive(true);
                 _activeIndicators[moldIndex] = indicator;
 
-                StartCoroutine(ReturnIndicatorAfterDelay(moldIndex, _indicatorDuration));
+                ReturnIndicatorAfterDelayAsync(moldIndex).Forget();
             }
         }
 
@@ -96,9 +105,9 @@ namespace PuzzleGame.Presentation
             _indicatorPool.Enqueue(indicator);
         }
 
-        private System.Collections.IEnumerator ClearRimAfterDelay(Renderer renderer, float delay)
+        private async UniTaskVoid ClearRimAfterDelayAsync(Renderer renderer)
         {
-            yield return new WaitForSeconds(delay);
+            await UniTask.Delay(System.TimeSpan.FromSeconds(_indicatorDuration), cancellationToken: _lifetimeToken);
             if (renderer != null)
             {
                 var mpb = new MaterialPropertyBlock();
@@ -108,9 +117,9 @@ namespace PuzzleGame.Presentation
             }
         }
 
-        private System.Collections.IEnumerator ReturnIndicatorAfterDelay(int moldIndex, float delay)
+        private async UniTaskVoid ReturnIndicatorAfterDelayAsync(int moldIndex)
         {
-            yield return new WaitForSeconds(delay);
+            await UniTask.Delay(System.TimeSpan.FromSeconds(_indicatorDuration), cancellationToken: _lifetimeToken);
             if (_activeIndicators.TryGetValue(moldIndex, out var indicator))
             {
                 ReturnToPool(indicator);

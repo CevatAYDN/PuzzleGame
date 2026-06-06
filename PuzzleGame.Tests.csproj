@@ -1,4 +1,4 @@
-<Project>
+﻿<Project>
   <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->
   <PropertyGroup>
     <BaseIntermediateOutputPath>Temp\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Tests\Fakes\FakeLevelGenerator.cs" />
+    <Compile Include="Assets\Tests\Fakes\FakeHapticFeedbackService.cs" />
     <Compile Include="Assets\Tests\Domain\Models\DomainColorTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\ReactionServiceTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\GameHistoryManagerTests.cs" />
@@ -61,6 +62,7 @@
     <Compile Include="Assets\Tests\Infrastructure\Pool\PoolManagerTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\SecureFileLevelProgressServiceTests.cs" />
     <Compile Include="Assets\Tests\Infrastructure\OnboardingFlowLogicTests.cs" />
+    <Compile Include="Assets\Tests\Presentation\WinLoseEvaluatorTests.cs" />
     <Compile Include="Assets\Tests\Infrastructure\ConsentManagerTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeAudioService.cs" />
     <Compile Include="Assets\Tests\Application\Services\GameStateMachineTests.cs" />
@@ -71,6 +73,7 @@
     <Compile Include="Assets\Tests\Fakes\FakeCastService.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeSaveManager.cs" />
     <Compile Include="Assets\Tests\Infrastructure\UnityMemorySnapshotServiceTests.cs" />
+    <Compile Include="Assets\Tests\Fakes\FakeActiveMoldsProvider.cs" />
     <Compile Include="Assets\Tests\Presentation\DailyChallengeCountdownTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeMoldSelectionService.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeMoldValidator.cs" />
@@ -80,16 +83,20 @@
     <Compile Include="Assets\Tests\Infrastructure\JsonTranslationProviderTests.cs" />
     <Compile Include="Assets\Tests\Infrastructure\Pool\GameObjectPoolTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\AnimationServiceTests.cs" />
+    <Compile Include="Assets\Tests\Application\Services\AgeGateServiceTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeErrorIndicatorService.cs" />
     <Compile Include="Assets\Tests\Presentation\BiomeProgressTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeTweenService.cs" />
+    <Compile Include="Assets\Tests\Fakes\FakeLevelProgressService.cs" />
     <Compile Include="Assets\Tests\Domain\Services\LocalizationServiceTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeReactionService.cs" />
     <Compile Include="Assets\Tests\Presentation\LevelBiomeClassifierTests.cs" />
+    <Compile Include="Assets\Tests\Application\Services\UndoServiceTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\CastServiceTests.cs" />
     <Compile Include="Assets\Tests\Application\MoldSelectionServiceTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\InputHandlerServiceTests.cs" />
     <Compile Include="Assets\Tests\Domain\Services\LevelGeneratorSolvabilityTests.cs" />
+    <Compile Include="Assets\Tests\Fakes\FakeCoinWallet.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeStreamRenderer.cs" />
     <Compile Include="Assets\Tests\Application\Services\GameSaveManagerTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeStreamTrailController.cs" />
@@ -105,17 +112,18 @@
     <Compile Include="Assets\Tests\Infrastructure\UpdateManagerTests.cs" />
     <Compile Include="Assets\Tests\Application\EventAggregatorMemoryTests.cs" />
     <Compile Include="Assets\Tests\Domain\Services\MoldValidationServiceTests.cs" />
+    <Compile Include="Assets\Tests\Application\Services\HintServiceTests.cs" />
     <Compile Include="Assets\Tests\Application\BiomeArtCatalogTests.cs" />
     <Compile Include="Assets\Tests\Editor\LevelDataBatchCreatorTests.cs" />
     <Compile Include="Assets\Tests\Domain\Services\LevelGeneratorTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeMoldView.cs" />
     <Compile Include="Assets\Tests\Events\EventAggregatorTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\LevelSetupServiceTests.cs" />
+    <Compile Include="Assets\Tests\Application\Services\DailyChallengeServiceTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeAnimationService.cs" />
     <Compile Include="Assets\Tests\Domain\Models\OreLayerTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\LevelValidationServiceTests.cs" />
     <Compile Include="Assets\Tests\Infrastructure\PlayerPrefsAudioSettingsServiceTests.cs" />
-    <Compile Include="Assets\Tests\Fakes\FakeActiveMoldsProvider.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Tests\PuzzleGame.Tests.asmdef" />

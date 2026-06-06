@@ -5,7 +5,8 @@
         "PuzzleGame.Domain",
         "VContainer",
         "PrimeTween.Runtime",
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "UniTask"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

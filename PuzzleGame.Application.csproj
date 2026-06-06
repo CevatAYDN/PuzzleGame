@@ -1,4 +1,4 @@
-<Project>
+﻿<Project>
   <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->
   <PropertyGroup>
     <BaseIntermediateOutputPath>Temp\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
@@ -65,6 +65,7 @@
     <Compile Include="Assets\Scripts\Application\Services\UndoService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\ScriptableObjectLevelRepository.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IAgeVerificationService.cs" />
+    <Compile Include="Assets\Scripts\Application\Interfaces\ISaveCrypto.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IHintService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IErrorIndicatorService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IGameObjectPool.cs" />
@@ -95,6 +96,7 @@
     <Compile Include="Assets\Scripts\Application\Services\GameSaveManager.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IParticleFactory.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\UIStyleConfig.cs" />
+    <Compile Include="Assets\Scripts\Application\Services\StreakService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\SecureFileLevelProgressService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\MoldSelectionService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IReactionService.cs" />
@@ -103,6 +105,7 @@
     <Compile Include="Assets\Scripts\Application\Interfaces\IStreamRenderer.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IShaderOptimizer.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\ICastService.cs" />
+    <Compile Include="Assets\Scripts\Application\Interfaces\ISaveStorage.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\ICoinWallet.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IGameHistoryManager.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\EconomyConfig.cs" />
@@ -137,7 +140,6 @@
     <Compile Include="Assets\Scripts\Application\Configuration\MoldVisualConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\LevelData.cs" />
     <Compile Include="Assets\Scripts\Application\Services\ReactionService.cs" />
-    <Compile Include="Assets\Scripts\Application\Services\StreakService.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Scripts\Application\PuzzleGame.Application.asmdef" />
@@ -1277,6 +1279,10 @@
     </Reference>
     <Reference Include="Unity.TextMeshPro">
       <HintPath>Library\ScriptAssemblies\Unity.TextMeshPro.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UniTask">
+      <HintPath>Library\ScriptAssemblies\UniTask.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEditor.UI">

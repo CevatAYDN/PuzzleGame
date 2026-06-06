@@ -24,7 +24,7 @@ namespace PuzzleGame.Presentation
         private readonly IGameHistoryManager _history;
         private readonly ITweenService _tween;
         private readonly IEventAggregator _events;
-        private readonly MoldPoolInitializer _pool;
+        private readonly IActiveMoldsProvider _pool;
         private LevelData _currentLevel;
 
         public WinLoseEvaluator(
@@ -35,7 +35,7 @@ namespace PuzzleGame.Presentation
             IGameHistoryManager history,
             ITweenService tween,
             IEventAggregator events,
-            MoldPoolInitializer pool)
+            IActiveMoldsProvider pool)
         {
             _stateMachine = stateMachine;
             _validator = validator;

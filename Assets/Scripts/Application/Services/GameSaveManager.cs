@@ -1,19 +1,17 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Security.Cryptography;
-using System.Text;
-using PuzzleGame.Domain.Models;
-using UnityEngine;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Logging;
+using PuzzleGame.Domain.Models;
+using UnityEngine;
 
 namespace PuzzleGame.Application.Services
 {
     /// <summary>
-    /// HMAC-SHA256 anti-tamper save manager.
-    /// Converted from static class to injectable instance (Fix #1 — Critical).
-    /// Register via DI: builder.Register&lt;ISaveManager, GameSaveManager&gt;(Lifetime.Singleton)
+    /// Secure level progress orchestrator. Owns the in-memory cache and the
+    /// serialization format; delegates crypto to <see cref="ISaveCrypto"/> and
+    /// file IO to <see cref="ISaveStorage"/>. Split from a 384 LOC god-class
+    /// in Sprint #18.
     ///
     /// File format:
     ///   - Level states serialized to JSON → payload
@@ -22,31 +20,37 @@ namespace PuzzleGame.Application.Services
     /// </summary>
     public class GameSaveManager : ISaveManager
     {
-        private const string SaveFileName = "puzzlegame_save.json";
         private const int CurrentVersion = 1;
         private const int MaxLevelsInMemory = 1000;
 
-        private readonly string SecretKey = BuildSecretKey();
+        private readonly ISaveCrypto _crypto;
+        private readonly ISaveStorage _storage;
 
         private SaveData _cachedSaveData;
         private bool _cacheLoaded;
 
-        private static string BuildSecretKey()
+        public GameSaveManager() : this(CreateDefaultCrypto(), CreateDefaultStorage()) { }
+
+        public GameSaveManager(ISaveCrypto crypto, ISaveStorage storage)
         {
-            // Cihaz-bağımlı tuz + statik biber.
-            // Tuz: her kurulumda farklıdır (device unique id + cihaz adı).
-            // Biber: tersine mühendisliği zorlaştırmak için kodun içinde tutulur.
-            // Tüm tuzun kaybolması (yeni cihaz, format) eski save'lerin reddedilmesine yol açar — kabul edilebilir trade-off.
-            string deviceId = SystemInfo.deviceUniqueIdentifier ?? "fallback";
-            string deviceModel = SystemInfo.deviceModel ?? "unknown";
-            const string pepper = "PG-Save-v1-X72kQ9mPr4tFv8wL";
-            return $"{deviceId}:{deviceModel}:{pepper}";
+            _crypto = crypto ?? throw new ArgumentNullException(nameof(crypto));
+            _storage = storage ?? throw new ArgumentNullException(nameof(storage));
         }
 
-        private string FilePath =>
-            Path.Combine(UnityEngine.Application.persistentDataPath, SaveFileName);
+        // Reflection-based defaults so the Application layer doesn't take a
+        // compile-time dependency on PuzzleGame.Infrastructure. VContainer
+        // resolution still uses the concrete types directly.
+        private static ISaveCrypto CreateDefaultCrypto()
+        {
+            var t = Type.GetType("PuzzleGame.Infrastructure.Implementations.SaveCrypto, PuzzleGame.Infrastructure");
+            return t != null ? (ISaveCrypto)Activator.CreateInstance(t) : null;
+        }
 
-        private string TempPath => FilePath + ".tmp";
+        private static ISaveStorage CreateDefaultStorage()
+        {
+            var t = Type.GetType("PuzzleGame.Infrastructure.Implementations.SaveStorage, PuzzleGame.Infrastructure");
+            return t != null ? (ISaveStorage)Activator.CreateInstance(t) : null;
+        }
 
         // ── Domain types ────────────────────────────────────────────────────
 
@@ -88,8 +92,7 @@ namespace PuzzleGame.Application.Services
                 var layers = new OreLayer[count];
                 for (int i = 0; i < count; i++)
                 {
-                    var color = new DomainColor(
-                        colorR[i], colorG[i], colorB[i], colorA[i]);
+                    var color = new DomainColor(colorR[i], colorG[i], colorB[i], colorA[i]);
                     layers[i] = new OreLayer(color, amounts[i]);
                 }
                 return layers;
@@ -115,23 +118,18 @@ namespace PuzzleGame.Application.Services
             public List<LevelStateData> levels = new List<LevelStateData>();
         }
 
-        // Save dosya formatı: içeriği değiştirilmiş payload'ı korur
         [Serializable]
         private class SecureFile
         {
             public int version;
             public string salt;
-            public string payload; // base64(utf8(json of SaveData))
-            public string signature; // hex of HMAC-SHA256
+            public string payload;
+            public string signature;
         }
 
         // ── Public API ──────────────────────────────────────────────────────
 
-        /// <summary>
-        /// Level state'ini kaydeder. Atomic write kullanır (yarım kalmış dosya oluşmaz).
-        /// </summary>
-        public bool Save(int levelIndex, int moveCount,
-            IMoldView[] Molds, bool isCompleted, int stars)
+        public bool Save(int levelIndex, int moveCount, IMoldView[] Molds, bool isCompleted, int stars)
         {
             if (Molds == null) return false;
 
@@ -159,17 +157,13 @@ namespace PuzzleGame.Application.Services
             else
             {
                 if (data.levels.Count >= MaxLevelsInMemory)
-                    data.levels.RemoveAt(0); // eski level'ı at
+                    data.levels.RemoveAt(0);
                 data.levels.Add(levelData);
             }
 
             return WriteSecure(data);
         }
 
-        /// <summary>
-        /// Belirtilen level'ın doğrulanmış kaydını döndürür.
-        /// Dosya yoksa, signature yanlışsa, JSON bozuksa null döner.
-        /// </summary>
         public GameSaveData? LoadLevel(int levelIndex)
         {
             var data = LoadVerified();
@@ -180,17 +174,14 @@ namespace PuzzleGame.Application.Services
             return new GameSaveData
             {
                 LevelIndex = raw.levelIndex,
-                MoveCount  = raw.moveCount,
+                MoveCount = raw.moveCount,
                 IsCompleted = raw.isCompleted,
                 Stars = raw.stars,
                 SavedAtUnix = raw.savedAtUnix
             };
         }
 
-        public int LoadLastPlayedLevel()
-        {
-            return LoadVerified()?.lastPlayedLevel ?? 0;
-        }
+        public int LoadLastPlayedLevel() => LoadVerified()?.lastPlayedLevel ?? 0;
 
         public void DeleteAll()
         {
@@ -198,8 +189,7 @@ namespace PuzzleGame.Application.Services
             {
                 _cachedSaveData = null;
                 _cacheLoaded = false;
-                if (File.Exists(FilePath)) File.Delete(FilePath);
-                if (File.Exists(TempPath)) File.Delete(TempPath);
+                _storage.Delete();
                 MoldLogger.LogInfo("[GameSaveManager] All save data deleted.");
             }
             catch (Exception ex)
@@ -212,43 +202,23 @@ namespace PuzzleGame.Application.Services
 
         public static GameSaveManager EditorInstance { get; } = new GameSaveManager();
 
-        public bool HasSaveData => File.Exists(FilePath);
+        public bool HasSaveData => _storage.Exists();
 
         public bool VerifyIntegrity() => LoadVerified() != null;
 
-        public long FileSizeBytes
-        {
-            get
-            {
-                try
-                {
-                    if (File.Exists(FilePath)) return new FileInfo(FilePath).Length;
-                }
-                catch (Exception ex)
-                {
-                    MoldLogger.LogWarning($"[GameSaveManager] FileSizeBytes failed: {ex.Message}");
-                }
-                return 0;
-            }
-        }
+        public long FileSizeBytes => _storage.GetSize();
 
-        public string SaveFilePath => FilePath;
+        public string SaveFilePath => _storage.FilePath;
 
-        public SaveData PeekVerified()
-        {
-            return LoadVerified();
-        }
+        public SaveData PeekVerified() => LoadVerified();
 
         // ── Core: verify + write ────────────────────────────────────────────
 
         private SaveData LoadVerified()
         {
-            if (_cacheLoaded)
-            {
-                return _cachedSaveData;
-            }
+            if (_cacheLoaded) return _cachedSaveData;
 
-            if (!File.Exists(FilePath))
+            if (!_storage.Exists())
             {
                 _cachedSaveData = null;
                 _cacheLoaded = true;
@@ -257,26 +227,22 @@ namespace PuzzleGame.Application.Services
 
             try
             {
-                string json = File.ReadAllText(FilePath, Encoding.UTF8);
-                var secure = JsonUtility.FromJson<SecureFile>(json);
+                var secure = JsonUtility.FromJson<SecureFile>(_storage.ReadAll());
                 if (secure == null) return null;
 
-                // Version check
                 if (secure.version != CurrentVersion)
                 {
                     MoldLogger.LogWarning($"[GameSaveManager] Save version mismatch (got {secure.version}, expected {CurrentVersion}). Discarding.");
                     return null;
                 }
 
-                // Signature check
-                if (!VerifyHmac(secure.salt, secure.payload, secure.signature))
+                if (!_crypto.Verify(secure.salt, secure.payload, secure.signature))
                 {
                     MoldLogger.LogWarning("[GameSaveManager] Save signature invalid — file tampered or corrupted.");
                     return null;
                 }
 
-                // Payload decode
-                string payloadJson = Encoding.UTF8.GetString(Convert.FromBase64String(secure.payload));
+                string payloadJson = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(secure.payload));
                 var data = JsonUtility.FromJson<SaveData>(payloadJson);
                 _cachedSaveData = data;
                 _cacheLoaded = true;
@@ -294,9 +260,9 @@ namespace PuzzleGame.Application.Services
             try
             {
                 string payloadJson = JsonUtility.ToJson(data);
-                string payload = Convert.ToBase64String(Encoding.UTF8.GetBytes(payloadJson));
-                string salt = GenerateSalt();
-                string signature = ComputeHmac(salt, payload);
+                string payload = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(payloadJson));
+                string salt = _crypto.GenerateSalt();
+                string signature = _crypto.Sign(salt, payload);
 
                 var secure = new SecureFile
                 {
@@ -305,18 +271,9 @@ namespace PuzzleGame.Application.Services
                     payload = payload,
                     signature = signature,
                 };
-                string json = JsonUtility.ToJson(secure);
 
-                // Atomic write: temp'e yaz, sonra rename
-                string dir = Path.GetDirectoryName(FilePath);
-                if (!string.IsNullOrEmpty(dir))
-                    Directory.CreateDirectory(dir);
+                _storage.WriteAtomic(JsonUtility.ToJson(secure));
 
-                File.WriteAllText(TempPath, json, Encoding.UTF8);
-                if (File.Exists(FilePath)) File.Delete(FilePath);
-                File.Move(TempPath, FilePath);
-
-                // Update cache
                 _cachedSaveData = data;
                 _cacheLoaded = true;
 
@@ -326,59 +283,16 @@ namespace PuzzleGame.Application.Services
             catch (Exception ex)
             {
                 MoldLogger.LogError($"[GameSaveManager] Save failed: {ex.Message}");
-                try 
-                { 
-                    if (File.Exists(TempPath)) File.Delete(TempPath); 
-                } 
-                catch (Exception deleteEx)
-                {
-                    MoldLogger.LogWarning($"[GameSaveManager] Temp file delete failed: {deleteEx.Message}");
-                }
                 return false;
             }
         }
-
-        // ── HMAC-SHA256 helpers ─────────────────────────────────────────────
-
-        private string ComputeHmac(string salt, string payload)
-        {
-            using (var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(SecretKey)))
-            {
-                byte[] data = Encoding.UTF8.GetBytes(salt + payload);
-                byte[] hash = hmac.ComputeHash(data);
-                return ByteArrayToHex(hash);
-            }
-        }
-
-        private bool VerifyHmac(string salt, string payload, string expectedHex)
-        {
-            string actual = ComputeHmac(salt, payload);
-            // Constant-time comparison — timing attack koruması
-            return CryptographicEquals(actual, expectedHex);
-        }
-
-        private static bool CryptographicEquals(string a, string b)
-        {
-            if (a == null || b == null || a.Length != b.Length) return false;
-            int diff = 0;
-            for (int i = 0; i < a.Length; i++)
-                diff |= a[i] ^ b[i];
-            return diff == 0;
-        }
-
-        private static string GenerateSalt()
-        {
-            var bytes = new byte[16];
-            using (var rng = RandomNumberGenerator.Create())
-                rng.GetBytes(bytes);
-            return Convert.ToBase64String(bytes);
-        }
-
-        private static string ByteArrayToHex(byte[] bytes)
-        {
-            var sb = new StringBuilder(bytes.Length * 2);
-            foreach (var b in bytes) sb.Append(b.ToString("x2"));
-            return sb.ToString();
-        }
     }
+
+    // ── Editor-instance default adapters (allow no-arg ctor / static EditorInstance) ──
+    // These wrap the concrete Infrastructure types only when no DI container is in play.
+    // DI registration uses SaveCrypto / SaveStorage directly via their interfaces.
+
+    // Adapters removed (Sprint #18c): default instances now use reflection
+    // (CreateDefaultCrypto/CreateDefaultStorage above) to avoid an
+    // Application→Infrastructure compile-time reference.
 }

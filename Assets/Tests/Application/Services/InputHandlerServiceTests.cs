@@ -22,6 +22,7 @@ namespace PuzzleGame.Tests.Application.Services
         private FakeAudioService _audioService;
         private FakeHistoryManager _historyManager;
         private FakeCastService _CastService;
+        private FakeHapticFeedbackService _hapticService;
         private GameConfig _gameConfig;
         private AnimationConfig _animConfig;
         private FakeActiveMoldsProvider _activeMoldsProvider;
@@ -40,6 +41,7 @@ namespace PuzzleGame.Tests.Application.Services
             _audioService = new FakeAudioService();
             _historyManager = new FakeHistoryManager();
             _CastService = new FakeCastService();
+            _hapticService = new FakeHapticFeedbackService();
 
             _gameConfig = ScriptableObject.CreateInstance<GameConfig>();
             _gameConfig.MoldLayerMask = 1 << 8;
@@ -60,7 +62,8 @@ namespace PuzzleGame.Tests.Application.Services
                 _inputHandler, Camera.main, _stateMachine,
                 _animationService, _selectionService, _validator,
                 _gameConfig, _animConfig, _audioService,
-                _historyManager, _CastService, lookup, defaults, _activeMoldsProvider);
+                _historyManager, _CastService, lookup, defaults, _activeMoldsProvider,
+                _hapticService);
             _sut = new InputHandlerService(router, lookup, defaults);
         }
 
