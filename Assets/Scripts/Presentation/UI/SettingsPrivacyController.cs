@@ -47,18 +47,18 @@ namespace PuzzleGame.Presentation.UI
             _analyticsService = analyticsService;
             _ageService = ageService;
 
-            _analyticsToggle.onValueChanged.AddListener(OnAnalyticsToggled);
-            _personalizedAdsToggle.onValueChanged.AddListener(OnPersonalizedToggled);
-            _resetConsentButton.onClick.AddListener(OnResetConsent);
-            _deleteDataButton.onClick.AddListener(OnDeleteData);
-            _ageVerifyButton.onClick.AddListener(OnReVerifyAge);
+            if (_analyticsToggle != null) _analyticsToggle.onValueChanged.AddListener(OnAnalyticsToggled);
+            if (_personalizedAdsToggle != null) _personalizedAdsToggle.onValueChanged.AddListener(OnPersonalizedToggled);
+            if (_resetConsentButton != null) _resetConsentButton.onClick.AddListener(OnResetConsent);
+            if (_deleteDataButton != null) _deleteDataButton.onClick.AddListener(OnDeleteData);
+            if (_ageVerifyButton != null) _ageVerifyButton.onClick.AddListener(OnReVerifyAge);
 
             if (_privacyPolicyButton != null)
                 _privacyPolicyButton.onClick.AddListener(() => UnityEngine.Application.OpenURL("https://oresorter.app/privacy"));
             if (_termsButton != null)
                 _termsButton.onClick.AddListener(() => UnityEngine.Application.OpenURL("https://oresorter.app/terms"));
 
-            _confirmNoButton.onClick.AddListener(HideConfirm);
+            if (_confirmNoButton != null) _confirmNoButton.onClick.AddListener(HideConfirm);
 
             RefreshToggles();
         }
@@ -68,8 +68,8 @@ namespace PuzzleGame.Presentation.UI
 
         private void RefreshToggles()
         {
-            _analyticsToggle.SetIsOnWithoutNotify(_analyticsService.IsEnabled);
-            _personalizedAdsToggle.SetIsOnWithoutNotify(_adService.IsPersonalizedAdsEnabled);
+            if (_analyticsToggle != null) _analyticsToggle.SetIsOnWithoutNotify(_analyticsService.IsEnabled);
+            if (_personalizedAdsToggle != null) _personalizedAdsToggle.SetIsOnWithoutNotify(_adService.IsPersonalizedAdsEnabled);
         }
 
         private void OnAnalyticsToggled(bool enabled)
@@ -130,11 +130,11 @@ namespace PuzzleGame.Presentation.UI
 
         private void OnDestroy()
         {
-            _analyticsToggle.onValueChanged.RemoveListener(OnAnalyticsToggled);
-            _personalizedAdsToggle.onValueChanged.RemoveListener(OnPersonalizedToggled);
-            _resetConsentButton.onClick.RemoveListener(OnResetConsent);
-            _deleteDataButton.onClick.RemoveListener(OnDeleteData);
-            _ageVerifyButton.onClick.RemoveListener(OnReVerifyAge);
+            if (_analyticsToggle != null) _analyticsToggle.onValueChanged.RemoveListener(OnAnalyticsToggled);
+            if (_personalizedAdsToggle != null) _personalizedAdsToggle.onValueChanged.RemoveListener(OnPersonalizedToggled);
+            if (_resetConsentButton != null) _resetConsentButton.onClick.RemoveListener(OnResetConsent);
+            if (_deleteDataButton != null) _deleteDataButton.onClick.RemoveListener(OnDeleteData);
+            if (_ageVerifyButton != null) _ageVerifyButton.onClick.RemoveListener(OnReVerifyAge);
         }
     }
 }

@@ -67,6 +67,7 @@
     <Compile Include="Assets\Scripts\Presentation\UI\LevelSelectUI.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldCorkController.cs" />
     <Compile Include="Assets\Scripts\Presentation\URPConfigHelper.cs" />
+    <Compile Include="Assets\Scripts\Presentation\CameraEffectsBootstrap.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\ConsentModal.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldStateManager.cs" />
     <Compile Include="Assets\Scripts\Presentation\GameManager.cs" />

@@ -54,10 +54,10 @@ namespace PuzzleGame.Presentation.UI
             _analyticsService = analyticsService ?? throw new ArgumentNullException(nameof(analyticsService));
             _ageService = ageService ?? throw new ArgumentNullException(nameof(ageService));
 
-            _acceptAllButton.onClick.AddListener(OnAcceptAll);
-            _rejectAllButton.onClick.AddListener(OnRejectAll);
-            _manageChoicesButton.onClick.AddListener(OnManageChoices);
-            _saveChoicesButton.onClick.AddListener(OnSaveChoices);
+            if (_acceptAllButton != null) _acceptAllButton.onClick.AddListener(OnAcceptAll);
+            if (_rejectAllButton != null) _rejectAllButton.onClick.AddListener(OnRejectAll);
+            if (_manageChoicesButton != null) _manageChoicesButton.onClick.AddListener(OnManageChoices);
+            if (_saveChoicesButton != null) _saveChoicesButton.onClick.AddListener(OnSaveChoices);
 
             if (_privacyPolicyButton != null)
                 _privacyPolicyButton.onClick.AddListener(() => UnityEngine.Application.OpenURL("https://oresorter.app/privacy"));
@@ -71,7 +71,7 @@ namespace PuzzleGame.Presentation.UI
         {
             gameObject.SetActive(true);
             if (_under13Notice != null) _under13Notice.gameObject.SetActive(_ageService.IsUnder13);
-            _mainPanel.SetActive(true);
+            if (_mainPanel != null) _mainPanel.SetActive(true);
             if (_granularPanel != null) _granularPanel.SetActive(false);
         }
 
@@ -125,10 +125,10 @@ namespace PuzzleGame.Presentation.UI
 
         private void OnDestroy()
         {
-            _acceptAllButton.onClick.RemoveListener(OnAcceptAll);
-            _rejectAllButton.onClick.RemoveListener(OnRejectAll);
-            _manageChoicesButton.onClick.RemoveListener(OnManageChoices);
-            _saveChoicesButton.onClick.RemoveListener(OnSaveChoices);
+            if (_acceptAllButton != null) _acceptAllButton.onClick.RemoveListener(OnAcceptAll);
+            if (_rejectAllButton != null) _rejectAllButton.onClick.RemoveListener(OnRejectAll);
+            if (_manageChoicesButton != null) _manageChoicesButton.onClick.RemoveListener(OnManageChoices);
+            if (_saveChoicesButton != null) _saveChoicesButton.onClick.RemoveListener(OnSaveChoices);
         }
     }
 }

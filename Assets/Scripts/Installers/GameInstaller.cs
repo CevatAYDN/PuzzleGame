@@ -97,7 +97,7 @@ namespace PuzzleGame.Installers
             // StreamingAssets path lives inside the APK and requires UnityWebRequest,
             // so the platform-specific async provider is registered instead and the
             // LocalizationBootstrap MonoBehaviour is created to preload it.
-            builder.Register<ITranslationProvider, JsonTranslationProvider>(Lifetime.Singleton);
+            builder.Register<ITranslationProvider>(resolver => new JsonTranslationProvider(), Lifetime.Singleton);
             builder.Register<ILocalizationService, LocalizationService>(Lifetime.Singleton)
                    .WithParameter(Domain.Models.SupportedLanguage.Turkish);
 
@@ -192,7 +192,8 @@ namespace PuzzleGame.Installers
                 .AsSelf()
                 .As<IErrorIndicatorService>();
 
-            builder.RegisterComponentInHierarchy<CameraEffectsController>();
+            var cameraEffects = PuzzleGame.Presentation.CameraEffectsBootstrap.EnsureExists();
+            builder.RegisterComponent(cameraEffects);
 
             builder.Register<MoldPoolInitializer>(Lifetime.Singleton)
                    .As<IActiveMoldsProvider>()
@@ -205,22 +206,22 @@ namespace PuzzleGame.Installers
             builder.Register<WinLoseEvaluator>(Lifetime.Singleton);
 
             // HUD presenter — must be a MonoBehaviour to serialize inspector references
-            builder.RegisterComponentInHierarchy<HudPresenter>();
+            RegisterComponentInHierarchyOrFallback<HudPresenter>(builder);
 
             // Consent flow UI — MonoBehaviours live on the consent scene prefab
-            builder.RegisterComponentInHierarchy<PuzzleGame.Presentation.UI.AgeGateModal>();
-            builder.RegisterComponentInHierarchy<PuzzleGame.Presentation.UI.ConsentModal>();
-            builder.RegisterComponentInHierarchy<PuzzleGame.Presentation.UI.SettingsPrivacyController>();
-            builder.RegisterComponentInHierarchy<PuzzleGame.Presentation.UI.SettingsSoundController>();
+            RegisterComponentInHierarchyOrFallback<PuzzleGame.Presentation.UI.AgeGateModal>(builder);
+            RegisterComponentInHierarchyOrFallback<PuzzleGame.Presentation.UI.ConsentModal>(builder);
+            RegisterComponentInHierarchyOrFallback<PuzzleGame.Presentation.UI.SettingsPrivacyController>(builder);
+            RegisterComponentInHierarchyOrFallback<PuzzleGame.Presentation.UI.SettingsSoundController>(builder);
 
             // Main menu — entry point after onboarding; manages Play/Daily/Settings/Privacy buttons
-            builder.RegisterComponentInHierarchy<PuzzleGame.Presentation.UI.MainMenuController>();
+            RegisterComponentInHierarchyOrFallback<PuzzleGame.Presentation.UI.MainMenuController>(builder);
 
             // World map — shows 2 biome cards (Crystal Mines + Volcanic Forge) with progress
-            builder.RegisterComponentInHierarchy<PuzzleGame.Presentation.UI.WorldMapController>();
+            RegisterComponentInHierarchyOrFallback<PuzzleGame.Presentation.UI.WorldMapController>(builder);
 
             // Daily challenge — entry screen with streak/countdown/play
-            builder.RegisterComponentInHierarchy<PuzzleGame.Presentation.UI.DailyChallengeController>();
+            RegisterComponentInHierarchyOrFallback<PuzzleGame.Presentation.UI.DailyChallengeController>(builder);
 
             // AI art provider — reads from BiomeArtCatalog ScriptableObject (optional, returns defaults if empty)
             builder.Register<PuzzleGame.Application.Interfaces.IBiomeArtProvider, PuzzleGame.Infrastructure.ScriptableObjectBiomeArtProvider>(Lifetime.Singleton);
@@ -295,6 +296,19 @@ namespace PuzzleGame.Installers
                     "No LevelData assets found in Resources/Levels. Build a level catalog or " +
                     "assign one in the GameInstaller inspector.");
             }
+        }
+
+        private void RegisterComponentInHierarchyOrFallback<T>(IContainerBuilder builder) where T : Component
+        {
+            var component = Object.FindAnyObjectByType<T>();
+            if (component == null)
+            {
+                var go = new GameObject($"[Fallback] {typeof(T).Name}");
+                component = go.AddComponent<T>();
+                DontDestroyOnLoad(go);
+                MoldLogger.LogWarning($"[DI Fallback] {typeof(T).Name} not found in scene. Created fallback object: {go.name}");
+            }
+            builder.RegisterComponent(component);
         }
     }
 }

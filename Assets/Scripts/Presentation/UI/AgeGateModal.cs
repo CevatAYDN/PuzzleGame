@@ -36,7 +36,7 @@ namespace PuzzleGame.Presentation.UI
         {
             _ageService = ageService ?? throw new ArgumentNullException(nameof(ageService));
             ConfigureSliders();
-            _continueButton.onClick.AddListener(OnContinueClicked);
+            if (_continueButton != null) _continueButton.onClick.AddListener(OnContinueClicked);
             Hide();
         }
 
@@ -48,7 +48,7 @@ namespace PuzzleGame.Presentation.UI
                 return;
             }
             gameObject.SetActive(true);
-            _modalPanel.SetActive(true);
+            if (_modalPanel != null) _modalPanel.SetActive(true);
             if (_errorLabel != null) _errorLabel.gameObject.SetActive(false);
         }
 
