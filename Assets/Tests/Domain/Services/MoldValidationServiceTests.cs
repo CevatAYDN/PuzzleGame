@@ -158,9 +158,12 @@ namespace PuzzleGame.Domain.Tests.Services
         // ── IsComplete ──────────────────────────────────────────────────────
 
         [Test]
-        public void IsComplete_EmptyMold_ReturnsTrue()
+        public void IsComplete_EmptyMold_ReturnsFalse()
         {
-            Assert.That(_validator.IsComplete(_source), Is.True);
+            // Fix #2: An empty mold is NOT complete — puzzle only ends when every
+            // ore is sorted into a uniformly full mold. Returning true here would
+            // silently pass win-checks on half-finished levels.
+            Assert.That(_validator.IsComplete(_source), Is.False);
         }
 
         [Test]

@@ -5,6 +5,7 @@ using GoogleMobileAds.Api;
 using GoogleMobileAds.Ump.Api;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Logging;
+using PuzzleGame.Domain.Interfaces;
 using System;
 
 namespace PuzzleGame.Application.Services
@@ -17,8 +18,19 @@ namespace PuzzleGame.Application.Services
         private bool _isConsentFormLoaded = false;
         private bool _isMobileAdsInitialized = false;
         private bool _isInterstitialReady = false;
+        private bool _isPersonalizedAdsEnabled = true;
+        private AdConsentState _consentState = AdConsentState.Unknown;
         private InterstitialAd _interstitialAd;
         private Action _onAdClosedCallback;
+
+        // IAdService implementation
+        public bool IsInitialized => _isMobileAdsInitialized && _isConsentFormLoaded;
+        public bool IsPersonalizedAdsEnabled
+        {
+            get => _isPersonalizedAdsEnabled;
+            set => _isPersonalizedAdsEnabled = value;
+        }
+        public AdConsentState ConsentState => _consentState;
 
         public AdMobService(IGameStateMachine stateMachine, IAnalyticsService analytics, IAudioService audio)
         {
@@ -137,30 +149,35 @@ namespace PuzzleGame.Application.Services
             if (_interstitialAd != null)
             {
                 _interstitialAd.Destroy();
+                _interstitialAd = null;
             }
 
-            _interstitialAd = new InterstitialAd(adUnitId);
-            _interstitialAd.OnAdLoaded += HandleOnAdLoaded;
-            _interstitialAd.OnAdFailedToLoad += HandleOnAdFailedToLoad;
-            _interstitialAd.OnAdClosed += HandleOnAdClosed;
+            // SDK 11+ API: Use static Load method
+            var adRequest = new AdRequest();
+            InterstitialAd.Load(adUnitId, adRequest, (InterstitialAd ad, LoadAdError error) =>
+            {
+                if (error != null)
+                {
+                    _isInterstitialReady = false;
+                    MoldLogger.LogError($"Interstitial ad failed to load: {error.GetMessage()}");
+                    return;
+                }
 
-            var request = new AdRequest.Builder().Build();
-            _interstitialAd.LoadAd(request);
+                _interstitialAd = ad;
+                _isInterstitialReady = true;
+                MoldLogger.LogInfo("Interstitial ad loaded successfully.");
+
+                // Register event handlers
+                _interstitialAd.OnAdFullScreenContentClosed += HandleOnAdClosed;
+                _interstitialAd.OnAdFullScreenContentFailed += (AdError err) =>
+                {
+                    _isInterstitialReady = false;
+                    MoldLogger.LogError($"Interstitial ad failed to show: {err.GetMessage()}");
+                };
+            });
         }
 
-        private void HandleOnAdLoaded(object sender, EventArgs args)
-        {
-            _isInterstitialReady = true;
-            MoldLogger.LogInfo("Interstitial ad loaded successfully.");
-        }
-
-        private void HandleOnAdFailedToLoad(object sender, AdFailedToLoadEventArgs args)
-        {
-            _isInterstitialReady = false;
-            MoldLogger.LogError($"Interstitial ad failed to load: {args.LoadAdError.GetMessage()}");
-        }
-
-        private void HandleOnAdClosed(object sender, EventArgs args)
+        private void HandleOnAdClosed()
         {
             _isInterstitialReady = false;
             _onAdClosedCallback?.Invoke();
@@ -174,6 +191,43 @@ namespace PuzzleGame.Application.Services
                 _interstitialAd.Destroy();
                 _interstitialAd = null;
             }
+        }
+
+        // IAdService implementation - explicit interface methods
+        public void Initialize()
+        {
+            // SDK is already initialized in constructor, just reload consent if needed
+            if (ConsentInformation.CanRequestAds())
+            {
+                _isConsentFormLoaded = true;
+                _consentState = AdConsentState.Accepted;
+            }
+        }
+
+        public void SetConsentState(AdConsentState state, bool personalizedAds)
+        {
+            _consentState = state;
+            _isPersonalizedAdsEnabled = personalizedAds;
+            MoldLogger.LogInfo($"Consent state set to: {state}, Personalized: {personalizedAds}");
+        }
+
+        public bool IsRewardedAdReady(RewardedAdType type)
+        {
+            // Placeholder - not implemented in current version
+            return false;
+        }
+
+        public void ShowRewardedAd(RewardedAdType type, Action<bool> onComplete)
+        {
+            // Placeholder - not implemented in current version
+            MoldLogger.LogWarning("Rewarded ads not implemented yet.");
+            onComplete?.Invoke(false);
+        }
+
+        public void PreloadAds()
+        {
+            // Placeholder - preload logic would go here
+            MoldLogger.LogInfo("Preloading ads...");
         }
     }
 }

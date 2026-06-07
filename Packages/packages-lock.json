@@ -1,17 +1,34 @@
 {
   "dependencies": {
     "com.cysharp.unitask": {
-      "version": "2.5.10",
+      "version": "2.5.11",
       "depth": 0,
       "source": "registry",
       "dependencies": {},
       "url": "https://package.openupm.com"
     },
-    "com.kyrylokuzyk.primetween": {
-      "version": "file:../Assets/Plugins/PrimeTween/internal/com.kyrylokuzyk.primetween-1.4.0.tgz",
+    "com.google.ads.mobile": {
+      "version": "file:com.google.ads.mobile",
       "depth": 0,
-      "source": "local-tarball",
-      "dependencies": {}
+      "source": "embedded",
+      "dependencies": {
+        "com.google.external-dependency-manager": "1.2.187",
+        "com.unity.modules.androidjni": "1.0.0"
+      }
+    },
+    "com.google.external-dependency-manager": {
+      "version": "1.2.187",
+      "depth": 1,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://package.openupm.com"
+    },
+    "com.kyrylokuzyk.primetween": {
+      "version": "1.4.0",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://registry.npmjs.org"
     },
     "com.unity.addressables": {
       "version": "2.9.1",

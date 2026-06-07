@@ -44,10 +44,19 @@ namespace PuzzleGame.Domain.Services
         }
 
         /// <exception cref="ArgumentNullException">If Mold is null.</exception>
+        /// <remarks>
+        /// Fix #2: An empty mold is NOT "complete" — the puzzle is only complete when
+        /// every ore is sorted into a uniformly full mold. Returning true for empty
+        /// would silently allow win checks to pass on a half-finished level. Callers
+        /// (e.g. <c>WinLoseEvaluator</c>) skip empty molds in their loop; the few
+        /// callers that need the "is this mold uniformly full?" semantic should use
+        /// this method's new return value directly. Per fail-loudly policy, callers
+        /// must be aware: empty ⇒ not complete.
+        /// </remarks>
         public bool IsComplete(MoldState Mold)
         {
             if (Mold == null) throw new ArgumentNullException(nameof(Mold));
-            if (Mold.IsEmpty) return true;
+            if (Mold.IsEmpty) return false;
             if (!Mold.IsFull) return false;
 
             var layers = Mold.Layers;

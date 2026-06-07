@@ -34,7 +34,15 @@ namespace PuzzleGame.Infrastructure.Implementations
 
         // ── Snapshot Stack ────────────────────────────────────────────────────
         // Each snapshot is a serialized MoldState copy for every active mold.
-        private readonly Stack<List<OreLayer>[]> _snapshots = new Stack<List<OreLayer>[]>(32);
+        //
+        // Fix #9: Previously a bounded `Stack<T>` with manual rotation on overflow.
+        // The rotation logic was wrong: `Stack<T>.ToArray()` returns the stack
+        // contents in LIFO order (top → bottom), but the rotation code reused the
+        // existing top-of-stack as the new top, which kept the most-recent snapshot
+        // at the BOTTOM and evicted the *second*-most-recent instead of the oldest.
+        // A `Queue<T>` is the right primitive here — FIFO with a single
+        // `Dequeue()` call to drop the oldest entry when capacity is exceeded.
+        private readonly Queue<List<OreLayer>[]> _snapshots = new Queue<List<OreLayer>[]>(32);
 
         // ── Debug Flags ───────────────────────────────────────────────────────
         public bool IsDebugModeEnabled { get; set; }
@@ -276,22 +284,21 @@ namespace PuzzleGame.Infrastructure.Implementations
                     ? new List<OreLayer>(mold.State.Layers)
                     : new List<OreLayer>(0);
             }
-            _snapshots.Push(snap);
+            _snapshots.Enqueue(snap);
 
-            if (_snapshots.Count > 32)
+            // Fix #9: Simple FIFO eviction — drop the oldest snapshot when full.
+            // The previous Stack-based rotation kept the newest at the bottom and
+            // popped the second-newest, which silently broke undo ordering.
+            while (_snapshots.Count > 32)
             {
-                // Discard oldest
-                var old = _snapshots.ToArray();
-                _snapshots.Clear();
-                for (int i = 1; i < old.Length; i++)
-                    _snapshots.Push(old[i]);
+                _snapshots.Dequeue();
             }
         }
 
         public void RestoreSnapshot()
         {
             if (_snapshots.Count == 0) return;
-            var snap = _snapshots.Pop();
+            var snap = _snapshots.Dequeue();
 
             for (int i = 0; i < snap.Length && i < (_molds?.Length ?? 0); i++)
             {

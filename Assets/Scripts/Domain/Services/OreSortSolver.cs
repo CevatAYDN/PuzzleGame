@@ -1,5 +1,4 @@
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using PuzzleGame.Domain;
 using PuzzleGame.Domain.Models;
@@ -10,9 +9,19 @@ namespace PuzzleGame.Domain.Services
     /// Evaluates playability and solves Ore Sort puzzles using Breadth-First Search.
     /// Pure C# — no UnityEngine dependency. Suitable for headless CI / cloud validation.
     ///
-    /// Fix #5: ComputeCanonicalKey no longer encodes Mold index into the hash key.
-    ///         Sorting is now purely content-based — symmetry elimination works correctly.
-    /// Fix #13: BFS hot path uses ArrayPool&lt;int[]&gt; to reduce GC pressure.
+    /// Fix #5:  ComputeCanonicalKey no longer encodes Mold index into the hash key.
+    ///          Sorting is now purely content-based — symmetry elimination works correctly.
+    /// Fix #13: BFS hot path previously used ArrayPool&lt;int[]&gt; to reduce GC pressure.
+    /// Fix #19: REMOVED ArrayPool — the original implementation rented pooled buffers and
+    ///          returned them inside the `finally` block, but those same buffers were
+    ///          already referenced by `nextNode` which had been enqueued (or kept as
+    ///          `Parent` for future nodes). Result: a use-after-return where subsequent
+    ///          `Rent()` calls could hand out the same memory to a *different* node,
+    ///          corrupting the BFS state space and producing non-deterministic solvability
+    ///          results. BFS state space is bounded by 16 molds × 4 layers (= 64 ints
+    ///          per snapshot) and the solver only runs at level-load time, so the GC
+    ///          savings were negligible. Plain allocation is correct, deterministic, and
+    ///          keeps the data-flow obvious.
     /// </summary>
     public class OreSortSolver
     {
@@ -174,71 +183,61 @@ namespace PuzzleGame.Domain.Services
 
                         if (countToCast == 0) continue;
 
-                        var ownedMolds = ArrayPool<int[]>.Shared.Rent(current.Molds.Length);
-                        int[] srcArray = null;
-                        int[] tgtArray = null;
-
-                        try
+                        // Fix #19: Plain allocation. Bounded by 16 molds × 4 layers
+                        // (= max 16 int[] per snapshot, each ≤ 4 ints). Allocates
+                        // only on the path that produces a brand-new state.
+                        var nextMolds = new int[current.Molds.Length][];
+                        for (int k = 0; k < current.Molds.Length; k++)
                         {
-                            for (int k = 0; k < current.Molds.Length; k++)
+                            if (k == i)
                             {
-                                if (k == i)
+                                int newSrcLen = source.Length - countToCast;
+                                if (newSrcLen == 0)
                                 {
-                                    int newSrcLen = source.Length - countToCast;
-                                    if (newSrcLen == 0)
-                                    {
-                                        ownedMolds[k] = Array.Empty<int>();
-                                    }
-                                    else
-                                    {
-                                        srcArray = ArrayPool<int>.Shared.Rent(newSrcLen);
-                                        Array.Copy(source, srcArray, newSrcLen);
-                                        ownedMolds[k] = srcArray;
-                                    }
-                                }
-                                else if (k == j)
-                                {
-                                    int newTgtLen = target.Length + countToCast;
-                                    tgtArray = ArrayPool<int>.Shared.Rent(newTgtLen);
-                                    Array.Copy(target, tgtArray, target.Length);
-                                    for (int p = 0; p < countToCast; p++)
-                                        tgtArray[target.Length + p] = sourceTopColor;
-                                    ownedMolds[k] = tgtArray;
+                                    nextMolds[k] = Array.Empty<int>();
                                 }
                                 else
                                 {
-                                    ownedMolds[k] = current.Molds[k];
+                                    var newSrc = new int[newSrcLen];
+                                    Array.Copy(source, newSrc, newSrcLen);
+                                    nextMolds[k] = newSrc;
                                 }
                             }
-
-                            var nextNode = new StateNode(ownedMolds, new Move(i, j), current, MoldCount);
-                            ulong hash = nextNode.ComputeCanonicalKey(maxLayers);
-                            if (!visited.Contains(hash))
+                            else if (k == j)
                             {
-                                if (nextNode.IsSolved(maxLayers))
-                                {
-                                    var path = new List<Move>();
-                                    var temp = nextNode;
-                                    while (temp.Parent != null)
-                                    {
-                                        path.Add(temp.LastMove);
-                                        temp = temp.Parent;
-                                    }
-                                    path.Reverse();
-                                    return new SolverResult { IsSolvable = true, SolutionPath = path, VisitedStatesCount = visitedCount };
-                                }
-
-                                visited.Add(hash);
-                                queue.Enqueue(nextNode);
+                                int newTgtLen = target.Length + countToCast;
+                                var newTgt = new int[newTgtLen];
+                                Array.Copy(target, newTgt, target.Length);
+                                for (int p = 0; p < countToCast; p++)
+                                    newTgt[target.Length + p] = sourceTopColor;
+                                nextMolds[k] = newTgt;
+                            }
+                            else
+                            {
+                                // Unchanged: share the parent's array reference. Read-only after enqueue.
+                                nextMolds[k] = current.Molds[k];
                             }
                         }
-                        finally
+
+                        var nextNode = new StateNode(nextMolds, new Move(i, j), current, MoldCount);
+                        ulong hash = nextNode.ComputeCanonicalKey(maxLayers);
+                        if (!visited.Contains(hash))
                         {
-                            if (srcArray != null && srcArray.Length > 0)
-                                ArrayPool<int>.Shared.Return(srcArray);
-                            if (tgtArray != null && tgtArray.Length > 0)
-                                ArrayPool<int>.Shared.Return(tgtArray);
-                            ArrayPool<int[]>.Shared.Return(ownedMolds);
+                            if (nextNode.IsSolved(maxLayers))
+                            {
+                                var path = new List<Move>();
+                                var temp = nextNode;
+                                while (temp.Parent != null)
+                                {
+                                    path.Add(temp.LastMove);
+                                    temp = temp.Parent;
+                                }
+                                path.Reverse();
+                                return new SolverResult { IsSolvable = true, SolutionPath = path, VisitedStatesCount = visitedCount };
+                            }
+
+                            visited.Add(hash);
+                            queue.Enqueue(nextNode);
                         }
                     }
                 }

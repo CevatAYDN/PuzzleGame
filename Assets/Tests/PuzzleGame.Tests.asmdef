@@ -8,7 +8,8 @@
         "PuzzleGame.Application",
         "PuzzleGame.Infrastructure",
         "PuzzleGame.Composition",
-        "PuzzleGame.Editor"
+        "PuzzleGame.Editor",
+        "PuzzleGame.Presentation"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

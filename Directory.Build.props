@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <NoStandardLibraries>false</NoStandardLibraries>
+    <NoStdLib>false</NoStdLib>
+    <DisableImplicitFrameworkReferences>false</DisableImplicitFrameworkReferences>
+  </PropertyGroup>
+</Project>

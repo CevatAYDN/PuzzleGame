@@ -27,6 +27,7 @@ namespace PuzzleGame
         private readonly Camera _camera;
         private readonly IErrorIndicatorService _errorIndicator;
         private readonly WobbleConfig _wobbleConfig;
+        private readonly OptionalMoldActivator _optionalMoldActivator;
 
         private readonly List<MoldController> _gameplayMoldsPool = new List<MoldController>();
         private readonly List<MoldController> _optionalMoldsPool = new List<MoldController>();
@@ -65,6 +66,15 @@ namespace PuzzleGame
             _camera = camera;
             _errorIndicator = errorIndicator;
             _wobbleConfig = wobbleConfig;
+            _optionalMoldActivator = new OptionalMoldActivator(
+                _rendererService,
+                _validator,
+                _animationService,
+                _inputHandlerService,
+                _historyManager,
+                _updateManager,
+                _errorIndicator,
+                _wobbleConfig);
         }
 
         /// <summary>
@@ -143,51 +153,11 @@ namespace PuzzleGame
 
         public void ActivateOptionalMolds(LevelData level)
         {
-            if (level == null || level.optionalTargets == null || level.optionalTargets.Count == 0) return;
-
-            int requestedOptionalCount = Mathf.Min(level.optionalTargets.Count, _optionalMoldsPool.Count);
-
-            // We will build a new combined array of IMoldView: all active gameplay molds + activated optional molds
-            var combinedActiveMolds = new List<IMoldView>(_Molds);
-
-            int startIndex = _Molds.Length;
-            for (int i = 0; i < _optionalMoldsPool.Count; i++)
-            {
-                var mold = _optionalMoldsPool[i];
-                if (mold == null) continue;
-
-                if (i < requestedOptionalCount)
-                {
-                    mold.gameObject.SetActive(true);
-                    mold.MoldIndex = startIndex + i;
-
-                    // Initialize the optional mold as empty
-                    mold.Initialize(_rendererService, _validator, _animationService, new List<OreLayer>());
-                    
-                    var wobble = mold.GetComponent<Wobble>();
-                    if (wobble != null)
-                    {
-                        wobble.config = _wobbleConfig;
-                        wobble.SetUpdateManager(_updateManager);
-                    }
-
-                    combinedActiveMolds.Add(mold);
-
-                    var targetConfig = level.optionalTargets[i];
-                    mold.gameObject.name = $"Optional_{targetConfig.name}_{i}";
-                }
-                else
-                {
-                    mold.gameObject.SetActive(false);
-                }
-            }
-
-            // Expose the new combined active molds to the input handler service, history manager and error indicators
-            var finalArray = combinedActiveMolds.ToArray();
-            _Molds = finalArray;
-            _inputHandlerService.SetMolds(finalArray);
-            _historyManager.SetMolds(finalArray);
-            _errorIndicator?.Initialize(finalArray);
+            // Fix #18: Optional target activation is now handled by a focused
+            // collaborator. This keeps MoldPoolInitializer responsible for base
+            // scene mold discovery/setup and moves optional-target wiring into
+            // OptionalMoldActivator.
+            _Molds = _optionalMoldActivator.Activate(level, _optionalMoldsPool, _Molds);
         }
 
         private static readonly MoldNameComparer Comparer = new MoldNameComparer();

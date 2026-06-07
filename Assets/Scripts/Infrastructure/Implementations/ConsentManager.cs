@@ -4,6 +4,7 @@ using PuzzleGame.Application.Logging;
 
 #if HAS_GOOGLE_MOBILE_ADS
 using GoogleMobileAds.Ump;
+using GoogleMobileAds.Ump.Api;
 #endif
 
 namespace PuzzleGame.Infrastructure.Implementations
@@ -40,7 +41,7 @@ namespace PuzzleGame.Infrastructure.Implementations
                     return;
                 }
                 IsReady = true;
-                MoldLogger.LogInfo($"{LogTag} Initialized. Available={ConsentInformation.IsConsentFormAvailable}");
+                MoldLogger.LogInfo($"{LogTag} Initialized. Available={ConsentInformation.IsConsentFormAvailable()}");
             });
 #else
             IsReady = true;

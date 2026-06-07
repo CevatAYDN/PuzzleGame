@@ -19,6 +19,35 @@ namespace PuzzleGame
     /// <see cref="MoldCorkController"/> (cork lifecycle).
     /// SRP: this class only orchestrates component lifecycle and exposes IMoldView.
     /// </summary>
+    /// <remarks>
+    /// REFACTOR ROADMAP (Fix #13): Despite the SRP comment above, this class is
+    /// effectively a 328-line micro-kernel — it owns Unity lifecycle (Awake, OnValidate,
+    /// OnDestroy), DI injection fallback wiring, editor preview, the IMoldView
+    /// adapter surface, and a large public method set. The composition is sound
+    /// (the inner POCOs are well factored) but the facade itself mixes concerns.
+    ///
+    /// Recommended future split (do NOT bundle with bug fixes — each is its own
+    /// PR with regression tests):
+    ///
+    ///   1. <c>MoldViewAdapter : IMoldView</c> — pure data adapter, no Unity references.
+    ///      Methods: <c>State</c>, <c>VisualLayers</c>, <c>IsEmpty/IsFull/IsCapped</c>,
+    ///      <c>UpdateVisuals</c>, <c>SetSelectionHighlight</c>, etc. Just delegates
+    ///      to the inner POCOs. Could be a struct.
+    ///
+    ///   2. <c>MoldBootstrapper : MonoBehaviour</c> — Awake/OnDestroy/OnValidate
+    ///      and the editor preview fallback chain. Knows about Resources.Load,
+    ///      the editor-only reflection services, and the fallback SO creation.
+    ///      Calls into the adapter after composition is complete.
+    ///
+    ///   3. <c>MoldController : MonoBehaviour</c> — only Unity-side integration:
+    ///      [RequireComponent]s, Wobble/Renderer/MoldMeshGenerator caching, and
+    ///      wiring the inspector fields into the bootstrapper.
+    ///
+    /// Each split is independently testable (the adapter as a unit test, the
+    /// bootstrapper with a fake Resources, the controller as a play-mode test)
+    /// and removes the need for the `<c>#if UNITY_EDITOR</c>` blocks scattered
+    /// through this file.
+    /// </remarks>
     [RequireComponent(typeof(Renderer))]
     [RequireComponent(typeof(Wobble))]
     public class MoldController : MonoBehaviour, IMoldView

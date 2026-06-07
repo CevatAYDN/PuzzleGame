@@ -76,6 +76,10 @@ namespace PuzzleGame.Domain.Models
             }
             _layers.Add(layer);
             _totalFill += layer.Amount;
+            // Fix #8: Notify observers on every mutating method, not only ReplaceLayers.
+            // Subscribers (e.g. MoldController visual sync) need to know about AddLayer
+            // and PopTopLayer too, otherwise visuals desync from state on normal casts.
+            OnLayersChanged?.Invoke(this);
         }
 
         /// <exception cref="InvalidOperationException">If the Mold is empty (caller must check IsEmpty).</exception>
@@ -90,6 +94,8 @@ namespace PuzzleGame.Domain.Models
             _layers.RemoveAt(_layers.Count - 1);
             _totalFill -= top.Amount;
             if (_totalFill < ForgeConstants.TotalFillEpsilon) _totalFill = 0f;
+            // Fix #8: see AddLayer.
+            OnLayersChanged?.Invoke(this);
             return top;
         }
 
@@ -97,6 +103,8 @@ namespace PuzzleGame.Domain.Models
         {
             _layers.Clear();
             _totalFill = 0f;
+            // Fix #8: see AddLayer.
+            OnLayersChanged?.Invoke(this);
         }
 
         /// <exception cref="ArgumentOutOfRangeException">If index is negative or &gt;= LayerCount.</exception>
@@ -110,6 +118,8 @@ namespace PuzzleGame.Domain.Models
             var oldLayer = _layers[index];
             _layers[index] = newLayer;
             _totalFill = _totalFill - oldLayer.Amount + newLayer.Amount;
+            // Fix #8: see AddLayer.
+            OnLayersChanged?.Invoke(this);
         }
 
         /// <exception cref="ArgumentOutOfRangeException">If index is negative or &gt;= LayerCount.</exception>
@@ -124,6 +134,8 @@ namespace PuzzleGame.Domain.Models
             _layers.RemoveAt(index);
             _totalFill -= removed.Amount;
             if (_totalFill < ForgeConstants.TotalFillEpsilon) _totalFill = 0f;
+            // Fix #8: see AddLayer.
+            OnLayersChanged?.Invoke(this);
         }
 
         /// <summary>

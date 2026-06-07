@@ -1,17 +1,28 @@
 {
   "scopedRegistries": [
     {
+      "name": "NPM",
+      "url": "https://registry.npmjs.org",
+      "scopes": [
+        "com.kyrylokuzyk"
+      ]
+    },
+    {
       "name": "OpenUPM",
       "url": "https://package.openupm.com",
       "scopes": [
         "jp.hadashikick.vcontainer",
-        "com.kyrylokuzyk.primetween",
-        "com.cysharp.unitask"
+        "com.cysharp.unitask",
+        "com.google.ads.mobile",
+        "com.google.external-dependency-manager"
       ]
     }
   ],
   "dependencies": {
-    "com.kyrylokuzyk.primetween": "file:../Assets/Plugins/PrimeTween/internal/com.kyrylokuzyk.primetween-1.4.0.tgz",
+    "com.cysharp.unitask": "2.5.11",
+    "com.google.ads.mobile": "11.2.0",
+    "com.google.external-dependency-manager": "1.2.179",
+    "com.kyrylokuzyk.primetween": "1.4.0",
     "com.unity.addressables": "2.9.1",
     "com.unity.ai.navigation": "2.0.13",
     "com.unity.collab-proxy": "2.12.4",
@@ -28,7 +39,6 @@
     "com.unity.visualeffectgraph": "17.4.0",
     "com.unity.visualscripting": "1.9.11",
     "jp.hadashikick.vcontainer": "1.18.0",
-    "com.cysharp.unitask": "2.5.10",
     "com.unity.modules.accessibility": "1.0.0",
     "com.unity.modules.adaptiveperformance": "1.0.0",
     "com.unity.modules.ai": "1.0.0",

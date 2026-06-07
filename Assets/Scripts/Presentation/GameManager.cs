@@ -211,8 +211,19 @@ namespace PuzzleGame
 
         private void OnSceneUnloaded(Scene scene)
         {
-            MoldLogger.LogDebug("Scene unloaded — clearing event aggregator subscriptions.");
-            _events?.Clear();
+            // Fix #3: REMOVED `_events?.Clear()`. EventAggregator is registered as
+            // Lifetime.Singleton in GameInstaller (DontDestroyOnLoad scope). Many
+            // long-lived subscribers (LevelFlowController, WinLoseEvaluator, etc.)
+            // are also singletons and live across scene transitions. Clearing the
+            // aggregator on every scene unload silently drops their subscriptions
+            // — the next LevelSelectedEvent after a scene change would never be
+            // handled, and the game would appear frozen.
+            //
+            // Per-scope cleanup should be the responsibility of the LifetimeScope
+            // itself (VContainer handles it when the scope is disposed). If scene-
+            // scoped subscribers are needed in the future, introduce a separate
+            // IScopedEventAggregator rather than nuking the global one here.
+            MoldLogger.LogDebug("Scene unloaded — leaving EventAggregator subscriptions intact.");
         }
 
         public void OnUpdate(float deltaTime)

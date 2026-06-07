@@ -5,6 +5,7 @@
         "PuzzleGame.Domain",
         "PuzzleGame.Application",
         "PuzzleGame.Infrastructure",
+        "PuzzleGame.Presentation",
         "VContainer",
         "PrimeTween.Runtime",
         "Unity.TextMeshPro",

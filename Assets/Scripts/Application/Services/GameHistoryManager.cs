@@ -43,9 +43,22 @@ namespace PuzzleGame.Application.Services
                 return;
             }
 
+            // Fix #10: Size the snapshot to the CURRENT number of active molds,
+            // not the level-initial `_maxMolds`. After ActivateOptionalMolds the
+            // pool grows, but a recycled snapshot from the pool is still sized to
+            // the old `_maxMolds` — extra optional molds would never be recorded
+            // and would silently revert on Undo. Use the larger of the two so
+            // pooled snapshots never truncate a freshly-grown mold set.
+            int neededSize = Math.Max(_maxMolds, _Molds.Length);
             var snapshot = _snapshotPool.Count > 0
                 ? _snapshotPool.Pop()
-                : new List<OreLayer>[_maxMolds];
+                : new List<OreLayer>[neededSize];
+
+            // If a recycled snapshot is too small for the current mold set, grow it.
+            if (snapshot.Length < neededSize)
+            {
+                Array.Resize(ref snapshot, neededSize);
+            }
 
             for (int i = 0; i < _Molds.Length; i++)
             {
@@ -114,6 +127,10 @@ namespace PuzzleGame.Application.Services
 
             if (snapshot.Length == _maxMolds)
             {
+                // Fix #10: Only return to the pool if the snapshot's capacity
+                // matches the original pool's expected size. Snapshots grown to
+                // accommodate optional molds (Array.Resize above) stay in history
+                // to avoid contaminating the pool with oversized entries.
                 for (int i = 0; i < snapshot.Length; i++)
                 {
                     if (snapshot[i] != null)
@@ -132,6 +149,8 @@ namespace PuzzleGame.Application.Services
             while (_history.Count > 0)
             {
                 var snap = _history.Pop();
+                // Fix #10: see Undo — only re-pool snapshots sized for the
+                // original pool capacity to avoid contaminating it.
                 if (snap != null && snap.Length == _maxMolds)
                 {
                     for (int i = 0; i < snap.Length; i++)

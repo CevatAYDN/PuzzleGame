@@ -12,13 +12,15 @@
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
-    "precompiledReferences": [],
+    "precompiledReferences": [
+        "GoogleMobileAds.dll"
+    ],
     "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [
         {
             "name": "com.google.ads.mobile",
-            "expression": "9.0.0",
+            "expression": "11.0.0",
             "define": "HAS_GOOGLE_MOBILE_ADS"
         },
         {

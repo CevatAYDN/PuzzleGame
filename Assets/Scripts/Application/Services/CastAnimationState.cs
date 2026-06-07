@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.VFX;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Interfaces;
@@ -39,7 +40,7 @@ namespace PuzzleGame.Application.Services
         public float ReturnDuration;
 
         // ── Stream / Particles ─────────────────────────────────────────────────
-        public UnityEngine.VFX.VisualEffect Effect;
+        public VisualEffect Effect;
         public IStreamRenderer StreamRenderer;
         public IStreamTrailController TrailController;
         public Color StreamColor;

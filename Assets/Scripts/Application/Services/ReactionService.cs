@@ -51,13 +51,14 @@ namespace PuzzleGame.Application.Services
             if (state == null || state.LayerCount < 2) return false;
 
             int lastIndex = state.LayerCount - 1;
-            if (lastIndex <= 0 || state.LayerCount < 2) return false;
 
+            // Fix #6: Removed dead defensive checks `if (i < 0 || i >= state.LayerCount)`.
+            // `i` is bounded by the loop header `for (int i = 0; i < lastIndex; i++)` —
+            // it can never be negative, and `i < lastIndex` already implies
+            // `i < state.LayerCount`. The `i+1` is similarly guaranteed by the
+            // iteration bound. The checks obscured the real algorithm.
             for (int i = 0; i < lastIndex; i++)
             {
-                if (i < 0 || i >= state.LayerCount) continue;
-                if ((i + 1) < 0 || (i + 1) >= state.LayerCount) continue;
-
                 var layerA = state.GetLayerAt(i);
                 var layerB = state.GetLayerAt(i + 1);
 
@@ -76,7 +77,12 @@ namespace PuzzleGame.Application.Services
                             MoldIndex = GetMoldIndex(Mold),
                             Rule = rule,
                             AffectedLayerA = i,
-                            AffectedLayerB = i + 1
+                            AffectedLayerB = i + 1,
+                            // Fix #17: carry designer-tuned transform amount into
+                            // ProcessTransform instead of relying on a hardcoded
+                            // local value there. Clamp defensively because serialized
+                            // assets can be edited outside the Inspector.
+                            TransformedLayerAmount = Clamp01(config.transformedLayerAmount)
                         };
                         return true;
                     }
@@ -139,10 +145,10 @@ namespace PuzzleGame.Application.Services
             if (layerIndexA < 0 || layerIndexA >= layerCount) return;
             if (layerIndexB < 0 || layerIndexB >= layerCount) return;
 
-            float combinedAmount = 1f;
-            var layerA = state.GetLayerAt(layerIndexA);
-            var layerB = state.GetLayerAt(layerIndexB);
-            combinedAmount = layerA.Amount + layerB.Amount;
+            // Fix #17: Use the designer-tuned transform amount from
+            // ReactionSystemData instead of deriving a potentially over-full
+            // amount from the two input layers.
+            float combinedAmount = result.TransformedLayerAmount;
 
             if (layerIndexA >= 0 && layerIndexA < layerCount)
             {
@@ -178,6 +184,13 @@ namespace PuzzleGame.Application.Services
 
         // Fix Code Quality #5: Use IMoldView.MoldIndex instead of fragile GameObject.name parsing.
         private static int GetMoldIndex(IMoldView Mold) => Mold.MoldIndex;
+
+        private static float Clamp01(float value)
+        {
+            if (value < 0f) return 0f;
+            if (value > 1f) return 1f;
+            return value;
+        }
     }
 
     public struct ReactionResult
@@ -186,5 +199,6 @@ namespace PuzzleGame.Application.Services
         public ReactionRule Rule { get; set; }
         public int AffectedLayerA { get; set; }
         public int AffectedLayerB { get; set; }
+        public float TransformedLayerAmount { get; set; }
     }
 }

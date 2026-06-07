@@ -13,6 +13,15 @@ namespace PuzzleGame.Application.Services
     /// Secured with HMAC-SHA256 signature verification to prevent local file tampering.
     /// Fires <see cref="OnBalanceChanged"/> on every mutation.
     /// </summary>
+    /// <remarks>
+    /// SECURITY MODEL (Fix #12): The HMAC verification here is a first-line defense
+    /// against casual save-file editing, NOT a tamper-proof security boundary. The
+    /// secret pepper is compiled into the binary and recoverable via reflection or
+    /// runtime memory inspection, and any player with a rooted device or custom ROM
+    /// can call the same `ComputeHash` path with a captured `deviceId` to forge a
+    /// valid balance. Treat this as defence-in-depth; do not rely on it to gate
+    /// paid content. For real-money purchases use server-side validation.
+    /// </remarks>
     public sealed class CoinWallet : ICoinWallet
     {
         private const string PrefsKey = "PuzzleGame.CoinBalance";
@@ -72,7 +81,11 @@ namespace PuzzleGame.Application.Services
             if (amount <= 0) return;
             _balance += amount;
             Persist();
-            MoldLogger.LogInfo($"{LogTag} +{amount} ({reason}). New balance: {_balance}.");
+            // Fix #12: Demoted to Debug — the log line discloses the new balance
+            // to anyone tailing the device log (or the in-game debug overlay).
+            // Aggregate transaction counts are still useful for live ops; individual
+            // balances can be reconstructed by listening to OnBalanceChanged.
+            MoldLogger.LogDebug($"{LogTag} +{amount} ({reason}). New balance: {_balance}.");
             OnBalanceChanged?.Invoke(_balance);
         }
 
@@ -82,7 +95,8 @@ namespace PuzzleGame.Application.Services
             if (!CanAfford(amount)) return false;
             _balance -= amount;
             Persist();
-            MoldLogger.LogInfo($"{LogTag} -{amount} ({reason}). New balance: {_balance}.");
+            // Fix #12: see Add.
+            MoldLogger.LogDebug($"{LogTag} -{amount} ({reason}). New balance: {_balance}.");
             OnBalanceChanged?.Invoke(_balance);
             return true;
         }

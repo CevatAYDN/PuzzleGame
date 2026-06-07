@@ -138,8 +138,29 @@ namespace PuzzleGame.Installers
                 CrashReporter.Current = resolver.Resolve<ICrashReportingService>();
             });
 
-            // Ads (falls back to safe no-op inside AdMobService when SDK is missing)
-            builder.Register<IAdService>(resolver => new AdMobService(resolver.Resolve<GameConfig>(), null, null, resolver.Resolve<IAnalyticsService>()), Lifetime.Singleton);
+            // Ads — AdMobService requires GoogleMobileAds SDK (installed via
+            // Package Manager / Assets/Plugins). When the SDK is absent the class
+            // fails to compile with CS0246, so we guard it behind the define.
+            // The fallback NoOpAdService is a compile-time-safe stub that returns
+            // false for IsInterstitialReady() and does nothing on Show.
+#if !GOOGLE_MOBILE_ADS_SDK_MISSING
+            try
+            {
+                builder.Register<IAdService>(resolver =>
+                    new Application.Services.AdMobService(
+                        resolver.Resolve<IGameStateMachine>(),
+                        resolver.Resolve<IAnalyticsService>(),
+                        resolver.Resolve<IAudioService>()),
+                    Lifetime.Singleton);
+            }
+            catch (System.Exception ex)
+            {
+                MoldLogger.LogError($"[DI] AdMobService registration failed: {ex.Message}. Falling back to NoOpAdService.");
+                builder.Register<IAdService, NoOpAdService>(Lifetime.Singleton);
+            }
+#else
+            builder.Register<IAdService, NoOpAdService>(Lifetime.Singleton);
+#endif
             builder.Register<PurchaseController>(Lifetime.Singleton);
 
             // GDPR consent + COPPA age gate
@@ -249,56 +270,22 @@ namespace PuzzleGame.Installers
 
         private void LoadOrThrowConfigs()
         {
-            if (gameConfig == null) gameConfig = Resources.Load<GameConfig>("Data/GameConfig");
-            if (gameConfig == null)
-            {
-                throw new System.InvalidOperationException(
-                    "GameConfig asset missing at Resources/Data/GameConfig. Cannot start without it.");
-            }
+            // Fix #16: Replaced 8 near-identical if/Resources.Load/throw blocks with
+            // a single helper call per config. The helper centralises the fail-
+            // loudly policy and the Inspector-override-vs-Resources fallback, so
+            // adding a new config no longer means copy-pasting 5 lines and a unique
+            // log message.
+            gameConfig       = ConfigLoader.LoadOrThrow(gameConfig,       "Data/GameConfig",       nameof(gameConfig));
+            animationConfig  = ConfigLoader.LoadOrThrow(animationConfig,  "Data/AnimationConfig",  nameof(animationConfig));
+            levelConfig      = ConfigLoader.LoadOrThrow(levelConfig,      "Data/LevelConfig",      nameof(levelConfig));
+            audioConfig      = ConfigLoader.LoadOrThrow(audioConfig,      "Data/AudioConfig",      nameof(audioConfig));
 
-            if (animationConfig == null) animationConfig = Resources.Load<AnimationConfig>("Data/AnimationConfig");
-            if (animationConfig == null)
-            {
-                throw new System.InvalidOperationException(
-                    "AnimationConfig asset missing at Resources/Data/AnimationConfig.");
-            }
+            // These two are tolerated missing (developer tools) but still
+            // get a default-instance fallback so downstream code never sees null.
+            streamVFXConfig  = ConfigLoader.LoadOrDefault(streamVFXConfig, "Data/StreamVFXConfig", nameof(streamVFXConfig));
+            economyConfig    = ConfigLoader.LoadOrDefault(economyConfig,   "Data/EconomyConfig",   nameof(economyConfig));
 
-            if (levelConfig == null) levelConfig = Resources.Load<LevelConfig>("Data/LevelConfig");
-            if (levelConfig == null)
-            {
-                throw new System.InvalidOperationException(
-                    "LevelConfig asset missing at Resources/Data/LevelConfig.");
-            }
-
-            if (audioConfig == null) audioConfig = Resources.Load<AudioConfig>("Data/AudioConfig");
-            if (audioConfig == null)
-            {
-                throw new System.InvalidOperationException(
-                    "AudioConfig asset missing at Resources/Data/AudioConfig.");
-            }
-
-            if (streamVFXConfig == null) streamVFXConfig = Resources.Load<StreamVFXConfig>("Data/StreamVFXConfig");
-            if (streamVFXConfig == null)
-            {
-                MoldLogger.LogWarning("StreamVFXConfig asset missing at Resources/Data/StreamVFXConfig. " +
-                    "Using fallback — create it via Tools > PuzzleGame > Open Editor > Data tab.");
-                streamVFXConfig = ScriptableObject.CreateInstance<StreamVFXConfig>();
-            }
-
-            if (economyConfig == null) economyConfig = Resources.Load<EconomyConfig>("Data/EconomyConfig");
-            if (economyConfig == null)
-            {
-                MoldLogger.LogWarning("EconomyConfig asset missing at Resources/Data/EconomyConfig. " +
-                    "Using defaults — create it via Tools > PuzzleGame > Open Editor > Data tab.");
-                economyConfig = ScriptableObject.CreateInstance<EconomyConfig>();
-            }
-
-            if (wobbleConfig == null) wobbleConfig = Resources.Load<WobbleConfig>("Data/WobbleConfig");
-            if (wobbleConfig == null)
-            {
-                throw new System.InvalidOperationException(
-                    "WobbleConfig asset missing at Resources/Data/WobbleConfig.");
-            }
+            wobbleConfig     = ConfigLoader.LoadOrThrow(wobbleConfig,     "Data/WobbleConfig",     nameof(wobbleConfig));
 
             // OnValidate the values the inspector might have corrupted
             gameConfig.colorMatchTolerance = Mathf.Max(

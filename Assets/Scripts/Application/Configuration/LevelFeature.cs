@@ -87,6 +87,14 @@ namespace PuzzleGame.Application.Configuration.FeatureSystem
         public bool enableReactions = true;
         public List<ReactionRule> reactionRules = new List<ReactionRule>();
 
+        // Fix #17: was hardcoded `combinedAmount = 1f` in ReactionService.ProcessTransform.
+        // Designers can now tune how saturated a transformed layer should be (1.0 = full
+        // mold, 0.5 = half-fill, etc.) without code changes. Defaults to 1.0 to preserve
+        // the previous visual behavior.
+        [Range(0f, 1f)]
+        [Tooltip("Amount of the merged layer after a Transform reaction. 1.0 = full crucible fill, 0.5 = half fill.")]
+        public float transformedLayerAmount = 1f;
+
         public override LevelFeatureType GetFeatureType() => LevelFeatureType.ReactionSystem;
     }
 }

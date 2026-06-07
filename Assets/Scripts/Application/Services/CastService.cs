@@ -120,9 +120,42 @@ namespace PuzzleGame.Application.Services
 
         private bool TryMultiLayerCast(IMoldView source, IMoldView target, LevelData levelData, IMoldView[] activeMolds)
         {
+            // Fix #5: Pre-validate EVERYTHING before mutating state and recording the
+            // undo snapshot. The previous implementation recorded the snapshot
+            // upfront and then rolled back mid-loop if the target filled up — that
+            // left a "dirty" no-op snapshot in the undo stack, so a subsequent
+            // Undo() (which costs coins via UndoService) would change nothing and
+            // silently drain the player's wallet.
             int castCount = GetCastLayerCount(source, target, levelData);
             if (castCount == 0) return false;
 
+            // Sanity-check the actual state still matches what GetCastLayerCount saw.
+            // Between the two calls a concurrent cast could have changed things.
+            var sourceState = source.State;
+            var targetState = target.State;
+            if (sourceState.IsEmpty) return false;
+            if (targetState.IsFull) return false;
+
+            // Verify source actually has `castCount` consecutive top layers matching.
+            // GetCastLayerCount only checks the COUNT, not that they still exist.
+            if (sourceState.LayerCount < castCount) return false;
+            var topColor = sourceState.TopLayer.HasValue
+                ? sourceState.TopLayer.Value.Color
+                : default(DomainColor);
+            int consecutive = 0;
+            for (int i = sourceState.LayerCount - 1; i >= 0 && consecutive < castCount; i--)
+            {
+                if (_validator.ColorsMatch(sourceState.GetLayerAt(i).Color, topColor))
+                    consecutive++;
+                else
+                    break;
+            }
+            if (consecutive < castCount) return false;
+
+            int targetFreeSlots = targetState.MaxLayers - targetState.LayerCount;
+            if (castCount > targetFreeSlots) return false;
+
+            // All preconditions hold — NOW record the snapshot.
             _historyManager.RecordUndoSnapshot();
 
             int casted = 0;
@@ -132,32 +165,23 @@ namespace PuzzleGame.Application.Services
             {
                 for (int i = 0; i < castCount; i++)
                 {
-                    if (source.State.IsEmpty)
-                    {
-                        Rollback(source, target, casted, rollbackBuffer);
-                        return false;
-                    }
-
-                    OreLayer layer = source.State.PopTopLayer();
-
-                    if (target.State.IsFull)
-                    {
-                        source.State.AddLayer(layer);
-                        Rollback(source, target, casted, rollbackBuffer);
-                        return false;
-                    }
-
-                    target.State.AddLayer(layer);
+                    OreLayer layer = sourceState.PopTopLayer();
+                    targetState.AddLayer(layer);
                     rollbackBuffer[casted] = layer;
                     casted++;
                 }
 
-                if (casted > 0)
-                {
-                    FinalizeCast(source, target, activeMolds, casted);
-                    return true;
-                }
-
+                FinalizeCast(source, target, activeMolds, casted);
+                return true;
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Defensive: if any mutation throws (shouldn't happen after
+                // pre-validation, but MoldState fails loudly), restore state and
+                // pop the snapshot we just recorded so the undo stack stays clean.
+                Rollback(source, target, casted, rollbackBuffer);
+                _historyManager.Undo();
+                MoldLogger.LogError($"[CastService] Multi-layer cast failed mid-loop: {ex.Message}");
                 return false;
             }
             finally

@@ -16,6 +16,30 @@ namespace PuzzleGame.Application.Services
     /// Particle pools use generic GameObjectPool&lt;T&gt;.
     /// Particle prefab creation delegated to ParticlePrefabFactory.
     /// </summary>
+    /// <remarks>
+    /// REFACTOR ROADMAP (Fix #15): This class has 9 constructor dependencies and
+    /// mixes three orthogonal concerns:
+    ///
+    ///   1. <b>Tween orchestration</b> (lift/lower/shake/settle/ore flash) — needs
+    ///      <c>AnimationConfig</c>, <c>ITweenService</c>, <c>IAudioService</c>.
+    ///   2. <b>Particle effects</b> (splash/bubble pools) — needs
+    ///      <c>IPoolManager</c>, <c>IParticleFactory</c>, prefab lifecycle, dispose.
+    ///   3. <b>Cast animation</b> (tilt/flow/return, stream renderer, trail) —
+    ///      needs <c>IStreamRenderer</c>, <c>IStreamTrailController</c>,
+    ///      <c>IColorAdapter</c>, <c>IFeatureFlagService</c>, and the
+    ///      <c>CastAnimationState</c> pool.
+    ///
+    /// Each concern can be split into its own service without changing the public
+    /// surface of <see cref="IAnimationService"/>. Recommended split:
+    ///
+    ///   - <c>ITweenAnimator</c> → <c>TweenAnimatorService</c> (handles lift/lower/shake/settle/ore flash)
+    ///   - <c>IParticleOrchestrator</c> → <c>ParticleOrchestratorService</c> (pool lifecycle + delay-return)
+    ///   - <c>ICastAnimator</c> → <c>CastAnimatorService</c> (tilt/flow/return, owns the CastAnimationState pool)
+    ///
+    /// The current <c>AnimationService</c> can then become a thin facade that
+    /// delegates to the three, preserving backward compatibility. Each sub-service
+    /// becomes individually unit-testable with a minimal fake surface.
+    /// </remarks>
     public class AnimationService : IAnimationService, System.IDisposable
     {
         private readonly AnimationConfig _config;
