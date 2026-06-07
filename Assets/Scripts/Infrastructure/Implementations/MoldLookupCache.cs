@@ -28,7 +28,8 @@ namespace PuzzleGame.Infrastructure.Implementations
             {
                 var view = molds[i];
                 if (view?.GameObject == null) continue;
-                var col = view.GameObject.GetComponent<Collider>();
+                // Use cached Collider from IMoldView (Fix #2)
+                var col = view.Collider;
                 if (col != null)
                     _byColliderId[col.GetEntityId()] = view;
             }

@@ -31,13 +31,38 @@ namespace PuzzleGame.Application.Services
             if (config == null || !config.enableReactions) return 0;
 
             int count = 0;
+
+            // Fix #17: Queue-based chain reaction processing.
+            // Process reactions iteratively instead of linear scan so that
+            // a reaction result (e.g. explosion emptying a mold) can trigger
+            // additional reactions in the same pass.
+            var queue = new Queue<(IMoldView mold, ReactionResult result)>();
+            var processedMolds = new HashSet<IMoldView>();
+
+            // Initial scan: find all reaction candidates
             foreach (var Mold in Molds)
             {
                 if (Mold == null) continue;
                 if (CheckMoldReactions(Mold, config, out ReactionResult result))
                 {
-                    count++;
-                    ProcessReactionResult(Mold, result);
+                    queue.Enqueue((Mold, result));
+                }
+            }
+
+            // Process chain reactions iteratively
+            while (queue.Count > 0)
+            {
+                var (mold, result) = queue.Dequeue();
+                if (processedMolds.Contains(mold)) continue;
+                processedMolds.Add(mold);
+
+                count++;
+                ProcessReactionResult(mold, result);
+
+                // After processing a reaction, check if the same mold triggers new reactions
+                if (CheckMoldReactions(mold, config, out ReactionResult chainResult))
+                {
+                    queue.Enqueue((mold, chainResult));
                 }
             }
 

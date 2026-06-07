@@ -4,6 +4,7 @@ using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Events;
+using PuzzleGame.Application.Logging;
 
 namespace PuzzleGame.Application.Services
 {
@@ -64,6 +65,9 @@ namespace PuzzleGame.Application.Services
             if (_current == next) return false;
             if (_rules.TryGetValue((_current, next), out var guard))
                 return guard();
+            // Fix #25: Log a warning for undefined transitions instead of silently allowing them.
+            // This makes it easier to debug unexpected state flows.
+            MoldLogger.LogWarning($"[StateMachine] No transition rule defined: {_current} → {next}. Allowing by default.");
             return true;
         }
 

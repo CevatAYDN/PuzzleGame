@@ -60,6 +60,8 @@ namespace PuzzleGame.Presentation.UI
         private LevelData _currentLevel;
 
         private readonly StringBuilder _sb = new StringBuilder(64);
+        // Fix #13: Cache last move count to avoid redundant SetText calls
+        private int _lastMoveCount = -1;
 
         [VContainer.Inject]
         public void Construct(
@@ -130,6 +132,7 @@ namespace PuzzleGame.Presentation.UI
         private void OnLevelLoaded(LevelLoadedEvent e)
         {
             _currentLevel = e.Level;
+            _lastMoveCount = -1; // reset cache on level load
             UpdateMoveCount(0);
             UpdateLevelTitle();
             HideAllPanels();
@@ -159,6 +162,11 @@ namespace PuzzleGame.Presentation.UI
         private void UpdateMoveCount(int count)
         {
             if (moveCountText == null || _history == null) return;
+            // Fix #13: Skip update if value hasn't changed to avoid redundant SetText calls
+            // TextMeshPro SetText regenerates mesh every call, so only call when needed
+            if (count == _lastMoveCount) return;
+            _lastMoveCount = count;
+
             string movesLabel = _localization != null ? _localization.GetString("moves_text") : "Moves";
             _sb.Clear();
             _sb.Append(movesLabel).Append(": ").Append(_history.CurrentMoveCount);

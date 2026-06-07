@@ -2,9 +2,12 @@ using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Domain.Models;
 
-namespace PuzzleGame.Infrastructure.Implementations
+namespace PuzzleGame.Application.Services
 {
     /// <summary>
+    /// Fix #A1: Changed namespace from Infrastructure.Implementations to Application.Services
+    /// to match file location (Application/Services/ folder).
+    /// 
     /// Thin facade composing the three input-handler subsystems:
     /// <list type="bullet">
     /// <item><see cref="IMoldInputRouter"/> — input routing + selection/cast flow</item>

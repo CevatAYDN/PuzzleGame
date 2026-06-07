@@ -20,6 +20,7 @@ namespace PuzzleGame.Tests.Fakes
         public int MoldIndex { get; set; }
         public Transform Transform { get; set; }
         public GameObject GameObject { get; set; }
+        public Collider Collider => GameObject != null ? GameObject.GetComponent<Collider>() : null;
         public float Height { get; set; } = 2f;
         public IReadOnlyList<OreLayer> VisualLayers => State.Layers;
         public float VisualTotalFill => State.TotalFill;

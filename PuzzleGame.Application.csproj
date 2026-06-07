@@ -78,7 +78,6 @@
     <Compile Include="Assets\Scripts\Application\Interfaces\IHapticFeedbackService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\AudioClipId.cs" />
     <Compile Include="Assets\Scripts\Application\Services\HintService.cs" />
-    <Compile Include="Assets\Scripts\Application\Services\AdMobService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\PrimeTweenService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\NoOpCrashReportingService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IMoldView.cs" />
@@ -121,6 +120,7 @@
     <Compile Include="Assets\Scripts\Application\Interfaces\ISaveManager.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IInputHandlerService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\ITweenService.cs" />
+    <Compile Include="Assets\Scripts\Application\CorkConstants.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IAnimationService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\ILevelSetupService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\CastService.cs" />

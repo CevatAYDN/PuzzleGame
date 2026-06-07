@@ -10,11 +10,14 @@ namespace PuzzleGame.Infrastructure.Implementations
     /// Handles registration and unregistration safely during updates.
     ///
     /// No longer a singleton — managed by VContainer DI (Lifetime.Singleton).
+    ///
+    /// Fix #5: Uses HashSet for O(1) Contains/Remove instead of List O(n).
+    /// Deferred add/remove buffers remain as Lists since they are small and processed once per frame.
     /// </summary>
     [DefaultExecutionOrder(-100)] // Run before other game updates
     public class UpdateManager : MonoBehaviour, IUpdateManager
     {
-        private readonly List<IUpdateable> _updateables = new List<IUpdateable>(64);
+        private readonly HashSet<IUpdateable> _updateables = new HashSet<IUpdateable>();
         private readonly List<IUpdateable> _toAdd = new List<IUpdateable>(16);
         private readonly List<IUpdateable> _toRemove = new List<IUpdateable>(16);
         private bool _isUpdating;
@@ -30,7 +33,7 @@ namespace PuzzleGame.Infrastructure.Implementations
 
             if (_isUpdating)
                 _toAdd.Add(updateable);
-            else if (!_updateables.Contains(updateable))
+            else
                 _updateables.Add(updateable);
         }
 
@@ -57,25 +60,24 @@ namespace PuzzleGame.Infrastructure.Implementations
                 _toRemove.Clear();
             }
 
-            for (int i = 0; i < _updateables.Count; i++)
-            {
-                var updatable = _updateables[i];
-                if (updatable != null)
-                    updatable.OnUpdate(deltaTime);
-            }
-
-            _isUpdating = false;
-
-            // Deferred add
+            // Apply deferred adds
             if (_toAdd.Count > 0)
             {
                 foreach (var item in _toAdd)
-                {
-                    if (!_updateables.Contains(item))
-                        _updateables.Add(item);
-                }
+                    _updateables.Add(item);
                 _toAdd.Clear();
             }
+
+            // Iterate over a snapshot to avoid modification during iteration
+            // (modifications are captured in _toAdd/_toRemove for next frame)
+            var snapshot = _updateables.Count > 0 ? new List<IUpdateable>(_updateables) : null;
+            if (snapshot != null)
+            {
+                foreach (var u in snapshot)
+                    u.OnUpdate(deltaTime);
+            }
+
+            _isUpdating = false;
         }
     }
 }

@@ -49,7 +49,14 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.4.10f1\Editor\Data\Tools\BuildPipeline\Unity.SourceGenerators\Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Scripts\Installers\LocalizationInstallerModule.cs" />
+    <Compile Include="Assets\Scripts\Installers\PresentationInstallerModule.cs" />
     <Compile Include="Assets\Scripts\Installers\ConfigLoader.cs" />
+    <Compile Include="Assets\Scripts\Installers\GameplayInstallerModule.cs" />
+    <Compile Include="Assets\Scripts\Installers\PersistenceInstallerModule.cs" />
+    <Compile Include="Assets\Scripts\Installers\CoreServicesInstallerModule.cs" />
+    <Compile Include="Assets\Scripts\Installers\ConfigInstallerModule.cs" />
+    <Compile Include="Assets\Scripts\Installers\EconomyInstallerModule.cs" />
     <Compile Include="Assets\Scripts\Installers\GameInstaller.cs" />
   </ItemGroup>
   <ItemGroup>

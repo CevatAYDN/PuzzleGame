@@ -12,6 +12,8 @@ namespace PuzzleGame.Application.Services
     public class ScriptableObjectLevelRepository : ILevelRepository
     {
         private readonly List<LevelData> _sorted;
+        // Fix #M8: Dictionary cache for O(1) lookup instead of O(n) FirstOrDefault
+        private readonly Dictionary<int, LevelData> _byNumber;
 
         public IReadOnlyList<LevelData> AllLevels => _sorted;
 
@@ -24,11 +26,19 @@ namespace PuzzleGame.Application.Services
                 .OrderBy(l => l.levelNumber)
                 .ToList()
                       ?? new List<LevelData>();
+
+            // Build dictionary cache for O(1) lookup
+            _byNumber = new Dictionary<int, LevelData>(_sorted.Count);
+            foreach (var level in _sorted)
+            {
+                _byNumber[level.levelNumber] = level;
+            }
         }
 
         public LevelData GetByNumber(int levelNumber)
         {
-            return _sorted.FirstOrDefault(l => l.levelNumber == levelNumber);
+            // Fix #M8: O(1) dictionary lookup instead of O(n) linear scan
+            return _byNumber.TryGetValue(levelNumber, out var level) ? level : null;
         }
     }
 }

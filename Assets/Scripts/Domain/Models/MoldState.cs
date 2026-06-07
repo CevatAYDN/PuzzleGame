@@ -75,7 +75,10 @@ namespace PuzzleGame.Domain.Models
                     $"Mold is full ({_layers.Count}/{MaxLayers}). Caller must check IsFull before AddLayer.");
             }
             _layers.Add(layer);
-            _totalFill += layer.Amount;
+            // Fix #19: Clamp total fill to avoid floating-point drift accumulation.
+            // Multiple AddLayer calls with fractional amounts (e.g. 0.25f × 4 = 0.9999999f)
+            // can cause precision issues in equality checks.
+            _totalFill = Math.Min(_totalFill + layer.Amount, MaxLayers);
             // Fix #8: Notify observers on every mutating method, not only ReplaceLayers.
             // Subscribers (e.g. MoldController visual sync) need to know about AddLayer
             // and PopTopLayer too, otherwise visuals desync from state on normal casts.
@@ -117,7 +120,8 @@ namespace PuzzleGame.Domain.Models
             }
             var oldLayer = _layers[index];
             _layers[index] = newLayer;
-            _totalFill = _totalFill - oldLayer.Amount + newLayer.Amount;
+            // Fix #19: Clamp total fill to avoid float precision drift
+            _totalFill = Math.Max(0f, Math.Min(_totalFill - oldLayer.Amount + newLayer.Amount, MaxLayers));
             // Fix #8: see AddLayer.
             OnLayersChanged?.Invoke(this);
         }

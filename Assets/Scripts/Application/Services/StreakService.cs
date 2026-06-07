@@ -24,7 +24,9 @@ namespace PuzzleGame.Application.Services
             {
                 var raw = PlayerPrefs.GetString(LastClaimedKey, string.Empty);
                 if (string.IsNullOrEmpty(raw)) return null;
-                return DateTime.TryParse(raw, null, System.Globalization.DateTimeStyles.RoundtripKind, out var dt)
+                // Fix #M6: Use InvariantCulture to prevent locale-dependent parsing issues
+                return DateTime.TryParse(raw, System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.RoundtripKind, out var dt)
                     ? dt.ToUniversalTime()
                     : (DateTime?)null;
             }

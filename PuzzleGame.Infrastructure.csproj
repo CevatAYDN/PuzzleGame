@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
   <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->
   <PropertyGroup>
     <BaseIntermediateOutputPath>Temp\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
@@ -57,7 +57,6 @@
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\ShaderOptimizer.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\ScriptableObjectBiomeArtProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Providers\ResourcesAssetProvider.cs" />
-    <Compile Include="Assets\Scripts\Infrastructure\CorkConstants.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\UpdateManager.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Models\TranslationFile.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\InputHandlerDefaults.cs" />

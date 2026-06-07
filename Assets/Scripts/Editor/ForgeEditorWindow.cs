@@ -55,12 +55,21 @@ namespace PuzzleGame.Editor
 
         private void OnDisable()
         {
+            // SceneView delegate'i en başta kaldır — tab exception'larından etkilenmez
             SceneView.duringSceneGui -= OnSceneGUIInternal;
+
             if (_tabs != null)
             {
                 foreach (var tab in _tabs)
                 {
-                    tab.OnDisable();
+                    try
+                    {
+                        tab.OnDisable();
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogError($"[ForgeEditorWindow] Tab {tab.GetType().Name}.OnDisable() failed: {ex.Message}");
+                    }
                 }
             }
         }

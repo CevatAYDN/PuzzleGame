@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using PuzzleGame.Application;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Logging;
 using PuzzleGame.Application.Configuration;
@@ -76,6 +77,7 @@ namespace PuzzleGame
         public bool IsCapped => _corkController != null && _corkController.IsCapped;
         public Transform Transform => transform;
         public GameObject GameObject => gameObject;
+        public Collider Collider => _cachedCollider;
         public float Height => _meshGenerator != null
             ? _meshGenerator.height
             : visualConfig != null
@@ -90,6 +92,7 @@ namespace PuzzleGame
         private MoldMeshGenerator _meshGenerator;
         private Renderer _renderer;
         private Wobble _wobble;
+        private Collider _cachedCollider;
 
         private IRendererService _rendererService;
         private IMoldValidator _validator;
@@ -98,6 +101,9 @@ namespace PuzzleGame
 
         private void Awake()
         {
+            // Cache Collider to avoid GetComponent calls in hot paths (Fix #2)
+            _cachedCollider = GetComponent<Collider>();
+
             if (_stateManager == null && _serializedLayers != null && _serializedLayers.Count > 0)
             {
                 RestoreStateFromSerialized();
@@ -171,7 +177,7 @@ namespace PuzzleGame
             _corkController = new MoldCorkController(
                 transform, _animationService,
                 () => Height,
-                () => _meshGenerator != null ? _meshGenerator.neckRadius : PuzzleGame.Infrastructure.CorkConstants.Radius,
+                () => _meshGenerator != null ? _meshGenerator.neckRadius : CorkConstants.Radius,
                 corkObject);
             _corkController.EnsureCork();
             corkObject = _corkController.CorkObject;
@@ -252,7 +258,7 @@ namespace PuzzleGame
                 _corkController = new MoldCorkController(
                     transform, _animationService,
                     () => Height,
-                    () => _meshGenerator != null ? _meshGenerator.neckRadius : PuzzleGame.Infrastructure.CorkConstants.Radius,
+                    () => _meshGenerator != null ? _meshGenerator.neckRadius : CorkConstants.Radius,
                     corkObject);
             }
             _corkController.EnsureCork(isFromOnValidate);

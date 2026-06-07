@@ -62,7 +62,9 @@ namespace PuzzleGame.Application.Services
         public void MarkCompleted()
         {
             PlayerPrefs.SetInt(CompletedKey, 1);
-            PlayerPrefs.Save();
+            // Fix #M5: Removed explicit Save() call. Unity auto-saves on Quit/Dispose.
+            // Explicit Save() on every completion causes disk I/O overhead on low-end devices.
+            // For explicit flush needed, call PlayerPrefs.Save() from Application.quitting callback.
         }
 
         public void Reset()

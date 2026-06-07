@@ -23,6 +23,10 @@ namespace PuzzleGame
         private MaterialPropertyBlock _propBlock;
         private bool? _isHighlighted = null; // Fix: Nullable to ensure initial SetSelectionHighlight(false) is applied
 
+        // Dirty flag cache to avoid redundant renderer service calls (Fix #12)
+        private int _lastLayerHash = -1;
+        private float _lastTotalFill = -1f;
+
         private static readonly int FresnelIntensityID = Shader.PropertyToID("_FresnelIntensity");
 
         public MoldVisualRenderer(
@@ -41,6 +45,7 @@ namespace PuzzleGame
 
         /// <summary>
         /// Pushes current visual state (layers + fill) to the renderer service for both Ore and glass materials.
+        /// Uses dirty flag pattern to skip redundant updates (Fix #12).
         /// </summary>
         public void Update()
         {
@@ -49,11 +54,43 @@ namespace PuzzleGame
             var visualLayers = _visualLayersProvider();
             float visualTotalFill = _visualTotalFillProvider();
 
+            // Dirty flag: compute hash of current state
+            int layerHash = visualLayers != null ? ComputeLayerHash(visualLayers) : 0;
+
+            // Skip if state unchanged
+            if (layerHash == _lastLayerHash && Mathf.Abs(visualTotalFill - _lastTotalFill) < 0.0001f)
+                return;
+
+            _lastLayerHash = layerHash;
+            _lastTotalFill = visualTotalFill;
+
+            // Fix #K3: Guard against null visualLayers after dirty flag
+            if (visualLayers == null)
+            {
+                visualLayers = new List<OreLayer>();
+            }
+
             _rendererService.UpdateOre(_renderer, visualLayers, visualTotalFill, _visualConfig);
 
             bool isEmpty = visualLayers.Count == 0 || visualTotalFill <= ForgeConstants.LayerAmountEpsilon;
             DomainColor baseColor = visualLayers.Count > 0 ? visualLayers[0].Color : new DomainColor(0, 0, 0, 0);
             _rendererService.UpdateGlass(_renderer, isEmpty, baseColor, _visualConfig);
+        }
+
+        /// <summary>
+        /// Computes a fast hash of layer list (color + amount) for dirty detection.
+        /// </summary>
+        private static int ComputeLayerHash(List<OreLayer> layers)
+        {
+            if (layers == null || layers.Count == 0) return 0;
+            int hash = layers.Count;
+            for (int i = 0; i < layers.Count; i++)
+            {
+                var layer = layers[i];
+                hash = hash * 31 + layer.Color.GetHashCode();
+                hash = hash * 31 + layer.Amount.GetHashCode();
+            }
+            return hash;
         }
 
         /// <summary>

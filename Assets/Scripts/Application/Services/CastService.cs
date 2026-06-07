@@ -42,6 +42,11 @@ namespace PuzzleGame.Application.Services
             if (target == null) throw new ArgumentNullException(nameof(target));
             if (levelData == null) throw new ArgumentNullException(nameof(levelData), "levelData is required.");
 
+            // Fix #4: Reaction sonrası source mold state'inin güncellenmesi için
+            // source ve target referanslarını tut. ReactionService, IMoldView
+            // üzerinden state'i modify edebilir ve bu değişiklikler source/target
+            // üzerinden otomatik olarak görünür olur.
+
             return levelData.enableMultiLayerCast
                 ? TryMultiLayerCast(source, target, levelData, activeMolds)
                 : TrySingleLayerCast(source, target, activeMolds);

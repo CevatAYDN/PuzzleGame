@@ -229,5 +229,103 @@ namespace PuzzleGame.Events.Tests
         {
             public string Data { get; set; }
         }
+
+        // ── SubscribeToken (Fix #9: IDisposable token-based subscription) ──
+
+        [Test]
+        public void SubscribeToken_HandlerIsCalled()
+        {
+            bool called = false;
+            using (_eventAggregator.SubscribeToken<TestEvent>(e => called = true))
+            {
+                _eventAggregator.Publish(new TestEvent());
+            }
+            Assert.That(called, Is.True);
+        }
+
+        [Test]
+        public void SubscribeToken_DisposeUnsubscribes()
+        {
+            bool called = false;
+            var token = _eventAggregator.SubscribeToken<TestEvent>(e => called = true);
+            token.Dispose();
+
+            _eventAggregator.Publish(new TestEvent());
+            Assert.That(called, Is.False);
+        }
+
+        [Test]
+        public void SubscribeToken_DoubleDispose_DoesNotThrow()
+        {
+            var token = _eventAggregator.SubscribeToken<TestEvent>(e => { });
+            token.Dispose();
+            Assert.DoesNotThrow(() => token.Dispose());
+        }
+
+        [Test]
+        public void SubscribeToken_UsingStatement_AutoUnsubscribes()
+        {
+            int callCount = 0;
+            using (_eventAggregator.SubscribeToken<TestEvent>(e => callCount++))
+            {
+                _eventAggregator.Publish(new TestEvent());
+                Assert.That(callCount, Is.EqualTo(1));
+            }
+            // After using block, subscription should be removed
+            _eventAggregator.Publish(new TestEvent());
+            Assert.That(callCount, Is.EqualTo(1)); // still 1, not 2
+        }
+
+        [Test]
+        public void SubscribeToken_MultipleTokens_IndependentDispose()
+        {
+            int count1 = 0, count2 = 0;
+            var token1 = _eventAggregator.SubscribeToken<TestEvent>(e => count1++);
+            var token2 = _eventAggregator.SubscribeToken<TestEvent>(e => count2++);
+
+            _eventAggregator.Publish(new TestEvent());
+            Assert.That(count1, Is.EqualTo(1));
+            Assert.That(count2, Is.EqualTo(1));
+
+            token1.Dispose();
+            _eventAggregator.Publish(new TestEvent());
+            Assert.That(count1, Is.EqualTo(1)); // unsubscribed
+            Assert.That(count2, Is.EqualTo(2)); // still active
+
+            token2.Dispose();
+        }
+
+        // ── Clear<T> (Fix #26: Event-type bazlı cleanup) ───────────────────
+
+        [Test]
+        public void ClearGeneric_OnlyClearsSpecifiedType()
+        {
+            bool testCalled = false;
+            bool otherCalled = false;
+            _eventAggregator.Subscribe<TestEvent>(e => testCalled = true);
+            _eventAggregator.Subscribe<OtherTestEvent>(e => otherCalled = true);
+
+            _eventAggregator.Clear<TestEvent>();
+
+            _eventAggregator.Publish(new TestEvent());
+            _eventAggregator.Publish(new OtherTestEvent());
+
+            Assert.That(testCalled, Is.False); // cleared
+            Assert.That(otherCalled, Is.True); // still active
+        }
+
+        [Test]
+        public void ClearGeneric_NonExistentType_DoesNotThrow()
+        {
+            Assert.DoesNotThrow(() => _eventAggregator.Clear<TestEvent>());
+        }
+
+        [Test]
+        public void ClearGeneric_CanBeCalledAfterFullClear()
+        {
+            _eventAggregator.Subscribe<TestEvent>(e => { });
+            _eventAggregator.Clear();
+            Assert.DoesNotThrow(() => _eventAggregator.Clear<TestEvent>());
+        }
     }
 }

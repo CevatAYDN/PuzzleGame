@@ -39,6 +39,8 @@ namespace PuzzleGame.Infrastructure.Implementations
 
         private LevelData _currentLevelData;
         private Vector3 _selectedOriginalPos;
+        // Fix #24: Frame guard to prevent processing multiple inputs per frame
+        private int _lastProcessedFrame = -1;
 
         public MoldInputRouter(
             IInputHandler inputHandler,
@@ -78,6 +80,11 @@ namespace PuzzleGame.Infrastructure.Implementations
 
         public void ProcessInput()
         {
+            // Fix #24: Frame-based guard — ensure ProcessInput is called only once per frame.
+            // Without this guard, multiple calls within same frame could process duplicate input.
+            if (Time.frameCount == _lastProcessedFrame) return;
+            _lastProcessedFrame = Time.frameCount;
+
             if (_stateMachine == null)
             {
                 MoldLogger.LogWarning("[MoldInputRouter] ProcessInput skipped: _stateMachine is null.");

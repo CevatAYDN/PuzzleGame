@@ -207,6 +207,10 @@ namespace PuzzleGame
             {
                 _onboardingFlow.OnCompletedFlow -= OnOnboardingCompleted;
             }
+
+            // Fix #M7: Clear static MoldCorkController caches to prevent memory leaks
+            // across scene loads. This cleans up the shared mesh/material cache.
+            MoldCorkController.ClearCache();
         }
 
         private void OnSceneUnloaded(Scene scene)

@@ -157,6 +157,10 @@ namespace PuzzleGame
             // collaborator. This keeps MoldPoolInitializer responsible for base
             // scene mold discovery/setup and moves optional-target wiring into
             // OptionalMoldActivator.
+            //
+            // Fix #29: NOTE - OptionalMoldActivator.Activate() now handles all dependent
+            // service sync internally (historyManager, inputHandlerService, errorIndicator).
+            // No need for redundant calls here.
             _Molds = _optionalMoldActivator.Activate(level, _optionalMoldsPool, _Molds);
         }
 

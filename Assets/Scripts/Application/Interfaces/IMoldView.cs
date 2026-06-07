@@ -18,6 +18,10 @@ namespace PuzzleGame.Application.Interfaces
         bool IsCapped { get; }
         Transform Transform { get; }
         GameObject GameObject { get; }
+        /// <summary>
+        /// Cached Collider reference. Avoids GetComponent<Collider>() calls in hot paths.
+        /// </summary>
+        Collider Collider { get; }
         float Height { get; }
         IReadOnlyList<OreLayer> VisualLayers { get; }
         float VisualTotalFill { get; }

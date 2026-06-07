@@ -83,6 +83,43 @@ namespace PuzzleGame.Application.Events
             list.Add(new Subscription<T>(handler));
         }
 
+        /// <summary>
+        /// Subscribes and returns an IDisposable token. Dispose() auto-unsubscribes.
+        /// Preferred over manual Subscribe/Unsubscribe for RAII-style cleanup (Fix #9).
+        /// </summary>
+        public IDisposable SubscribeToken<T>(Action<T> handler)
+        {
+            Subscribe(handler);
+            return new SubscriptionToken<T>(this, handler);
+        }
+
+        /// <summary>
+        /// RAII token that auto-unsubscribes when disposed.
+        /// </summary>
+        private sealed class SubscriptionToken<T> : IDisposable
+        {
+            private readonly EventAggregator _aggregator;
+            private Action<T> _handler;
+            private bool _disposed;
+
+            public SubscriptionToken(EventAggregator aggregator, Action<T> handler)
+            {
+                _aggregator = aggregator;
+                _handler = handler;
+            }
+
+            public void Dispose()
+            {
+                if (_disposed) return;
+                _disposed = true;
+                if (_handler != null)
+                {
+                    _aggregator.Unsubscribe(_handler);
+                    _handler = null;
+                }
+            }
+        }
+
         public void Unsubscribe<T>(Action<T> handler)
         {
             if (handler == null) return;
@@ -157,6 +194,21 @@ namespace PuzzleGame.Application.Events
                     _listPool.Push(list);
             }
             _subscribers.Clear();
+        }
+
+        // Fix #26: Event-type bazlı cleanup — sadece belirli bir event tipini temizler.
+        // Clear() tümünü silmek için kullanılır, bu metot ise belirli bir event tipine
+        // abone olanları seçici olarak temizler.
+        public void Clear<T>()
+        {
+            var type = typeof(T);
+            if (_subscribers.TryGetValue(type, out var list))
+            {
+                list.Clear();
+                _subscribers.Remove(type);
+                if (_listPool.Count < MaxPoolSize)
+                    _listPool.Push(list);
+            }
         }
     }
 }

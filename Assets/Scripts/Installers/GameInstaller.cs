@@ -1,21 +1,9 @@
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
-using PuzzleGame.Domain;
-using PuzzleGame.Domain.Interfaces;
-using PuzzleGame.Domain.Services;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Configuration;
-using PuzzleGame.Application.Interfaces;
-using PuzzleGame.Application.Services;
-using PuzzleGame.Application.Events;
-using PuzzleGame.Infrastructure.Implementations;
-using PuzzleGame.Infrastructure.Pool;
-using PuzzleGame.Infrastructure;
 using PuzzleGame.Application.Logging;
-using PuzzleGame.Infrastructure.Providers;
-using PuzzleGame.Presentation;
-using PuzzleGame.Presentation.UI;
 
 namespace PuzzleGame.Installers
 {
@@ -26,6 +14,11 @@ namespace PuzzleGame.Installers
     /// FAIL-LOUDLY: configuration loading and DI registration throw
     /// instead of silently defaulting — the player should never see a
     /// half-configured game due to a missing asset.
+    ///
+    /// Architecture: This class acts as an orchestrator that delegates
+    /// registration to focused installer modules. Each module is a
+    /// single-responsibility static class that registers a cohesive
+    /// group of services.
     /// </summary>
     public class GameInstaller : LifetimeScope
     {
@@ -41,273 +34,35 @@ namespace PuzzleGame.Installers
 
         protected override void Configure(IContainerBuilder builder)
         {
-            LoadOrThrowConfigs();
-            LoadOrThrowLevelCatalog();
+            // 1. Load configurations (fail-loudly)
+            ConfigInstallerModule.Configure(builder, this);
 
-            // Configs as instances
-            builder.RegisterInstance(gameConfig);
-            builder.RegisterInstance(animationConfig);
-            builder.RegisterInstance(levelConfig);
-            builder.RegisterInstance(audioConfig);
-            builder.RegisterInstance(streamVFXConfig);
-            builder.RegisterInstance(economyConfig);
-            builder.RegisterInstance(wobbleConfig);
-            builder.RegisterInstance(levelCatalog);
+            // 2. Core infrastructure services
+            CoreServicesInstallerModule.Configure(builder);
 
-            builder.Register<Camera>(resolver =>
-            {
-                var cam = Camera.main;
-                if (cam == null)
-                    throw new System.InvalidOperationException(
-                        "Camera.main is null when resolving Camera dependency. " +
-                        "Ensure a Camera tagged 'MainCamera' exists in the scene before the LifetimeScope activates.");
-                return cam;
-            }, Lifetime.Singleton);
+            // 3. Localization (platform-aware)
+            LocalizationInstallerModule.Configure(builder);
 
-            // Infrastructure — no dependencies
-            builder.Register<IRendererService, RendererService>(Lifetime.Singleton);
-            builder.Register<IPoolManager, PoolManager>(Lifetime.Singleton);
-            builder.Register<IColorAdapter, ColorAdapter>(Lifetime.Singleton);
-            builder.Register<IEventAggregator, EventAggregator>(Lifetime.Singleton);
-            builder.Register<IShaderOptimizer, ShaderOptimizer>(Lifetime.Singleton);
-            builder.RegisterComponentOnNewGameObject<UpdateManager>(Lifetime.Singleton)
-                .UnderTransform((Transform)null)
-                .AsImplementedInterfaces()
-                .AsSelf(); // DontDestroyOnLoad — root GameObject
+            // 4. Persistence layer
+            PersistenceInstallerModule.Configure(builder);
 
-            // Tween service — PrimeTween is the chosen impl. Coroutine fallback removed (orphan v2).
-            builder.Register<ITweenService, PrimeTweenService>(Lifetime.Singleton);
+            // 5. Economy, monetization, retention
+            EconomyInstallerModule.Configure(builder);
 
-            // Input handler — MobileInputHandler is the chosen impl for touch devices.
-            // Both implementations are kept; selection happens at startup based on platform.
-#if UNITY_ANDROID || UNITY_IOS
-            builder.Register<IInputHandler, MobileInputHandler>(Lifetime.Singleton);
-#else
-            builder.Register<IInputHandler, InputHandler>(Lifetime.Singleton);
-#endif
+            // 6. Gameplay services
+            GameplayInstallerModule.Configure(builder);
 
-            builder.Register<IMoldValidator>(resolver =>
-                new MoldValidationService(resolver.Resolve<GameConfig>().colorMatchTolerance),
-                Lifetime.Singleton);
-            builder.Register<IGameStateMachine, GameStateMachine>(Lifetime.Singleton);
-            builder.Register<IGameHistoryManager, GameHistoryManager>(Lifetime.Singleton);
-            builder.Register<ILevelProgressService, SecureFileLevelProgressService>(Lifetime.Singleton);
-            builder.Register<ILevelRepository, ScriptableObjectLevelRepository>(Lifetime.Singleton);
-            builder.Register<ILevelGenerator, DifficultyBasedLevelGenerator>(Lifetime.Singleton);
-            // Sprint #12 + #15: JsonTranslationProvider is the default sync loader
-            // (Editor + Standalone: File.ReadAllText works). On Android the
-            // StreamingAssets path lives inside the APK and requires UnityWebRequest,
-            // so the platform-specific async provider is registered instead and the
-            // LocalizationBootstrap MonoBehaviour is created to preload it.
-            builder.Register<ITranslationProvider>(resolver => new JsonTranslationProvider(), Lifetime.Singleton);
-            builder.Register<ILocalizationService, LocalizationService>(Lifetime.Singleton)
-                   .WithParameter(Domain.Models.SupportedLanguage.Turkish);
-
-#if UNITY_ANDROID && !UNITY_EDITOR
-            // Android override: sync File.ReadAllText on StreamingAssets returns 0 bytes.
-            // The async provider caches the JSON via UnityWebRequest; LocalizationBootstrap
-            // awaits the load during Start() so the first GetString call finds data ready.
-            builder.Register<StreamingAssetsJsonTranslationProvider>(Lifetime.Singleton);
-            builder.Register<ITranslationProvider>(resolver =>
-                resolver.Resolve<StreamingAssetsJsonTranslationProvider>(), Lifetime.Singleton);
-            builder.Register<IAsyncTranslationProvider>(resolver =>
-                resolver.Resolve<StreamingAssetsJsonTranslationProvider>(), Lifetime.Singleton);
-            var bootstrapGo = new GameObject("LocalizationBootstrap");
-            builder.RegisterComponent(bootstrapGo.AddComponent<LocalizationBootstrap>());
-#endif
-            builder.Register<ISaveCrypto, SaveCrypto>(Lifetime.Singleton);
-            builder.Register<ISaveStorage, SaveStorage>(Lifetime.Singleton);
-            builder.Register<ISaveManager, GameSaveManager>(Lifetime.Singleton);
-
-            // Economy
-            builder.Register<ICoinWallet, CoinWallet>(Lifetime.Singleton);
-            builder.Register<IHintService, HintService>(Lifetime.Singleton);
-            builder.Register<IUndoService, UndoService>(Lifetime.Singleton);
-
-            // Tutorial
-            builder.Register<ITutorialService, TutorialService>(Lifetime.Singleton);
-
-            // Haptics + analytics (mobile platform hooks; no-op by default)
-            builder.Register<IHapticFeedbackService, HapticFeedbackService>(Lifetime.Singleton);
-            builder.Register<HapticObserver>(Lifetime.Singleton);
-            builder.Register<IAnalyticsService, NoOpAnalyticsService>(Lifetime.Singleton);
-
-            builder.Register<ICrashReportingService, NoOpCrashReportingService>(Lifetime.Singleton);
-            builder.RegisterBuildCallback(resolver =>
-            {
-                CrashReporter.Current = resolver.Resolve<ICrashReportingService>();
-            });
-
-            // Ads — AdMobService requires GoogleMobileAds SDK (installed via
-            // Package Manager / Assets/Plugins). When the SDK is absent the class
-            // fails to compile with CS0246, so we guard it behind the define.
-            // The fallback NoOpAdService is a compile-time-safe stub that returns
-            // false for IsInterstitialReady() and does nothing on Show.
-#if !GOOGLE_MOBILE_ADS_SDK_MISSING
-            try
-            {
-                builder.Register<IAdService>(resolver =>
-                    new Application.Services.AdMobService(
-                        resolver.Resolve<IGameStateMachine>(),
-                        resolver.Resolve<IAnalyticsService>(),
-                        resolver.Resolve<IAudioService>()),
-                    Lifetime.Singleton);
-            }
-            catch (System.Exception ex)
-            {
-                MoldLogger.LogError($"[DI] AdMobService registration failed: {ex.Message}. Falling back to NoOpAdService.");
-                builder.Register<IAdService, NoOpAdService>(Lifetime.Singleton);
-            }
-#else
-            builder.Register<IAdService, NoOpAdService>(Lifetime.Singleton);
-#endif
-            builder.Register<PurchaseController>(Lifetime.Singleton);
-
-            // GDPR consent + COPPA age gate
-            builder.Register<IAgeVerificationService, AgeGateService>(Lifetime.Singleton);
-            builder.Register<IConsentManager, ConsentManager>(Lifetime.Singleton);
-
-            // Feature flags
-            builder.Register<IFeatureFlagService, FeatureFlagService>(Lifetime.Singleton);
-
-            // Daily challenge + streak (retention)
-            builder.Register<IDailyChallengeService, DailyChallengeService>(Lifetime.Singleton);
-            builder.Register<IStreakService, StreakService>(Lifetime.Singleton);
-
-            // Audio settings (persistent BGM/SFX enable + volume; survives restarts).
-            // IEventAggregator is auto-injected by VContainer; the constructor default
-            // (null) keeps persistence working even when aggregator is absent.
-            builder.Register<IAudioSettingsService, PlayerPrefsAudioSettingsService>(Lifetime.Singleton);
-
-            // Memory snapshot — Unity Profiler-backed (built-in, no package).
-            // Used for leak detection (e.g. capture before/after level load).
-            // Swap to Memory Profiler package-backed impl for deep snapshots.
-            builder.Register<IMemorySnapshotService, UnityMemorySnapshotService>(Lifetime.Singleton);
-
-            // Application services
-            builder.Register<IMoldSelectionService, MoldSelectionService>(Lifetime.Singleton);
-            builder.Register<IAudioService, AudioService>(Lifetime.Singleton);
-#if ENABLE_ADDRESSABLES
-            builder.Register<IAssetProvider, AddressablesAssetProvider>(Lifetime.Singleton);
-            builder.RegisterBuildCallback(resolver => resolver.Resolve<IAssetProvider>().Initialize());
-#else
-            builder.Register<IAssetProvider, ResourcesAssetProvider>(Lifetime.Singleton);
-            builder.RegisterBuildCallback(resolver => resolver.Resolve<IAssetProvider>().Initialize());
-#endif
-            builder.Register<IParticleFactory, ParticleFactory>(Lifetime.Singleton);
-            builder.Register<IStreamRenderer, StreamRenderer>(Lifetime.Singleton);
-            builder.Register<IStreamTrailController, StreamTrailController>(Lifetime.Singleton);
-            builder.Register<IAnimationService, AnimationService>(Lifetime.Singleton);
-            builder.Register<ILevelSetupService, LevelSetupService>(Lifetime.Singleton);
-            builder.Register<ILevelValidationService, LevelValidationService>(Lifetime.Singleton);
-            builder.Register<ICastService, CastService>(Lifetime.Singleton);
-            builder.Register<IReactionService, ReactionService>(Lifetime.Singleton);
-            builder.Register<IInputHandlerService, InputHandlerService>(Lifetime.Singleton);
-
-            // Input handler subsystem — composed from 3 focused services.
-            // Register the focused interfaces so consumers (MoldPoolInitializer,
-            // GameManager) can depend on the smallest contract they need.
-            builder.Register<IMoldLookupCache, MoldLookupCache>(Lifetime.Singleton);
-            builder.Register<IInputHandlerDefaults, InputHandlerDefaults>(Lifetime.Singleton);
-            builder.Register<IMoldInputRouter, MoldInputRouter>(Lifetime.Singleton);
-
-            // Developer tools — PourSystemController implements 3 focused
-            // interfaces (IPourSimulator / IPourHistoryService / IPourDebugController)
-            // plus the IPourSystemController facade. Register all 4 so consumers
-            // can depend on the smallest contract that fits their need.
-            builder.Register<PourSystemController>(Lifetime.Singleton)
-                   .As<IPourSystemController>()
-                   .As<IPourSimulator>()
-                   .As<IPourHistoryService>()
-                   .As<IPourDebugController>()
-                   .AsSelf();
-
-            // ErrorIndicator — bootstrap ensures it exists (auto-creates if scene is misconfigured)
-            var errorIndicator = PuzzleGame.Presentation.ErrorIndicatorBootstrap.EnsureExists();
-            builder.RegisterInstance(errorIndicator)
-                .AsSelf()
-                .As<IErrorIndicatorService>();
-
-            var cameraEffects = PuzzleGame.Presentation.CameraEffectsBootstrap.EnsureExists();
-            builder.RegisterComponent(cameraEffects);
-
-            builder.Register<MoldPoolInitializer>(Lifetime.Singleton)
-                   .As<IActiveMoldsProvider>()
-                   .AsSelf();
-
-            builder.RegisterComponentInHierarchy<GameManager>();
-
-            // Presentation controllers — POCOs, scoped to scene lifetime via the container
-            builder.Register<LevelFlowController>(Lifetime.Singleton);
-            builder.Register<WinLoseEvaluator>(Lifetime.Singleton);
-
-            // HUD presenter — must be a MonoBehaviour to serialize inspector references
-            RegisterComponentInHierarchyOrFallback<HudPresenter>(builder);
-
-            // Consent flow UI — MonoBehaviours live on the consent scene prefab
-            RegisterComponentInHierarchyOrFallback<PuzzleGame.Presentation.UI.AgeGateModal>(builder);
-            RegisterComponentInHierarchyOrFallback<PuzzleGame.Presentation.UI.ConsentModal>(builder);
-            RegisterComponentInHierarchyOrFallback<PuzzleGame.Presentation.UI.SettingsPrivacyController>(builder);
-            RegisterComponentInHierarchyOrFallback<PuzzleGame.Presentation.UI.SettingsSoundController>(builder);
-
-            // Main menu — entry point after onboarding; manages Play/Daily/Settings/Privacy buttons
-            RegisterComponentInHierarchyOrFallback<PuzzleGame.Presentation.UI.MainMenuController>(builder);
-
-            // World map — shows 2 biome cards (Crystal Mines + Volcanic Forge) with progress
-            RegisterComponentInHierarchyOrFallback<PuzzleGame.Presentation.UI.WorldMapController>(builder);
-
-            // Daily challenge — entry screen with streak/countdown/play
-            RegisterComponentInHierarchyOrFallback<PuzzleGame.Presentation.UI.DailyChallengeController>(builder);
-
-            // AI art provider — reads from BiomeArtCatalog ScriptableObject (optional, returns defaults if empty)
-            builder.Register<PuzzleGame.Application.Interfaces.IBiomeArtProvider, PuzzleGame.Infrastructure.ScriptableObjectBiomeArtProvider>(Lifetime.Singleton);
-
-            // Onboarding orchestrator — POCO, owned by container; runs Splash → AgeGate → Consent → MainMenu
-            builder.Register<OnboardingFlowController>(Lifetime.Singleton);
+            // 7. Presentation layer + UI
+            PresentationInstallerModule.Configure(builder);
 
             MoldLogger.LogInfo("GameInstaller configured — all services registered.");
         }
 
-        private void LoadOrThrowConfigs()
-        {
-            // Fix #16: Replaced 8 near-identical if/Resources.Load/throw blocks with
-            // a single helper call per config. The helper centralises the fail-
-            // loudly policy and the Inspector-override-vs-Resources fallback, so
-            // adding a new config no longer means copy-pasting 5 lines and a unique
-            // log message.
-            gameConfig       = ConfigLoader.LoadOrThrow(gameConfig,       "Data/GameConfig",       nameof(gameConfig));
-            animationConfig  = ConfigLoader.LoadOrThrow(animationConfig,  "Data/AnimationConfig",  nameof(animationConfig));
-            levelConfig      = ConfigLoader.LoadOrThrow(levelConfig,      "Data/LevelConfig",      nameof(levelConfig));
-            audioConfig      = ConfigLoader.LoadOrThrow(audioConfig,      "Data/AudioConfig",      nameof(audioConfig));
-
-            // These two are tolerated missing (developer tools) but still
-            // get a default-instance fallback so downstream code never sees null.
-            streamVFXConfig  = ConfigLoader.LoadOrDefault(streamVFXConfig, "Data/StreamVFXConfig", nameof(streamVFXConfig));
-            economyConfig    = ConfigLoader.LoadOrDefault(economyConfig,   "Data/EconomyConfig",   nameof(economyConfig));
-
-            wobbleConfig     = ConfigLoader.LoadOrThrow(wobbleConfig,     "Data/WobbleConfig",     nameof(wobbleConfig));
-
-            // OnValidate the values the inspector might have corrupted
-            gameConfig.colorMatchTolerance = Mathf.Max(
-                ForgeConstants.ColorMatchEpsilon, gameConfig.colorMatchTolerance);
-            gameConfig.maxLayersPerMold = Mathf.Clamp(
-                gameConfig.maxLayersPerMold, 1, ForgeConstants.MaxLayers);
-        }
-
-        private void LoadOrThrowLevelCatalog()
-        {
-            if (levelCatalog != null && levelCatalog.Length > 0) return;
-
-            levelCatalog = Resources.LoadAll<LevelData>("Levels");
-            if (levelCatalog == null || levelCatalog.Length == 0)
-            {
-                throw new System.InvalidOperationException(
-                    "No LevelData assets found in Resources/Levels. Build a level catalog or " +
-                    "assign one in the GameInstaller inspector.");
-            }
-        }
-
-        private void RegisterComponentInHierarchyOrFallback<T>(IContainerBuilder builder) where T : Component
+        /// <summary>
+        /// Finds a MonoBehaviour in the scene hierarchy or creates a fallback instance.
+        /// Used by installer modules that need to register UI controllers.
+        /// </summary>
+        internal static T FindOrFallback<T>(IContainerBuilder builder) where T : Component
         {
             var component = Object.FindAnyObjectByType<T>();
             if (component == null)
@@ -318,6 +73,7 @@ namespace PuzzleGame.Installers
                 MoldLogger.LogWarning($"[DI Fallback] {typeof(T).Name} not found in scene. Created fallback object: {go.name}");
             }
             builder.RegisterComponent(component);
+            return component;
         }
     }
 }
