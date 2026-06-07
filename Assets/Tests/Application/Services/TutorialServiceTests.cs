@@ -19,7 +19,7 @@ namespace PuzzleGame.Tests.Application.Services
             UnityEngine.PlayerPrefs.DeleteKey("PuzzleGame.TutorialCompleted");
             _events = new EventAggregator();
             _selection = new FakeMoldSelectionService();
-            _sut = new TutorialService(_events, _selection);
+            _sut = new TutorialService(_events, _selection, new FakeFeatureFlagService());
         }
 
         [TearDown]

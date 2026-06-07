@@ -57,13 +57,13 @@ namespace PuzzleGame.Application.Services
             if (_overlay == null) return;
             _overlay.gameObject.SetActive(true);
             _overlay.blocksRaycasts = true;
-            float t = 0f;
+            float elapsed = 0f;
             _overlay.alpha = from;
-            while (t < duration)
+            while (elapsed < duration)
             {
-                await UniTask.Yield(PlayerLoopTiming.Update, _lifetimeToken);
-                t += Time.unscaledDeltaTime;
-                _overlay.alpha = Mathf.Lerp(from, to, t / duration);
+                await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, _lifetimeToken);
+                elapsed += Time.unscaledDeltaTime;
+                _overlay.alpha = Mathf.Lerp(from, to, Mathf.Clamp01(elapsed / duration));
             }
             _overlay.alpha = to;
             if (to <= 0f)

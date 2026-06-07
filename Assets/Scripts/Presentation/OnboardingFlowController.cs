@@ -20,6 +20,7 @@ namespace PuzzleGame.Presentation
         private readonly IConsentManager _consentManager;
         private readonly IAdService _adService;
         private readonly IAnalyticsService _analyticsService;
+        private readonly IFeatureFlagService _featureFlagService;
 
         private readonly UI.AgeGateModal _ageGateModal;
         private readonly UI.ConsentModal _consentModal;
@@ -33,6 +34,7 @@ namespace PuzzleGame.Presentation
             IConsentManager consentManager,
             IAdService adService,
             IAnalyticsService analyticsService,
+            IFeatureFlagService featureFlagService,
             UI.AgeGateModal ageGateModal,
             UI.ConsentModal consentModal)
         {
@@ -40,6 +42,7 @@ namespace PuzzleGame.Presentation
             _consentManager = consentManager ?? throw new ArgumentNullException(nameof(consentManager));
             _adService = adService ?? throw new ArgumentNullException(nameof(adService));
             _analyticsService = analyticsService ?? throw new ArgumentNullException(nameof(analyticsService));
+            _featureFlagService = featureFlagService ?? throw new ArgumentNullException(nameof(featureFlagService));
             _ageGateModal = ageGateModal ?? throw new ArgumentNullException(nameof(ageGateModal));
             _consentModal = consentModal ?? throw new ArgumentNullException(nameof(consentModal));
 
@@ -89,12 +92,26 @@ namespace PuzzleGame.Presentation
         private void OnConsentCompleted(AdConsentState state, bool personalizedAds)
         {
             MoldLogger.LogInfo($"{LogTag} Consent completed. state={state} personalized={personalizedAds}");
+            
+            // Track session start after consent is obtained (GDPR compliant)
+            if (_analyticsService != null && _analyticsService.IsEnabled)
+            {
+                _analyticsService.Track(AnalyticsEvent.SessionStart);
+            }
+            
             ProceedToMainMenu();
         }
 
         private void ProceedToMainMenu()
         {
             _adService.PreloadAds();
+            
+            string onboardingType = _featureFlagService.GetString("onboarding_flow_type", "classic");
+            if (onboardingType == "sandbox")
+            {
+                MoldLogger.LogInfo($"{LogTag} Sandbox onboarding mode enabled — starting free-play period.");
+            }
+            
             MoldLogger.LogInfo($"{LogTag} Onboarding complete — proceeding to Main Menu.");
             OnCompletedFlow?.Invoke();
         }

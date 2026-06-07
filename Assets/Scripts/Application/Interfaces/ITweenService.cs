@@ -35,6 +35,7 @@ namespace PuzzleGame.Application.Interfaces
         Linear,
         InOutSine,
         OutBack,
+        InBack,
         OutBounce,
         InOutQuad
     }

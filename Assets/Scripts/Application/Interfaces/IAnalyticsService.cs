@@ -15,6 +15,7 @@ namespace PuzzleGame.Application.Interfaces
         CoinEarned,
         CoinSpent,
         AdWatched,
+        IAPPurchase,
         ShopOpened,
         DailyChallengeStarted,
         DailyChallengeCompleted,

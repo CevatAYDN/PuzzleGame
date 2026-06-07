@@ -2,6 +2,7 @@ using NUnit.Framework;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Events;
 using PuzzleGame.Application.Interfaces;
+using PuzzleGame.Application.Services;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Presentation;
 using PuzzleGame.Tests.Fakes;
@@ -44,7 +45,8 @@ namespace PuzzleGame.Tests.Presentation
 
             _sut = new WinLoseEvaluator(
                 _state, _validator, _audio, _progress,
-                _history, _tween, _events, _pool);
+                _history, _tween, _events, _pool,
+                new NoOpAnalyticsService());
         }
 
         [TearDown]

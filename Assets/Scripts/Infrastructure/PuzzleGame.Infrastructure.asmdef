@@ -25,6 +25,11 @@
             "name": "com.google.firebase.analytics",
             "expression": "11.0.0",
             "define": "HAS_FIREBASE_ANALYTICS"
+        },
+        {
+            "name": "com.google.firebase.crashlytics",
+            "expression": "11.0.0",
+            "define": "HAS_FIREBASE_CRASHLYTICS"
         }
     ],
     "noEngineReferences": false

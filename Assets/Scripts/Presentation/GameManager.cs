@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using PuzzleGame.Domain.Interfaces;
@@ -44,6 +45,8 @@ namespace PuzzleGame
         private OnboardingFlowController _onboardingFlow;
         private MoldPoolInitializer _moldPoolInitializer;
         private HapticObserver _hapticObserver;
+        private IAnalyticsService _analytics;
+        private float _sessionStartTime;
 
         private bool _isInitialized;
 
@@ -59,7 +62,8 @@ namespace PuzzleGame
             LevelFlowController levelFlow,
             OnboardingFlowController onboardingFlow,
             MoldPoolInitializer moldPoolInitializer,
-            HapticObserver hapticObserver)
+            HapticObserver hapticObserver,
+            IAnalyticsService analytics)
         {
             _gameConfig = gameConfig;
             _audioConfig = audioConfig;
@@ -72,6 +76,7 @@ namespace PuzzleGame
             _onboardingFlow = onboardingFlow;
             _moldPoolInitializer = moldPoolInitializer;
             _hapticObserver = hapticObserver;
+            _analytics = analytics;
 
             _isInitialized = true;
         }
@@ -86,28 +91,30 @@ namespace PuzzleGame
                 enabled = false;
                 return;
             }
-
+            
             MoldLogger.LogInfo("GameManager Start — initializing game systems.");
-
+            
+            _sessionStartTime = Time.realtimeSinceStartup;
+            
             double refreshRate = Screen.currentResolution.refreshRateRatio.value;
             UnityEngine.Application.targetFrameRate = refreshRate > 0
                 ? (int)Math.Round(refreshRate)
                 : 60;
             MoldLogger.LogInfo($"Target frame rate set to: {UnityEngine.Application.targetFrameRate} FPS");
-
+            
             _shaderOptimizer?.Initialize(_gameConfig != null && _gameConfig.applyMobileShaderDefaults);
             InitAudio();
-
+            
             SceneManager.sceneUnloaded += OnSceneUnloaded;
             _events.Subscribe<GameStateChangedEvent>(OnGameStateChanged);
-
+            
             _updateManager?.Register(this);
-
+            
             // Check if we are in play-test mode (no real Main Menu in scene, but Molds exist)
             bool isFallbackMenu = mainMenuController == null || mainMenuController.gameObject.name.Contains("[Fallback]");
             var moldsInScene = FindObjectsByType<MoldController>(FindObjectsInactive.Exclude);
             bool isPlayTest = isFallbackMenu && moldsInScene.Length > 0;
-
+            
             if (isPlayTest)
             {
                 MoldLogger.LogInfo("[PlayTest] Fallback Menu detected with Molds in scene. Initializing Play-Test mode directly, skipping onboarding.");
@@ -178,6 +185,17 @@ namespace PuzzleGame
             {
                 MoldLogger.LogWarning("MainMenuController not assigned — falling back to legacy LevelSelect-only flow.");
             }
+        }
+
+        private void OnApplicationPause(bool pause)
+        {
+            if (!pause) return;
+            if (_analytics == null) return;
+            float durationSec = Time.realtimeSinceStartup - _sessionStartTime;
+            _analytics.Track(AnalyticsEvent.SessionEnd, new Dictionary<string, object>
+            {
+                { "durationSec", durationSec }
+            });
         }
 
         private void OnDestroy()

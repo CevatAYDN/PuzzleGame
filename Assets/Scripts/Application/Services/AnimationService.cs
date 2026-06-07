@@ -35,6 +35,7 @@ namespace PuzzleGame.Application.Services
         private readonly IParticleFactory _particleFactory;
         private readonly IStreamRenderer _streamRenderer;
         private readonly IStreamTrailController _trailController;
+        private readonly IFeatureFlagService _featureFlagService;
 
         private readonly ParticleSystem _splashPrefab;
         private readonly ParticleSystem _bubblePrefab;
@@ -44,7 +45,7 @@ namespace PuzzleGame.Application.Services
 
         public bool IsAnimating => _activeTweenCount > 0;
 
-        public AnimationService(AnimationConfig config, ITweenService tween, IAudioService audioService, IPoolManager poolManager, IColorAdapter colorAdapter, IParticleFactory particleFactory, IStreamRenderer streamRenderer, IStreamTrailController trailController)
+        public AnimationService(AnimationConfig config, ITweenService tween, IAudioService audioService, IPoolManager poolManager, IColorAdapter colorAdapter, IParticleFactory particleFactory, IStreamRenderer streamRenderer, IStreamTrailController trailController, IFeatureFlagService featureFlagService)
         {
             _config = config;
             _tween = tween ?? throw new ArgumentNullException(nameof(tween));
@@ -54,6 +55,7 @@ namespace PuzzleGame.Application.Services
             _particleFactory = particleFactory ?? throw new ArgumentNullException(nameof(particleFactory));
             _streamRenderer = streamRenderer ?? throw new ArgumentNullException(nameof(streamRenderer));
             _trailController = trailController;
+            _featureFlagService = featureFlagService ?? throw new ArgumentNullException(nameof(featureFlagService));
 
             _splashPrefab = _particleFactory.CreateSplash();
             _bubblePrefab = _particleFactory.CreateBubble();
@@ -153,6 +155,26 @@ namespace PuzzleGame.Application.Services
         public void AnimateCast(IMoldView source, IMoldView target,
                                 float duration, Action onComplete = null)
         {
+            if (_featureFlagService.GetBool("enable_punch_animation", false))
+            {
+                Vector3 originalScale = source.Transform.localScale;
+                Vector3 squashScale = new Vector3(originalScale.x * 1.2f, originalScale.y * 0.8f, originalScale.z);
+                
+                IncrCount();
+                var squashTween = _tween.TweenScale(source.Transform, squashScale, 0.1f, EaseType.OutBack)
+                    .OnComplete(() =>
+                    {
+                        var stretchTween = _tween.TweenScale(source.Transform, originalScale, 0.1f, EaseType.InBack)
+                            .OnComplete(() =>
+                            {
+                                DecrCount();
+                            });
+                        RegisterTween(stretchTween);
+                    });
+                RegisterTween(squashTween);
+            }
+            else
+            {
             if (duration <= 0f)
             {
                 MoldLogger.LogWarning("AnimateCast called with duration <= 0f. Falling back to 0.001f.");
@@ -213,6 +235,7 @@ namespace PuzzleGame.Application.Services
             var tilt = _tween.TweenCustom(state, 0f, 1f, state.TiltDuration, CastAnimationState.TiltUpdate);
             RegisterTween(tilt);
             tilt.OnComplete(state.OnTiltCompleteCached);
+            }
         }
 
         public void AnimateErrorShake(Transform Mold, Action onComplete = null)

@@ -37,12 +37,14 @@ namespace PuzzleGame.Infrastructure.Implementations
 #endif
 
         private readonly GameConfig _gameConfig;
+        private readonly IAnalyticsService _analytics;
 
-        public AdMobService(GameConfig gameConfig = null, string rewardedAdUnitId = null, string interstitialAdUnitId = null)
+        public AdMobService(GameConfig gameConfig = null, string rewardedAdUnitId = null, string interstitialAdUnitId = null, IAnalyticsService analytics = null)
         {
             _gameConfig = gameConfig;
             _rewardedAdUnitId = rewardedAdUnitId;
             _interstitialAdUnitId = interstitialAdUnitId;
+            _analytics = analytics;
         }
 
         public void Initialize()
@@ -96,11 +98,22 @@ namespace PuzzleGame.Infrastructure.Implementations
             _rewardedAd.Show(reward =>
             {
                 MoldLogger.LogInfo($"{LogTag} Rewarded {type} granted ({reward.Amount} {reward.Type}).");
+                _analytics?.Track(AnalyticsEvent.AdWatched, new Dictionary<string, object>
+                {
+                    { "adType", "rewarded" },
+                    { "placement", type.ToString() },
+                    { "result", "granted" }
+                });
                 onComplete?.Invoke(true);
                 LoadRewardedAd();
             });
 #else
             MoldLogger.LogInfo($"{LogTag} ShowRewardedAd (no-op: AdMob SDK not installed). type={type}");
+            _analytics?.Track(AnalyticsEvent.AdWatched, new Dictionary<string, object>
+            {
+                { "adType", "rewarded" },
+                { "placement", type.ToString() }
+            });
             onComplete?.Invoke(true);
 #endif
         }

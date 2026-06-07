@@ -227,8 +227,19 @@ namespace PuzzleGame.Application.Services
 
             try
             {
-                var secure = JsonUtility.FromJson<SecureFile>(_storage.ReadAll());
-                if (secure == null) return null;
+                string rawJson = _storage.ReadAll();
+                if (string.IsNullOrEmpty(rawJson))
+                {
+                    MoldLogger.LogWarning("[GameSaveManager] Save file is empty.");
+                    return null;
+                }
+
+                var secure = JsonUtility.FromJson<SecureFile>(rawJson);
+                if (secure == null)
+                {
+                    MoldLogger.LogError("[GameSaveManager] Save file JSON parse failed — corrupted format.");
+                    return null;
+                }
 
                 if (secure.version != CurrentVersion)
                 {
@@ -236,21 +247,44 @@ namespace PuzzleGame.Application.Services
                     return null;
                 }
 
-                if (!_crypto.Verify(secure.salt, secure.payload, secure.signature))
+                if (string.IsNullOrEmpty(secure.payload) || string.IsNullOrEmpty(secure.signature) || string.IsNullOrEmpty(secure.salt))
                 {
-                    MoldLogger.LogWarning("[GameSaveManager] Save signature invalid — file tampered or corrupted.");
+                    MoldLogger.LogError("[GameSaveManager] Save file missing required fields (payload/salt/signature). Tampered?");
                     return null;
                 }
 
-                string payloadJson = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(secure.payload));
+                if (!_crypto.Verify(secure.salt, secure.payload, secure.signature))
+                {
+                    MoldLogger.LogError("[GameSaveManager] Save signature INVALID — file tampered or corrupted. Save discarded for security.");
+                    return null;
+                }
+
+                string payloadJson;
+                try
+                {
+                    payloadJson = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(secure.payload));
+                }
+                catch (FormatException)
+                {
+                    MoldLogger.LogError("[GameSaveManager] Save payload is not valid Base64 — tampered?");
+                    return null;
+                }
+
                 var data = JsonUtility.FromJson<SaveData>(payloadJson);
+                if (data == null)
+                {
+                    MoldLogger.LogError("[GameSaveManager] Save payload JSON parse failed — corrupted payload.");
+                    return null;
+                }
+
                 _cachedSaveData = data;
                 _cacheLoaded = true;
+                MoldLogger.LogInfo($"[GameSaveManager] Save loaded successfully ({data.levels.Count} levels).");
                 return data;
             }
             catch (Exception ex)
             {
-                MoldLogger.LogError($"[GameSaveManager] Load failed: {ex.Message}");
+                MoldLogger.LogError($"[GameSaveManager] Unexpected load error: {ex.GetType().Name}: {ex.Message}");
                 return null;
             }
         }

@@ -174,59 +174,71 @@ namespace PuzzleGame.Domain.Services
 
                         if (countToCast == 0) continue;
 
-                        // Fix #13: Allocate owned rows directly. The outer-array pool was redundant —
-                        // rows inside it were always freshly `new int[]` (except the shared ones
-                        // borrowed from `current.Molds`), so pooling the outer array bought nothing
-                        // and created a confusing reference lifecycle.
-                        int[][] ownedMolds = new int[current.Molds.Length][];
-                        for (int k = 0; k < current.Molds.Length; k++)
+                        var ownedMolds = ArrayPool<int[]>.Shared.Rent(current.Molds.Length);
+                        int[] srcArray = null;
+                        int[] tgtArray = null;
+
+                        try
                         {
-                            if (k == i)
+                            for (int k = 0; k < current.Molds.Length; k++)
                             {
-                                int newSrcLen = source.Length - countToCast;
-                                if (newSrcLen == 0)
+                                if (k == i)
                                 {
-                                    ownedMolds[k] = Array.Empty<int>();
+                                    int newSrcLen = source.Length - countToCast;
+                                    if (newSrcLen == 0)
+                                    {
+                                        ownedMolds[k] = Array.Empty<int>();
+                                    }
+                                    else
+                                    {
+                                        srcArray = ArrayPool<int>.Shared.Rent(newSrcLen);
+                                        Array.Copy(source, srcArray, newSrcLen);
+                                        ownedMolds[k] = srcArray;
+                                    }
+                                }
+                                else if (k == j)
+                                {
+                                    int newTgtLen = target.Length + countToCast;
+                                    tgtArray = ArrayPool<int>.Shared.Rent(newTgtLen);
+                                    Array.Copy(target, tgtArray, target.Length);
+                                    for (int p = 0; p < countToCast; p++)
+                                        tgtArray[target.Length + p] = sourceTopColor;
+                                    ownedMolds[k] = tgtArray;
                                 }
                                 else
                                 {
-                                    ownedMolds[k] = new int[newSrcLen];
-                                    Array.Copy(source, ownedMolds[k], newSrcLen);
+                                    ownedMolds[k] = current.Molds[k];
                                 }
                             }
-                            else if (k == j)
+
+                            var nextNode = new StateNode(ownedMolds, new Move(i, j), current, MoldCount);
+                            ulong hash = nextNode.ComputeCanonicalKey(maxLayers);
+                            if (!visited.Contains(hash))
                             {
-                                int newTgtLen = target.Length + countToCast;
-                                ownedMolds[k] = new int[newTgtLen];
-                                Array.Copy(target, ownedMolds[k], target.Length);
-                                for (int p = 0; p < countToCast; p++)
-                                    ownedMolds[k][target.Length + p] = sourceTopColor;
-                            }
-                            else
-                            {
-                                ownedMolds[k] = current.Molds[k];
+                                if (nextNode.IsSolved(maxLayers))
+                                {
+                                    var path = new List<Move>();
+                                    var temp = nextNode;
+                                    while (temp.Parent != null)
+                                    {
+                                        path.Add(temp.LastMove);
+                                        temp = temp.Parent;
+                                    }
+                                    path.Reverse();
+                                    return new SolverResult { IsSolvable = true, SolutionPath = path, VisitedStatesCount = visitedCount };
+                                }
+
+                                visited.Add(hash);
+                                queue.Enqueue(nextNode);
                             }
                         }
-
-                        var nextNode = new StateNode(ownedMolds, new Move(i, j), current, MoldCount);
-                        ulong hash = nextNode.ComputeCanonicalKey(maxLayers);
-                        if (!visited.Contains(hash))
+                        finally
                         {
-                            if (nextNode.IsSolved(maxLayers))
-                            {
-                                var path = new List<Move>();
-                                var temp = nextNode;
-                                while (temp.Parent != null)
-                                {
-                                    path.Add(temp.LastMove);
-                                    temp = temp.Parent;
-                                }
-                                path.Reverse();
-                                return new SolverResult { IsSolvable = true, SolutionPath = path, VisitedStatesCount = visitedCount };
-                            }
-
-                            visited.Add(hash);
-                            queue.Enqueue(nextNode);
+                            if (srcArray != null && srcArray.Length > 0)
+                                ArrayPool<int>.Shared.Return(srcArray);
+                            if (tgtArray != null && tgtArray.Length > 0)
+                                ArrayPool<int>.Shared.Return(tgtArray);
+                            ArrayPool<int[]>.Shared.Return(ownedMolds);
                         }
                     }
                 }

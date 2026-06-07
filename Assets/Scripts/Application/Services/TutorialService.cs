@@ -17,6 +17,7 @@ namespace PuzzleGame.Application.Services
 
         private readonly IEventAggregator _events;
         private readonly IMoldSelectionService _selection;
+        private readonly IFeatureFlagService _featureFlagService;
 
         private TutorialStep _currentStep = TutorialStep.Inactive;
 
@@ -34,10 +35,11 @@ namespace PuzzleGame.Application.Services
         public event Action<TutorialStep> OnStepChanged;
         public event Action OnTutorialCompleted;
 
-        public TutorialService(IEventAggregator events, IMoldSelectionService selection)
+        public TutorialService(IEventAggregator events, IMoldSelectionService selection, IFeatureFlagService featureFlagService)
         {
             _events = events;
             _selection = selection;
+            _featureFlagService = featureFlagService;
             _selection.OnMoldSelected += OnMoldSelected;
             _events.Subscribe<CastCompletedEvent>(OnCastCompleted);
             _events.Subscribe<LevelSelectedEvent>(OnLevelSelected);
@@ -51,6 +53,17 @@ namespace PuzzleGame.Application.Services
                 MoldLogger.LogInfo($"{LogTag} Already completed — not running.");
                 return;
             }
+            
+            // Check for sandbox onboarding mode
+            string onboardingType = _featureFlagService.GetString("onboarding_flow_type", "classic");
+            if (onboardingType == "sandbox")
+            {
+                MoldLogger.LogInfo($"{LogTag} Sandbox mode enabled — skipping initial tutorial steps.");
+                // In sandbox mode, we start with a 30-second free-play period
+                // No tutorial steps will be shown initially
+                return;
+            }
+            
             MoldLogger.LogInfo($"{LogTag} Beginning tutorial.");
             SetStep(TutorialStep.Welcome);
         }

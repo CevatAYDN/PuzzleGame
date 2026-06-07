@@ -63,6 +63,7 @@ namespace PuzzleGame.Application.Services
             EaseType.Linear => Ease.Linear,
             EaseType.InOutSine => Ease.InOutSine,
             EaseType.OutBack => Ease.OutBack,
+            EaseType.InBack => Ease.InBack,
             EaseType.OutBounce => Ease.OutBounce,
             EaseType.InOutQuad => Ease.InOutQuad,
             _ => Ease.Linear,

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Events;
@@ -27,6 +28,7 @@ namespace PuzzleGame.Presentation
         private readonly IEventAggregator _events;
         private readonly IAdService _adService;
         private readonly GameConfig _gameConfig;
+        private readonly IAnalyticsService _analytics;
 
         private int _levelsPlayedSinceLastAd;
 
@@ -41,7 +43,8 @@ namespace PuzzleGame.Presentation
             MoldPoolInitializer pool,
             IEventAggregator events,
             IAdService adService,
-            GameConfig gameConfig)
+            GameConfig gameConfig,
+            IAnalyticsService analytics)
         {
             _stateMachine = stateMachine;
             _levelRepository = levelRepository;
@@ -54,6 +57,7 @@ namespace PuzzleGame.Presentation
             _events = events;
             _adService = adService;
             _gameConfig = gameConfig;
+            _analytics = analytics;
 
             _events.Subscribe<LevelSelectedEvent>(OnLevelSelected);
         }
@@ -76,6 +80,10 @@ namespace PuzzleGame.Presentation
         public void ReturnToMenu()
         {
             if (_stateMachine.IsInState(GameState.Menu)) return;
+            if (_stateMachine.IsInState(GameState.Playing) || _stateMachine.IsInState(GameState.OptionalCasting))
+            {
+                _analytics.Track(AnalyticsEvent.LevelAbandoned);
+            }
             _stateMachine.TransitionTo(GameState.Menu);
         }
 
@@ -115,7 +123,15 @@ namespace PuzzleGame.Presentation
                         if (_adService != null && _adService.IsInterstitialReady())
                         {
                             MoldLogger.LogInfo("[AdFlow] Showing interstitial ad before loading level.");
-                            _adService.ShowInterstitialAd(() => LoadLevelInternal(level));
+                            _adService.ShowInterstitialAd(() =>
+                            {
+                                _analytics.Track(AnalyticsEvent.AdWatched, new Dictionary<string, object>
+                                {
+                                    { "adType", "interstitial" },
+                                    { "placement", "level_transition" }
+                                });
+                                LoadLevelInternal(level);
+                            });
                             return;
                         }
                     }
@@ -143,6 +159,10 @@ namespace PuzzleGame.Presentation
             _stateMachine.TransitionTo(GameState.Playing);
             _audio.PlaySfx(AudioClipId.LevelStart);
             _events.Publish(new LevelLoadedEvent(level));
+            _analytics.Track(AnalyticsEvent.LevelStarted, new Dictionary<string, object>
+            {
+                { "levelNumber", level.levelNumber }
+            });
         }
     }
 }

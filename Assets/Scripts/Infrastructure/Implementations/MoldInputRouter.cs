@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Events;
 using PuzzleGame.Application.Interfaces;
@@ -34,6 +35,7 @@ namespace PuzzleGame.Infrastructure.Implementations
         private readonly IInputHandlerDefaults _defaults;
         private readonly IActiveMoldsProvider _moldsProvider;
         private readonly IHapticFeedbackService _hapticService;
+        private readonly IAnalyticsService _analytics;
 
         private LevelData _currentLevelData;
         private Vector3 _selectedOriginalPos;
@@ -53,7 +55,8 @@ namespace PuzzleGame.Infrastructure.Implementations
             IMoldLookupCache lookup,
             IInputHandlerDefaults defaults,
             IActiveMoldsProvider moldsProvider,
-            IHapticFeedbackService hapticService)
+            IHapticFeedbackService hapticService,
+            IAnalyticsService analytics)
         {
             _inputHandler = inputHandler ?? throw new ArgumentNullException(nameof(inputHandler));
             _camera = camera;
@@ -70,6 +73,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             _defaults = defaults ?? throw new ArgumentNullException(nameof(defaults));
             _moldsProvider = moldsProvider ?? throw new ArgumentNullException(nameof(moldsProvider));
             _hapticService = hapticService ?? throw new ArgumentNullException(nameof(hapticService));
+            _analytics = analytics ?? throw new ArgumentNullException(nameof(analytics));
         }
 
         public void ProcessInput()
@@ -241,6 +245,12 @@ namespace PuzzleGame.Infrastructure.Implementations
                 {
                     LowerSelectedMold();
                     _selectionService.Deselect();
+                });
+                _analytics.Track(AnalyticsEvent.ErrorShown, new Dictionary<string, object>
+                {
+                    { "errorCode", "validator_rejected" },
+                    { "sourceIndex", source?.MoldIndex ?? -1 },
+                    { "targetIndex", target?.MoldIndex ?? -1 }
                 });
             }
         }

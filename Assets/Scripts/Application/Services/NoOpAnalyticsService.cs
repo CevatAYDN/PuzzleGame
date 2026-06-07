@@ -18,7 +18,22 @@ namespace PuzzleGame.Application.Services
         {
             if (!IsEnabled) return;
             if (!MoldLogger.IsDebugEnabled) return;
-            MoldLogger.LogDebug($"{LogTag} {evt} (properties: {properties?.Count ?? 0})");
+            if (properties == null || properties.Count == 0)
+            {
+                MoldLogger.LogDebug($"{LogTag} {evt}");
+                return;
+            }
+            var sb = new System.Text.StringBuilder(128);
+            sb.Append(LogTag).Append(' ').Append(evt).Append(" {");
+            bool first = true;
+            foreach (var kvp in properties)
+            {
+                if (!first) sb.Append(", ");
+                sb.Append(kvp.Key).Append('=').Append(kvp.Value);
+                first = false;
+            }
+            sb.Append('}');
+            MoldLogger.LogDebug(sb.ToString());
         }
 
         public void SetUserProperty(string key, string value)

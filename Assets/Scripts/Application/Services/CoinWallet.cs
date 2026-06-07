@@ -96,7 +96,7 @@ namespace PuzzleGame.Application.Services
 
         private string ComputeHash(int balance)
         {
-            string deviceId = SystemInfo.deviceUniqueIdentifier ?? "fallback";
+            string deviceId = GetOrCreateDeviceId();
             string deviceModel = SystemInfo.deviceModel ?? "unknown";
             const string pepper = "PG-Coin-v1-S3cr3tKey";
             string secretKey = $"{deviceId}:{deviceModel}:{pepper}";
@@ -113,6 +113,31 @@ namespace PuzzleGame.Application.Services
                 }
                 return sb.ToString();
             }
+        }
+
+        private string GetOrCreateDeviceId()
+        {
+            const string DeviceIdKey = "PuzzleGame.DeviceId";
+            string deviceId = PlayerPrefs.GetString(DeviceIdKey, string.Empty);
+            
+            if (string.IsNullOrEmpty(deviceId))
+            {
+                string unityDeviceId = SystemInfo.deviceUniqueIdentifier;
+                if (!string.IsNullOrEmpty(unityDeviceId) && unityDeviceId != "UNKNOWN")
+                {
+                    deviceId = unityDeviceId;
+                }
+                else
+                {
+                    var bytes = new byte[16];
+                    using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
+                        rng.GetBytes(bytes);
+                    deviceId = Convert.ToBase64String(bytes);
+                }
+                PlayerPrefs.SetString(DeviceIdKey, deviceId);
+                PlayerPrefs.Save();
+            }
+            return deviceId;
         }
 
         private static bool CryptographicEquals(string a, string b)

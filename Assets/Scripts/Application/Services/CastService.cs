@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using PuzzleGame.Domain;
 using PuzzleGame.Domain.Models;
@@ -23,9 +24,6 @@ namespace PuzzleGame.Application.Services
         private readonly IEventAggregator _eventAggregator;
         private readonly IErrorIndicatorService _errorIndicator;
         private LevelData _currentLevelData;
-
-        // Zero-allocation: RolledBack listesi pool edilerek gereksiz GC önlendi.
-        private readonly List<OreLayer> _rollbackBuffer = new List<OreLayer>(8);
 
         public CastService(IMoldValidator validator, IGameHistoryManager historyManager, IReactionService reactionService, IEventAggregator eventAggregator, IErrorIndicatorService errorIndicator)
         {
@@ -128,50 +126,55 @@ namespace PuzzleGame.Application.Services
             _historyManager.RecordUndoSnapshot();
 
             int casted = 0;
-            _rollbackBuffer.Clear();
+            OreLayer[] rollbackBuffer = ArrayPool<OreLayer>.Shared.Rent(castCount);
 
-            for (int i = 0; i < castCount; i++)
+            try
             {
-                OreLayer layer;
-                try
+                for (int i = 0; i < castCount; i++)
                 {
-                    layer = source.State.PopTopLayer();
-                }
-                catch (InvalidOperationException)
-                {
-                    Rollback(source, target, casted);
-                    return false;
-                }
+                    if (source.State.IsEmpty)
+                    {
+                        Rollback(source, target, casted, rollbackBuffer);
+                        return false;
+                    }
 
-                try
-                {
+                    OreLayer layer = source.State.PopTopLayer();
+
+                    if (target.State.IsFull)
+                    {
+                        source.State.AddLayer(layer);
+                        Rollback(source, target, casted, rollbackBuffer);
+                        return false;
+                    }
+
                     target.State.AddLayer(layer);
+                    rollbackBuffer[casted] = layer;
                     casted++;
-                    _rollbackBuffer.Add(layer);
                 }
-                catch (InvalidOperationException ex)
+
+                if (casted > 0)
                 {
-                    source.State.AddLayer(layer);
-                    Rollback(source, target, casted);
-                    throw new InvalidOperationException("CastService multi-layer invariant violated.", ex);
+                    FinalizeCast(source, target, activeMolds, casted);
+                    return true;
+                }
+
+                return false;
+            }
+            finally
+            {
+                if (rollbackBuffer != null)
+                {
+                    ArrayPool<OreLayer>.Shared.Return(rollbackBuffer, clearArray: true);
                 }
             }
-
-            if (casted > 0)
-            {
-                FinalizeCast(source, target, activeMolds, casted);
-                return true;
-            }
-
-            return false;
         }
 
-        private void Rollback(IMoldView source, IMoldView target, int castedCount)
+        private void Rollback(IMoldView source, IMoldView target, int castedCount, OreLayer[] buffer)
         {
             for (int r = castedCount - 1; r >= 0; r--)
             {
                 target.State.PopTopLayer();
-                source.State.AddLayer(_rollbackBuffer[r]);
+                source.State.AddLayer(buffer[r]);
             }
         }
 

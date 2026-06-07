@@ -87,6 +87,7 @@
     <Compile Include="Assets\Tests\Fakes\FakeErrorIndicatorService.cs" />
     <Compile Include="Assets\Tests\Presentation\BiomeProgressTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeTweenService.cs" />
+    <Compile Include="Assets\Tests\Fakes\FakeFeatureFlagService.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeLevelProgressService.cs" />
     <Compile Include="Assets\Tests\Domain\Services\LocalizationServiceTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeReactionService.cs" />

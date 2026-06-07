@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Events;
@@ -25,6 +26,8 @@ namespace PuzzleGame.Presentation
         private readonly ITweenService _tween;
         private readonly IEventAggregator _events;
         private readonly IActiveMoldsProvider _pool;
+        private readonly IAnalyticsService _analytics;
+        private readonly System.Diagnostics.Stopwatch _levelStopwatch = new System.Diagnostics.Stopwatch();
         private LevelData _currentLevel;
 
         public WinLoseEvaluator(
@@ -35,7 +38,8 @@ namespace PuzzleGame.Presentation
             IGameHistoryManager history,
             ITweenService tween,
             IEventAggregator events,
-            IActiveMoldsProvider pool)
+            IActiveMoldsProvider pool,
+            IAnalyticsService analytics)
         {
             _stateMachine = stateMachine;
             _validator = validator;
@@ -45,6 +49,7 @@ namespace PuzzleGame.Presentation
             _tween = tween;
             _events = events;
             _pool = pool;
+            _analytics = analytics;
 
             _events.Subscribe<CastCompletedEvent>(OnCastCompleted);
             _events.Subscribe<LevelLoadedEvent>(OnLevelLoaded);
@@ -65,6 +70,7 @@ namespace PuzzleGame.Presentation
         private void OnLevelLoaded(LevelLoadedEvent e)
         {
             _currentLevel = e.Level;
+            _levelStopwatch.Restart();
         }
 
         private void OnCastCompleted(CastCompletedEvent e)
@@ -72,32 +78,38 @@ namespace PuzzleGame.Presentation
             _tween.Delay(0.5f).OnComplete(CheckWin).Start();
         }
 
+        private bool _isWon = false;
+        
         private void CheckWin()
         {
+            if (_isWon) return;
+            
             var molds = _pool.Molds;
             if (molds == null || molds.Length == 0) return;
-
+            
             bool hasOre = false;
             bool allComplete = true;
-
+            
             foreach (var view in molds)
             {
                 if (view == null || view.IsEmpty) continue;
                 hasOre = true;
-
+                
                 bool isComplete = _validator.IsComplete(view.State);
                 if (isComplete && !view.IsCapped)
                 {
                     view.AnimateCompletion();
                 }
-
+                
                 if (!isComplete) allComplete = false;
             }
-
+            
             if (!allComplete || !hasOre) return;
-
+            
+            _isWon = true;
+            
             _audio.PlaySfx(AudioClipId.LevelComplete);
-
+            
             if (_currentLevel != null && _currentLevel.optionalTargets != null && _currentLevel.optionalTargets.Count > 0)
             {
                 _stateMachine.TransitionTo(GameState.OptionalCasting);
@@ -138,6 +150,15 @@ namespace PuzzleGame.Presentation
             {
                 _progress.RecordCompletion(_currentLevel.levelNumber, moveCount, stars);
             }
+
+            _levelStopwatch.Stop();
+            _analytics.Track(AnalyticsEvent.LevelCompleted, new Dictionary<string, object>
+            {
+                { "levelNumber", _currentLevel?.levelNumber ?? 0 },
+                { "moveCount", moveCount },
+                { "stars", stars },
+                { "durationSec", (float)_levelStopwatch.Elapsed.TotalSeconds }
+            });
 
             _events.Publish(new LevelCompletedEvent(moveCount));
         }

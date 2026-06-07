@@ -132,12 +132,22 @@ namespace PuzzleGame.Installers
             builder.Register<HapticObserver>(Lifetime.Singleton);
             builder.Register<IAnalyticsService, NoOpAnalyticsService>(Lifetime.Singleton);
 
+            builder.Register<ICrashReportingService, NoOpCrashReportingService>(Lifetime.Singleton);
+            builder.RegisterBuildCallback(resolver =>
+            {
+                CrashReporter.Current = resolver.Resolve<ICrashReportingService>();
+            });
+
             // Ads (falls back to safe no-op inside AdMobService when SDK is missing)
-            builder.Register<IAdService>(resolver => new AdMobService(resolver.Resolve<GameConfig>(), null, null), Lifetime.Singleton);
+            builder.Register<IAdService>(resolver => new AdMobService(resolver.Resolve<GameConfig>(), null, null, resolver.Resolve<IAnalyticsService>()), Lifetime.Singleton);
+            builder.Register<PurchaseController>(Lifetime.Singleton);
 
             // GDPR consent + COPPA age gate
             builder.Register<IAgeVerificationService, AgeGateService>(Lifetime.Singleton);
             builder.Register<IConsentManager, ConsentManager>(Lifetime.Singleton);
+
+            // Feature flags
+            builder.Register<IFeatureFlagService, FeatureFlagService>(Lifetime.Singleton);
 
             // Daily challenge + streak (retention)
             builder.Register<IDailyChallengeService, DailyChallengeService>(Lifetime.Singleton);

@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using UnityEngine;
 using PuzzleGame.Application.Interfaces;
+using PuzzleGame.Application.Services;
 using PuzzleGame.Infrastructure.Implementations;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Models;
@@ -63,7 +64,8 @@ namespace PuzzleGame.Tests.Application.Services
                 _animationService, _selectionService, _validator,
                 _gameConfig, _animConfig, _audioService,
                 _historyManager, _CastService, lookup, defaults, _activeMoldsProvider,
-                _hapticService);
+                _hapticService,
+                new NoOpAnalyticsService());
             _sut = new InputHandlerService(router, lookup, defaults);
         }
 

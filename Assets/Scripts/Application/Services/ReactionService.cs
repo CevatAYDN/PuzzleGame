@@ -48,22 +48,18 @@ namespace PuzzleGame.Application.Services
         {
             result = default;
             var state = Mold.State;
-            if (state.LayerCount < 2) return false;
+            if (state == null || state.LayerCount < 2) return false;
 
-            for (int i = 0; i < state.LayerCount - 1; i++)
+            int lastIndex = state.LayerCount - 1;
+            if (lastIndex <= 0 || state.LayerCount < 2) return false;
+
+            for (int i = 0; i < lastIndex; i++)
             {
-                OreLayer layerA;
-                OreLayer layerB;
-                try
-                {
-                    layerA = state.GetLayerAt(i);
-                    layerB = state.GetLayerAt(i + 1);
-                }
-                catch (ArgumentOutOfRangeException)
-                {
-                    throw new InvalidOperationException(
-                        $"ReactionService: Mold '{Mold.GameObject.name}' state mutated during reaction scan.");
-                }
+                if (i < 0 || i >= state.LayerCount) continue;
+                if ((i + 1) < 0 || (i + 1) >= state.LayerCount) continue;
+
+                var layerA = state.GetLayerAt(i);
+                var layerB = state.GetLayerAt(i + 1);
 
                 var colorTypeA = layerA.ColorType;
                 var colorTypeB = layerB.ColorType;
@@ -131,32 +127,31 @@ namespace PuzzleGame.Application.Services
         private void ProcessTransform(IMoldView Mold, ReactionResult result)
         {
             var state = Mold.State;
+            if (state == null) return;
 
             var resultColor = result.Rule.resultColor;
             var domainColor = (DomainColor)resultColor.ToDefaultDomainColor();
 
             int layerIndexA = result.AffectedLayerA;
             int layerIndexB = result.AffectedLayerB;
+            int layerCount = state.LayerCount;
+
+            if (layerIndexA < 0 || layerIndexA >= layerCount) return;
+            if (layerIndexB < 0 || layerIndexB >= layerCount) return;
 
             float combinedAmount = 1f;
-            try
-            {
-                combinedAmount = state.GetLayerAt(layerIndexA).Amount + state.GetLayerAt(layerIndexB).Amount;
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-            }
+            var layerA = state.GetLayerAt(layerIndexA);
+            var layerB = state.GetLayerAt(layerIndexB);
+            combinedAmount = layerA.Amount + layerB.Amount;
 
-            try
+            if (layerIndexA >= 0 && layerIndexA < layerCount)
             {
                 state.ReplaceAtIndex(layerIndexA, new OreLayer(domainColor, combinedAmount, resultColor));
-                state.RemoveAtIndex(layerIndexB);
             }
-            catch (ArgumentOutOfRangeException ex)
+
+            if (layerIndexB >= 0 && layerIndexB < state.LayerCount)
             {
-                throw new InvalidOperationException(
-                    $"ReactionService.ProcessTransform: layer index out of range for Mold '{Mold.GameObject.name}'.",
-                    ex);
+                state.RemoveAtIndex(layerIndexB);
             }
 
             Mold.UpdateVisualsFromState();

@@ -49,18 +49,23 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.4.8f1\Editor\Data\Tools\BuildPipeline\Unity.SourceGenerators\Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Scripts\Application\Interfaces\ICrashReportingService.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\PourConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Services\GameHistoryManager.cs" />
     <Compile Include="Assets\Scripts\Application\Events\FeatureEvents.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IAsyncTranslationProvider.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IUndoService.cs" />
+    <Compile Include="Assets\Scripts\Application\Services\PurchaseController.cs" />
     <Compile Include="Assets\Scripts\Application\Services\NoOpAnalyticsService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IMoldInputRouter.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IPourSystemController.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IEventAggregator.cs" />
+    <Compile Include="Assets\Scripts\Application\Interfaces\IFeatureFlagService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IRendererService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\GameStateMachine.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\ITutorialService.cs" />
+    <Compile Include="Assets\Scripts\Application\Services\TutorialService.cs" />
+    <Compile Include="Assets\Scripts\Application\Services\FeatureFlagService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IMoldLookupCache.cs" />
     <Compile Include="Assets\Scripts\Application\Services\UndoService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\ScriptableObjectLevelRepository.cs" />
@@ -76,6 +81,7 @@
     <Compile Include="Assets\Scripts\Application\Interfaces\AudioClipId.cs" />
     <Compile Include="Assets\Scripts\Application\Services\HintService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\PrimeTweenService.cs" />
+    <Compile Include="Assets\Scripts\Application\Services\NoOpCrashReportingService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IMoldView.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IPoolManager.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\LevelConfig.cs" />
@@ -98,6 +104,7 @@
     <Compile Include="Assets\Scripts\Application\Configuration\UIStyleConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Services\StreakService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\SecureFileLevelProgressService.cs" />
+    <Compile Include="Assets\Scripts\Application\Logging\CrashReporter.cs" />
     <Compile Include="Assets\Scripts\Application\Services\MoldSelectionService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IReactionService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IAnalyticsService.cs" />

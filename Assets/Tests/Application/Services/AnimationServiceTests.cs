@@ -38,7 +38,7 @@ namespace PuzzleGame.Tests.Application.Services
             _audioService = new FakeAudioService();
             _poolManager = new PoolManager();
 
-            _sut = new AnimationService(_config, _tweenService, _audioService, _poolManager, new ColorAdapter(), new FakeParticleFactory(), new FakeStreamRenderer(), new FakeStreamTrailController());
+            _sut = new AnimationService(_config, _tweenService, _audioService, _poolManager, new ColorAdapter(), new FakeParticleFactory(), new FakeStreamRenderer(), new FakeStreamTrailController(), new FakeFeatureFlagService());
         }
 
         [TearDown]
