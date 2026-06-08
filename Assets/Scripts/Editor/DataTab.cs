@@ -146,6 +146,9 @@ namespace PuzzleGame.Editor
 
                     GUILayout.FlexibleSpace();
 
+                    // Always render the same number of controls to avoid
+                    // layout/repaint mismatch (GUILayout group control count
+                    // must be deterministic across all event types).
                     if (exists)
                     {
                         GUILayout.Label("Security Integrity:", GUILayout.Width(110));
@@ -155,6 +158,14 @@ namespace PuzzleGame.Editor
 
                         GUILayout.FlexibleSpace();
                         GUILayout.Label((size / 1024.0).ToString("F1") + " KB", EditorStyles.miniLabel, GUILayout.Width(60));
+                    }
+                    else
+                    {
+                        // Placeholder controls to keep layout deterministic
+                        GUILayout.Label("", GUILayout.Width(110));
+                        GUILayout.Label("", EditorStyles.boldLabel, GUILayout.Width(110));
+                        GUILayout.FlexibleSpace();
+                        GUILayout.Label("", EditorStyles.miniLabel, GUILayout.Width(60));
                     }
                 }
 

@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
   <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->
   <PropertyGroup>
     <BaseIntermediateOutputPath>Temp\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
@@ -93,7 +93,6 @@
     <Compile Include="Assets\Tests\Fakes\FakeReactionService.cs" />
     <Compile Include="Assets\Tests\Presentation\LevelBiomeClassifierTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeFeatureFlagService.cs" />
-    <Compile Include="Assets\Tests\Editor\CoreServicesInstallerTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\UndoServiceTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\CastServiceTests.cs" />
     <Compile Include="Assets\Tests\Application\MoldSelectionServiceTests.cs" />
@@ -1185,6 +1184,10 @@
     </Reference>
     <Reference Include="UnityEditor.TestRunner">
       <HintPath>Library\ScriptAssemblies\UnityEditor.TestRunner.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="VContainer">
+      <HintPath>Library\ScriptAssemblies\VContainer.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEditor.UI">

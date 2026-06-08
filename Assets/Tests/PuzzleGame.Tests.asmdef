@@ -9,7 +9,9 @@
         "PuzzleGame.Infrastructure",
         "PuzzleGame.Composition",
         "PuzzleGame.Editor",
-        "PuzzleGame.Presentation"
+        "PuzzleGame.Presentation",
+        "VContainer",
+        "VContainer.EnableCodeGen"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
