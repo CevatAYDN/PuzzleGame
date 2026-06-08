@@ -18,12 +18,14 @@ namespace PuzzleGame.Tests.Application.Services
             _config.hintCost = 15;
             _config.undoCost = 10;
             PlayerPrefs.DeleteKey("PuzzleGame.CoinBalance");
+            PlayerPrefs.DeleteKey("PuzzleGame.CoinBalance.Hash");
         }
 
         [TearDown]
         public void Teardown()
         {
             PlayerPrefs.DeleteKey("PuzzleGame.CoinBalance");
+            PlayerPrefs.DeleteKey("PuzzleGame.CoinBalance.Hash");
             if (_config != null) Object.DestroyImmediate(_config);
         }
 
@@ -64,7 +66,6 @@ namespace PuzzleGame.Tests.Application.Services
         [Test]
         public void TrySpend_NotAffordable_NoDeductionAndReturnsFalse()
         {
-            _sut = new CoinWallet(_config);
             _config.startingCoins = 10;
             _sut = new CoinWallet(_config);
             bool result = _sut.TrySpend(50, "expensive_purchase");

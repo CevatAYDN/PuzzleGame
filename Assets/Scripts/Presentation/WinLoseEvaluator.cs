@@ -136,7 +136,7 @@ namespace PuzzleGame.Presentation
                 {
                     foreach (var mold in molds)
                     {
-                        if (mold != null && mold.GameObject.name.StartsWith("Optional_") && !mold.IsEmpty)
+                        if (mold?.GameObject != null && mold.GameObject.name.StartsWith("Optional_") && !mold.IsEmpty)
                         {
                             stars = Math.Min(3, stars + 1);
                             MoldLogger.LogInfo("Optional casting target filled — Perfect Forge bonus.");

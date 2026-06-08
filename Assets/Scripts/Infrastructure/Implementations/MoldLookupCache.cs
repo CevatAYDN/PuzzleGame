@@ -38,8 +38,20 @@ namespace PuzzleGame.Infrastructure.Implementations
         public IMoldView FindByCollider(Collider collider)
         {
             if (collider == null) return null;
-            _byColliderId.TryGetValue(collider.GetEntityId(), out var view);
-            return view;
+            // Fast path: O(1) EntityId lookup
+            if (_byColliderId.TryGetValue(collider.GetEntityId(), out var view))
+                return view;
+            
+            // Fallback: Linear search for test environments where EntityId may not match
+            // (e.g., when Collider is set directly via test setup without proper EntityId)
+            if (_molds == null) return null;
+            for (int i = 0; i < _molds.Length; i++)
+            {
+                var mold = _molds[i];
+                if (mold?.Collider != null && ReferenceEquals(mold.Collider, collider))
+                    return mold;
+            }
+            return null;
         }
 
         public IMoldView FindByState(MoldState state)

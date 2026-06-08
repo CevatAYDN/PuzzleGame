@@ -382,9 +382,11 @@ namespace PuzzleGame.Tests.Presentation
             PublishCastCompleted();
 
             Assert.That(_state.LastTransitionTo, Is.EqualTo(GameState.LevelComplete));
-            Assert.That(_progress.LastRecordedStars, Is.EqualTo(3));
+            // When no level is loaded, RecordCompletion is NOT called (stars default to 3 for analytics only).
             Assert.That(_progress.RecordCompletionCallCount, Is.EqualTo(0),
                 "RecordCompletion must not be called when no level was loaded.");
+            // LastRecordedStars remains at default (0) since RecordCompletion was skipped.
+            Assert.That(_progress.LastRecordedStars, Is.EqualTo(0));
         }
 
         // ─────────────────────────────────────────────────────────────────────

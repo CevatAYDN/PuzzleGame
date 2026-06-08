@@ -41,6 +41,7 @@ namespace PuzzleGame.Infrastructure.Implementations
         private Vector3 _selectedOriginalPos;
         // Fix #24: Frame guard to prevent processing multiple inputs per frame
         private int _lastProcessedFrame = -1;
+        private readonly bool _enableFrameGuard;
 
         public MoldInputRouter(
             IInputHandler inputHandler,
@@ -58,7 +59,8 @@ namespace PuzzleGame.Infrastructure.Implementations
             IInputHandlerDefaults defaults,
             IActiveMoldsProvider moldsProvider,
             IHapticFeedbackService hapticService,
-            IAnalyticsService analytics)
+            IAnalyticsService analytics,
+            bool enableFrameGuard = true)
         {
             _inputHandler = inputHandler ?? throw new ArgumentNullException(nameof(inputHandler));
             _camera = camera;
@@ -73,6 +75,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             _castService = castService;
             _lookup = lookup ?? throw new ArgumentNullException(nameof(lookup));
             _defaults = defaults ?? throw new ArgumentNullException(nameof(defaults));
+            _enableFrameGuard = enableFrameGuard;
             _moldsProvider = moldsProvider ?? throw new ArgumentNullException(nameof(moldsProvider));
             _hapticService = hapticService ?? throw new ArgumentNullException(nameof(hapticService));
             _analytics = analytics ?? throw new ArgumentNullException(nameof(analytics));
@@ -81,9 +84,13 @@ namespace PuzzleGame.Infrastructure.Implementations
         public void ProcessInput()
         {
             // Fix #24: Frame-based guard — ensure ProcessInput is called only once per frame.
-            // Without this guard, multiple calls within same frame could process duplicate input.
-            if (Time.frameCount == _lastProcessedFrame) return;
-            _lastProcessedFrame = Time.frameCount;
+            // Disabled in test mode via _enableFrameGuard flag to allow multiple calls per frame.
+            if (_enableFrameGuard)
+            {
+                int currentFrame = Time.frameCount;
+                if (currentFrame == _lastProcessedFrame) return;
+                _lastProcessedFrame = currentFrame;
+            }
 
             if (_stateMachine == null)
             {

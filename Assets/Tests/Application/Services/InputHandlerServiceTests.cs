@@ -65,7 +65,8 @@ namespace PuzzleGame.Tests.Application.Services
                 _gameConfig, _animConfig, _audioService,
                 _historyManager, _CastService, lookup, defaults, _activeMoldsProvider,
                 _hapticService,
-                new NoOpAnalyticsService());
+                new NoOpAnalyticsService(),
+                enableFrameGuard: false);
             _sut = new InputHandlerService(router, lookup, defaults);
         }
 
@@ -282,43 +283,7 @@ namespace PuzzleGame.Tests.Application.Services
             }
 
             _inputHandler.SimulateClick(Vector2.zero, raycastSuccess: true, collider: collider);
-            
-            object boxedHit = new RaycastHit();
-            if (collider != null)
-            {
-                var field = typeof(RaycastHit).GetField("m_Collider", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (field != null)
-                {
-                    if (field.FieldType == typeof(int))
-                    {
-#pragma warning disable CS0618
-                        field.SetValue(boxedHit, collider.GetInstanceID());
-#pragma warning restore CS0618
-                    }
-                    else
-                    {
-                        var method = collider.GetType().GetMethod("GetEntityId");
-                        if (method != null)
-                        {
-                            var entityId = method.Invoke(collider, null);
-                            field.SetValue(boxedHit, entityId);
-                        }
-                        else
-                        {
-                            var entityId = System.Activator.CreateInstance(field.FieldType);
-                            var dataField = field.FieldType.GetField("m_Data", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                            if (dataField != null)
-                            {
-#pragma warning disable CS0618
-                                dataField.SetValue(entityId, collider.GetInstanceID());
-#pragma warning restore CS0618
-                            }
-                            field.SetValue(boxedHit, entityId);
-                        }
-                    }
-                }
-            }
-            _inputHandler.RaycastHitResult = (RaycastHit)boxedHit;
+            _inputHandler.RaycastColliderResult = collider;
         }
     }
 }

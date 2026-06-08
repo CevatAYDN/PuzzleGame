@@ -165,7 +165,8 @@ namespace PuzzleGame.Domain.Tests.Models
         {
             var Mold = CreateSut(3);
             var validator = new PuzzleGame.Domain.Services.MoldValidationService(0.05f);
-            Assert.That(validator.IsComplete(Mold), Is.True); // empty is complete
+            // Empty mold is NOT complete — IsComplete requires IsFull + single color.
+            Assert.That(validator.IsComplete(Mold), Is.False, "Empty mold should not be complete.");
 
             Mold.AddLayer(Layer(1f, 0f, 0f, 1f, 0.33f));
             Mold.AddLayer(Layer(1f, 0f, 0f, 1f, 0.33f));
