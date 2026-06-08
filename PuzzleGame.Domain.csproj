@@ -52,6 +52,7 @@
     <Compile Include="Assets\Scripts\Domain\Interfaces\IGameStateMachine.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\PourPreviewResult.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\PourRejectReason.cs" />
+    <Compile Include="Assets\Scripts\Domain\Models\PowerUpType.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\MoldState.cs" />
     <Compile Include="Assets\Scripts\Domain\Services\MoldValidationService.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\DomainColor.cs" />

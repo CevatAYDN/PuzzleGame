@@ -10,7 +10,25 @@ env:
   UNITY_VERSION: 6000.0.32f1
 
 jobs:
-  test-playmode:
+  # ── Lint (dotnet build) ──────────────────────────────────────────────────
+  lint:
+    name: Lint (dotnet build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: dotnet build
+        run: dotnet build PuzzleGame.slnx --configuration Release
+
+  # ── Tests ────────────────────────────────────────────────────────────────
+  test:
     name: PlayMode + EditMode Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -45,11 +63,12 @@ jobs:
           name: test-results
           path: artifacts/test-results
 
+  # ── Build Android ────────────────────────────────────────────────────────
   build-android:
     name: Build Android (IL2CPP)
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    needs: test-playmode
+    needs: [lint, test]
     if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
@@ -71,10 +90,86 @@ jobs:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
           ANDROID_KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
-          ANDROID_KEYALIAS_NAME: ${{ secrets.ANDROID_KEYALIAS_NAME }}
+          ANDROID_KEYALIAS: ${{ secrets.ANDROID_KEYALIAS }}
           ANDROID_KEYALIAS_PASS: ${{ secrets.ANDROID_KEYALIAS_PASS }}
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
           targetPlatform: Android
           buildMethod: PuzzleGame.Editor.BuildScript.BuildAndroidRelease
-          artifactsPath: build/Android
+          versioning: Semantic
+          androidAppBundle: false
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-build
+          path: build/Android
+
+  # ── Build iOS (Xcode project only, no signing) ───────────────────────────
+  build-ios:
+    name: Build iOS (Xcode Project)
+    runs-on: macos-latest
+    timeout-minutes: 60
+    needs: [lint, test]
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          submodules: recursive
+
+      - name: Cache Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-ios-${{ runner.os }}-${{ hashFiles('Packages/manifest.json', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            Library-ios-${{ runner.os }}-
+
+      - name: Build iOS
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: iOS
+          buildMethod: PuzzleGame.Editor.BuildScript.BuildiOSRelease
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: build/iOS
+
+  # ── Build Windows ────────────────────────────────────────────────────────
+  build-windows:
+    name: Build Windows Standalone
+    runs-on: windows-latest
+    timeout-minutes: 60
+    needs: [lint, test]
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          submodules: recursive
+
+      - name: Cache Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-win-${{ runner.os }}-${{ hashFiles('Packages/manifest.json', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            Library-win-${{ runner.os }}-
+
+      - name: Build Windows
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: StandaloneWindows64
+          buildMethod: PuzzleGame.Editor.BuildScript.BuildWindowsRelease
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: build/Windows

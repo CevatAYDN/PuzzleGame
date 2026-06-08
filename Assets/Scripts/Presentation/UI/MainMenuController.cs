@@ -85,6 +85,7 @@ namespace PuzzleGame.Presentation.UI
                 _events.Subscribe<HideDailyChallengeRequestEvent>(OnHideDailyChallenge);
                 _events.Subscribe<ShowSoundPanelRequestEvent>(OnShowSoundPanel);
                 _events.Subscribe<HideSoundPanelRequestEvent>(OnHideSoundPanel);
+                _events.Subscribe<HideSettingsRequestEvent>(OnHideSettings);
             }
             if (_coinWallet != null) _coinWallet.OnBalanceChanged += OnCoinBalanceChanged;
         }
@@ -102,6 +103,7 @@ namespace PuzzleGame.Presentation.UI
                 _events.Unsubscribe<HideDailyChallengeRequestEvent>(OnHideDailyChallenge);
                 _events.Unsubscribe<ShowSoundPanelRequestEvent>(OnShowSoundPanel);
                 _events.Unsubscribe<HideSoundPanelRequestEvent>(OnHideSoundPanel);
+                _events.Unsubscribe<HideSettingsRequestEvent>(OnHideSettings);
             }
             if (_coinWallet != null) _coinWallet.OnBalanceChanged -= OnCoinBalanceChanged;
         }
@@ -181,6 +183,12 @@ namespace PuzzleGame.Presentation.UI
         private void OnHideSoundPanel(HideSoundPanelRequestEvent e)
         {
             if (soundPanel != null) soundPanel.SetActive(false);
+            FadeRoot(1f);
+        }
+
+        private void OnHideSettings(HideSettingsRequestEvent e)
+        {
+            if (settingsPanel != null) settingsPanel.SetActive(false);
             FadeRoot(1f);
         }
 

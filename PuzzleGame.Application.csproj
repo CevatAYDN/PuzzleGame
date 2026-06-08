@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
   <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->
   <PropertyGroup>
     <BaseIntermediateOutputPath>Temp\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
@@ -56,6 +56,7 @@
     <Compile Include="Assets\Scripts\Application\Interfaces\IAsyncTranslationProvider.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IUndoService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\PurchaseController.cs" />
+    <Compile Include="Assets\Scripts\Application\Services\PowerUpService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\NoOpAnalyticsService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IMoldInputRouter.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IPourSystemController.cs" />
@@ -85,6 +86,7 @@
     <Compile Include="Assets\Scripts\Application\Configuration\LevelConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IAudioSettingsService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IPourSimulator.cs" />
+    <Compile Include="Assets\Scripts\Application\Interfaces\IPowerUpService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\InputHandlerService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IBiomeArtProvider.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\AnimationConfig.cs" />

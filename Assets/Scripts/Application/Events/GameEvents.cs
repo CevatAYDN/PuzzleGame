@@ -150,4 +150,21 @@ namespace PuzzleGame.Application.Events
             NewSettings = newSettings;
         }
     }
+
+    /// <summary>
+    /// Published by IPowerUpService when a power-up is activated.
+    /// Gameplay systems (PourSystemController, MoldSpawner, etc.) listen
+    /// and apply the effect.
+    /// </summary>
+    public readonly struct PowerUpActivatedEvent
+    {
+        public PowerUpType Type { get; }
+        public int MoldIndex { get; }
+
+        public PowerUpActivatedEvent(PowerUpType type, int moldIndex)
+        {
+            Type = type;
+            MoldIndex = moldIndex;
+        }
+    }
 }

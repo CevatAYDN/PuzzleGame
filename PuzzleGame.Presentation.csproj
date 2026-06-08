@@ -79,6 +79,7 @@
     <Compile Include="Assets\Scripts\Presentation\ActiveMoldsProvider.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\WorldMapController.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\SettingsPrivacyController.cs" />
+    <Compile Include="Assets\Scripts\Presentation\UI\SettingsController.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\MainMenuController.cs" />
     <Compile Include="Assets\Scripts\Presentation\LevelFlowController.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldAnimator.cs" />
