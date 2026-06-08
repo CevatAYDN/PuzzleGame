@@ -17,7 +17,7 @@ namespace PuzzleGame.Installers
     /// Registers core infrastructure services.
     /// These services have no business dependencies and are used by all other layers.
     /// </summary>
-    internal static class CoreServicesInstallerModule
+    public static class CoreServicesInstallerModule
     {
         public static void Configure(IContainerBuilder builder)
         {

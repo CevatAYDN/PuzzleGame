@@ -1231,28 +1231,12 @@
       <HintPath>C:\Program Files\Unity\Hub\Editor\6000.4.10f1\Editor\Data\NetStandard\compat\2.1.0\shims\netfx\System.Xml.Serialization.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="VContainer">
-      <HintPath>Library\ScriptAssemblies\VContainer.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="PrimeTween.Runtime">
-      <HintPath>Library\ScriptAssemblies\PrimeTween.Runtime.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="Unity.TextMeshPro">
       <HintPath>Library\ScriptAssemblies\Unity.TextMeshPro.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Unity.InputSystem">
-      <HintPath>Library\ScriptAssemblies\Unity.InputSystem.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="Unity.RenderPipelines.Universal.Runtime">
       <HintPath>Library\ScriptAssemblies\Unity.RenderPipelines.Universal.Runtime.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="UniTask">
-      <HintPath>Library\ScriptAssemblies\UniTask.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEditor.UI">
@@ -1269,6 +1253,10 @@
     <ProjectReference Include="PuzzleGame.Application.csproj" />
     <ProjectReference Include="PuzzleGame.Infrastructure.csproj" />
     <ProjectReference Include="PuzzleGame.Presentation.csproj" />
+    <ProjectReference Include="VContainer.csproj" />
+    <ProjectReference Include="PrimeTween.Runtime.csproj" />
+    <ProjectReference Include="Unity.InputSystem.csproj" />
+    <ProjectReference Include="UniTask.csproj" />
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <ItemGroup>

@@ -13,7 +13,7 @@ namespace PuzzleGame.Installers
     /// animation, level setup/validation, cast, reaction, input handling,
     /// pour system (dev tools).
     /// </summary>
-    internal static class GameplayInstallerModule
+    public static class GameplayInstallerModule
     {
         public static void Configure(IContainerBuilder builder)
         {

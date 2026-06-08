@@ -20,7 +20,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: mat_LayeredLiquid
+  m_Name: mat_LayeredOre
   m_Shader: {fileID: 4800000, guid: 4ae3cea20146e164e8b77dfb4b65e9ac, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0

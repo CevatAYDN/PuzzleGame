@@ -24,7 +24,7 @@
       "url": "https://package.openupm.com"
     },
     "com.kyrylokuzyk.primetween": {
-      "version": "1.4.0",
+      "version": "1.4.6",
       "depth": 0,
       "source": "registry",
       "dependencies": {},

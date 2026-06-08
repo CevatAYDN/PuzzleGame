@@ -176,6 +176,12 @@ namespace PuzzleGame.Editor
                     EditorGUILayout.LabelField("Completed Levels",
                         data.levels.FindAll(l => l.isCompleted).Count + "/" + data.levels.Count);
                 }
+                else
+                {
+                    // Placeholder controls to keep layout deterministic
+                    EditorGUILayout.LabelField("");
+                    EditorGUILayout.LabelField("");
+                }
 
                 EditorGUILayout.Space(4);
                 using (new EditorGUILayout.HorizontalScope())

@@ -22,7 +22,7 @@ namespace PuzzleGame.Tests.Editor
     [TestFixture]
     public class CoreServicesInstallerTests
     {
-        private IContainer _container;
+        private IObjectResolver _container;
 
         [TearDown]
         public void Teardown()
