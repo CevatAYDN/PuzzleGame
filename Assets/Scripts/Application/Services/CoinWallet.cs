@@ -50,7 +50,14 @@ namespace PuzzleGame.Application.Services
 
                     if (CryptographicEquals(savedHash, computedHash))
                     {
-                        _balance = savedBalance;
+                        // Tamper guard: a forged save file could set a negative
+                        // balance; clamp to zero so the wallet invariant holds.
+                        _balance = savedBalance < 0 ? 0 : savedBalance;
+                        if (savedBalance < 0)
+                        {
+                            MoldLogger.LogWarning($"{LogTag} Saved balance was negative ({savedBalance}); clamped to 0.");
+                            Persist();
+                        }
                     }
                     else
                     {
@@ -63,7 +70,7 @@ namespace PuzzleGame.Application.Services
                 {
                     // Migration path: balance exists but hash is not set yet.
                     // Compute and save it now to prevent resetting legacy players.
-                    _balance = savedBalance;
+                    _balance = savedBalance < 0 ? 0 : savedBalance;
                     Persist();
                 }
             }

@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
   <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->
   <PropertyGroup>
     <BaseIntermediateOutputPath>Temp\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
@@ -70,6 +70,7 @@
     <Compile Include="Assets\Scripts\Presentation\MoldCorkController.cs" />
     <Compile Include="Assets\Scripts\Presentation\URPConfigHelper.cs" />
     <Compile Include="Assets\Scripts\Presentation\HapticObserver.cs" />
+    <Compile Include="Assets\Scripts\Presentation\IFallbackMarker.cs" />
     <Compile Include="Assets\Scripts\Presentation\CameraEffectsBootstrap.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\ConsentModal.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldStateManager.cs" />

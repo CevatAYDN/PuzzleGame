@@ -105,5 +105,31 @@ namespace PuzzleGame
                 });
             }
         }
+
+        /// <summary>
+        /// Replaces every layer in one shot, firing a single
+        /// <see cref="MoldState.OnLayersChanged"/> notification at the end.
+        /// Cheaper than calling <c>AddLayer</c> in a loop and avoids visual
+        /// flicker on undo / snapshot restore.
+        /// </summary>
+        /// <exception cref="ArgumentException">Thrown if <paramref name="layers"/> exceeds <see cref="MaxLayers"/>.</exception>
+        public void ReplaceAllLayers(IReadOnlyList<OreLayer> layers)
+        {
+            int count = layers != null ? layers.Count : 0;
+            if (count > _maxLayers)
+            {
+                throw new System.ArgumentException(
+                    $"Cannot replace layers: count={count} exceeds MaxLayers={_maxLayers}.",
+                    nameof(layers));
+            }
+
+            // Reuse the existing instance so observers keep their subscription.
+            _state.Clear();
+            for (int i = 0; i < count; i++)
+            {
+                _state.AddLayer(layers[i]);
+            }
+            SyncSerializedFromLayers(layers);
+        }
     }
 }

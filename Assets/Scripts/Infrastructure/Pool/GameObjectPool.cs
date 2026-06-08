@@ -15,6 +15,7 @@ namespace PuzzleGame.Infrastructure.Pool
     public class GameObjectPool<T> : IGameObjectPool<T> where T : Component
     {
         private readonly T _prefab;
+        private readonly Transform _defaultParent;
         private readonly Stack<T> _inactive = new Stack<T>();
         private readonly HashSet<T> _active = new HashSet<T>();
         private readonly int _maxSize;
@@ -26,7 +27,8 @@ namespace PuzzleGame.Infrastructure.Pool
 
         public GameObjectPool(T prefab, int maxSize,
                               Action<T> onRent = null,
-                              Action<T> onReturn = null)
+                              Action<T> onReturn = null,
+                              Transform defaultParent = null)
         {
             if (prefab == null)
                 throw new ArgumentNullException(nameof(prefab));
@@ -35,6 +37,7 @@ namespace PuzzleGame.Infrastructure.Pool
             _maxSize = Mathf.Max(1, maxSize);
             _onRent = onRent;
             _onReturn = onReturn;
+            _defaultParent = defaultParent;
         }
 
         public T Rent(Transform parent = null)
@@ -51,7 +54,11 @@ namespace PuzzleGame.Infrastructure.Pool
 
             if (instance == null)
             {
-                instance = UnityEngine.Object.Instantiate(_prefab, parent);
+                // Use the explicit parent if provided, otherwise the pool's
+                // default parent. Keeps multi-scene setups honest — pooled
+                // objects are born into the correct scene.
+                var targetParent = parent != null ? parent : _defaultParent;
+                instance = UnityEngine.Object.Instantiate(_prefab, targetParent);
                 instance.gameObject.name = _prefab.name;
             }
             else if (parent != null)

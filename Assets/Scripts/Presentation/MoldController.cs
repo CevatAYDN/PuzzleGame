@@ -101,8 +101,14 @@ namespace PuzzleGame
 
         private void Awake()
         {
-            // Cache Collider to avoid GetComponent calls in hot paths (Fix #2)
+            // Cache all sibling components to avoid GetComponent calls in hot paths
+            // (Fix #2 covers Collider; the other components are cached here so the
+            // editor-time OnValidate path and runtime Initialize() share the same
+            // references).
             _cachedCollider = GetComponent<Collider>();
+            _renderer = GetComponent<Renderer>();
+            _wobble = GetComponent<Wobble>();
+            _meshGenerator = GetComponent<MoldMeshGenerator>();
 
             if (_stateManager == null && _serializedLayers != null && _serializedLayers.Count > 0)
             {
@@ -126,9 +132,12 @@ namespace PuzzleGame
             _animationService = animationService;
             _tweenService = tweenService;
 
-            _meshGenerator = GetComponent<MoldMeshGenerator>();
-            _renderer = GetComponent<Renderer>();
-            _wobble = GetComponent<Wobble>();
+            // Component references were already cached in Awake(); guard for the
+            // case where Initialize() is invoked before Awake (unusual but possible
+            // in editor play-mode entry).
+            if (_renderer == null) _renderer = GetComponent<Renderer>();
+            if (_wobble == null) _wobble = GetComponent<Wobble>();
+            if (_meshGenerator == null) _meshGenerator = GetComponent<MoldMeshGenerator>();
 
             if (visualConfig == null)
             {
@@ -238,6 +247,9 @@ namespace PuzzleGame
 #endif
             }
 
+            // Re-cache components in case RestoreStateFromSerialized is called
+            // before Awake (OnValidate path in edit mode). Awake cache wins in
+            // play mode; this is the safety net.
             _meshGenerator = GetComponent<MoldMeshGenerator>();
             _renderer = GetComponent<Renderer>();
             _wobble = GetComponent<Wobble>();

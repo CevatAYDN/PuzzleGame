@@ -109,32 +109,20 @@ namespace PuzzleGame
             _events.Subscribe<GameStateChangedEvent>(OnGameStateChanged);
             
             _updateManager?.Register(this);
-            
-            // Check if we are in play-test mode (no real Main Menu in scene, but Molds exist)
-            bool isFallbackMenu = mainMenuController == null || mainMenuController.gameObject.name.Contains("[Fallback]");
-            var moldsInScene = FindObjectsByType<MoldController>(FindObjectsInactive.Exclude);
-            bool isPlayTest = isFallbackMenu && moldsInScene.Length > 0;
-            
-            if (isPlayTest)
+
+            if (TryEnterPlayTestMode())
             {
-                MoldLogger.LogInfo("[PlayTest] Fallback Menu detected with Molds in scene. Initializing Play-Test mode directly, skipping onboarding.");
-                if (_moldPoolInitializer != null)
-                {
-                    _moldPoolInitializer.InitializeForLevel(null);
-                }
-                _stateMachine?.TransitionTo(GameState.Playing);
+                return;
+            }
+
+            if (_onboardingFlow != null)
+            {
+                _onboardingFlow.OnCompletedFlow += OnOnboardingCompleted;
+                _onboardingFlow.Run();
             }
             else
             {
-                if (_onboardingFlow != null)
-                {
-                    _onboardingFlow.OnCompletedFlow += OnOnboardingCompleted;
-                    _onboardingFlow.Run();
-                }
-                else
-                {
-                    _stateMachine?.TransitionTo(GameState.Menu);
-                }
+                _stateMachine?.TransitionTo(GameState.Menu);
             }
         }
 
@@ -145,28 +133,40 @@ namespace PuzzleGame
                 _onboardingFlow.OnCompletedFlow -= OnOnboardingCompleted;
             }
 
-            // Check if we are in play-test mode (no real Main Menu in scene, but Molds exist)
-            bool isFallbackMenu = mainMenuController == null || mainMenuController.gameObject.name.Contains("[Fallback]");
-            var moldsInScene = FindObjectsByType<MoldController>(FindObjectsInactive.Exclude);
-
-            if (isFallbackMenu && moldsInScene.Length > 0)
+            if (!TryEnterPlayTestMode())
             {
-                MoldLogger.LogInfo("[PlayTest] Fallback Menu detected with Molds in scene. Initializing Play-Test mode.");
-                
-                // Initialize the mold pool for playtesting (with null level, which triggers play-test initialization)
-                if (_moldPoolInitializer != null)
-                {
-                    _moldPoolInitializer.InitializeForLevel(null);
-                }
-
-                // Transition state machine directly to Playing so inputs work
-                _stateMachine?.TransitionTo(GameState.Playing);
-            }
-            else
-            {
-                // Normal flow: transition to Menu state
                 _stateMachine?.TransitionTo(GameState.Menu);
             }
+        }
+
+        /// <summary>
+        /// Detects play-test mode (no real Main Menu in scene, but Mold instances exist)
+        /// and short-circuits the normal Menu / Onboarding flow. Returns true when the
+        /// play-test branch was taken.
+        /// </summary>
+        private bool TryEnterPlayTestMode()
+        {
+            if (!IsFallbackMenuActive())
+                return false;
+
+            var moldsInScene = FindObjectsByType<MoldController>(FindObjectsInactive.Exclude);
+            if (moldsInScene.Length == 0)
+                return false;
+
+            MoldLogger.LogInfo("[PlayTest] Fallback Menu detected with Molds in scene. Initializing Play-Test mode.");
+            _moldPoolInitializer?.InitializeForLevel(null);
+            _stateMachine?.TransitionTo(GameState.Playing);
+            return true;
+        }
+
+        /// <summary>
+        /// True when the assigned MainMenuController is missing or has been synthesised
+        /// by DI as a fallback (i.e. no real menu prefab is in the scene).
+        /// </summary>
+        private bool IsFallbackMenuActive()
+        {
+            if (mainMenuController == null) return true;
+            return mainMenuController is IFallbackMarker fm && fm.IsFallback;
         }
 
         private void InitAudio()
@@ -189,13 +189,26 @@ namespace PuzzleGame
 
         private void OnApplicationPause(bool pause)
         {
-            if (!pause) return;
-            if (_analytics == null) return;
-            float durationSec = Time.realtimeSinceStartup - _sessionStartTime;
-            _analytics.Track(AnalyticsEvent.SessionEnd, new Dictionary<string, object>
+            if (pause)
             {
-                { "durationSec", durationSec }
-            });
+                if (_analytics == null) return;
+                float durationSec = Time.realtimeSinceStartup - _sessionStartTime;
+                _analytics.Track(AnalyticsEvent.SessionEnd, new Dictionary<string, object>
+                {
+                    { "durationSec", durationSec }
+                });
+            }
+            else
+            {
+                // Foreground dönüşü: eğer oyun Paused ise resume et. Sahne sahibi
+                // tüketiciler (WinLoseEvaluator vb.) zaten kendi state'lerini
+                // GameStateChangedEvent üzerinden yönetir; bu sadece state-machine
+                // tarafındaki deadlock'u önler.
+                if (_stateMachine != null && _stateMachine.IsInState(GameState.Paused))
+                {
+                    _stateMachine.TransitionTo(GameState.Playing);
+                }
+            }
         }
 
         private void OnDestroy()

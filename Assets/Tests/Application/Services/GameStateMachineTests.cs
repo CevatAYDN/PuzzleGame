@@ -85,9 +85,14 @@ namespace PuzzleGame.Tests.Application.Services
         [Test]
         public void OnStateChanged_EventFires()
         {
+            // OnStateChanged is [Obsolete] — the canonical subscription path is
+            // IEventAggregator.GameStateChangedEvent. Verify that here too as
+            // a regression guard for the deprecated channel.
+#pragma warning disable CS0618
             GameState? firedPrev = null;
             GameState? firedCurr = null;
             _sut.OnStateChanged += (prev, curr) => { firedPrev = prev; firedCurr = curr; };
+#pragma warning restore CS0618
 
             _sut.TransitionTo(GameState.Menu);
 

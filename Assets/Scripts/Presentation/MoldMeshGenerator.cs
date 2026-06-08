@@ -201,9 +201,49 @@ namespace PuzzleGame
         }
 
 #if UNITY_EDITOR
+        // Snapshot of the last values that triggered a build. Subsequent
+        // OnValidate calls whose deltas fall below the threshold are elided —
+        // the editor drags the slider by tiny fractions every frame, and each
+        // one used to issue a full mesh rebuild + material reapply.
+        private float _lastHeight = -1f;
+        private float _lastBodyRadius = -1f;
+        private float _lastNeckRadius = -1f;
+        private float _lastNeckHeight = -1f;
+        private float _lastCapRadius = -1f;
+        private float _lastCapHeight = -1f;
+        private int _lastSegments = -1;
+        private const float RebuildEpsilon = 1e-3f;
+
+        private bool HasShapeChanged()
+        {
+            if (Mathf.Abs(height       - _lastHeight)       > RebuildEpsilon) return true;
+            if (Mathf.Abs(bodyRadius   - _lastBodyRadius)   > RebuildEpsilon) return true;
+            if (Mathf.Abs(neckRadius   - _lastNeckRadius)   > RebuildEpsilon) return true;
+            if (Mathf.Abs(neckHeight   - _lastNeckHeight)   > RebuildEpsilon) return true;
+            if (Mathf.Abs(capRadius    - _lastCapRadius)    > RebuildEpsilon) return true;
+            if (Mathf.Abs(capHeight    - _lastCapHeight)    > RebuildEpsilon) return true;
+            if (segments != _lastSegments) return true;
+            return false;
+        }
+
+        private void CacheShapeSnapshot()
+        {
+            _lastHeight = height;
+            _lastBodyRadius = bodyRadius;
+            _lastNeckRadius = neckRadius;
+            _lastNeckHeight = neckHeight;
+            _lastCapRadius = capRadius;
+            _lastCapHeight = capHeight;
+            _lastSegments = segments;
+        }
+
         private void OnValidate()
         {
             if (UnityEngine.Application.isPlaying || _isBuildingInProgress) return;
+
+            // First OnValidate after a fresh domain reload — always build.
+            bool firstBuild = _lastHeight < 0f;
+            if (!firstBuild && !HasShapeChanged()) return;
 
             _isBuildingInProgress = true;
             EditorApplication.delayCall += () =>
@@ -213,6 +253,7 @@ namespace PuzzleGame
                 _meshRenderer = GetComponent<MeshRenderer>();
                 BuildMesh();
                 ApplyMaterials();
+                CacheShapeSnapshot();
                 _isBuildingInProgress = false;
             };
         }

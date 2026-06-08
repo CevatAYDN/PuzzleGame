@@ -60,7 +60,11 @@ namespace PuzzleGame.Installers
 
         /// <summary>
         /// Finds a MonoBehaviour in the scene hierarchy or creates a fallback instance.
-        /// Used by installer modules that need to register UI controllers.
+        /// Used by installer modules that need to register services in DI.
+        ///
+        /// If the component implements <see cref="PuzzleGame.Presentation.IFallbackMarker"/>,
+        /// the synthesised fallback instance is marked so consumers (e.g. <c>GameManager</c>)
+        /// can detect play-test mode without paying the cost of a name-string comparison.
         /// </summary>
         internal static T FindOrFallback<T>(IContainerBuilder builder) where T : Component
         {
@@ -71,6 +75,11 @@ namespace PuzzleGame.Installers
                 component = go.AddComponent<T>();
                 DontDestroyOnLoad(go);
                 MoldLogger.LogWarning($"[DI Fallback] {typeof(T).Name} not found in scene. Created fallback object: {go.name}");
+
+                if (component is PuzzleGame.Presentation.IFallbackMarker marker)
+                {
+                    marker.MarkAsFallback();
+                }
             }
             builder.RegisterComponent(component);
             return component;

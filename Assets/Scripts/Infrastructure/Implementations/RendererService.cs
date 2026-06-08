@@ -36,6 +36,10 @@ namespace PuzzleGame.Infrastructure.Implementations
 
         private readonly IColorAdapter _colorAdapter;
 
+        // MaterialPropertyBlock instances are reused across every mold render.
+        // Crucially we do NOT create per-renderer Material instances — that
+        // would leak GPU memory on every level transition. The blocks are
+        // shared, and the underlying Renderer owns the actual material asset.
         private readonly MaterialPropertyBlock _OreBlock = new MaterialPropertyBlock();
         private readonly MaterialPropertyBlock _glassBlock  = new MaterialPropertyBlock();
         private readonly List<OreLayer> _mergedLayers = new List<OreLayer>();

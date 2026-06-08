@@ -253,6 +253,20 @@ namespace PuzzleGame.Infrastructure.Implementations
             apply?.Invoke(_visualOverrides ?? _visualConfigRef);
         }
 
+        /// <summary>
+        /// Returns true when the controller is in editor (non-play) mode. Config
+        /// overrides (which clone the source ScriptableObject) are cheap to skip
+        /// outside the editor and risky in shipping builds if accidentally wired
+        /// up — they leak the clone past the current scope unless <see cref="ClearAllOverrides"/>
+        /// is called.
+        /// </summary>
+        public bool IsEditorOverrideContext =>
+#if UNITY_EDITOR
+            !UnityEngine.Application.isPlaying;
+#else
+            false;
+#endif
+
         public void ClearAllOverrides()
         {
             if (_animOverrides != null)
@@ -396,6 +410,11 @@ namespace PuzzleGame.Infrastructure.Implementations
         {
             ClearAllOverrides();
             _snapshots.Clear();
+            _molds = null;
+            _animConfigRef = null;
+            _visualConfigRef = null;
+            _animOverrides = null;
+            _visualOverrides = null;
         }
     }
 }

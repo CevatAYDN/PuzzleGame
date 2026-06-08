@@ -12,6 +12,14 @@ namespace PuzzleGame.Application.Services
     /// Pure POCO state machine. Test edilebilir, Unity bağımlılığı yok.
     /// EventAggregator üzerinden global event publish eder.
     /// </summary>
+    /// <remarks>
+    /// Standart kanal: <see cref="IEventAggregator"/> üzerinden yayınlanan
+    /// <c>GameStateChangedEvent</c>. UI ve diğer consumer'lar **mutlaka**
+    /// bu kanalı kullanmalı. <see cref="OnStateChanged"/> action'ı
+    /// yalnızca test senkronizasyonu ve geriye dönük uyumluluk içindir;
+    /// production kodunda dinlemeyin — global event ile sıralama
+    /// belirsizliğine yol açar.
+    /// </remarks>
     public class GameStateMachine : IGameStateMachine
     {
         private readonly Dictionary<(GameState, GameState), Func<bool>> _rules
@@ -24,6 +32,12 @@ namespace PuzzleGame.Application.Services
         public GameState Previous => _previous;
         private readonly IEventAggregator _eventAggregator;
 
+        /// <summary>
+        /// Geriye dönük uyumluluk + test senkronizasyonu için. Production UI'lar
+        /// bunu dinlememeli — standart kanal <c>GameStateChangedEvent</c>'tir.
+        /// </summary>
+        [Obsolete("Use IEventAggregator.GameStateChangedEvent instead. " +
+                  "OnStateChanged is kept for test sync and backward compatibility only.")]
         public event Action<GameState, GameState> OnStateChanged;
 
         public GameStateMachine(IEventAggregator eventAggregator)
@@ -80,7 +94,9 @@ namespace PuzzleGame.Application.Services
             _previous = prev;
             _current = next;
 
+#pragma warning disable CS0618 // Backward-compat fire for test sync + legacy consumers.
             OnStateChanged?.Invoke(prev, next);
+#pragma warning restore CS0618
             _eventAggregator.Publish(new GameStateChangedEvent(prev, next));
             return true;
         }

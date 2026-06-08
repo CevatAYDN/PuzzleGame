@@ -12,7 +12,9 @@ namespace PuzzleGame.Tests.Fakes
         public GameState Current { get; set; } = GameState.Menu;
         public GameState Previous { get; set; } = GameState.Menu;
 
+#pragma warning disable CS0618
         public event Action<GameState, GameState> OnStateChanged;
+#pragma warning restore CS0618
 
         public int TransitionToCallCount { get; private set; }
         public GameState LastTransitionTo { get; private set; }
@@ -29,7 +31,9 @@ namespace PuzzleGame.Tests.Fakes
             var old = Current;
             Previous = old;
             Current = next;
+#pragma warning disable CS0618
             OnStateChanged?.Invoke(old, next);
+#pragma warning restore CS0618
             return true;
         }
 

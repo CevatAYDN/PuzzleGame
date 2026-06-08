@@ -29,11 +29,44 @@ namespace PuzzleGame.Editor
 
         public int callbackOrder => 0;
 
+        // Y22: Whitelist of shaders that look like ours (PuzzleGame/... or
+        // Custom/...) but must NEVER be stripped. Listed by suffix match
+        // because the shader asset paths are not stable across machines.
+        // Anything in here is exempt from the variant stripping below.
+        private static readonly string[] WhitelistedShaderSuffixes =
+        {
+            // MagmaFlow / pour stream — every variant the VFX graph references
+            // must be kept or the VFX component will fall back to magenta.
+            "PuzzleGame/MagmaFlow",
+            "PuzzleGame/PourStream",
+            "PuzzleGame/StreamTrail",
+
+            // UI shaders that URP canvas rendering depends on.
+            "PuzzleGame/UI",
+            "Custom/UI",
+        };
+
+        private static bool IsWhitelisted(string shaderName)
+        {
+            if (string.IsNullOrEmpty(shaderName)) return false;
+            for (int i = 0; i < WhitelistedShaderSuffixes.Length; i++)
+            {
+                if (shaderName == WhitelistedShaderSuffixes[i] ||
+                    shaderName.StartsWith(WhitelistedShaderSuffixes[i] + "/"))
+                    return true;
+            }
+            return false;
+        }
+
         public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
         {
             // Only process PuzzleGame and Custom/ shaders
             if (!shader.name.StartsWith("PuzzleGame/") && !shader.name.StartsWith("Custom/"))
                 return;
+
+            // Y22: bail out before touching the variant list so the logger
+            // reports the exemption and we can audit it from the build log.
+            if (IsWhitelisted(shader.name)) return;
 
             int strippedCount = 0;
             for (int i = data.Count - 1; i >= 0; i--)

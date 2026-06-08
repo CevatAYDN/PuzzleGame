@@ -42,6 +42,7 @@ namespace PuzzleGame.Application.Services
 
         // ── IMoldLookupCache ────────────────────────────────────────────────
         public void SetMolds(IMoldView[] molds) => _lookup.SetMolds(molds);
+        public void RemoveMold(IMoldView mold) => _lookup.RemoveMold(mold);
         public IMoldView FindByCollider(UnityEngine.Collider collider) => _lookup.FindByCollider(collider);
         public IMoldView FindByState(MoldState state) => _lookup.FindByState(state);
 

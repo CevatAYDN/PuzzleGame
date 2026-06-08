@@ -37,16 +37,23 @@ namespace PuzzleGame.Installers
                 CrashReporter.Current = resolver.Resolve<ICrashReportingService>();
             });
 
-            // Ads — Infrastructure AdMobService (more robust, #if HAS_GOOGLE_MOBILE_ADS guard)
-            // Uses GameConfig for ad unit IDs. Falls back to NoOpAdService when SDK missing.
+            // Ads — compile-time selection between AdMobService and the NoOp
+            // fallback. The HasGoogleMobileAds symbol is defined by the
+            // Infrastructure asmdef when the Google Mobile Ads package is
+            // installed; otherwise we never even reference AdMobService, so a
+            // missing package can never produce a runtime TypeLoadException.
             builder.Register<IAdService>(resolver =>
             {
+#if HAS_GOOGLE_MOBILE_ADS
                 var config = resolver.Resolve<GameConfig>();
                 return new AdMobService(
                     gameConfig: config,
                     rewardedAdUnitId: null,
                     interstitialAdUnitId: null,
                     analytics: resolver.Resolve<IAnalyticsService>());
+#else
+                return new NoOpAdService();
+#endif
             }, Lifetime.Singleton);
             builder.Register<PurchaseController>(Lifetime.Singleton);
 

@@ -127,6 +127,21 @@ namespace PuzzleGame.Application.Services
 
             var assignments = GenerateLevelAssignments(Molds, currentLevel);
 
+            // Fail-loudly: a hand-authored LevelData whose Mold count diverges
+            // from the scene's IMoldView array is a designer error and would
+            // either drop molds silently or crash later in gameplay. Surface
+            // the mismatch now with both numbers so the level can be re-authored.
+            if (currentLevel.MoldCount > 0 && Molds.Length != currentLevel.MoldCount)
+            {
+                MoldLogger.LogError(
+                    $"[LevelSetupService] Mold count mismatch: scene has {Molds.Length} " +
+                    $"IMoldView components but LevelData '{currentLevel.name}' expects {currentLevel.MoldCount}. " +
+                    "Refusing to silently drop or pad molds — fix the level asset or the scene.");
+                throw new InvalidOperationException(
+                    $"Mold count mismatch for level '{currentLevel.name}': " +
+                    $"scene={Molds.Length}, level={currentLevel.MoldCount}.");
+            }
+
             for (int i = 0; i < Molds.Length; i++)
             {
                 var Mold = Molds[i];

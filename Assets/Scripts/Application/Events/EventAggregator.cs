@@ -55,7 +55,7 @@ namespace PuzzleGame.Application.Events
         private readonly Dictionary<Type, List<ISubscription>> _subscribers =
             new Dictionary<Type, List<ISubscription>>();
 
-        private const int MaxPoolSize = 16;
+        private const int MaxPoolSize = 64;
 
         private readonly Stack<List<ISubscription>> _listPool = new Stack<List<ISubscription>>();
 
@@ -148,6 +148,8 @@ namespace PuzzleGame.Application.Events
 
             if (_subscribers.TryGetValue(typeof(T), out var list) && list.Count > 0)
             {
+                // Pre-size the snapshot to avoid List growth allocations during AddRange.
+                snapshot.Capacity = list.Count;
                 snapshot.AddRange(list);
             }
             else

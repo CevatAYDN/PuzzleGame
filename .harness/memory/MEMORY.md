@@ -53,3 +53,9 @@ Type: convention
 Reins affected: developer, unity-expert, game-logic-expert
 Commit messages use `type(scope): summary` (e.g. `feat(domain): add difficulty-based seed range`). See `.harness/docs/git-workflow.md`.
 WHY: Lets `git log --grep` and changelog generation work without extra tooling.
+
+### Council Mode is opt-in, not default (2026-06-08)
+Type: convention
+Reins affected: harness (orchestrator)
+The orchestrator supports a 5-persona "Board of Directors" review mode (Lead Architect / Mechanics / Performance / UI-UX / QA). It is **only** triggered by explicit user keywords (`kurul`, `council`, `kurul oturumu`, `meclis`, `5 kişilik kurul`, `board of directors`). Format and rules live in `.harness/agent.md` → "Council Mode" section. Personas are role-plays, not separate LLM calls — project context stays unified.
+WHY: A 5-persona debate is expensive in tokens and noisy for trivial tasks. Keeping it opt-in preserves the default "route to one rein" flow and respects the user's "be concise" preference.

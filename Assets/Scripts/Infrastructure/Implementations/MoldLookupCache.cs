@@ -64,5 +64,28 @@ namespace PuzzleGame.Infrastructure.Implementations
             }
             return null;
         }
+
+        public void RemoveMold(IMoldView mold)
+        {
+            if (mold == null || _molds == null) return;
+
+            // Drop from the array (replace with null so FindByState short-circuits).
+            for (int i = 0; i < _molds.Length; i++)
+            {
+                if (ReferenceEquals(_molds[i], mold))
+                {
+                    _molds[i] = null;
+                    break;
+                }
+            }
+
+            // Drop from the collider dictionary so a stale EntityId does not
+            // resolve to a destroyed mold.
+            var col = mold.Collider;
+            if (col != null)
+            {
+                _byColliderId.Remove(col.GetEntityId());
+            }
+        }
     }
 }

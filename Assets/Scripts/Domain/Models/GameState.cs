@@ -33,4 +33,26 @@ namespace PuzzleGame.Domain.Models
         /// <summary>Tüm oyun tamamlandı, credits/fin.</summary>
         GameOver,
     }
+
+    /// <summary>
+    /// UI/Inspector/Reflection enumeration sırası enum tanım sırasından bağımsız.
+    /// Inspector dropdown'ları, debug overlay sıralaması ve editor tooling
+    /// bu listeyi kullanmalı — enum'a yeni state eklenirse buraya da ekleyin.
+    /// </summary>
+    public static class GameStateOrder
+    {
+        public static readonly System.Collections.Generic.IReadOnlyList<GameState> DisplayOrder =
+            new GameState[]
+            {
+                GameState.Boot,
+                GameState.Menu,
+                GameState.LevelLoading,
+                GameState.Playing,
+                GameState.OptionalCasting,
+                GameState.Paused,
+                GameState.LevelComplete,
+                GameState.LevelFailed,
+                GameState.GameOver,
+            };
+    }
 }

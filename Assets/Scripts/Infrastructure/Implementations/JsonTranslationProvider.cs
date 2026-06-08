@@ -5,6 +5,7 @@ using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Infrastructure.Models;
 using UnityEngine;
+using PuzzleGame.Application.Logging;
 
 namespace PuzzleGame.Infrastructure.Implementations
 {
@@ -23,6 +24,7 @@ namespace PuzzleGame.Infrastructure.Implementations
     /// </summary>
     public class JsonTranslationProvider : ITranslationProvider
     {
+        private const string LogTag = "[JsonTranslationProvider]";
         private const string DefaultRelativePath = "Localization/translations.json";
         private readonly string _filePath;
 
@@ -40,8 +42,43 @@ namespace PuzzleGame.Infrastructure.Implementations
 
         public IReadOnlyDictionary<string, Dictionary<SupportedLanguage, string>> Load()
         {
-            string json = File.ReadAllText(_filePath);
-            return Parse(json);
+            string json;
+            try
+            {
+                json = File.ReadAllText(_filePath);
+            }
+            catch (FileNotFoundException ex)
+            {
+                MoldLogger.LogWarning($"{LogTag} Translation file not found at '{_filePath}'. " +
+                                      "Falling back to empty dictionary — UI strings will use key-as-is fallback. " +
+                                      $"({ex.Message})");
+                return new Dictionary<string, Dictionary<SupportedLanguage, string>>();
+            }
+            catch (DirectoryNotFoundException ex)
+            {
+                MoldLogger.LogWarning($"{LogTag} Directory missing for '{_filePath}'. Returning empty dictionary. " +
+                                      $"({ex.Message})");
+                return new Dictionary<string, Dictionary<SupportedLanguage, string>>();
+            }
+            catch (IOException ex)
+            {
+                MoldLogger.LogError($"{LogTag} I/O error reading '{_filePath}': {ex.Message}. Returning empty dictionary.");
+                return new Dictionary<string, Dictionary<SupportedLanguage, string>>();
+            }
+
+            try
+            {
+                return Parse(json);
+            }
+            catch (Exception ex)
+            {
+                // JsonUtility throws ArgumentException on malformed JSON. Catch
+                // every exception type because Unity's serializer reports shape
+                // errors through several wrappers.
+                MoldLogger.LogError($"{LogTag} Failed to parse '{_filePath}' as TranslationFile. " +
+                                    $"Returning empty dictionary. Error: {ex.Message}");
+                return new Dictionary<string, Dictionary<SupportedLanguage, string>>();
+            }
         }
 
         /// <summary>

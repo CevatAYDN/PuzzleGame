@@ -23,6 +23,14 @@ namespace PuzzleGame.Application.Interfaces
         void SetMolds(IMoldView[] molds);
 
         /// <summary>
+        /// Removes a single mold from the cache. Call this from
+        /// <c>MoldController.OnDestroy</c> (or whenever a mold is destroyed
+        /// outside of a full <see cref="SetMolds"/> rebuild) so that
+        /// <see cref="FindByCollider"/> does not return a destroyed instance.
+        /// </summary>
+        void RemoveMold(IMoldView mold);
+
+        /// <summary>
         /// Resolves a collider to its owning <see cref="IMoldView"/> via
         /// the EntityId cache built in <see cref="SetMolds"/>.
         /// Returns null if the collider is not a registered mold.

@@ -56,6 +56,17 @@ namespace PuzzleGame.Domain.Services
             return key;
         }
 
+        public string GetStringOrDefault(string key, string fallback)
+        {
+            if (string.IsNullOrEmpty(key)) return fallback;
+            var value = GetString(key);
+            // Treat "key-as-is" fallback (i.e. missing translation) as a miss so
+            // callers never see a raw translation key in the UI.
+            if (string.IsNullOrEmpty(value) || value == key)
+                return fallback;
+            return value;
+        }
+
         public void SetLanguage(SupportedLanguage language)
         {
             if (_currentLanguage != language)

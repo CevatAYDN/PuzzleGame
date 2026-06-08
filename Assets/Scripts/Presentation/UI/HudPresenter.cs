@@ -62,6 +62,10 @@ namespace PuzzleGame.Presentation.UI
         private readonly StringBuilder _sb = new StringBuilder(64);
         // Fix #13: Cache last move count to avoid redundant SetText calls
         private int _lastMoveCount = -1;
+        // Y20: also cache the level title + win move count so re-publishing the
+        // same level-completed event does not regenerate TMP meshes.
+        private int _lastLevelNumber = -1;
+        private int _lastWinMoveCount = -1;
 
         [VContainer.Inject]
         public void Construct(
@@ -141,8 +145,9 @@ namespace PuzzleGame.Presentation.UI
         private void OnLevelCompleted(LevelCompletedEvent e)
         {
             if (winPanel != null) winPanel.SetActive(true);
-            if (winMoveCountText != null)
+            if (winMoveCountText != null && e.MoveCount != _lastWinMoveCount)
             {
+                _lastWinMoveCount = e.MoveCount;
                 string movesLabel = _localization != null ? _localization.GetString("moves_text") : "Moves";
                 _sb.Clear();
                 _sb.Append(movesLabel).Append(": ").Append(e.MoveCount);
@@ -176,6 +181,8 @@ namespace PuzzleGame.Presentation.UI
         private void UpdateLevelTitle()
         {
             if (levelTitleText == null || _currentLevel == null) return;
+            if (_currentLevel.levelNumber == _lastLevelNumber) return;
+            _lastLevelNumber = _currentLevel.levelNumber;
             _sb.Clear();
             _sb.Append("Level ").Append(_currentLevel.levelNumber);
             levelTitleText.SetText(_sb);

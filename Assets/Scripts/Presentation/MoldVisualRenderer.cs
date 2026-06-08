@@ -113,5 +113,28 @@ namespace PuzzleGame
             _propBlock.SetFloat(FresnelIntensityID, active ? activeFresnel : inactiveFresnel);
             _renderer.SetPropertyBlock(_propBlock, glassIndex);
         }
+
+        /// <summary>
+        /// Releases the cached <see cref="MaterialPropertyBlock"/> and clears
+        /// the dirty-flag caches. Call from <c>MoldController.OnDestroy</c>
+        /// so the cached state cannot survive past the host GameObject.
+        ///
+        /// This renderer does NOT own a <see cref="Material"/> instance — it
+        /// uses <see cref="MaterialPropertyBlock"/> exclusively, so there is
+        /// no per-instance material to <c>Destroy</c>. We still call
+        /// <c>SetPropertyBlock(null)</c> to drop the reference the renderer
+        /// is holding onto us.
+        /// </summary>
+        public void Dispose()
+        {
+            if (_renderer != null)
+            {
+                int glassIndex = _visualConfig != null ? _visualConfig.moldMaterialIndex : 0;
+                _renderer.SetPropertyBlock(null, glassIndex);
+            }
+            _propBlock = null;
+            _lastLayerHash = -1;
+            _lastTotalFill = -1f;
+        }
     }
 }

@@ -21,6 +21,15 @@ namespace PuzzleGame.Infrastructure.Implementations
         private VisualEffectAsset _cachedAsset;
         private int _frameCounter;
 
+        // Last published source/target mouth positions. Used to skip redundant
+        // VFX property writes when the camera-relative delta is below the
+        // configured threshold — VFX Graph still needs per-frame intensity
+        // updates, but StartPos/EndPos can be elided when the pour is essentially
+        // static. Keeps the per-pour cost bounded for the slow-pour segments.
+        private Vector3 _lastStartPos;
+        private Vector3 _lastEndPos;
+        private const float PositionEpsilonSqr = 1e-4f; // 0.01 m² in world units
+
         public StreamRenderer(StreamVFXConfig config, IEventAggregator eventAggregator, IAssetProvider assetProvider)
         {
             _config = config ?? throw new System.ArgumentNullException(nameof(config));
@@ -114,11 +123,22 @@ namespace PuzzleGame.Infrastructure.Implementations
                 (new Vector3(0f, source.Height, 0f));
             Vector3 targetMouth = targetT.position + Vector3.up * (target.Height + 0.15f);
 
-            // Set positions in VFX Graph
-            if (vfx.HasVector3("StartPos"))
+            // Set positions in VFX Graph — but only when either endpoint has
+            // moved more than the epsilon since the last publish. Per-frame
+            // intensity (below) is still updated every frame because the curve
+            // depends on t.
+            bool startMoved = (sourceMouth - _lastStartPos).sqrMagnitude > PositionEpsilonSqr;
+            bool endMoved   = (targetMouth - _lastEndPos).sqrMagnitude > PositionEpsilonSqr;
+            if (startMoved && vfx.HasVector3("StartPos"))
+            {
                 vfx.SetVector3("StartPos", sourceMouth);
-            if (vfx.HasVector3("EndPos"))
+                _lastStartPos = sourceMouth;
+            }
+            if (endMoved && vfx.HasVector3("EndPos"))
+            {
                 vfx.SetVector3("EndPos", targetMouth);
+                _lastEndPos = targetMouth;
+            }
 
             // Bell-curve intensity: peaks at t=0.5
             float intensity = _config.flowIntensity * (1f - Mathf.Abs(t - 0.5f) * 2f);

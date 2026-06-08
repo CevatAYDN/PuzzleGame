@@ -16,10 +16,17 @@ namespace PuzzleGame.Presentation.UI
     /// When "Play" is clicked, publishes a ShowWorldMapRequestEvent that LevelSelectUI listens for.
     /// SRP: only owns main-menu UI state and navigation. Sub-panels are separate components.
     /// </summary>
-    public class MainMenuController : MonoBehaviour
+    public class MainMenuController : MonoBehaviour, PuzzleGame.Presentation.IFallbackMarker
     {
         private const string LogTag = "[MainMenu]";
         private const float SubPanelFadeDuration = 0.25f;
+
+        // ── IFallbackMarker ──────────────────────────────────────────────────
+        // Set by GameInstaller.FindOrFallback when the component is synthesised at
+        // runtime. Real scene-authored instances leave this false.
+        [SerializeField] private bool _isFallback;
+        public bool IsFallback => _isFallback;
+        public void MarkAsFallback() => _isFallback = true;
 
         [Header("Buttons")]
         [SerializeField] private Button playButton;

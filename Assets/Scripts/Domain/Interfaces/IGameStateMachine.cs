@@ -15,7 +15,13 @@ namespace PuzzleGame.Domain.Interfaces
         /// <summary>True eğer mevcut state verilen ile eşitse.</summary>
         bool IsInState(GameState state);
 
-        /// <summary>State değiştiğinde tetiklenir. (previous, current) argümanları.</summary>
+        /// <summary>
+        /// State değiştiğinde tetiklenir. (previous, current) argümanları.
+        /// DEPRECATED: Standart kanal <c>IEventAggregator.GameStateChangedEvent</c>'tir.
+        /// Bu event yalnızca test senkronizasyonu ve geriye dönük uyumluluk içindir.
+        /// </summary>
+        [Obsolete("Use IEventAggregator.GameStateChangedEvent instead. " +
+                  "OnStateChanged is kept for test sync and backward compatibility only.")]
         event Action<GameState, GameState> OnStateChanged;
 
         /// <summary>Geçiş yapar. İzin verilmiyse false döner.</summary>

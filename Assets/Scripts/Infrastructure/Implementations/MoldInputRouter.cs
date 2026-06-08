@@ -18,6 +18,22 @@ namespace PuzzleGame.Infrastructure.Implementations
     /// focused on orchestration (one responsibility) while data concerns
     /// live in their own services.
     /// </summary>
+    /// <remarks>
+    /// Raycast / hit-test ordering (MoldInputRouter + IMoldLookupCache):
+    /// <list type="number">
+    /// <item><see cref="Camera"/> ray cast hits the <c>Collider</c> of every <c>IMoldView</c>.</item>
+    /// <item>The collider is resolved to its owning mold via
+    ///   <see cref="IMoldLookupCache.FindByCollider"/>, which uses the O(1)
+    ///   EntityId dictionary built in <see cref="IMoldLookupCache.SetMolds"/>.</item>
+    /// <item>If two colliders overlap, the raycast returns the closest one
+    ///   (Unity's <see cref="Physics.Raycast"/> default). Z-order tie-break
+    ///   is therefore "nearest hit first"; do not rely on array order in
+    ///   <see cref="IActiveMoldsProvider.Molds"/>.</item>
+    /// </list>
+    /// When <see cref="IMoldLookupCache.FindByCollider"/> misses (test setup
+    /// without proper EntityId, etc.) the router falls back to a linear scan
+    /// over <see cref="IActiveMoldsProvider.Molds"/> in array order.
+    /// </remarks>
     public sealed class MoldInputRouter : IMoldInputRouter
     {
         private readonly IInputHandler _inputHandler;

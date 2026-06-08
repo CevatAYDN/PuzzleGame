@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
   <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->
   <PropertyGroup>
     <BaseIntermediateOutputPath>Temp\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
@@ -51,6 +51,7 @@
   <ItemGroup>
     <Compile Include="Assets\Scripts\Domain\Interfaces\IGameStateMachine.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\PourPreviewResult.cs" />
+    <Compile Include="Assets\Scripts\Domain\Models\PourRejectReason.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\MoldState.cs" />
     <Compile Include="Assets\Scripts\Domain\Services\MoldValidationService.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\DomainColor.cs" />
