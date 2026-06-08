@@ -1,4 +1,4 @@
-<Project>
+﻿<Project>
   <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->
   <PropertyGroup>
     <BaseIntermediateOutputPath>Temp\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
@@ -75,10 +75,10 @@
     <Compile Include="Assets\Tests\Infrastructure\UnityMemorySnapshotServiceTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeActiveMoldsProvider.cs" />
     <Compile Include="Assets\Tests\Presentation\DailyChallengeCountdownTests.cs" />
+    <Compile Include="Assets\Tests\Infrastructure\SaveCryptoTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeMoldSelectionService.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeMoldValidator.cs" />
     <Compile Include="Assets\Tests\Infrastructure\PourSystemControllerInterfaceSegregationTests.cs" />
-    <Compile Include="Assets\Tests\Infrastructure\PourSystemControllerTests.cs" />
     <Compile Include="Assets\Tests\Infrastructure\ColorAdapterTests.cs" />
     <Compile Include="Assets\Tests\Presentation\ErrorIndicatorBootstrapTests.cs" />
     <Compile Include="Assets\Tests\Infrastructure\JsonTranslationProviderTests.cs" />
@@ -93,14 +93,17 @@
     <Compile Include="Assets\Tests\Fakes\FakeReactionService.cs" />
     <Compile Include="Assets\Tests\Presentation\LevelBiomeClassifierTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeFeatureFlagService.cs" />
+    <Compile Include="Assets\Tests\Editor\CoreServicesInstallerTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\UndoServiceTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\CastServiceTests.cs" />
     <Compile Include="Assets\Tests\Application\MoldSelectionServiceTests.cs" />
+    <Compile Include="Assets\Tests\Presentation\MoldCorkControllerCacheTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\InputHandlerServiceTests.cs" />
     <Compile Include="Assets\Tests\Domain\Services\LevelGeneratorSolvabilityTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeCoinWallet.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeStreamRenderer.cs" />
     <Compile Include="Assets\Tests\Application\Services\GameSaveManagerTests.cs" />
+    <Compile Include="Assets\Tests\Infrastructure\PourSystemControllerTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeStreamTrailController.cs" />
     <Compile Include="Assets\Tests\Domain\Services\LevelGeneratorV2Tests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeHistoryManager.cs" />
@@ -108,6 +111,7 @@
     <Compile Include="Assets\Tests\Infrastructure\ShaderOptimizerTests.cs" />
     <Compile Include="Assets\Tests\Application\AudioPreferencesTests.cs" />
     <Compile Include="Assets\Tests\Domain\Models\MoldStateTests.cs" />
+    <Compile Include="Assets\Tests\Infrastructure\FirebaseCrashReportingTests.cs" />
     <Compile Include="Assets\Tests\Domain\Services\OreSortSolverTests.cs" />
     <Compile Include="Assets\Tests\Domain\MoldStateReplaceLayersTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\TutorialServiceTests.cs" />
@@ -126,8 +130,6 @@
     <Compile Include="Assets\Tests\Domain\Models\OreLayerTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\LevelValidationServiceTests.cs" />
     <Compile Include="Assets\Tests\Infrastructure\PlayerPrefsAudioSettingsServiceTests.cs" />
-    <Compile Include="Assets\Tests\Infrastructure\SaveCryptoTests.cs" />
-    <Compile Include="Assets\Tests\Infrastructure\FirebaseCrashReportingTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Tests\PuzzleGame.Tests.asmdef" />

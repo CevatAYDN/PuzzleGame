@@ -1,4 +1,4 @@
-<Project>
+﻿<Project>
   <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->
   <PropertyGroup>
     <BaseIntermediateOutputPath>Temp\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
@@ -52,7 +52,6 @@
     <Compile Include="Assets\Scripts\Domain\Interfaces\IGameStateMachine.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\PourPreviewResult.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\PourRejectReason.cs" />
-    <Compile Include="Assets\Scripts\Domain\Models\PowerUpType.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\MoldState.cs" />
     <Compile Include="Assets\Scripts\Domain\Services\MoldValidationService.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\DomainColor.cs" />
@@ -69,6 +68,7 @@
     <Compile Include="Assets\Scripts\Domain\Difficulty.cs" />
     <Compile Include="Assets\Scripts\Domain\ForgeConstants.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\OreLayer.cs" />
+    <Compile Include="Assets\Scripts\Domain\Models\PowerUpType.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\MoldDebugState.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\IUpdateable.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\ILevelProgressService.cs" />

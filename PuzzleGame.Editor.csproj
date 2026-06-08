@@ -1,4 +1,4 @@
-<Project>
+﻿<Project>
   <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->
   <PropertyGroup>
     <BaseIntermediateOutputPath>Temp\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
@@ -64,10 +64,10 @@
     <Compile Include="Assets\Scripts\Editor\TestTab.cs" />
     <Compile Include="Assets\Scripts\Editor\LevelSolverUtility.cs" />
     <Compile Include="Assets\Scripts\Editor\PouringLabTab.cs" />
+    <Compile Include="Assets\Scripts\Editor\DifficultyCurveAnalyzer.cs" />
+    <Compile Include="Assets\Scripts\Editor\BuildScript.cs" />
     <Compile Include="Assets\Scripts\Editor\LevelUITab.cs" />
     <Compile Include="Assets\Scripts\Editor\AddressablesInstaller.cs" />
-    <Compile Include="Assets\Scripts\Editor\BuildScript.cs" />
-    <Compile Include="Assets\Scripts\Editor\DifficultyCurveAnalyzer.cs" />
     <Compile Include="Assets\Scripts\Editor\ForgeEditorWindow.cs" />
     <Compile Include="Assets\Scripts\Editor\SceneBuilderMoldFactory.cs" />
     <Compile Include="Assets\Scripts\Editor\SceneTab.cs" />

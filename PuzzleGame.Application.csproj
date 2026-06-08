@@ -1,4 +1,4 @@
-<Project>
+﻿<Project>
   <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->
   <PropertyGroup>
     <BaseIntermediateOutputPath>Temp\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
@@ -56,7 +56,6 @@
     <Compile Include="Assets\Scripts\Application\Interfaces\IAsyncTranslationProvider.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IUndoService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\PurchaseController.cs" />
-    <Compile Include="Assets\Scripts\Application\Services\PowerUpService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\NoOpAnalyticsService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IMoldInputRouter.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IPourSystemController.cs" />
@@ -76,6 +75,7 @@
     <Compile Include="Assets\Scripts\Application\Configuration\StreamVFXConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Services\TutorialService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IFeatureFlagService.cs" />
+    <Compile Include="Assets\Scripts\Application\Interfaces\IPowerUpService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IHapticFeedbackService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\AudioClipId.cs" />
     <Compile Include="Assets\Scripts\Application\Services\HintService.cs" />
@@ -86,7 +86,6 @@
     <Compile Include="Assets\Scripts\Application\Configuration\LevelConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IAudioSettingsService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IPourSimulator.cs" />
-    <Compile Include="Assets\Scripts\Application\Interfaces\IPowerUpService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\InputHandlerService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IBiomeArtProvider.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\AnimationConfig.cs" />
@@ -115,6 +114,7 @@
     <Compile Include="Assets\Scripts\Application\Interfaces\ICastService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\ISaveStorage.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\ICoinWallet.cs" />
+    <Compile Include="Assets\Scripts\Application\Services\PowerUpService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IGameHistoryManager.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\EconomyConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Events\EventAggregator.cs" />
