@@ -43,9 +43,13 @@ namespace PuzzleGame.Tests.Presentation
             _level.parMoves = 5;
             _level.goodMoves = 10;
 
+            // Create a minimal MoldPoolInitializer for testing (only ActivateOptionalMolds is used)
+            var moldInitializer = new MoldPoolInitializer(
+                null, null, null, null, null, null, null, null, null, null, _pool);
+
             _sut = new WinLoseEvaluator(
                 _state, _validator, _audio, _progress,
-                _history, _tween, _events, _pool,
+                _history, _tween, _events, _pool, moldInitializer,
                 new NoOpAnalyticsService());
         }
 

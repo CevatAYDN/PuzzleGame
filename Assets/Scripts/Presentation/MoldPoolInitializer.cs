@@ -14,8 +14,11 @@ namespace PuzzleGame
     /// Discovers MoldController objects in the scene, activates the correct count for a level,
     /// and wires them into the game systems (history, input, level setup, camera).
     /// Extracted from GameManager for SRP (single responsibility = Mold pool initialization).
+    /// 
+    /// No longer implements IActiveMoldsProvider to break circular dependency.
+    /// Delegates to ActiveMoldsProvider singleton.
     /// </summary>
-    public sealed class MoldPoolInitializer : IActiveMoldsProvider
+    public sealed class MoldPoolInitializer
     {
         private readonly ILevelSetupService _levelSetupService;
         private readonly IRendererService _rendererService;
@@ -28,12 +31,10 @@ namespace PuzzleGame
         private readonly IErrorIndicatorService _errorIndicator;
         private readonly WobbleConfig _wobbleConfig;
         private readonly OptionalMoldActivator _optionalMoldActivator;
+        private readonly IActiveMoldsProvider _activeMoldsProvider;
 
         private readonly List<MoldController> _gameplayMoldsPool = new List<MoldController>();
         private readonly List<MoldController> _optionalMoldsPool = new List<MoldController>();
-        private IMoldView[] _Molds;
-
-        public IMoldView[] Molds => _Molds;
 
         public int MaxGameplayMolds
         {
@@ -54,7 +55,8 @@ namespace PuzzleGame
             IUpdateManager updateManager,
             Camera camera,
             IErrorIndicatorService errorIndicator,
-            WobbleConfig wobbleConfig)
+            WobbleConfig wobbleConfig,
+            IActiveMoldsProvider activeMoldsProvider)
         {
             _levelSetupService = levelSetupService;
             _rendererService = rendererService;
@@ -66,6 +68,7 @@ namespace PuzzleGame
             _camera = camera;
             _errorIndicator = errorIndicator;
             _wobbleConfig = wobbleConfig;
+            _activeMoldsProvider = activeMoldsProvider;
             _optionalMoldActivator = new OptionalMoldActivator(
                 _rendererService,
                 _validator,
@@ -118,7 +121,7 @@ namespace PuzzleGame
                 }
             }
 
-            _Molds = new IMoldView[activeCount];
+            var molds = new IMoldView[activeCount];
             int index = 0;
             for (int i = 0; i < _gameplayMoldsPool.Count; i++)
             {
@@ -126,7 +129,7 @@ namespace PuzzleGame
                 if (b != null && b.gameObject.activeSelf)
                 {
                     b.MoldIndex = index;
-                    _Molds[index++] = b;
+                    molds[index++] = b;
                 }
             }
 
@@ -141,12 +144,15 @@ namespace PuzzleGame
                 }
             }
 
-            _historyManager.Initialize(_Molds);
-            _inputHandlerService.SetMolds(_Molds);
+            // Set molds to the shared provider to break circular dependency
+            _activeMoldsProvider.Molds = molds;
+
+            _historyManager.Initialize(molds);
+            _inputHandlerService.SetMolds(molds);
             _inputHandlerService.SetLevelData(level);
 
-            _levelSetupService.SetupMolds(_Molds, level, _rendererService, _validator, _animationService);
-            _errorIndicator?.Initialize(_Molds);
+            _levelSetupService.SetupMolds(molds, level, _rendererService, _validator, _animationService);
+            _errorIndicator?.Initialize(molds);
 
             ConfigureCamera();
         }
@@ -161,7 +167,7 @@ namespace PuzzleGame
             // Fix #29: NOTE - OptionalMoldActivator.Activate() now handles all dependent
             // service sync internally (historyManager, inputHandlerService, errorIndicator).
             // No need for redundant calls here.
-            _Molds = _optionalMoldActivator.Activate(level, _optionalMoldsPool, _Molds);
+            _activeMoldsProvider.Molds = _optionalMoldActivator.Activate(level, _optionalMoldsPool, _activeMoldsProvider.Molds);
         }
 
         private static readonly MoldNameComparer Comparer = new MoldNameComparer();
@@ -207,7 +213,7 @@ namespace PuzzleGame
             {
                 adapter = _camera.gameObject.AddComponent<PuzzleGame.Presentation.CameraResolutionAdapter>();
             }
-            adapter.Initialize(this);
+            adapter.Initialize(_activeMoldsProvider);
         }
 
         private class MoldNameComparer : IComparer<MoldController>

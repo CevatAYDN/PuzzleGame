@@ -14,6 +14,7 @@ namespace PuzzleGame.Tests.Application.Services
     public class InputHandlerServiceTests
     {
         private InputHandlerService _sut;
+        private MoldInputRouter _router;
         private EventAggregator _eventAggregator;
         private FakeInputHandler _inputHandler;
         private FakeGameStateMachine _stateMachine;
@@ -59,15 +60,14 @@ namespace PuzzleGame.Tests.Application.Services
             var lookup = new MoldLookupCache();
             var defaults = new InputHandlerDefaults();
             _activeMoldsProvider = new FakeActiveMoldsProvider();
-            var router = new MoldInputRouter(
+            _router = new MoldInputRouter(
                 _inputHandler, Camera.main, _stateMachine,
                 _animationService, _selectionService, _validator,
                 _gameConfig, _animConfig, _audioService,
                 _historyManager, _CastService, lookup, defaults, _activeMoldsProvider,
                 _hapticService,
-                new NoOpAnalyticsService(),
-                enableFrameGuard: false);
-            _sut = new InputHandlerService(router, lookup, defaults);
+                new NoOpAnalyticsService());
+            _sut = new InputHandlerService(_router, lookup, defaults);
         }
 
         [TearDown]
@@ -284,6 +284,10 @@ namespace PuzzleGame.Tests.Application.Services
 
             _inputHandler.SimulateClick(Vector2.zero, raycastSuccess: true, collider: collider);
             _inputHandler.RaycastColliderResult = collider;
+
+            // Reset the per-frame guard so the next ProcessInput is not silently dropped.
+            // Multiple clicks within the same test frame must all be processed.
+            _router?.ResetFrameGuardForTests();
         }
     }
 }

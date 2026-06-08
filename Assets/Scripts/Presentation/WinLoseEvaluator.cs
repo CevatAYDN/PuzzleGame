@@ -26,6 +26,7 @@ namespace PuzzleGame.Presentation
         private readonly ITweenService _tween;
         private readonly IEventAggregator _events;
         private readonly IActiveMoldsProvider _pool;
+        private readonly MoldPoolInitializer _moldInitializer;
         private readonly IAnalyticsService _analytics;
         private readonly System.Diagnostics.Stopwatch _levelStopwatch = new System.Diagnostics.Stopwatch();
         private LevelData _currentLevel;
@@ -39,6 +40,7 @@ namespace PuzzleGame.Presentation
             ITweenService tween,
             IEventAggregator events,
             IActiveMoldsProvider pool,
+            MoldPoolInitializer moldInitializer,
             IAnalyticsService analytics)
         {
             _stateMachine = stateMachine;
@@ -49,6 +51,7 @@ namespace PuzzleGame.Presentation
             _tween = tween;
             _events = events;
             _pool = pool;
+            _moldInitializer = moldInitializer;
             _analytics = analytics;
 
             _events.Subscribe<CastCompletedEvent>(OnCastCompleted);
@@ -113,7 +116,7 @@ namespace PuzzleGame.Presentation
             if (_currentLevel != null && _currentLevel.optionalTargets != null && _currentLevel.optionalTargets.Count > 0)
             {
                 _stateMachine.TransitionTo(GameState.OptionalCasting);
-                _pool.ActivateOptionalMolds(_currentLevel);
+                _moldInitializer.ActivateOptionalMolds(_currentLevel);
                 MoldLogger.LogInfo("All main crucibles complete — entered OptionalCasting.");
             }
             else

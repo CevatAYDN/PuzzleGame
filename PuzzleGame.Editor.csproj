@@ -73,6 +73,7 @@
     <Compile Include="Assets\Scripts\Editor\LevelDataBatchCreator.cs" />
     <Compile Include="Assets\Scripts\Editor\DataTab.cs" />
     <Compile Include="Assets\Scripts\Editor\LocalizationTab.cs" />
+    <Compile Include="Assets\Scripts\Editor\SceneBuilderUI.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Scripts\Editor\PuzzleGame.Editor.asmdef" />
@@ -1280,6 +1281,10 @@
     </Reference>
     <Reference Include="VContainer">
       <HintPath>Library\ScriptAssemblies\VContainer.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.InputSystem">
+      <HintPath>Library\ScriptAssemblies\Unity.InputSystem.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEditor.UI">

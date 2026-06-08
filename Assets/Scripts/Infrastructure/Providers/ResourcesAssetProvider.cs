@@ -20,7 +20,11 @@ namespace PuzzleGame.Infrastructure.Providers
             var asset = Resources.Load<T>(address);
             if (asset == null)
             {
-                MoldLogger.LogWarning($"[ResourcesAssetProvider] Failed to load optional asset '{address}' from Resources. Fallbacks will be used.");
+                // Optional assets are common during early dev (particles, prefabs not yet authored).
+                // Downgrade to Debug so it doesn't pollute the editor console.
+                UnityEngine.Debug.Log(
+                    $"[ResourcesAssetProvider] Optional asset '{address}' missing — using fallback. " +
+                    "Add it under Resources/ to silence this log.");
             }
             onComplete?.Invoke(asset);
         }
@@ -35,7 +39,9 @@ namespace PuzzleGame.Infrastructure.Providers
             var prefab = Resources.Load<GameObject>(address);
             if (prefab == null)
             {
-                MoldLogger.LogWarning($"[ResourcesAssetProvider] Failed to load optional prefab '{address}' from Resources. Fallbacks will be used.");
+                UnityEngine.Debug.Log(
+                    $"[ResourcesAssetProvider] Optional prefab '{address}' missing — using fallback. " +
+                    "Add it under Resources/ to silence this log.");
                 onComplete?.Invoke(null);
                 return;
             }

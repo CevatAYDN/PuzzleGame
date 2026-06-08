@@ -29,9 +29,13 @@ namespace PuzzleGame.Installers
             var cameraEffects = CameraEffectsBootstrap.EnsureExists();
             builder.RegisterComponent(cameraEffects);
 
-            // Mold pool initializer
+            // ActiveMoldsProvider — separate singleton to break circular dependency
+            // (MoldPoolInitializer no longer implements IActiveMoldsProvider)
+            builder.Register<ActiveMoldsProvider>(Lifetime.Singleton)
+                   .As<IActiveMoldsProvider>();
+
+            // Mold pool initializer (no longer implements IActiveMoldsProvider)
             builder.Register<MoldPoolInitializer>(Lifetime.Singleton)
-                   .As<IActiveMoldsProvider>()
                    .AsSelf();
 
             // Game manager (MonoBehaviour in hierarchy)

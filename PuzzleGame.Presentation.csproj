@@ -75,6 +75,7 @@
     <Compile Include="Assets\Scripts\Presentation\MoldStateManager.cs" />
     <Compile Include="Assets\Scripts\Presentation\GameManager.cs" />
     <Compile Include="Assets\Scripts\Presentation\Wobble.cs" />
+    <Compile Include="Assets\Scripts\Presentation\ActiveMoldsProvider.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\WorldMapController.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\SettingsPrivacyController.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\MainMenuController.cs" />

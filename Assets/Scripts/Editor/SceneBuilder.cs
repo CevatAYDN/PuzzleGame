@@ -100,6 +100,10 @@ namespace PuzzleGame.Editor
                 CreateGameInstaller();
             }
 
+            // Always create UI controllers so DI does not need fallback GameObjects at runtime.
+            // Idempotent — re-running will skip nodes that already exist.
+            SceneBuilderUI.SetupUIControllers();
+
             Undo.CollapseUndoOperations(undoGroup);
             EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
             Debug.Log("[SceneBuilder] Current scene set up with GameManager + DI. Ctrl+Z to undo.");

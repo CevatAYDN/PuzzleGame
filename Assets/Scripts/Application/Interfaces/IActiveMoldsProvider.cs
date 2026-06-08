@@ -1,20 +1,15 @@
-using PuzzleGame.Application.Configuration;
-
 namespace PuzzleGame.Application.Interfaces
 {
     /// <summary>
     /// Exposes the active gameplay molds without leaking the Presentation-layer
     /// <c>MoldPoolInitializer</c> into the Application layer.
+    /// 
+    /// This interface is intentionally minimal - only provides read access to the
+    /// active mold list. Operations like ActivateOptionalMolds belong in
+    /// MoldPoolInitializer to avoid circular dependencies.
     /// </summary>
     public interface IActiveMoldsProvider
     {
-        IMoldView[] Molds { get; }
-
-        /// <summary>
-        /// Activates the optional mold slots declared by the level, appends them
-        /// to <see cref="Molds"/>, and re-wires input/history/error indicators.
-        /// No-op when the level has no optional targets.
-        /// </summary>
-        void ActivateOptionalMolds(LevelData level);
+        IMoldView[] Molds { get; set; }
     }
 }
