@@ -34,14 +34,14 @@ namespace PuzzleGame.Domain.Models
         /// <summary>
         /// Layer colors as <see cref="DomainColor"/> values.
         /// Array length equals <see cref="LayerCount"/>.
-        /// Null if the mold state was unavailable.
+        /// Never <c>null</c> (uses an empty array when unavailable).
         /// </summary>
         public DomainColor[] LayerColors { get; }
 
         /// <summary>
         /// Layer amounts (0.0 to 1.0 each).
         /// Array length equals <see cref="LayerCount"/>.
-        /// Null if the mold state was unavailable.
+        /// Never <c>null</c> (uses an empty array when unavailable).
         /// </summary>
         public float[] LayerAmounts { get; }
 

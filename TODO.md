@@ -1,0 +1,9 @@
+- [ ] Implementasyon uyumsuzluklarını düzelt: OreLayer.IsEmpty semantiği ile MoldState/MoldValidationService uyumu
+- [ ] Fix #1: PrimeTweenService Chain/Group davranışını implement et
+- [ ] Fix #2: AdMobService retry’lerinde async void yerine güvenli Task/error handling
+- [ ] Fix #3: UpdateManager per-frame snapshot GC alloc azalt (snapshot reuse/buffer)
+- [ ] Fix #4: MoldDebugState unavailable state’inde LayerColors/LayerAmounts null/length tutarlılığı
+- [ ] Runtime performans: FindObjectsByType playtest heuristiğini bayrak/marker ile yönet
+- [ ] Undo/snapshot doğruluğu: OreLayer deep copy/immutability garantisi
+- [ ] Testler: Domain unit tests (solver vs validator consistency, tolerance boundary, empty-like layers)
+- [ ] Testler: Playmode/profiling (ad fallback, tween restart safety, GC alloc)

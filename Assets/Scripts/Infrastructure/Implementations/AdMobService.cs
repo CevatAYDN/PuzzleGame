@@ -222,29 +222,48 @@ namespace PuzzleGame.Infrastructure.Implementations
             MoldLogger.LogInfo($"{LogTag} Consent applied. Personalized={IsPersonalizedAdsEnabled} State={ConsentState}");
         }
 
-        private async void RetryLoadRewarded()
+        private void RetryLoadRewarded()
         {
             float delay = _gameConfig != null ? _gameConfig.adRetryDelay : 30f;
             MoldLogger.LogWarning($"{LogTag} Rewarded retry scheduled in {delay}s.");
-            await System.Threading.Tasks.Task.Delay((int)(delay * 1000));
-            if (IsInitialized)
+
+            System.Threading.Tasks.Task.Run(async () =>
             {
-                MoldLogger.LogInfo($"{LogTag} Retrying rewarded ad load...");
-                LoadRewardedAd();
-            }
+                try
+                {
+                    await System.Threading.Tasks.Task.Delay((int)(delay * 1000)).ConfigureAwait(false);
+                    if (!IsInitialized) return;
+                    MoldLogger.LogInfo($"{LogTag} Retrying rewarded ad load...");
+                    LoadRewardedAd();
+                }
+                catch (Exception ex)
+                {
+                    MoldLogger.LogError($"{LogTag} RetryLoadRewarded failed: {ex.Message}");
+                }
+            });
         }
 
-        private async void RetryLoadInterstitial()
+        private void RetryLoadInterstitial()
         {
             float delay = _gameConfig != null ? _gameConfig.adRetryDelay : 30f;
             MoldLogger.LogWarning($"{LogTag} Interstitial retry scheduled in {delay}s.");
-            await System.Threading.Tasks.Task.Delay((int)(delay * 1000));
-            if (IsInitialized)
+
+            System.Threading.Tasks.Task.Run(async () =>
             {
-                MoldLogger.LogInfo($"{LogTag} Retrying interstitial ad load...");
-                LoadInterstitialAd();
-            }
+                try
+                {
+                    await System.Threading.Tasks.Task.Delay((int)(delay * 1000)).ConfigureAwait(false);
+                    if (!IsInitialized) return;
+                    MoldLogger.LogInfo($"{LogTag} Retrying interstitial ad load...");
+                    LoadInterstitialAd();
+                }
+                catch (Exception ex)
+                {
+                    MoldLogger.LogError($"{LogTag} RetryLoadInterstitial failed: {ex.Message}");
+                }
+            });
         }
+
 #endif
     }
 }

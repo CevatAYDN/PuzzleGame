@@ -34,11 +34,15 @@ namespace PuzzleGame.Domain.Services
             if (source.IsEmpty)  return false;
             if (target.IsFull)   return false;
 
+            // Target "empty-like" check: sometimes a mold may contain layers that are
+            // considered empty at the OreLayer level (transparent / amount epsilon / ColorType.None).
             if (target.IsEmpty) return true;
 
             var sourceTop = source.TopLayer;
+            if (sourceTop == null || sourceTop.Value.IsEmpty) return false;
+
             var targetTop = target.TopLayer;
-            if (sourceTop == null || targetTop == null) return false;
+            if (targetTop == null || targetTop.Value.IsEmpty) return true;
 
             return ColorsMatch(sourceTop.Value.Color, targetTop.Value.Color);
         }
@@ -60,10 +64,16 @@ namespace PuzzleGame.Domain.Services
             if (!Mold.IsFull) return false;
 
             var layers = Mold.Layers;
+            if (layers.Count == 0) return false;
+
+            // Any empty-like layer means the mold is not complete.
+            if (layers[0].IsEmpty) return false;
+
             var firstColor = layers[0].Color;
             int count = layers.Count;
             for (int i = 1; i < count; i++)
             {
+                if (layers[i].IsEmpty) return false;
                 if (!ColorsMatch(layers[i].Color, firstColor))
                     return false;
             }

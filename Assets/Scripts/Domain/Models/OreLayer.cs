@@ -17,6 +17,7 @@ namespace PuzzleGame.Domain.Models
 
         public bool IsEmpty =>
             Color.IsTransparent ||
+            ColorType == OreColor.None ||
             Amount <= ForgeConstants.LayerAmountEpsilon;
 
         public OreLayer(DomainColor color, float amount) : this(color, amount, OreColor.None)

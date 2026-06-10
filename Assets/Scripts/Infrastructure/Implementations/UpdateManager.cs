@@ -20,6 +20,7 @@ namespace PuzzleGame.Infrastructure.Implementations
         private readonly HashSet<IUpdateable> _updateables = new HashSet<IUpdateable>();
         private readonly List<IUpdateable> _toAdd = new List<IUpdateable>(16);
         private readonly List<IUpdateable> _toRemove = new List<IUpdateable>(16);
+        private readonly List<IUpdateable> _snapshotBuffer = new List<IUpdateable>(32);
         private bool _isUpdating;
 
         private void Awake()
@@ -70,10 +71,11 @@ namespace PuzzleGame.Infrastructure.Implementations
 
             // Iterate over a snapshot to avoid modification during iteration
             // (modifications are captured in _toAdd/_toRemove for next frame)
-            var snapshot = _updateables.Count > 0 ? new List<IUpdateable>(_updateables) : null;
-            if (snapshot != null)
+            _snapshotBuffer.Clear();
+            if (_updateables.Count > 0)
             {
-                foreach (var u in snapshot)
+                _snapshotBuffer.AddRange(_updateables);
+                foreach (var u in _snapshotBuffer)
                     u.OnUpdate(deltaTime);
             }
 

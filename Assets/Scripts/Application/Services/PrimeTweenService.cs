@@ -81,8 +81,21 @@ namespace PuzzleGame.Application.Services
 
         public PrimeTweenHandle(Tween tween) => _tween = tween;
 
-        public void Chain(ITweenHandle other) { }
-        public void Group(ITweenHandle other) { }
+        public void Chain(ITweenHandle other)
+        {
+            if (other is PrimeTweenHandle h)
+                _tween.Chain(h._tween);
+            else if (other is PrimeTweenSequenceHandle s)
+                _tween.Chain(s._sequence);
+        }
+
+        public void Group(ITweenHandle other)
+        {
+            if (other is PrimeTweenHandle h)
+                _tween.Group(h._tween);
+            else if (other is PrimeTweenSequenceHandle s)
+                _tween.Group(s._sequence);
+        }
 
         public ITweenHandle OnComplete(Action callback)
         {
