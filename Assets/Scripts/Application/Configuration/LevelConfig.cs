@@ -13,12 +13,12 @@ namespace PuzzleGame.Application.Configuration
         [Header("Color Palette")]
         public Color[] palette = new Color[]
         {
-            new Color(0.95f, 0.20f, 0.25f),
-            new Color(0.20f, 0.55f, 0.95f),
-            new Color(0.30f, 0.85f, 0.35f),
-            new Color(0.98f, 0.80f, 0.15f),
-            new Color(0.70f, 0.30f, 0.90f),
-            new Color(0.95f, 0.50f, 0.15f),
+            new Color(0.9f,  0.2f,  0.2f),
+            new Color(0.2f,  0.6f,  0.9f),
+            new Color(0.2f,  0.8f,  0.2f),
+            new Color(0.95f, 0.9f,  0.2f),
+            new Color(0.7f,  0.2f,  0.9f),
+            new Color(0.9f,  0.5f,  0.2f),
         };
 
         [Header("Mold Visuals")]

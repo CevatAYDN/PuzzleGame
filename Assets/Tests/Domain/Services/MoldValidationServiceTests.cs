@@ -113,6 +113,14 @@ namespace PuzzleGame.Domain.Tests.Services
         }
 
         [Test]
+        public void CanCast_FromEmptyTopLayerIntoEmptyTarget_ReturnsFalse()
+        {
+            var emptyLayer = new OreLayer(DC(0, 0, 0, 0), 0.25f, OreColor.None);
+            _source.AddLayer(emptyLayer);
+            Assert.That(_validator.CanCast(_source, _target), Is.False);
+        }
+
+        [Test]
         public void CanCast_MatchingColors_ReturnsTrue()
         {
             _source.AddLayer(Layer(Red()));

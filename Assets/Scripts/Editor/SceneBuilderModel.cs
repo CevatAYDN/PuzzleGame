@@ -88,12 +88,12 @@ namespace PuzzleGame.Editor
         // Default palette — Quick Add dropdown'unda da kullanılır
         public static readonly Color[] DefaultPalette =
         {
-            new Color(0.95f, 0.15f, 0.25f), // red
-            new Color(0.10f, 0.65f, 1.00f), // blue
-            new Color(0.15f, 0.85f, 0.35f), // green
-            new Color(1.00f, 0.85f, 0.05f), // yellow
-            new Color(0.70f, 0.25f, 0.95f), // purple
-            new Color(0.98f, 0.45f, 0.10f), // orange
+            new Color(0.9f,  0.2f,  0.2f),  // red
+            new Color(0.2f,  0.6f,  0.9f),  // blue
+            new Color(0.2f,  0.8f,  0.2f),  // green
+            new Color(0.95f, 0.9f,  0.2f),  // yellow
+            new Color(0.7f,  0.2f,  0.9f),  // purple
+            new Color(0.9f,  0.5f,  0.2f),  // orange
         };
     }
 }

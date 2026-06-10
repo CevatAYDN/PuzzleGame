@@ -1,9 +1,18 @@
-- [ ] Implementasyon uyumsuzluklarını düzelt: OreLayer.IsEmpty semantiği ile MoldState/MoldValidationService uyumu
-- [ ] Fix #1: PrimeTweenService Chain/Group davranışını implement et
-- [ ] Fix #2: AdMobService retry’lerinde async void yerine güvenli Task/error handling
-- [ ] Fix #3: UpdateManager per-frame snapshot GC alloc azalt (snapshot reuse/buffer)
-- [ ] Fix #4: MoldDebugState unavailable state’inde LayerColors/LayerAmounts null/length tutarlılığı
-- [ ] Runtime performans: FindObjectsByType playtest heuristiğini bayrak/marker ile yönet
-- [ ] Undo/snapshot doğruluğu: OreLayer deep copy/immutability garantisi
-- [ ] Testler: Domain unit tests (solver vs validator consistency, tolerance boundary, empty-like layers)
-- [ ] Testler: Playmode/profiling (ad fallback, tween restart safety, GC alloc)
+# TODO - Unity Editor “Tam Kontrol” Geliştirmeleri
+
+## Step 1 — Playback / PlayMode çakışmasını düzelt
+- [ ] Playback sırasında Play’e geçişte playback’i otomatik durdur
+- [ ] Play sırasında (EditorApplication.isPlaying) playback UI/engine aktif olmasın
+- [ ] Playback UpdatePlaybackLoop içinde hızlı return + state reset güvenliği
+- [ ] “Load” / “Play” / “InitPlayback” akışlarında tutarlı state yönetimi
+
+## Step 2 — Solve/Verify/Reseed/Optimize işlerini geliştir
+- [ ] Tek seferde sadece bir uzun işlem çalışsın (reentrancy guard)
+- [ ] İptal butonu / iptal bayrağı ekle
+- [ ] İş boyunca ForgeEditorWindow status bar’ı güncelle
+- [ ] ProgressBar + ClearProgressBar her koşulda garantilensin
+
+## Step 3 — (Sonraki iterasyonlar)
+- [ ] Validate aksiyonlarını güçlendir (quick fix/ping)
+- [ ] Level load/export “aktif scene yönetimi + Undo grubu standardı” iyileştirme
+- [ ] Global hotkey / refresh / tab switching iyileştirmeleri

@@ -47,7 +47,7 @@ namespace PuzzleGame.Domain
         /// <summary>Per-channel tolerance for DomainColor equality / hash.</summary>
         public const float DomainColorHashEpsilon = 0.001f;
         /// <summary>Tolerance for OreColor.FromDomainColor conversion.</summary>
-        public const float OreColorMatchEpsilon = 0.1f;
+        public const float OreColorMatchEpsilon = 0.25f;
 
         // ── Solver Limits ───────────────────────────────────────────────
         /// <summary>BFS visit budget for the OreSortSolver (overflow guard).</summary>

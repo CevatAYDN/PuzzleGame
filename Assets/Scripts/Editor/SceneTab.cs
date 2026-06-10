@@ -24,6 +24,10 @@ namespace PuzzleGame.Editor
         private Color _paintColor = Color.red;
         private float _paintAmount = 0.25f;
 
+        // "Tam kontrol" güvenliği: editor işlemleri sırasında reentrancy/çakışma engeli
+        private bool _isLongRunning;
+        private bool _cancelLongRunning;
+
         public void OnEnable(ForgeEditorWindow window)
         {
             _window = window;
@@ -31,6 +35,34 @@ namespace PuzzleGame.Editor
 
         public void OnDisable()
         {
+            _isLongRunning = false;
+            _cancelLongRunning = false;
+        }
+
+        private bool TryBeginLongRunning(string reason)
+        {
+            if (_isLongRunning)
+            {
+                _window.SetStatus(reason, MessageType.Warning);
+                return false;
+            }
+
+            // PlayMode aktifken sahneyi değiştiren işlemleri blokla (tam kontrol)
+            if (EditorApplication.isPlaying)
+            {
+                _window.SetStatus("PlayMode aktifken Scene Builder işlemi başlatılamaz.", MessageType.Warning);
+                return false;
+            }
+
+            _isLongRunning = true;
+            _cancelLongRunning = false;
+            return true;
+        }
+
+        private void EndLongRunning()
+        {
+            _isLongRunning = false;
+            _cancelLongRunning = false;
         }
 
         public void OnGUI()
@@ -38,6 +70,23 @@ namespace PuzzleGame.Editor
             EditorGUILayout.LabelField("Scene Builder", EditorStyles.boldLabel);
             _sceneScroll = EditorGUILayout.BeginScrollView(_sceneScroll);
 
+            if (_isLongRunning)
+            {
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                {
+                    EditorGUILayout.LabelField("Background Operation", EditorStyles.miniBoldLabel);
+                    EditorGUILayout.HelpBox("İşlem sürüyor. Editör işlemleri kilitlenmiştir.", MessageType.Info);
+                    if (GUILayout.Button("Cancel"))
+                    {
+                        _cancelLongRunning = true;
+                        _window.SetStatus("Cancel requested. İşlem sonraki adımda durdurulacak.", MessageType.Info);
+                    }
+                }
+
+                EditorGUILayout.Space(6);
+            }
+
+            EditorGUI.BeginDisabledGroup(_isLongRunning || EditorApplication.isPlaying);
             // ── Paint Mode Section ──────────────────────────────────────────
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
@@ -204,6 +253,7 @@ namespace PuzzleGame.Editor
                 }
             }
 
+            EditorGUI.EndDisabledGroup();
             EditorGUILayout.EndScrollView();
         }
 
@@ -349,13 +399,21 @@ namespace PuzzleGame.Editor
 
         private void AddMolds(int count, bool firstEmpty)
         {
+            if (!TryBeginLongRunning("AddMolds already running / locked")) return;
+
             try
             {
                 EditorUtility.DisplayProgressBar("PuzzleGame", $"Creating {count} Molds...", 0f);
                 Vector3 center = new Vector3(0f, 0f, 0f);
                 var positions = SceneBuilder.ComputePositions(_MoldLayout, count, center);
+
                 for (int i = 0; i < count; i++)
                 {
+                    if (_cancelLongRunning) break;
+
+                    float t = (count <= 0) ? 1f : (i / (float)count);
+                    EditorUtility.DisplayProgressBar("PuzzleGame", $"Creating {count} Molds... ({i + 1}/{count})", t);
+
                     Color[] colors;
                     if (firstEmpty && i == 0)
                         colors = System.Array.Empty<Color>();
@@ -368,30 +426,52 @@ namespace PuzzleGame.Editor
                     SceneBuilder.CreateMold(SceneBuilderModel.MoldConfig.WithColors(
                         positions[i], colors, _shaderVariant, "Mold"));
                 }
-                _window.SetStatus($"Added {count} Molds ({(firstEmpty ? "1 empty, " : "")}{count - (firstEmpty ? 1 : 0)} filled).", MessageType.Info);
+
+                if (_cancelLongRunning)
+                    _window.SetStatus("AddMolds canceled.", MessageType.Warning);
+                else
+                    _window.SetStatus($"Added {count} Molds ({(firstEmpty ? "1 empty, " : "")}{count - (firstEmpty ? 1 : 0)} filled).", MessageType.Info);
             }
             finally
             {
                 EditorUtility.ClearProgressBar();
+                EndLongRunning();
             }
         }
 
         private void BuildScene()
         {
+            if (!TryBeginLongRunning("BuildScene already running / locked")) return;
+
             if (_buildOpts.newScene)
             {
                 if (!EditorUtility.DisplayDialog("Replace current scene?",
                     "The current scene will be lost. Save first?", "Continue", "Cancel"))
+                {
+                    EndLongRunning();
                     return;
+                }
             }
 
             try
             {
                 EditorUtility.DisplayProgressBar("PuzzleGame Scene", "Building...", 0.3f);
+
+                if (_cancelLongRunning)
+                    return;
+
                 SceneBuilder.Build(_buildOpts);
-                _window.SetStatus("Scene built. Ctrl+Z to undo.", MessageType.Info);
+
+                if (_cancelLongRunning)
+                    _window.SetStatus("BuildScene canceled.", MessageType.Warning);
+                else
+                    _window.SetStatus("Scene built. Ctrl+Z to undo.", MessageType.Info);
             }
-            finally { EditorUtility.ClearProgressBar(); }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+                EndLongRunning();
+            }
         }
 
         private void ExportSceneToLevel(LevelData level)
@@ -402,10 +482,13 @@ namespace PuzzleGame.Editor
                 return;
             }
 
+            if (!TryBeginLongRunning("ExportSceneToLevel already running / locked")) return;
+
             var Molds = Object.FindObjectsByType<MoldController>(FindObjectsInactive.Include);
             if (Molds.Length == 0)
             {
                 _window.SetStatus("No Molds found in the scene to export.", MessageType.Warning);
+                EndLongRunning();
                 return;
             }
 
@@ -453,25 +536,42 @@ namespace PuzzleGame.Editor
             level.emptyMoldCount = emptyCount;
 
             var levelConfig = AssetDatabase.LoadAssetAtPath<LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
-            var result = LevelSolverUtility.SolveLevel(level, levelConfig);
-            if (result.IsSolvable)
-            {
-                level.parMoves = result.SolutionPath.Count;
-                level.goodMoves = Mathf.RoundToInt(result.SolutionPath.Count * 1.4f);
-                if (level.goodMoves < level.parMoves + 2) level.goodMoves = level.parMoves + 2;
-                _window.SetStatus($"Exported scene to Level {level.levelNumber} successfully. Solvable in {result.SolutionPath.Count} moves (Par auto-assigned).", MessageType.Info);
-            }
-            else
-            {
-                level.parMoves = 10;
-                level.goodMoves = 15;
-                _window.SetStatus($"Exported scene to Level {level.levelNumber} successfully, but layout is UNSOLVABLE! Reset par to defaults.", MessageType.Warning);
-            }
 
-            EditorUtility.SetDirty(level);
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-            _window.RefreshLevelList();
+            try
+            {
+                EditorUtility.DisplayProgressBar("PuzzleGame", "Solving exported level...", 0.65f);
+                var result = LevelSolverUtility.SolveLevel(level, levelConfig);
+
+                if (_cancelLongRunning)
+                {
+                    _window.SetStatus("ExportSceneToLevel canceled.", MessageType.Warning);
+                    return;
+                }
+
+                if (result.IsSolvable)
+                {
+                    level.parMoves = result.SolutionPath.Count;
+                    level.goodMoves = Mathf.RoundToInt(result.SolutionPath.Count * 1.4f);
+                    if (level.goodMoves < level.parMoves + 2) level.goodMoves = level.parMoves + 2;
+                    _window.SetStatus($"Exported scene to Level {level.levelNumber} successfully. Solvable in {result.SolutionPath.Count} moves (Par auto-assigned).", MessageType.Info);
+                }
+                else
+                {
+                    level.parMoves = 10;
+                    level.goodMoves = 15;
+                    _window.SetStatus($"Exported scene to Level {level.levelNumber} successfully, but layout is UNSOLVABLE! Reset par to defaults.", MessageType.Warning);
+                }
+
+                EditorUtility.SetDirty(level);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+                _window.RefreshLevelList();
+            }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+                EndLongRunning();
+            }
         }
     }
 }

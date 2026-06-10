@@ -40,16 +40,32 @@ namespace PuzzleGame.Editor
             public int optimalMoves;
         }
 
+        private bool _isLongRunning = false;
+        private bool _cancelLongRunning = false;
+
         public void OnEnable(ForgeEditorWindow window)
         {
             _window = window;
             RefreshLevelList();
             EditorApplication.update += UpdatePlaybackLoop;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
         public void OnDisable()
         {
             EditorApplication.update -= UpdatePlaybackLoop;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+        }
+
+        private void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.ExitingEditMode || state == PlayModeStateChange.EnteredPlayMode)
+            {
+                if (_isPlayingPlayback)
+                {
+                    StopPlayback("Playback stopped due to Play Mode transition.", MessageType.Info);
+                }
+            }
         }
 
         public void OnGUI()
@@ -117,6 +133,29 @@ namespace PuzzleGame.Editor
                 EditorGUILayout.Space(6);
             }
 
+            // ── Long Running Operation Control ─────────────────────────
+            if (_isLongRunning)
+            {
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                {
+                    EditorGUILayout.LabelField("⏳ Background Operation", EditorStyles.miniBoldLabel);
+                    EditorGUILayout.HelpBox("İş devam ediyor. İptal etmek için aşağıdaki butona bas.", MessageType.Info);
+
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        GUILayout.FlexibleSpace();
+                        var cancelText = _cancelLongRunning ? "Cancelling..." : "✖ Cancel";
+                        if (GUILayout.Button(cancelText, GUILayout.Width(110)))
+                        {
+                            _cancelLongRunning = true;
+                            _window.SetStatus("Cancellation requested. Waiting for current step to finish...", MessageType.Warning);
+                        }
+                    }
+                }
+
+                EditorGUILayout.Space(6);
+            }
+
             // ── Batch Create ─────────────────────────────────────────────
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
@@ -155,15 +194,18 @@ namespace PuzzleGame.Editor
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    if (GUILayout.Button("Verify All 100", EditorStyles.miniButton, GUILayout.Width(100)))
-                        EditorApplication.delayCall += SolveAndVerifyAll;
-                    if (GUILayout.Button("Auto-Reseed", EditorStyles.miniButton, GUILayout.Width(90)))
-                        EditorApplication.delayCall += AutoReseedUnsolvableLevels;
-                    if (GUILayout.Button("Optimize Pars", EditorStyles.miniButton, GUILayout.Width(95)))
-                        EditorApplication.delayCall += AutoOptimizeAllPars;
+                    using (new EditorGUI.DisabledGroupScope(_isLongRunning))
+                    {
+                        if (GUILayout.Button("Verify All 100", EditorStyles.miniButton, GUILayout.Width(100)))
+                            EditorApplication.delayCall += () => SolveAndVerifyAll();
+                        if (GUILayout.Button("Auto-Reseed", EditorStyles.miniButton, GUILayout.Width(90)))
+                            EditorApplication.delayCall += () => AutoReseedUnsolvableLevels();
+                        if (GUILayout.Button("Optimize Pars", EditorStyles.miniButton, GUILayout.Width(95)))
+                            EditorApplication.delayCall += () => AutoOptimizeAllPars();
+                        if (GUILayout.Button("Refresh List", EditorStyles.miniButton, GUILayout.Width(90)))
+                            EditorApplication.delayCall += RefreshLevelList;
+                    }
                     GUILayout.FlexibleSpace();
-                    if (GUILayout.Button("Refresh List", EditorStyles.miniButton, GUILayout.Width(90)))
-                        EditorApplication.delayCall += RefreshLevelList;
                 }
 
                 EditorGUILayout.Space(4);
@@ -369,8 +411,28 @@ namespace PuzzleGame.Editor
             RefreshLevelList();
         }
 
+        private bool TryBeginLongRunning(string reasonStatus)
+        {
+            if (_isLongRunning) return false;
+            _isLongRunning = true;
+            _cancelLongRunning = false;
+            _window.SetStatus(reasonStatus, MessageType.Info);
+            return true;
+        }
+
+        private void EndLongRunning(string finalStatus = null, MessageType finalType = MessageType.Info)
+        {
+            _isLongRunning = false;
+            _cancelLongRunning = false;
+            if (!string.IsNullOrEmpty(finalStatus))
+                _window.SetStatus(finalStatus, finalType);
+        }
+
         private void SolveSingleLevel(int index)
         {
+            if (_isPlayingPlayback)
+                StopPlayback("Playback stopped (starting Solve).", MessageType.Info);
+
             if (index < 0 || index >= _existingLevels.Count) return;
             var lvl = _existingLevels[index];
             if (!lvl.exists) return;
@@ -487,8 +549,13 @@ namespace PuzzleGame.Editor
             _window.SetStatus($"Level {lvl.number:D2} par moves optimized to {levelData.parMoves} (good moves: {levelData.goodMoves}).", MessageType.Info);
         }
 
-        private void SolveAndVerifyAll()
+        private async void SolveAndVerifyAll()
         {
+            if (_isPlayingPlayback)
+                StopPlayback("Playback stopped (starting Verify All).", MessageType.Info);
+
+            if (!TryBeginLongRunning("Verifying all levels...")) return;
+
             var levelConfig = AssetDatabase.LoadAssetAtPath<LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
             int total = _existingLevels.Count;
             int unsolvableCount = 0;
@@ -498,36 +565,59 @@ namespace PuzzleGame.Editor
             {
                 for (int i = 0; i < total; i++)
                 {
+                    if (_cancelLongRunning)
+                    {
+                        _window.SetStatus("Verification cancelled.", MessageType.Warning);
+                        break;
+                    }
+
                     var lvl = _existingLevels[i];
                     if (!lvl.exists) continue;
 
                     EditorUtility.DisplayProgressBar("Solving Levels", $"Solving Level {lvl.number:D2}...", (float)i / total);
 
                     var levelData = AssetDatabase.LoadAssetAtPath<LevelData>(lvl.path);
-                    if (levelData == null) continue;
+                    if (levelData != null)
+                    {
+                        var result = LevelSolverUtility.SolveLevel(levelData, levelConfig);
 
-                    var result = LevelSolverUtility.SolveLevel(levelData, levelConfig);
+                        lvl.hasSolved = true;
+                        lvl.isSolvable = result.IsSolvable;
+                        lvl.optimalMoves = result.IsSolvable ? result.SolutionPath.Count : 0;
+                        _existingLevels[i] = lvl;
 
-                    lvl.hasSolved = true;
-                    lvl.isSolvable = result.IsSolvable;
-                    lvl.optimalMoves = result.IsSolvable ? result.SolutionPath.Count : 0;
-                    _existingLevels[i] = lvl;
+                        if (result.IsSolvable) solvableCount++;
+                        else unsolvableCount++;
+                    }
 
-                    if (result.IsSolvable) solvableCount++;
-                    else unsolvableCount++;
+                    await System.Threading.Tasks.Task.Yield();
                 }
 
-                _window.SetStatus($"Verification completed. Solvable: {solvableCount}, Unsolvable: {unsolvableCount}",
-                    unsolvableCount == 0 ? MessageType.Info : MessageType.Warning);
+                if (!_cancelLongRunning)
+                {
+                    _window.SetStatus($"Verification completed. Solvable: {solvableCount}, Unsolvable: {unsolvableCount}",
+                        unsolvableCount == 0 ? MessageType.Info : MessageType.Warning);
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[LevelsTab] SolveAndVerifyAll failed: {ex.Message}");
+                _window.SetStatus($"Error: {ex.Message}", MessageType.Error);
             }
             finally
             {
                 EditorUtility.ClearProgressBar();
+                EndLongRunning(_cancelLongRunning ? "Verification cancelled." : null, _cancelLongRunning ? MessageType.Warning : MessageType.Info);
             }
         }
 
-        private void AutoReseedUnsolvableLevels()
+        private async void AutoReseedUnsolvableLevels()
         {
+            if (_isPlayingPlayback)
+                StopPlayback("Playback stopped (starting Reseed).", MessageType.Info);
+
+            if (!TryBeginLongRunning("Reseeding unsolvable levels...")) return;
+
             var levelConfig = AssetDatabase.LoadAssetAtPath<LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
             int reseededCount = 0;
 
@@ -535,6 +625,12 @@ namespace PuzzleGame.Editor
             {
                 for (int i = 0; i < _existingLevels.Count; i++)
                 {
+                    if (_cancelLongRunning)
+                    {
+                        _window.SetStatus("Reseed cancelled.", MessageType.Warning);
+                        break;
+                    }
+
                     var lvl = _existingLevels[i];
                     if (!lvl.exists) continue;
 
@@ -585,20 +681,33 @@ namespace PuzzleGame.Editor
                     {
                         Debug.LogWarning($"[Auto-Reseed] Could not find solvable seed for Level {lvl.number:D2} in 100 attempts.");
                     }
+
+                    await System.Threading.Tasks.Task.Yield();
                 }
 
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
                 _window.SetStatus($"Reseed complete. Successfully reseeded & solved {reseededCount} levels.", MessageType.Info);
             }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[LevelsTab] AutoReseedUnsolvableLevels failed: {ex.Message}");
+                _window.SetStatus($"Error: {ex.Message}", MessageType.Error);
+            }
             finally
             {
                 EditorUtility.ClearProgressBar();
+                EndLongRunning(_cancelLongRunning ? "Reseed cancelled." : null, _cancelLongRunning ? MessageType.Warning : MessageType.Info);
             }
         }
 
-        private void AutoOptimizeAllPars()
+        private async void AutoOptimizeAllPars()
         {
+            if (_isPlayingPlayback)
+                StopPlayback("Playback stopped (starting Optimize Pars).", MessageType.Info);
+
+            if (!TryBeginLongRunning("Optimizing pars...")) return;
+
             var levelConfig = AssetDatabase.LoadAssetAtPath<LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
             int optimizedCount = 0;
 
@@ -606,11 +715,19 @@ namespace PuzzleGame.Editor
             {
                 for (int i = 0; i < _existingLevels.Count; i++)
                 {
+                    if (_cancelLongRunning)
+                    {
+                        _window.SetStatus("Optimize cancelled.", MessageType.Warning);
+                        break;
+                    }
+
                     var lvl = _existingLevels[i];
                     if (!lvl.exists) continue;
 
                     var levelData = AssetDatabase.LoadAssetAtPath<LevelData>(lvl.path);
                     if (levelData == null) continue;
+
+                    EditorUtility.DisplayProgressBar("Optimizing Pars", $"Optimizing Level {lvl.number:D2}...", (float)i / _existingLevels.Count);
 
                     var result = LevelSolverUtility.SolveLevel(levelData, levelConfig);
                     if (result.IsSolvable)
@@ -627,14 +744,22 @@ namespace PuzzleGame.Editor
                         lvl.optimalMoves = result.SolutionPath.Count;
                         _existingLevels[i] = lvl;
                     }
+
+                    await System.Threading.Tasks.Task.Yield();
                 }
 
                 AssetDatabase.SaveAssets();
                 _window.SetStatus($"Optimized par/good moves for {optimizedCount} solvable levels.", MessageType.Info);
             }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[LevelsTab] AutoOptimizeAllPars failed: {ex.Message}");
+                _window.SetStatus($"Error: {ex.Message}", MessageType.Error);
+            }
             finally
             {
                 EditorUtility.ClearProgressBar();
+                EndLongRunning(_cancelLongRunning ? "Optimize cancelled." : null, _cancelLongRunning ? MessageType.Warning : MessageType.Info);
             }
         }
 
@@ -650,12 +775,18 @@ namespace PuzzleGame.Editor
 
         private void PlayLevelInActiveScene(int index)
         {
+            // Playback UI/engine state çakışmasını engelle.
+            if (_isPlayingPlayback)
+                StopPlayback("Playback stopped (starting Play Mode).", MessageType.Info);
+
             if (index < 0 || index >= _existingLevels.Count) return;
             var lvl = _existingLevels[index];
             if (!lvl.exists) return;
 
             var levelData = AssetDatabase.LoadAssetAtPath<LevelData>(lvl.path);
             LoadLevelIntoScene(levelData);
+
+            // LoadLevelIntoScene zaten scene state set eder; bundan sonra Play Mode başlasın.
             EditorApplication.isPlaying = true;
         }
 
@@ -712,8 +843,24 @@ namespace PuzzleGame.Editor
         private float _playbackSpeed = 1.0f;
         private LevelData _playbackLevelData;
 
+        private void StopPlayback(string reason, MessageType type)
+        {
+            _isPlayingPlayback = false;
+            _playbackStep = 0;
+            _lastPlaybackUpdateTime = 0;
+
+            if (!string.IsNullOrEmpty(reason))
+                _window.SetStatus(reason, type);
+
+            _window.Repaint();
+        }
+
         private void UpdatePlaybackLoop()
         {
+            // Play mode devreye girdiyse playback state güncellemeleri çakışmasın.
+            // (EditorApplication.isPlaying true iken kesinlikle hiçbir scene/serialize state değiştirmiyoruz.)
+            if (EditorApplication.isPlaying) return;
+
             if (!_isPlayingPlayback) return;
 
             double time = EditorApplication.timeSinceStartup;
@@ -741,27 +888,40 @@ namespace PuzzleGame.Editor
         private void InitPlayback(LevelData level)
         {
             if (level == null) return;
-            
+
+            // Play mode açıkken playback başlatma (state/serialize çakışması).
+            if (EditorApplication.isPlaying)
+            {
+                _window.SetStatus("Close Play Mode to start playback.", MessageType.Warning);
+                _isPlayingPlayback = false;
+                return;
+            }
+
+            // Önce mevcut playback'i kes.
+            _isPlayingPlayback = false;
+            _playbackStep = 0;
+            _lastPlaybackUpdateTime = 0;
+
             var levelConfig = AssetDatabase.LoadAssetAtPath<LevelConfig>($"{DataAssetCreator.DataPath}/LevelConfig.asset");
             var initial = LevelSolverUtility.GetLevelAssignments(level, levelConfig);
-            
+
             var result = LevelSolverUtility.SolveLevel(level, levelConfig);
             if (!result.IsSolvable)
             {
                 _window.SetStatus($"Cannot start playback: Level {level.levelNumber} is unsolvable.", MessageType.Warning);
                 return;
             }
-            
+
             _playbackLevelData = level;
             _playbackMoves = result.SolutionPath;
-            
+
             int maxLayers = level.autoGenerate ? level.maxLayersPerMold : 4;
             if (maxLayers < 4) maxLayers = 4;
-            
+
             _playbackStates = GeneratePlaybackStates(initial, _playbackMoves, maxLayers, level.enableMultiLayerCast);
             _playbackStep = 0;
             _isPlayingPlayback = false;
-            
+
             LoadLevelIntoScene(level);
             ApplyPlaybackState(0);
         }

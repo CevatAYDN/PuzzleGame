@@ -58,7 +58,7 @@ namespace PuzzleGame.Domain.Models
         private static int RoundedHash(float v)
         {
             // Divide by epsilon, round to nearest int - values within epsilon map to the same bucket.
-            int bucket = (int)Math.Round(v / ForgeConstants.ColorMatchEpsilon);
+            int bucket = (int)Math.Round(v / ForgeConstants.DomainColorHashEpsilon);
             return bucket;
         }
 

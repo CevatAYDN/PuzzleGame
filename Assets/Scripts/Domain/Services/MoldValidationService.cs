@@ -34,12 +34,12 @@ namespace PuzzleGame.Domain.Services
             if (source.IsEmpty)  return false;
             if (target.IsFull)   return false;
 
+            var sourceTop = source.TopLayer;
+            if (sourceTop == null || sourceTop.Value.IsEmpty) return false;
+
             // Target "empty-like" check: sometimes a mold may contain layers that are
             // considered empty at the OreLayer level (transparent / amount epsilon / ColorType.None).
             if (target.IsEmpty) return true;
-
-            var sourceTop = source.TopLayer;
-            if (sourceTop == null || sourceTop.Value.IsEmpty) return false;
 
             var targetTop = target.TopLayer;
             if (targetTop == null || targetTop.Value.IsEmpty) return true;
