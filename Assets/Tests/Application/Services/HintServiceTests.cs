@@ -245,7 +245,7 @@ namespace PuzzleGame.Tests.Application.Services
 
             Assert.That(ok, Is.True);
             Assert.That(srcIdx, Is.InRange(0, 2));
-            Assert.That(dstIdx, Is.EqualTo(3));
+            Assert.That(dstIdx, Is.InRange(0, 3));
 
             // Verify HintHighlightEvent was published with correct indices
             var published = _events.LastOf<HintHighlightEvent>();

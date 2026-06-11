@@ -84,6 +84,7 @@ namespace PuzzleGame.Application.Services
             sourceMoldIndex = first.FromIndex;
             targetMoldIndex = first.ToIndex;
             _hintsUsedThisLevel++;
+            _events.Publish(new HintHighlightEvent(sourceMoldIndex, targetMoldIndex));
             return true;
         }
 

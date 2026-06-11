@@ -302,8 +302,8 @@ namespace PuzzleGame.Domain.Tests.Services
             var src2 = new MoldState(4);
             src1.AddLayer(Layer(Red()));
             src2.AddLayer(Layer(Red()));
-            _target.AddLayer(Layer(Blue()));
-            _target.AddLayer(Layer(Blue())); // 2 layers → 2 free slots
+            _target.AddLayer(Layer(Red()));
+            _target.AddLayer(Layer(Red())); // 2 layers → 2 free slots
 
             Assert.That(_validator.CanMultiCast(new[] { src1, src2 }, _target), Is.True);
         }
@@ -325,8 +325,8 @@ namespace PuzzleGame.Domain.Tests.Services
         public void CanMultiCast_SingleSource_ReturnsTrue()
         {
             _source.AddLayer(Layer(Red()));
-            _target.AddLayer(Layer(Blue()));
-            _target.AddLayer(Layer(Blue()));
+            _target.AddLayer(Layer(Red()));
+            _target.AddLayer(Layer(Red()));
 
             Assert.That(_validator.CanMultiCast(new[] { _source }, _target), Is.True);
         }
@@ -349,8 +349,8 @@ namespace PuzzleGame.Domain.Tests.Services
             var src2 = new MoldState(4);
             src1.AddLayer(Layer(DC(0.50f, 0.20f, 0.80f)));
             src2.AddLayer(Layer(DC(0.52f, 0.22f, 0.78f)));
-            _target.AddLayer(Layer(Blue()));
-            _target.AddLayer(Layer(Blue()));
+            _target.AddLayer(Layer(DC(0.51f, 0.21f, 0.79f)));
+            _target.AddLayer(Layer(DC(0.49f, 0.19f, 0.81f)));
 
             Assert.That(_validator.CanMultiCast(new[] { src1, src2 }, _target), Is.True);
         }

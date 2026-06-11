@@ -167,11 +167,13 @@ namespace PuzzleGame.Application.Services
             {
                 if (mold?.State == null) continue;
                 int take = Math.Min(allLayers.Count - layerIdx, mold.State.MaxLayers);
-                if (take <= 0) break;
-                var moldLayers = allLayers.GetRange(layerIdx, take);
-                mold.State.ReplaceLayers(moldLayers);
+                if (take > 0)
+                {
+                    var moldLayers = allLayers.GetRange(layerIdx, take);
+                    mold.State.ReplaceLayers(moldLayers);
+                    layerIdx += take;
+                }
                 mold.UpdateVisualsFromState();
-                layerIdx += take;
             }
 
             MoldLogger.LogInfo($"{LogTag} Shuffle: redistributed {allLayers.Count} layers across {allMolds.Length} molds.");

@@ -48,6 +48,16 @@ namespace PuzzleGame.Tests.Editor
             var builder = new ContainerBuilder();
             // Provide GameConfig which IMoldValidator depends on
             builder.Register<GameConfig>(resolver => ScriptableObject.CreateInstance<GameConfig>(), Lifetime.Singleton);
+            // Provide AnimationConfig which AnimationService depends on
+            builder.Register<AnimationConfig>(resolver => ScriptableObject.CreateInstance<AnimationConfig>(), Lifetime.Singleton);
+            // Provide AudioConfig which AudioService depends on
+            builder.Register<AudioConfig>(resolver => ScriptableObject.CreateInstance<AudioConfig>(), Lifetime.Singleton);
+            // Provide StreamVFXConfig which StreamRenderer depends on
+            builder.Register<StreamVFXConfig>(resolver => ScriptableObject.CreateInstance<StreamVFXConfig>(), Lifetime.Singleton);
+            // Provide IFeatureFlagService which AnimationService depends on
+            builder.Register<IFeatureFlagService, PuzzleGame.Tests.Fakes.FakeFeatureFlagService>(Lifetime.Singleton);
+            // Provide IErrorIndicatorService which CastService depends on
+            builder.Register<IErrorIndicatorService, PuzzleGame.Tests.Fakes.FakeErrorIndicatorService>(Lifetime.Singleton);
             CoreServicesInstallerModule.Configure(builder); // Provides IMoldValidator needed by CastService
             GameplayInstallerModule.Configure(builder);
             // PourSystemController is a plain C# class registered in
