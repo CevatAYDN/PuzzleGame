@@ -51,7 +51,14 @@ namespace PuzzleGame.Installers
             builder.Register<ILeaderboardService, LeaderboardService>(Lifetime.Singleton);
 
             // Season / Progress
-            builder.Register<SeasonConfig>(Lifetime.Singleton);
+            builder.Register<SeasonConfig>(resolver =>
+            {
+                var config = UnityEngine.Resources.Load<SeasonConfig>("Data/SeasonConfig");
+                if (config == null)
+                    config = UnityEngine.ScriptableObject.CreateInstance<SeasonConfig>();
+                return config;
+            }, Lifetime.Singleton);
+            builder.Register<IProgressRepository, PlayerPrefsProgressRepository>(Lifetime.Singleton);
             builder.Register<IProgressService, ProgressService>(Lifetime.Singleton);
 
             // Level editor
@@ -69,7 +76,7 @@ namespace PuzzleGame.Installers
 
             builder.Register<IChargeStorageService, PlayerPrefsChargeStorage>(Lifetime.Singleton);
 
-            builder.Register<IRandomProvider, SystemRandomProvider>(Lifetime.Singleton);
+            builder.Register<IRandomProvider>(resolver => new SystemRandomProvider(), Lifetime.Singleton);
 
             // Multi-pour orchestration
             builder.Register<IMultiPourService, MultiPourService>(Lifetime.Singleton);

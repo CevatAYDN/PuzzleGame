@@ -163,6 +163,7 @@
     <Compile Include="Assets\Scripts\Application\Configuration\GameConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\WobbleConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IChargeStorageService.cs" />
+    <Compile Include="Assets\Scripts\Application\Interfaces\IProgressRepository.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\MoldVisualConfig.cs" />
     <Compile Include="Assets\Scripts\Application\Configuration\LevelData.cs" />
     <Compile Include="Assets\Scripts\Application\Services\ReactionService.cs" />

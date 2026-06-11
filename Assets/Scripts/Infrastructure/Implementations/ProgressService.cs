@@ -15,6 +15,7 @@ namespace PuzzleGame.Infrastructure.Implementations
         private const string ClaimedPrefPrefix = "PuzzleGame.Progress.Claimed.";
 
         private readonly SeasonConfig _config;
+        private readonly IProgressRepository _repository;
         private int _totalXp;
         private int _seasonXp;
         private readonly HashSet<int> _claimedTiers = new HashSet<int>();
@@ -27,9 +28,10 @@ namespace PuzzleGame.Infrastructure.Implementations
         public bool IsSeasonActive => ComputeSeasonActive();
         public SeasonDef ActiveSeason => GetActiveSeason();
 
-        public ProgressService(SeasonConfig config)
+        public ProgressService(SeasonConfig config, IProgressRepository repository)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
             LoadState();
         }
 
@@ -47,9 +49,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             if (amount <= 0) return;
             _totalXp += amount;
             _seasonXp += amount;
-            PlayerPrefs.SetInt(XpPrefKey, _totalXp);
-            PlayerPrefs.SetInt(SeasonXpPrefKey, _seasonXp);
-            PlayerPrefs.Save();
+            _repository.SaveXp(_totalXp, _seasonXp);
             MoldLogger.LogInfo($"{LogTag} +{amount} XP (total: {_totalXp})");
         }
 
@@ -88,8 +88,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             }
 
             _claimedTiers.Add(tierIndex);
-            PlayerPrefs.SetInt(ClaimedPrefPrefix + tierIndex, 1);
-            PlayerPrefs.Save();
+            _repository.SaveClaimedTier(tierIndex);
             MoldLogger.LogInfo($"{LogTag} Claimed tier {tierIndex} reward.");
             return true;
         }
@@ -109,23 +108,13 @@ namespace PuzzleGame.Infrastructure.Implementations
             _totalXp = 0;
             _seasonXp = 0;
             _claimedTiers.Clear();
-            PlayerPrefs.DeleteKey(XpPrefKey);
-            PlayerPrefs.DeleteKey(SeasonXpPrefKey);
-            for (int i = 0; i < 200; i++)
-                PlayerPrefs.DeleteKey(ClaimedPrefPrefix + i);
-            PlayerPrefs.Save();
+            _repository.ResetProgress();
             MoldLogger.LogInfo($"{LogTag} All progress reset.");
         }
 
         private void LoadState()
         {
-            _totalXp = PlayerPrefs.GetInt(XpPrefKey, 0);
-            _seasonXp = PlayerPrefs.GetInt(SeasonXpPrefKey, 0);
-            for (int i = 0; i < 200; i++)
-            {
-                if (PlayerPrefs.GetInt(ClaimedPrefPrefix + i, 0) == 1)
-                    _claimedTiers.Add(i);
-            }
+            _repository.LoadProgress(out _totalXp, out _seasonXp, _claimedTiers);
             MoldLogger.LogInfo($"{LogTag} Loaded: {_totalXp} XP, {_claimedTiers.Count} tiers claimed.");
         }
 

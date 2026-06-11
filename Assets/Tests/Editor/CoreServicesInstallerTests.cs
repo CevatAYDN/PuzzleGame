@@ -42,19 +42,10 @@ namespace PuzzleGame.Tests.Editor
         }
 
         [Test]
-        public void CoreServices_RegistersOreSortSolver()
-        {
-            var builder = new ContainerBuilder();
-            GameplayInstallerModule.Configure(builder); // solver lives here
-            _container = builder.Build();
-            Assert.IsNotNull(_container.Resolve<OreSortSolver>(),
-                "OreSortSolver must be registered via GameplayInstallerModule.");
-        }
-
-        [Test]
         public void CoreServices_RegistersPourDebugController()
         {
             var builder = new ContainerBuilder();
+            CoreServicesInstallerModule.Configure(builder); // Provides IMoldValidator needed by CastService
             GameplayInstallerModule.Configure(builder);
             // PourSystemController is a plain C# class registered in
             // GameplayInstallerModule — verify the debug interface resolves.

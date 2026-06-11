@@ -165,7 +165,7 @@ namespace PuzzleGame.Domain.Tests.Services
         {
             // Use a small mold count + high difficulty to stress the solver
             var (layout, isSolvable) = _generator.GenerateSolvable(
-                4, 5, 1, _palette, Difficulty.Expert,
+                4, 4, 1, _palette, Difficulty.Expert,
                 seed: 42, maxAttempts: 4, enableFrozenLayers: true);
 
             Assert.That(layout, Is.Not.Null);

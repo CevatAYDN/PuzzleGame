@@ -90,6 +90,14 @@ namespace PuzzleGame.Domain.Services
                     return false;
             }
 
+            // Check if the common source color matches the target's top layer (unless target is empty-like)
+            var targetTop = target.TopLayer;
+            if (targetTop != null && !targetTop.Value.IsEmpty)
+            {
+                if (commonColor != null && !ColorsMatch(commonColor.Value, targetTop.Value.Color))
+                    return false;
+            }
+
             return true;
         }
 
@@ -140,9 +148,6 @@ namespace PuzzleGame.Domain.Services
         }
 
         public bool ColorsMatch(DomainColor a, DomainColor b) =>
-            Math.Abs(a.R - b.R) < _colorTolerance &&
-            Math.Abs(a.G - b.G) < _colorTolerance &&
-            Math.Abs(a.B - b.B) < _colorTolerance &&
-            Math.Abs(a.A - b.A) < _colorTolerance;
+            a.Matches(b, _colorTolerance);
     }
 }

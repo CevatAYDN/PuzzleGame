@@ -35,11 +35,23 @@ namespace PuzzleGame.Installers
             builder.Register<IAchievementService, AchievementService>(Lifetime.Singleton);
 
             // Accessibility (color-blind mode)
-            builder.Register<AccessibilityConfig>(Lifetime.Singleton);
+            builder.Register<AccessibilityConfig>(resolver =>
+            {
+                var config = UnityEngine.Resources.Load<AccessibilityConfig>("Data/AccessibilityConfig");
+                if (config == null)
+                    config = UnityEngine.ScriptableObject.CreateInstance<AccessibilityConfig>();
+                return config;
+            }, Lifetime.Singleton);
             builder.Register<IAccessibilityService, AccessibilityService>(Lifetime.Singleton);
 
             // Cosmetic shop
-            builder.Register<CosmeticConfig>(Lifetime.Singleton);
+            builder.Register<CosmeticConfig>(resolver =>
+            {
+                var config = UnityEngine.Resources.Load<CosmeticConfig>("Data/CosmeticConfig");
+                if (config == null)
+                    config = UnityEngine.ScriptableObject.CreateInstance<CosmeticConfig>();
+                return config;
+            }, Lifetime.Singleton);
             builder.Register<ICosmeticShopService, CosmeticShopService>(Lifetime.Singleton);
 
             // Crash reporting

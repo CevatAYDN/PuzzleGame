@@ -93,6 +93,7 @@ namespace PuzzleGame.Application.Services
 
         public void ApplyColorBomb(IActiveMoldsProvider moldsProvider, int moldIndex)
         {
+            if (moldsProvider == null) return;
             var allMolds = moldsProvider.Molds;
             if (allMolds == null || moldIndex < 0 || moldIndex >= allMolds.Length)
             {
@@ -140,6 +141,7 @@ namespace PuzzleGame.Application.Services
 
         public void ApplyShuffle(IActiveMoldsProvider moldsProvider)
         {
+            if (moldsProvider == null) return;
             var allMolds = moldsProvider.Molds;
             if (allMolds == null || allMolds.Length == 0) return;
 

@@ -41,6 +41,9 @@ namespace PuzzleGame.Installers
             // Game manager (MonoBehaviour in hierarchy)
             builder.RegisterComponentInHierarchy<GameManager>();
 
+            // Game lifecycle bootstrapper
+            builder.RegisterEntryPoint<GameLifecycleBootstrapper>();
+
             // Play-test bootstrapper
             GameInstaller.FindOrFallback<PlayTestBootstrap>(builder);
 

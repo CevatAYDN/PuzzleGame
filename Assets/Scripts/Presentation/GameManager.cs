@@ -34,9 +34,7 @@ namespace PuzzleGame
             "VContainer DI failed — GameInstaller (LifetimeScope) not found or not configured.\n" +
             "Fix: Tools > PuzzleGame > Open Editor > Scene tab > 'Setup Current Scene (GameManager + DI)'";
 
-        private GameConfig _gameConfig;
-        private AudioConfig _audioConfig;
-        private IShaderOptimizer _shaderOptimizer;
+        // Configurations moved to GameLifecycleBootstrapper
         private IEventAggregator _events;
         private IUpdateManager _updateManager;
         private IInputHandlerService _inputHandlerService;
@@ -53,9 +51,6 @@ namespace PuzzleGame
 
         [Inject]
         public void Construct(
-            GameConfig gameConfig,
-            AudioConfig audioConfig,
-            IShaderOptimizer shaderOptimizer,
             IEventAggregator eventAggregator,
             IUpdateManager updateManager,
             IInputHandlerService inputHandlerService,
@@ -67,9 +62,6 @@ namespace PuzzleGame
             HapticObserver hapticObserver,
             IAnalyticsService analytics)
         {
-            _gameConfig = gameConfig;
-            _audioConfig = audioConfig;
-            _shaderOptimizer = shaderOptimizer;
             _events = eventAggregator;
             _updateManager = updateManager;
             _inputHandlerService = inputHandlerService;
@@ -95,18 +87,8 @@ namespace PuzzleGame
                 return;
             }
             
-            MoldLogger.LogInfo("GameManager Start — initializing game systems.");
-            
+            MoldLogger.LogInfo("GameManager Start — initializing game loop and flow.");
             _sessionStartTime = Time.realtimeSinceStartup;
-            
-            double refreshRate = Screen.currentResolution.refreshRateRatio.value;
-            UnityEngine.Application.targetFrameRate = refreshRate > 0
-                ? (int)Math.Round(refreshRate)
-                : 60;
-            MoldLogger.LogInfo($"Target frame rate set to: {UnityEngine.Application.targetFrameRate} FPS");
-            
-            _shaderOptimizer?.Initialize(_gameConfig != null && _gameConfig.applyMobileShaderDefaults);
-            InitAudio();
             
             SceneManager.sceneUnloaded += OnSceneUnloaded;
             _events.Subscribe<GameStateChangedEvent>(OnGameStateChanged);
@@ -163,13 +145,7 @@ namespace PuzzleGame
             return mainMenuController is IFallbackMarker fm && fm.IsFallback;
         }
 
-        private void InitAudio()
-        {
-            if (_audioConfig == null)
-            {
-                MoldLogger.LogWarning("AudioConfig is null — audio init skipped.");
-            }
-        }
+
 
         private void OnGameStateChanged(GameStateChangedEvent e)
         {

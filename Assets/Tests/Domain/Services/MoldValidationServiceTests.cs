@@ -28,9 +28,9 @@ namespace PuzzleGame.Domain.Tests.Services
                 Mold.AddLayer(Layer(c, 0.25f));
         }
 
-        private DomainColor Red() => DC(1f, 0f, 0f);
-        private DomainColor Blue() => DC(0f, 0f, 1f);
-        private DomainColor Green() => DC(0f, 1f, 0f);
+        private DomainColor Red() => OreColor.Red.ToDefaultDomainColor();
+        private DomainColor Blue() => OreColor.Blue.ToDefaultDomainColor();
+        private DomainColor Green() => OreColor.Green.ToDefaultDomainColor();
 
         // ── ColorsMatch ─────────────────────────────────────────────────────
 

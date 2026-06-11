@@ -323,7 +323,8 @@ namespace PuzzleGame.Domain.Services
                     for (int layerIdx = 0; layerIdx < Mold.Length; layerIdx++)
                     {
                         // 4 bits per layer — supports up to 15 distinct colors.
-                        key |= ((ulong)Mold[layerIdx] & 0x0FuL) << (layerIdx * 4);
+                        // Fix #20: Offset color ID by +1 to differentiate Color ID 0 from an empty layer!
+                        key |= (((ulong)Mold[layerIdx] + 1) & 0x0FuL) << (layerIdx * 4);
                     }
                     // Fix #5: No index encoding here — content only.
                     MoldKeys[b] = key;

@@ -124,6 +124,7 @@
     <Compile Include="Assets\Tests\Infrastructure\UpdateManagerTests.cs" />
     <Compile Include="Assets\Tests\Application\EventAggregatorMemoryTests.cs" />
     <Compile Include="Assets\Tests\Domain\Services\MoldValidationServiceTests.cs" />
+    <Compile Include="Assets\Tests\Fakes\FakeMultiPourService.cs" />
     <Compile Include="Assets\Tests\Application\Services\HintServiceTests.cs" />
     <Compile Include="Assets\Tests\Application\BiomeArtCatalogTests.cs" />
     <Compile Include="Assets\Tests\Editor\LevelDataBatchCreatorTests.cs" />

@@ -115,6 +115,13 @@ namespace PuzzleGame.Infrastructure.Implementations
                     _owned.Add(item.id);
                 }
             }
+            foreach (var id in _config.defaultUnlockedIds)
+            {
+                if (!string.IsNullOrEmpty(id))
+                {
+                    _owned.Add(id);
+                }
+            }
 
             foreach (CosmeticType type in Enum.GetValues(typeof(CosmeticType)))
             {

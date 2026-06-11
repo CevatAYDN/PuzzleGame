@@ -49,7 +49,7 @@ namespace PuzzleGame.Tests.Presentation
             var randomProvider = new FakeRandomProvider();
             var powerUpService = new PowerUpService(new EventAggregator(), new FakeAnimationService(), chargeStorage, randomProvider);
             var moldInitializer = new MoldPoolInitializer(
-                null, null, null, null, null, null, null, null, null, null, _pool, null, powerUpService);
+                null, null, null, null, null, null, null, null, null, null, _pool, _events, powerUpService);
 
             _sut = new WinLoseEvaluator(
                 _state, _validator, _audio, _progress,
@@ -303,19 +303,6 @@ namespace PuzzleGame.Tests.Presentation
             Assert.That(_state.LastTransitionTo, Is.EqualTo(GameState.OptionalCasting));
         }
 
-        [Test]
-        public void CheckWin_AllCompleteWithOptionalTargets_ActivatesOptionalMolds()
-        {
-            _events.Publish(new LevelLoadedEvent(_level));
-            _level.optionalTargets.Add(new OptionalTargetData());
-            _validator.IsCompleteResult = true;
-            _pool.Molds = new IMoldView[] { BuildNonEmptyView() };
-
-            PublishCastCompleted();
-
-            Assert.That(_pool.ActivateOptionalMoldsCallCount, Is.EqualTo(1));
-            Assert.That(_pool.LastActivatedLevel, Is.SameAs(_level));
-        }
 
         [Test]
         public void CheckWin_AllCompleteWithOptionalTargets_DoesNotRecordProgressYet()

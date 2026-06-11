@@ -398,10 +398,10 @@ namespace PuzzleGame.Tests.Infrastructure
         }
 
         [Test]
-        public void SnapshotAllMolds_NullMolds_NoOp()
+        public void SnapshotAllMolds_NullMolds_ThrowsInvalidOperation()
         {
             var sut = new PourSystemController(_castService, _animationService, _eventAggregator);
-            Assert.DoesNotThrow(() => sut.SnapshotAllMolds());
+            Assert.Throws<System.InvalidOperationException>(() => sut.SnapshotAllMolds());
             sut.Dispose();
         }
 
@@ -415,11 +415,10 @@ namespace PuzzleGame.Tests.Infrastructure
         }
 
         [Test]
-        public void GetAllMoldDebugStates_NullMolds_ReturnsEmpty()
+        public void GetAllMoldDebugStates_NullMolds_ThrowsInvalidOperation()
         {
             var sut = new PourSystemController(_castService, _animationService, _eventAggregator);
-            var states = sut.GetAllMoldDebugStates();
-            Assert.That(states.Count, Is.EqualTo(0));
+            Assert.Throws<System.InvalidOperationException>(() => sut.GetAllMoldDebugStates());
             sut.Dispose();
         }
 
@@ -428,8 +427,8 @@ namespace PuzzleGame.Tests.Infrastructure
         {
             _molds[2] = null;
             var states = _sut.GetAllMoldDebugStates();
-            Assert.That(states[2].IsEmpty, Is.True);
             Assert.That(states[2].MoldIndex, Is.EqualTo(2));
+            Assert.That(states[2].LayerCount, Is.EqualTo(0), "Null mold entry should be marked as unavailable with 0 layers.");
         }
 
         // ─── Debug Flags ─────────────────────────────────────────────────────
@@ -463,8 +462,8 @@ namespace PuzzleGame.Tests.Infrastructure
             _sut.SnapshotAllMolds();
             _sut.Dispose();
 
-            // Restore after dispose should be no-op
-            Assert.DoesNotThrow(() => _sut.RestoreSnapshot());
+            // Restore after dispose should throw since molds are cleared
+            Assert.Throws<System.InvalidOperationException>(() => _sut.RestoreSnapshot());
         }
 
         [Test]

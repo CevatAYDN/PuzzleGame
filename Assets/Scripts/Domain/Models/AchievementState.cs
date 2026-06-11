@@ -19,8 +19,12 @@ namespace PuzzleGame.Domain.Models
             Target = target;
         }
 
-        public AchievementState WithProgress(int progress) =>
-            new AchievementState(Id, Unlocked, UnlockedAt, progress, Target);
+        public AchievementState WithProgress(int progress)
+        {
+            bool nowUnlocked = Unlocked || progress >= Target;
+            DateTime at = nowUnlocked && !Unlocked ? DateTime.UtcNow : UnlockedAt;
+            return new AchievementState(Id, nowUnlocked, at, progress, Target);
+        }
 
         public AchievementState Unlock(DateTime at) =>
             new AchievementState(Id, true, at, Target, Target);

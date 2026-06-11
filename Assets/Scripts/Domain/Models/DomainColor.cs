@@ -27,6 +27,12 @@ namespace PuzzleGame.Domain.Models
 
         public bool IsTransparent => A <= ForgeConstants.TransparencyAlphaEpsilon;
 
+        public bool Matches(DomainColor other, float tolerance) =>
+            Math.Abs(R - other.R) < tolerance &&
+            Math.Abs(G - other.G) < tolerance &&
+            Math.Abs(B - other.B) < tolerance &&
+            Math.Abs(A - other.A) < tolerance;
+
         public override string ToString() => $"DomainColor(r={R:F3}, g={G:F3}, b={B:F3}, a={A:F3})";
 
         public bool Equals(DomainColor other) =>

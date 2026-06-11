@@ -60,6 +60,7 @@ namespace PuzzleGame.Tests.Application.Services
             var lookup = new MoldLookupCache();
             var defaults = new InputHandlerDefaults();
             _activeMoldsProvider = new FakeActiveMoldsProvider();
+            var multiPourService = new FakeMultiPourService();
             _router = new MoldInputRouter(
                 _inputHandler, Camera.main, _stateMachine,
                 _animationService, _selectionService, _validator,
@@ -67,7 +68,7 @@ namespace PuzzleGame.Tests.Application.Services
                 _historyManager, _CastService, lookup, defaults, _activeMoldsProvider,
                 _hapticService,
                 new NoOpAnalyticsService(),
-                multiPourService: null);
+                multiPourService: multiPourService);
             _sut = new InputHandlerService(_router, lookup, defaults);
         }
 

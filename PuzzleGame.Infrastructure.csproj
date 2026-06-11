@@ -54,6 +54,7 @@
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\LevelEditorService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\ColorAdapter.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\AudioService.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\PlayerPrefsProgressRepository.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\StreamTrailController.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\ShaderOptimizer.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\AccessibilityService.cs" />
