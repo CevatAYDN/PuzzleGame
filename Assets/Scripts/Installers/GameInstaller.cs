@@ -59,6 +59,20 @@ namespace PuzzleGame.Installers
         }
 
         /// <summary>
+        /// Finds a MonoBehaviour in the scene hierarchy. If found, registers it in the DI container.
+        /// If not found, ignores it. Used for optional components like PlayTestBootstrap.
+        /// </summary>
+        internal static T FindOptional<T>(IContainerBuilder builder) where T : Component
+        {
+            var component = Object.FindAnyObjectByType<T>();
+            if (component != null)
+            {
+                builder.RegisterComponent(component);
+            }
+            return component;
+        }
+
+        /// <summary>
         /// Finds a MonoBehaviour in the scene hierarchy or throws an exception.
         /// Used by installer modules that need to register services in DI.
         /// </summary>

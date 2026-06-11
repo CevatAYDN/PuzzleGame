@@ -82,12 +82,16 @@ namespace PuzzleGame.Editor
             var ctrl = go.AddComponent<MoldController>();
             ctrl.glassMaterial = glassMat;
             ctrl.OreMaterial = OreMat;
+            
+            // Editor aracı olduğu için config'i bulup enjekte etmek zorundayız
+            var visualConfig = Resources.Load<MoldVisualConfig>("Data/MoldVisualConfig");
+            if (visualConfig != null) ctrl.visualConfig = visualConfig;
 
             var initial = (cfg.initialLayers != null)
                 ? cfg.initialLayers
                 : BuildLayers(cfg.colors ?? System.Array.Empty<Color>());
 
-            ctrl.Initialize(renderer, validator, animationService: null, initial);
+            ctrl.Initialize(renderer, validator, animationService: null, initial, visualConfigOverride: visualConfig);
 
             Undo.RegisterCreatedObjectUndo(go, $"Create {uniqueName}");
             return go;

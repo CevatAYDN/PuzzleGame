@@ -45,7 +45,7 @@ namespace PuzzleGame.Installers
             builder.RegisterEntryPoint<GameLifecycleBootstrapper>();
 
             // Play-test bootstrapper
-            GameInstaller.FindOrThrow<PlayTestBootstrap>(builder);
+            GameInstaller.FindOptional<PlayTestBootstrap>(builder);
 
             // Presentation controllers — POCOs, scoped to scene lifetime via the container
             builder.Register<LevelFlowController>(Lifetime.Singleton);

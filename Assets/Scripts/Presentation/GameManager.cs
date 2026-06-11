@@ -51,6 +51,7 @@ namespace PuzzleGame
 
         [Inject]
         public void Construct(
+            IObjectResolver resolver,
             IEventAggregator eventAggregator,
             IUpdateManager updateManager,
             IInputHandlerService inputHandlerService,
@@ -58,7 +59,6 @@ namespace PuzzleGame
             LevelFlowController levelFlow,
             OnboardingFlowController onboardingFlow,
             MoldPoolInitializer moldPoolInitializer,
-            PlayTestBootstrap playTestBootstrap,
             HapticObserver hapticObserver,
             IAnalyticsService analytics)
         {
@@ -69,9 +69,10 @@ namespace PuzzleGame
             _levelFlow = levelFlow;
             _onboardingFlow = onboardingFlow;
             _moldPoolInitializer = moldPoolInitializer;
-            _playTestBootstrap = playTestBootstrap;
             _hapticObserver = hapticObserver;
             _analytics = analytics;
+
+            resolver.TryResolve(out _playTestBootstrap);
 
             _isInitialized = true;
         }

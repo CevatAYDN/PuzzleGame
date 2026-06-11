@@ -174,6 +174,24 @@ namespace PuzzleGame.Editor
                     p.showPourPreview = true;
                     p.showAffectedBoundaries = false;
                 }, overridePerAsset("PourConfig")),
+
+                Ensure<SeasonConfig>("SeasonConfig", s => {
+                    s.xpPerLevelComplete = 50;
+                    s.xpPerStar = 10;
+                    s.xpEfficiencyBonus = 25;
+                    s.xpPerPlayerLevel = 500;
+                    s.seasons = new System.Collections.Generic.List<SeasonDef>
+                    {
+                        new SeasonDef 
+                        { 
+                            seasonId = "season_1", 
+                            displayNameKey = "SEASON_1_NAME",
+                            baseXp = 100,
+                            xpPerTier = 50,
+                            tierCount = 10
+                        }
+                    };
+                }, overridePerAsset("SeasonConfig")),
             };
 
             AssetDatabase.SaveAssets();
@@ -205,6 +223,7 @@ namespace PuzzleGame.Editor
                 ["AudioConfig"]        = Exists<AudioConfig>("AudioConfig"),
                 ["StreamVFXConfig"]   = Exists<StreamVFXConfig>("StreamVFXConfig"),
                 ["PourConfig"]        = Exists<PourConfig>("PourConfig"),
+                ["SeasonConfig"]      = Exists<SeasonConfig>("SeasonConfig"),
             };
         }
     }

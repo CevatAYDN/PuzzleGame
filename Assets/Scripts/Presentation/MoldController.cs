@@ -144,6 +144,13 @@ namespace PuzzleGame
                 visualConfig = visualConfigOverride;
                 if (visualConfig == null)
                 {
+#if UNITY_EDITOR
+                    if (!UnityEngine.Application.isPlaying)
+                    {
+                        // Safe skip in Edit Mode
+                        return;
+                    }
+#endif
                     throw new InvalidOperationException($"[MoldController] MoldVisualConfig is not assigned on {gameObject.name} and was not injected! Fail-Fast triggered.");
                 }
             }
@@ -247,6 +254,14 @@ namespace PuzzleGame
 
             if (visualConfig == null)
             {
+#if UNITY_EDITOR
+                if (!UnityEngine.Application.isPlaying)
+                {
+                    // Editor'de bileşeni ilk eklediğimiz anda (AddComponent) OnValidate tetiklenir
+                    // Henüz config atanmadığı için hata fırlatmak yerine güvenli çıkış yap.
+                    return;
+                }
+#endif
                 throw new InvalidOperationException($"[MoldController] RestoreStateFromSerialized: MoldVisualConfig is not assigned on {gameObject.name}. Fail-Fast triggered.");
             }
             int maxLayers = visualConfig != null ? visualConfig.maxLayers : ForgeConstants.DefaultLayerCapacity;

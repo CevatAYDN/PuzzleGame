@@ -38,6 +38,8 @@ namespace PuzzleGame.Editor
             CreateModal<Presentation.UI.SettingsSoundController>("SettingsSoundController");
             CreateModal<Presentation.UI.WorldMapController>("WorldMapController");
             CreateModal<Presentation.UI.DailyChallengeController>("DailyChallengeController");
+            CreateModal<Presentation.UI.PowerUpUI>("PowerUpUI");
+            CreateModal<Presentation.UI.AchievementNotificationUI>("AchievementNotificationUI");
 
             Debug.Log("[SceneBuilderUI] UI controllers created successfully.");
         }
