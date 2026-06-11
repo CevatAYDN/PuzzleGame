@@ -42,6 +42,10 @@ namespace PuzzleGame.Application.Configuration
         [Range(1, 10)]
         public int interstitialInterval = 3;
 
+        [Header("Daily Challenge")]
+        [Min(0)]
+        public int dailyChallengeCoinReward = 50;
+
         [Tooltip("Delay in seconds before retrying to load an ad after a failure.")]
         [Min(5f)]
         public float adRetryDelay = 30f;

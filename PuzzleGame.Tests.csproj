@@ -54,6 +54,7 @@
     <Compile Include="Assets\Tests\Domain\Models\DomainColorTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\ReactionServiceTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\GameHistoryManagerTests.cs" />
+    <Compile Include="Assets\Tests\Application\Services\PowerUpServiceTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeGameStateMachine.cs" />
     <Compile Include="Assets\Tests\Application\MemorySnapshotDiffTests.cs" />
     <Compile Include="Assets\Tests\Infrastructure\AudioServiceTests.cs" />
@@ -64,6 +65,9 @@
     <Compile Include="Assets\Tests\Infrastructure\OnboardingFlowLogicTests.cs" />
     <Compile Include="Assets\Tests\Presentation\WinLoseEvaluatorTests.cs" />
     <Compile Include="Assets\Tests\Infrastructure\ConsentManagerTests.cs" />
+    <Compile Include="Assets\Tests\Infrastructure\LeaderboardServiceTests.cs" />
+    <Compile Include="Assets\Tests\Infrastructure\ProgressServiceTests.cs" />
+    <Compile Include="Assets\Tests\Application\Services\AchievementServiceTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeAudioService.cs" />
     <Compile Include="Assets\Tests\Application\Services\GameStateMachineTests.cs" />
     <Compile Include="Assets\Tests\Infrastructure\RendererServiceTests.cs" />
@@ -100,6 +104,7 @@
     <Compile Include="Assets\Tests\Presentation\MoldCorkControllerCacheTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\InputHandlerServiceTests.cs" />
     <Compile Include="Assets\Tests\Domain\Services\LevelGeneratorSolvabilityTests.cs" />
+    <Compile Include="Assets\Tests\Fakes\FakeEventAggregator.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeCoinWallet.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeStreamRenderer.cs" />
     <Compile Include="Assets\Tests\Application\Services\GameSaveManagerTests.cs" />
@@ -108,6 +113,7 @@
     <Compile Include="Assets\Tests\Domain\Services\LevelGeneratorV2Tests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeHistoryManager.cs" />
     <Compile Include="Assets\Tests\Application\Services\ScriptableObjectLevelRepositoryTests.cs" />
+    <Compile Include="Assets\Tests\Infrastructure\CosmeticShopServiceTests.cs" />
     <Compile Include="Assets\Tests\Infrastructure\ShaderOptimizerTests.cs" />
     <Compile Include="Assets\Tests\Application\AudioPreferencesTests.cs" />
     <Compile Include="Assets\Tests\Domain\Models\MoldStateTests.cs" />
@@ -121,6 +127,7 @@
     <Compile Include="Assets\Tests\Application\Services\HintServiceTests.cs" />
     <Compile Include="Assets\Tests\Application\BiomeArtCatalogTests.cs" />
     <Compile Include="Assets\Tests\Editor\LevelDataBatchCreatorTests.cs" />
+    <Compile Include="Assets\Tests\Fakes\FakeStreakService.cs" />
     <Compile Include="Assets\Tests\Domain\Services\LevelGeneratorTests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeMoldView.cs" />
     <Compile Include="Assets\Tests\Events\EventAggregatorTests.cs" />

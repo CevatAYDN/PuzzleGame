@@ -8,6 +8,7 @@ using PuzzleGame.Presentation;
 using PuzzleGame.Tests.Fakes;
 using System.Collections.Generic;
 using UnityEngine;
+using PuzzleGame.Infrastructure.Implementations;
 
 namespace PuzzleGame.Tests.Presentation
 {
@@ -44,8 +45,11 @@ namespace PuzzleGame.Tests.Presentation
             _level.goodMoves = 10;
 
             // Create a minimal MoldPoolInitializer for testing (only ActivateOptionalMolds is used)
+            var chargeStorage = new FakeChargeStorageService();
+            var randomProvider = new FakeRandomProvider();
+            var powerUpService = new PowerUpService(new EventAggregator(), new FakeAnimationService(), chargeStorage, randomProvider);
             var moldInitializer = new MoldPoolInitializer(
-                null, null, null, null, null, null, null, null, null, null, _pool);
+                null, null, null, null, null, null, null, null, null, null, _pool, null, powerUpService);
 
             _sut = new WinLoseEvaluator(
                 _state, _validator, _audio, _progress,
@@ -434,5 +438,26 @@ namespace PuzzleGame.Tests.Presentation
             Assert.That(_progress.LastRecordedStars, Is.EqualTo(2),
                 "2 stars (8 moves > par=5), no bonus when optional target is empty.");
         }
+    }
+}
+
+namespace PuzzleGame.Tests.Presentation
+{
+    internal sealed class FakeChargeStorageService : IChargeStorageService
+    {
+        private readonly Dictionary<PowerUpType, int> _store = new Dictionary<PowerUpType, int>();
+
+        public int GetCharge(PowerUpType type, int defaultValue)
+            => _store.TryGetValue(type, out int v) ? v : defaultValue;
+
+        public void SetCharge(PowerUpType type, int value)
+            => _store[type] = value;
+
+        public void Save() { }
+    }
+
+    internal sealed class FakeRandomProvider : IRandomProvider
+    {
+        public int Next(int maxValue) => 0;
     }
 }

@@ -22,6 +22,8 @@ namespace PuzzleGame.Domain.Models
 
         public IReadOnlyList<OreLayer> Layers => _layers;
         public int MaxLayers { get; }
+        public OreColor CorkColor { get; private set; }
+        public bool HasCork => CorkColor != OreColor.None;
 
         private readonly List<OreLayer> _layers;
         private float _totalFill;
@@ -48,6 +50,16 @@ namespace PuzzleGame.Domain.Models
         public bool  IsEmpty    => _layers.Count == 0;
 
         public bool IsFull => _layers.Count >= MaxLayers;
+
+        public void SetCork(OreColor color)
+        {
+            CorkColor = color;
+        }
+
+        public void BreakCork()
+        {
+            CorkColor = OreColor.None;
+        }
 
         /// <summary>Returns the top layer. Returns null only if the Mold is empty (use IsEmpty to check).</summary>
         public OreLayer? TopLayer => IsEmpty ? (OreLayer?)null : _layers[_layers.Count - 1];

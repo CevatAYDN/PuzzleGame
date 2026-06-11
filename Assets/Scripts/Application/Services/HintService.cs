@@ -23,6 +23,7 @@ namespace PuzzleGame.Application.Services
         private readonly EconomyConfig _config;
         private readonly IActiveMoldsProvider _molds;
         private readonly IEventAggregator _events;
+        private readonly IAnimationService _animationService;
 
         private int _hintsUsedThisLevel;
 
@@ -34,12 +35,14 @@ namespace PuzzleGame.Application.Services
             ICoinWallet wallet,
             EconomyConfig config,
             IActiveMoldsProvider molds,
-            IEventAggregator events)
+            IEventAggregator events,
+            IAnimationService animationService)
         {
             _wallet = wallet;
             _config = config;
             _molds = molds;
             _events = events;
+            _animationService = animationService;
             _events.Subscribe<LevelSelectedEvent>(_ => _hintsUsedThisLevel = 0);
         }
 
@@ -48,6 +51,11 @@ namespace PuzzleGame.Application.Services
             sourceMoldIndex = -1;
             targetMoldIndex = -1;
 
+            if (_animationService != null && _animationService.IsAnimating)
+            {
+                MoldLogger.LogWarning($"{LogTag} Hint ignored: Animation is active.");
+                return false;
+            }
             if (currentLevel == null) return false;
             if (_config != null && _hintsUsedThisLevel >= _config.maxHintPerLevel)
             {

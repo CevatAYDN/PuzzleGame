@@ -164,6 +164,72 @@ namespace PuzzleGame.Tests.Application.Services
             Assert.That(results, Is.EqualTo(2));
         }
 
+        // ── Chain Reaction + Undo QA (TODO Step 4) ────────────────────────
+
+        [Test]
+        public void CheckReactions_ChainReaction_ExplosionTriggersSubsequentReactions()
+        {
+            var b1 = new MoldState(4);
+            b1.AddLayer(new OreLayer(new DomainColor(0.9f, 0.2f, 0.2f), 1f, OreColor.Red));
+            b1.AddLayer(new OreLayer(new DomainColor(0.2f, 0.2f, 0.9f), 1f, OreColor.Blue));
+
+            var b2 = new MoldState(4);
+            b2.AddLayer(new OreLayer(new DomainColor(0.9f, 0.2f, 0.2f), 1f, OreColor.Red));
+            b2.AddLayer(new OreLayer(new DomainColor(0.2f, 0.2f, 0.9f), 1f, OreColor.Blue));
+
+            var v1 = new FakeMoldView(b1) { GameObject = new UnityEngine.GameObject("B1"), Transform = new UnityEngine.GameObject("B1").transform };
+            var v2 = new FakeMoldView(b2) { GameObject = new UnityEngine.GameObject("B2"), Transform = new UnityEngine.GameObject("B2").transform };
+
+            var config = CreateTestConfig();
+            var results = _sut.CheckReactions(new IMoldView[] { v1, v2 }, config);
+
+            Assert.That(results, Is.EqualTo(2));
+            Assert.That(b1.IsEmpty, Is.True);
+            Assert.That(b2.IsEmpty, Is.True);
+        }
+
+        [Test]
+        public void CheckReactions_AfterExplosion_StateIsStableForUndo()
+        {
+            var mold = new MoldState(4);
+            mold.AddLayer(new OreLayer(new DomainColor(0.9f, 0.2f, 0.2f), 1f, OreColor.Red));
+            mold.AddLayer(new OreLayer(new DomainColor(0.2f, 0.2f, 0.9f), 1f, OreColor.Blue));
+
+            var view = new FakeMoldView(mold) { GameObject = new UnityEngine.GameObject("TestMold"), Transform = new UnityEngine.GameObject("TestMold").transform };
+
+            var config = CreateTestConfig();
+            int result = _sut.CheckReactions(new IMoldView[] { view }, config);
+
+            Assert.That(result, Is.EqualTo(1));
+            Assert.That(mold.IsEmpty, Is.True);
+            Assert.That(mold.LayerCount, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void CheckReactions_NoReactionWhenMoldAlreadyEmpty()
+        {
+            var mold = new MoldState(4);
+            var view = new FakeMoldView(mold) { GameObject = new UnityEngine.GameObject("Empty"), Transform = new UnityEngine.GameObject("Empty").transform };
+
+            var config = CreateTestConfig();
+            int result = _sut.CheckReactions(new IMoldView[] { view }, config);
+
+            Assert.That(result, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void CheckReactions_SingleMoldWithOneLayer_NoReaction()
+        {
+            var mold = new MoldState(4);
+            mold.AddLayer(new OreLayer(new DomainColor(0.9f, 0.2f, 0.2f), 1f, OreColor.Red));
+            var view = new FakeMoldView(mold) { GameObject = new UnityEngine.GameObject("Single"), Transform = new UnityEngine.GameObject("Single").transform };
+
+            var config = CreateTestConfig();
+            int result = _sut.CheckReactions(new IMoldView[] { view }, config);
+
+            Assert.That(result, Is.EqualTo(0));
+        }
+
         // ── Helpers ────────────────────────────────────────────────────────────
 
         private static FakeMoldView CreateMoldWithLayers(params OreColor[] colors)

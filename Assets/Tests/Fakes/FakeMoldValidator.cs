@@ -10,13 +10,19 @@ namespace PuzzleGame.Tests.Fakes
     {
         public bool CanCastResult { get; set; } = true;
         public bool IsCompleteResult { get; set; }
+        public bool CanBreakCorkResult { get; set; } = true;
 
         public int CanCastCallCount { get; private set; }
         public int IsCompleteCallCount { get; private set; }
+        public int CanBreakCorkCallCount { get; private set; }
 
         public MoldState LastSource { get; private set; }
         public MoldState LastTarget { get; private set; }
         public MoldState LastCompleteCheck { get; private set; }
+        public MoldState LastBreakCorkSource { get; private set; }
+        public MoldState LastBreakCorkTarget { get; private set; }
+
+        public bool CanMultiCast(MoldState[] sources, MoldState target) => CanCastResult;
 
         public bool CanCast(MoldState source, MoldState target)
         {
@@ -24,6 +30,14 @@ namespace PuzzleGame.Tests.Fakes
             LastSource = source;
             LastTarget = target;
             return CanCastResult;
+        }
+
+        public bool CanBreakCork(MoldState source, MoldState target)
+        {
+            CanBreakCorkCallCount++;
+            LastBreakCorkSource = source;
+            LastBreakCorkTarget = target;
+            return CanBreakCorkResult;
         }
 
         public bool IsComplete(MoldState state)
@@ -42,6 +56,7 @@ namespace PuzzleGame.Tests.Fakes
         {
             CanCastCallCount = 0;
             IsCompleteCallCount = 0;
+            CanBreakCorkCallCount = 0;
         }
     }
 }

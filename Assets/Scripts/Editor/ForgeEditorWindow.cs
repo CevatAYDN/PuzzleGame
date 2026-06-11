@@ -78,6 +78,8 @@ namespace PuzzleGame.Editor
         {
             if (_tabs == null || _tabs.Count == 0) return;
 
+            HandleKeyboardShortcuts();
+
             DrawTabs();
             EditorGUILayout.Space(6);
 
@@ -87,6 +89,38 @@ namespace PuzzleGame.Editor
             }
 
             DrawStatusBar();
+        }
+
+        private void HandleKeyboardShortcuts()
+        {
+            var e = Event.current;
+            if (e == null || e.type != EventType.KeyDown) return;
+
+            bool ctrl = e.control || e.command;
+
+            if (ctrl && e.keyCode == KeyCode.Tab)
+            {
+                e.Use();
+                int dir = e.shift ? -1 : 1;
+                _activeTabIndex = (_activeTabIndex + dir + _tabs.Count) % _tabs.Count;
+                Repaint();
+                return;
+            }
+
+            if (e.keyCode == KeyCode.F5)
+            {
+                e.Use();
+                RefreshData();
+                SetStatus("Refreshed (F5).", MessageType.Info);
+                return;
+            }
+
+            if (ctrl && e.keyCode == KeyCode.R)
+            {
+                e.Use();
+                RefreshData();
+                SetStatus("Refreshed (Ctrl+R).", MessageType.Info);
+            }
         }
 
         private void OnSceneGUIInternal(SceneView sceneView)

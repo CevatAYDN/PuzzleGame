@@ -51,26 +51,34 @@
   <ItemGroup>
     <Compile Include="Assets\Scripts\Infrastructure\Providers\IAssetProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\SaveCrypto.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\LevelEditorService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\ColorAdapter.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\AudioService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\StreamTrailController.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\ShaderOptimizer.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\AccessibilityService.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\ProgressService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\ScriptableObjectBiomeArtProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Providers\ResourcesAssetProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\UpdateManager.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Models\TranslationFile.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\InputHandlerDefaults.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Pool\GameObjectPool.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\CloudSaveService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\ConsentManager.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\ParticleFactory.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Providers\AddressablesAssetProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\StreamingAssetsJsonTranslationProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Pool\PoolManager.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\PourSimulator.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\NoOpAdService.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\PourDebugController.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\PourSystemController.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\MoldInputRouter.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\JsonTranslationProvider.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\PlayerPrefsChargeStorage.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\RendererService.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\CosmeticShopService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\MoldLookupCache.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\StreamRenderer.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\HardcodedTranslationProvider.cs" />
@@ -78,8 +86,11 @@
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\MobileInputHandler.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\InputHandler.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\AdMobService.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\PourHistoryService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\FirebaseCrashReportingService.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\SystemRandomProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\UnityMemorySnapshotService.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\LeaderboardService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\SaveStorage.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\PlayerPrefsAudioSettingsService.cs" />
   </ItemGroup>

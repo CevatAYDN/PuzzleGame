@@ -4,6 +4,7 @@ using PuzzleGame.Domain;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Infrastructure;
 using PuzzleGame.Application.Interfaces;
+using PuzzleGame.Application.Logging;
 using UnityEngine;
 
 namespace PuzzleGame.Infrastructure.Implementations
@@ -84,9 +85,16 @@ namespace PuzzleGame.Infrastructure.Implementations
                 if (i < _mergedLayers.Count)
                 {
                     var layer = _mergedLayers[i];
-                    float sat = config != null ? config.saturationBoost : 1.25f;
-                    float bri = config != null ? config.brightnessBoost : 1.15f;
-                    color      = AdjustColor(_colorAdapter.ToUnity(layer.Color), sat, bri);
+                    if (layer.IsHidden)
+                    {
+                        color = new Color(0.35f, 0.35f, 0.35f, 1f);
+                    }
+                    else
+                    {
+                        float sat = config != null ? config.saturationBoost : 1.25f;
+                        float bri = config != null ? config.brightnessBoost : 1.15f;
+                        color      = AdjustColor(_colorAdapter.ToUnity(layer.Color), sat, bri);
+                    }
                     cumulative += layer.Amount;
                     fill       = cumulative;
                 }
@@ -116,6 +124,10 @@ namespace PuzzleGame.Infrastructure.Implementations
             // affects all mold instances using the same asset. Use the MPB path
             // for runtime (play mode) rendering; editor previews should use
             // EditorGUI.DrawPreview or a dedicated preview material instead.
+#endif
+
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+            VerifyGPUInstancing(renderer);
 #endif
         }
 
@@ -154,6 +166,10 @@ namespace PuzzleGame.Infrastructure.Implementations
 #if UNITY_EDITOR
             // Editor-time shared material modification removed — see comment in UpdateOre.
 #endif
+
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+            VerifyGPUInstancing(renderer);
+#endif
         }
 
         private static Color AdjustColor(Color c, float sat, float bright)
@@ -165,5 +181,21 @@ namespace PuzzleGame.Infrastructure.Implementations
                 Mathf.Clamp01((avg + (c.b - avg) * sat) * bright),
                 c.a);
         }
+
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+        private static void VerifyGPUInstancing(Renderer renderer)
+        {
+            if (renderer == null) return;
+            var sharedMats = renderer.sharedMaterials;
+            if (sharedMats == null) return;
+            for (int i = 0; i < sharedMats.Length; i++)
+            {
+                if (sharedMats[i] != null && sharedMats[i].name.EndsWith("(Instance)"))
+                {
+                    MoldLogger.LogWarning($"[GPU Instancing Warning] Renderer '{renderer.name}' has an instantiated material copy '{sharedMats[i].name}'. This breaks GPU instancing batching. Ensure no code accesses 'renderer.material'.");
+                }
+            }
+        }
+#endif
     }
 }

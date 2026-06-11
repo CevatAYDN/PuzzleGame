@@ -48,6 +48,9 @@ namespace PuzzleGame.Installers
             // UI components (MonoBehaviours that may or may not be in scene)
             GameInstaller.FindOrFallback<HudPresenter>(builder);
 
+            GameInstaller.FindOrFallback<PowerUpUI>(builder);
+            GameInstaller.FindOrFallback<AchievementNotificationUI>(builder);
+
             // Consent flow UI — MonoBehaviours live on the consent scene prefab
             GameInstaller.FindOrFallback<AgeGateModal>(builder);
             GameInstaller.FindOrFallback<ConsentModal>(builder);

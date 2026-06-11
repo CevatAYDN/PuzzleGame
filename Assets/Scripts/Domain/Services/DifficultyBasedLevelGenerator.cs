@@ -21,9 +21,24 @@ namespace PuzzleGame.Domain.Services
             Difficulty difficulty,
             int seed = 0)
         {
+            return Generate(MoldCount, maxLayers, emptyMoldCount, colorPalette, difficulty, seed, false);
+        }
+
+        public List<List<OreLayer>> Generate(
+            int MoldCount,
+            int maxLayers,
+            int emptyMoldCount,
+            DomainColor[] colorPalette,
+            Difficulty difficulty,
+            int seed = 0,
+            bool enableFrozenLayers = false)
+        {
             var result = new List<List<OreLayer>>(MoldCount);
             for (int i = 0; i < MoldCount; i++)
                 result.Add(new List<OreLayer>());
+
+            if (MoldCount < 2)
+                return result;
 
             int empties = Math.Clamp(emptyMoldCount, 1, MoldCount - 1);
             int filledCount = MoldCount - empties;
@@ -35,7 +50,6 @@ namespace PuzzleGame.Domain.Services
             var rng = new Random(seed);
             float amountPerLayer = 1f / maxLayers;
 
-            // Map Difficulty enum to a float difficulty index (0.0 to 1.0)
             float mixFactor = difficulty switch
             {
                 Difficulty.Trivial => 0.1f,
@@ -48,7 +62,6 @@ namespace PuzzleGame.Domain.Services
 
             int shufflePasses = Math.Max(1, (int)(mixFactor * 5));
 
-            // Gather all layers for all active colors
             var allLayers = new List<DomainColor>(numColors * maxLayers);
             for (int c = 0; c < numColors; c++)
             {
@@ -56,13 +69,11 @@ namespace PuzzleGame.Domain.Services
                     allLayers.Add(colorPalette[c]);
             }
 
-            // Shuffle based on difficulty
             for (int s = 0; s < shufflePasses; s++)
             {
                 FisherYatesShuffle(allLayers, rng);
             }
 
-            // Distribute mixed layers to the filled Molds
             int layerIndex = 0;
             for (int i = 0; i < filledCount; i++)
             {
@@ -78,13 +89,44 @@ namespace PuzzleGame.Domain.Services
                 }
             }
 
-            // For higher difficulties, swap some upper layers to make puzzle sorting trickier
             if (mixFactor > 0.7f)
             {
                 ApplyAdvancedDifficulty(result, mixFactor, rng);
             }
 
+            if (enableFrozenLayers && mixFactor >= 0.5f)
+            {
+                ApplyFrozenLayers(result, filledCount, mixFactor, rng);
+            }
+
             return result;
+        }
+
+        private static void ApplyFrozenLayers(
+            List<List<OreLayer>> assignments,
+            int filledCount,
+            float difficulty,
+            Random rng)
+        {
+            int frozenCount = Math.Max(1, (int)(filledCount * difficulty * 0.3f));
+            var candidates = new List<int>();
+            for (int i = 0; i < filledCount; i++)
+            {
+                if (assignments[i].Count >= 2)
+                    candidates.Add(i);
+            }
+
+            for (int f = 0; f < frozenCount && candidates.Count > 0; f++)
+            {
+                int idx = rng.Next(candidates.Count);
+                int moldIdx = candidates[idx];
+                candidates.RemoveAt(idx);
+
+                var layers = assignments[moldIdx];
+                int frozenPos = rng.Next(0, layers.Count - 1);
+                var layer = layers[frozenPos];
+                layers[frozenPos] = new OreLayer(layer.Color, layer.Amount, layer.ColorType, layer.IsHidden, LayerModifier.Frozen);
+            }
         }
 
         public (List<List<OreLayer>> Molds, bool IsSolvable) GenerateSolvable(
@@ -94,24 +136,46 @@ namespace PuzzleGame.Domain.Services
             DomainColor[] colorPalette,
             Difficulty difficulty,
             int seed = 0,
-            int maxAttempts = 8)
+            int maxAttempts = 8,
+            bool enableFrozenLayers = false,
+            bool enableMultiPour = false)
         {
             if (maxAttempts < 1) maxAttempts = 1;
 
             int baseSeed = seed;
             List<List<OreLayer>> lastResult = null;
 
+            // First pass: try with full features (frozen + multi-pour if enabled)
             for (int attempt = 0; attempt < maxAttempts; attempt++)
             {
                 int currentSeed = baseSeed == 0
                     ? unchecked((int)(DateTime.UtcNow.Ticks & 0x7FFFFFFF)) + attempt
                     : baseSeed + attempt;
 
-                lastResult = Generate(MoldCount, maxLayers, emptyMoldCount, colorPalette, difficulty, currentSeed);
+                lastResult = Generate(MoldCount, maxLayers, emptyMoldCount, colorPalette, difficulty, currentSeed, enableFrozenLayers);
                 var solverResult = OreSortSolver.Solve(lastResult, maxLayers);
                 if (solverResult.IsSolvable)
                 {
                     return (lastResult, true);
+                }
+            }
+
+            // Fallback pass: if frozen layers were enabled but no solution found,
+            // retry without frozen layers to guarantee a solvable level
+            if (enableFrozenLayers)
+            {
+                for (int attempt = 0; attempt < maxAttempts; attempt++)
+                {
+                    int currentSeed = baseSeed == 0
+                        ? unchecked((int)(DateTime.UtcNow.Ticks & 0x7FFFFFFF)) + attempt + maxAttempts
+                        : baseSeed + attempt + maxAttempts;
+
+                    lastResult = Generate(MoldCount, maxLayers, emptyMoldCount, colorPalette, difficulty, currentSeed, false);
+                    var solverResult = OreSortSolver.Solve(lastResult, maxLayers);
+                    if (solverResult.IsSolvable)
+                    {
+                        return (lastResult, true);
+                    }
                 }
             }
 

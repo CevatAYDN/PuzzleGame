@@ -7,6 +7,7 @@ using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Logging;
 using UnityEngine;
+using PuzzleGame.Application.Events;
 
 namespace PuzzleGame
 {
@@ -18,7 +19,7 @@ namespace PuzzleGame
     /// No longer implements IActiveMoldsProvider to break circular dependency.
     /// Delegates to ActiveMoldsProvider singleton.
     /// </summary>
-    public sealed class MoldPoolInitializer
+    public sealed class MoldPoolInitializer : IDisposable
     {
         private readonly ILevelSetupService _levelSetupService;
         private readonly IRendererService _rendererService;
@@ -32,15 +33,25 @@ namespace PuzzleGame
         private readonly WobbleConfig _wobbleConfig;
         private readonly OptionalMoldActivator _optionalMoldActivator;
         private readonly IActiveMoldsProvider _activeMoldsProvider;
+        private readonly IEventAggregator _eventAggregator;
+        private readonly IPowerUpService _powerUpService;
 
         private readonly List<MoldController> _gameplayMoldsPool = new List<MoldController>();
         private readonly List<MoldController> _optionalMoldsPool = new List<MoldController>();
+
+        private int _extraMoldsActivated;
+        private IDisposable _powerUpSubscription;
+        private bool _disposed;
 
         public int MaxGameplayMolds
         {
             get
             {
-                if (_gameplayMoldsPool.Count == 0 && _optionalMoldsPool.Count == 0) CacheMolds();
+                if (_gameplayMoldsPool.Count == 0 && _optionalMoldsPool.Count == 0)
+                {
+                    CacheMolds();
+                }
+
                 return _gameplayMoldsPool.Count;
             }
         }
@@ -56,7 +67,9 @@ namespace PuzzleGame
             Camera camera,
             IErrorIndicatorService errorIndicator,
             WobbleConfig wobbleConfig,
-            IActiveMoldsProvider activeMoldsProvider)
+            IActiveMoldsProvider activeMoldsProvider,
+            IEventAggregator eventAggregator,
+            IPowerUpService powerUpService)
         {
             _levelSetupService = levelSetupService;
             _rendererService = rendererService;
@@ -69,6 +82,8 @@ namespace PuzzleGame
             _errorIndicator = errorIndicator;
             _wobbleConfig = wobbleConfig;
             _activeMoldsProvider = activeMoldsProvider;
+            _eventAggregator = eventAggregator;
+            _powerUpService = powerUpService ?? throw new ArgumentNullException(nameof(powerUpService));
             _optionalMoldActivator = new OptionalMoldActivator(
                 _rendererService,
                 _validator,
@@ -78,6 +93,15 @@ namespace PuzzleGame
                 _updateManager,
                 _errorIndicator,
                 _wobbleConfig);
+
+            _powerUpSubscription = _eventAggregator.SubscribeToken<PowerUpActivatedEvent>(OnPowerUpActivated);
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            _powerUpSubscription?.Dispose();
         }
 
         /// <summary>
@@ -86,12 +110,18 @@ namespace PuzzleGame
         /// </summary>
         public void InitializeForLevel(LevelData level)
         {
-            if (_gameplayMoldsPool.Count == 0 && _optionalMoldsPool.Count == 0) CacheMolds();
+            if (_gameplayMoldsPool.Count == 0 && _optionalMoldsPool.Count == 0)
+            {
+                CacheMolds();
+            }
 
             // 1. Hide all optional molds first
             foreach (var mold in _optionalMoldsPool)
             {
-                if (mold != null) mold.gameObject.SetActive(false);
+                if (mold != null)
+                {
+                    mold.gameObject.SetActive(false);
+                }
             }
 
             // 2. Setup standard gameplay molds count
@@ -170,6 +200,81 @@ namespace PuzzleGame
             _activeMoldsProvider.Molds = _optionalMoldActivator.Activate(level, _optionalMoldsPool, _activeMoldsProvider.Molds);
         }
 
+        private void OnPowerUpActivated(PowerUpActivatedEvent e)
+        {
+            switch (e.Type)
+            {
+                case PowerUpType.ExtraMold:
+                    ActivateExtraMold();
+                    break;
+                case PowerUpType.ColorBomb:
+                    _powerUpService.ApplyColorBomb(_activeMoldsProvider, e.MoldIndex);
+                    break;
+                case PowerUpType.Shuffle:
+                    _powerUpService.ApplyShuffle(_activeMoldsProvider);
+                    break;
+                default:
+                    MoldLogger.LogWarning($"[MoldPoolInitializer] Unhandled power-up: {e.Type}");
+                    break;
+            }
+        }
+
+        public bool ActivateExtraMold()
+        {
+            if (_optionalMoldsPool.Count == 0)
+            {
+                MoldLogger.LogWarning("[MoldPoolInitializer] No optional molds in pool for Extra Mold power-up.");
+                return false;
+            }
+
+            int inactiveIndex = -1;
+            for (int i = 0; i < _optionalMoldsPool.Count; i++)
+            {
+                var mold = _optionalMoldsPool[i];
+                if (mold != null && !mold.gameObject.activeSelf)
+                {
+                    inactiveIndex = i;
+                    break;
+                }
+            }
+
+            if (inactiveIndex < 0)
+            {
+                MoldLogger.LogWarning("[MoldPoolInitializer] All optional molds already active.");
+                return false;
+            }
+
+            var currentMolds = _activeMoldsProvider.Molds;
+            var moldToActivate = _optionalMoldsPool[inactiveIndex];
+            int newIndex = currentMolds.Length;
+
+            moldToActivate.gameObject.SetActive(true);
+            moldToActivate.MoldIndex = newIndex;
+            moldToActivate.Initialize(_rendererService, _validator, _animationService, new List<OreLayer>());
+
+            var wobble = moldToActivate.GetComponent<Wobble>();
+            if (wobble != null)
+            {
+                wobble.config = _wobbleConfig;
+                wobble.SetUpdateManager(_updateManager);
+            }
+
+            moldToActivate.gameObject.name = $"ExtraMold_{_extraMoldsActivated}";
+
+            var expanded = new IMoldView[currentMolds.Length + 1];
+            Array.Copy(currentMolds, expanded, currentMolds.Length);
+            expanded[currentMolds.Length] = moldToActivate;
+
+            _activeMoldsProvider.Molds = expanded;
+            _historyManager.SetMolds(expanded);
+            _inputHandlerService.SetMolds(expanded);
+            _errorIndicator?.Initialize(expanded);
+
+            _extraMoldsActivated++;
+            MoldLogger.LogInfo($"[MoldPoolInitializer] Extra mold activated. Total active: {expanded.Length}");
+            return true;
+        }
+
         private static readonly MoldNameComparer Comparer = new MoldNameComparer();
 
         private void CacheMolds()
@@ -182,7 +287,11 @@ namespace PuzzleGame
 
             foreach (var mold in temp)
             {
-                if (mold == null) continue;
+                if (mold == null)
+                {
+                    continue;
+                }
+
                 if (mold.isOptionalTarget)
                 {
                     _optionalMoldsPool.Add(mold);
@@ -199,12 +308,18 @@ namespace PuzzleGame
             }
 
             if (_gameplayMoldsPool.Count == 0)
+            {
                 MoldLogger.LogWarning("No gameplay MoldController found in scene.");
+            }
         }
 
         private void ConfigureCamera()
         {
-            if (_camera == null) return;
+            if (_camera == null)
+            {
+                return;
+            }
+
             _camera.backgroundColor = new Color(0.08f, 0.05f, 0.16f, 1.0f);
             _camera.clearFlags = CameraClearFlags.SolidColor;
 
@@ -220,9 +335,21 @@ namespace PuzzleGame
         {
             public int Compare(MoldController x, MoldController y)
             {
-                if (x == null && y == null) return 0;
-                if (x == null) return -1;
-                if (y == null) return 1;
+                if (x == null && y == null)
+                {
+                    return 0;
+                }
+
+                if (x == null)
+                {
+                    return -1;
+                }
+
+                if (y == null)
+                {
+                    return 1;
+                }
+
                 return string.CompareOrdinal(x.name, y.name);
             }
         }

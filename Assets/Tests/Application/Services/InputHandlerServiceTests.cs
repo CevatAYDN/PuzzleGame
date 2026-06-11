@@ -66,7 +66,8 @@ namespace PuzzleGame.Tests.Application.Services
                 _gameConfig, _animConfig, _audioService,
                 _historyManager, _CastService, lookup, defaults, _activeMoldsProvider,
                 _hapticService,
-                new NoOpAnalyticsService());
+                new NoOpAnalyticsService(),
+                multiPourService: null);
             _sut = new InputHandlerService(_router, lookup, defaults);
         }
 

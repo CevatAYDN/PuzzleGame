@@ -220,5 +220,139 @@ namespace PuzzleGame.Domain.Tests.Services
         {
             Assert.Throws<System.ArgumentNullException>(() => _validator.IsComplete(null));
         }
+
+        // ── CanMultiCast ────────────────────────────────────────────────────
+
+        [Test]
+        public void CanMultiCast_NullSources_ThrowsArgumentNullException()
+        {
+            Assert.Throws<System.ArgumentNullException>(() => _validator.CanMultiCast(null, _target));
+        }
+
+        [Test]
+        public void CanMultiCast_EmptySourcesArray_ThrowsArgumentNullException()
+        {
+            Assert.Throws<System.ArgumentNullException>(() => _validator.CanMultiCast(new MoldState[0], _target));
+        }
+
+        [Test]
+        public void CanMultiCast_NullTarget_ThrowsArgumentNullException()
+        {
+            var sources = new[] { _source };
+            Assert.Throws<System.ArgumentNullException>(() => _validator.CanMultiCast(sources, null));
+        }
+
+        [Test]
+        public void CanMultiCast_EmptyTarget_ReturnsFalse()
+        {
+            _source.AddLayer(Layer(Red()));
+            Assert.That(_validator.CanMultiCast(new[] { _source }, _target), Is.False);
+        }
+
+        [Test]
+        public void CanMultiCast_FullTarget_ReturnsFalse()
+        {
+            _source.AddLayer(Layer(Red()));
+            FillMold(_target, 4, Blue());
+            Assert.That(_validator.CanMultiCast(new[] { _source }, _target), Is.False);
+        }
+
+        [Test]
+        public void CanMultiCast_InsufficientSpace_ReturnsFalse()
+        {
+            // Target has 3 layers (1 free slot), but 2 sources → needs 2 slots.
+            var src1 = new MoldState(4);
+            var src2 = new MoldState(4);
+            src1.AddLayer(Layer(Red()));
+            src2.AddLayer(Layer(Red()));
+            FillMold(_target, 3, Blue());
+
+            Assert.That(_validator.CanMultiCast(new[] { src1, src2 }, _target), Is.False);
+        }
+
+        [Test]
+        public void CanMultiCast_NullSourceInArray_ReturnsFalse()
+        {
+            var src1 = new MoldState(4);
+            src1.AddLayer(Layer(Red()));
+            _target.AddLayer(Layer(Blue()));
+
+            Assert.That(_validator.CanMultiCast(new MoldState[] { src1, null }, _target), Is.False);
+        }
+
+        [Test]
+        public void CanMultiCast_EmptySource_ReturnsFalse()
+        {
+            _target.AddLayer(Layer(Blue()));
+            Assert.That(_validator.CanMultiCast(new[] { _source }, _target), Is.False);
+        }
+
+        [Test]
+        public void CanMultiCast_SourceEqualsTarget_ReturnsFalse()
+        {
+            _source.AddLayer(Layer(Red()));
+            _target.AddLayer(Layer(Blue()));
+            Assert.That(_validator.CanMultiCast(new[] { _source, _source }, _target), Is.False);
+        }
+
+        [Test]
+        public void CanMultiCast_SameColorSources_ReturnsTrue()
+        {
+            var src1 = new MoldState(4);
+            var src2 = new MoldState(4);
+            src1.AddLayer(Layer(Red()));
+            src2.AddLayer(Layer(Red()));
+            _target.AddLayer(Layer(Blue()));
+            _target.AddLayer(Layer(Blue())); // 2 layers → 2 free slots
+
+            Assert.That(_validator.CanMultiCast(new[] { src1, src2 }, _target), Is.True);
+        }
+
+        [Test]
+        public void CanMultiCast_DifferentColors_ReturnsFalse()
+        {
+            var src1 = new MoldState(4);
+            var src2 = new MoldState(4);
+            src1.AddLayer(Layer(Red()));
+            src2.AddLayer(Layer(Blue()));
+            _target.AddLayer(Layer(Blue()));
+            _target.AddLayer(Layer(Blue()));
+
+            Assert.That(_validator.CanMultiCast(new[] { src1, src2 }, _target), Is.False);
+        }
+
+        [Test]
+        public void CanMultiCast_SingleSource_ReturnsTrue()
+        {
+            _source.AddLayer(Layer(Red()));
+            _target.AddLayer(Layer(Blue()));
+            _target.AddLayer(Layer(Blue()));
+
+            Assert.That(_validator.CanMultiCast(new[] { _source }, _target), Is.True);
+        }
+
+        [Test]
+        public void CanMultiCast_FrozenSourceTopLayer_ReturnsFalse()
+        {
+            var frozenLayer = new OreLayer(DC(1f, 0f, 0f), 0.25f, OreColor.Red, false, LayerModifier.Frozen);
+            _source.AddLayer(frozenLayer);
+            _target.AddLayer(Layer(Blue()));
+            _target.AddLayer(Layer(Blue()));
+
+            Assert.That(_validator.CanMultiCast(new[] { _source }, _target), Is.False);
+        }
+
+        [Test]
+        public void CanMultiCast_ColorsWithinTolerance_ReturnsTrue()
+        {
+            var src1 = new MoldState(4);
+            var src2 = new MoldState(4);
+            src1.AddLayer(Layer(DC(0.50f, 0.20f, 0.80f)));
+            src2.AddLayer(Layer(DC(0.52f, 0.22f, 0.78f)));
+            _target.AddLayer(Layer(Blue()));
+            _target.AddLayer(Layer(Blue()));
+
+            Assert.That(_validator.CanMultiCast(new[] { src1, src2 }, _target), Is.True);
+        }
     }
 }

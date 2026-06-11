@@ -213,9 +213,10 @@ namespace PuzzleGame.Events.Tests
             LevelCompletedEvent received = default;
             _eventAggregator.Subscribe<LevelCompletedEvent>(e => received = e);
 
-            _eventAggregator.Publish(new LevelCompletedEvent(15));
+            _eventAggregator.Publish(new LevelCompletedEvent(15, 3));
 
             Assert.That(received.MoveCount, Is.EqualTo(15));
+            Assert.That(received.Stars, Is.EqualTo(3));
         }
 
         // ── Test event types ────────────────────────────────────────────────

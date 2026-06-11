@@ -52,6 +52,7 @@ namespace PuzzleGame.Infrastructure.Implementations
         private readonly IActiveMoldsProvider _moldsProvider;
         private readonly IHapticFeedbackService _hapticService;
         private readonly IAnalyticsService _analytics;
+        private readonly IMultiPourService _multiPourService;
 
         private LevelData _currentLevelData;
         private Vector3 _selectedOriginalPos;
@@ -74,7 +75,8 @@ namespace PuzzleGame.Infrastructure.Implementations
             IInputHandlerDefaults defaults,
             IActiveMoldsProvider moldsProvider,
             IHapticFeedbackService hapticService,
-            IAnalyticsService analytics)
+            IAnalyticsService analytics,
+            IMultiPourService multiPourService)
         {
             _inputHandler = inputHandler ?? throw new ArgumentNullException(nameof(inputHandler));
             _camera = camera;
@@ -92,6 +94,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             _moldsProvider = moldsProvider ?? throw new ArgumentNullException(nameof(moldsProvider));
             _hapticService = hapticService ?? throw new ArgumentNullException(nameof(hapticService));
             _analytics = analytics ?? throw new ArgumentNullException(nameof(analytics));
+            _multiPourService = multiPourService ?? throw new ArgumentNullException(nameof(multiPourService));
         }
 
         /// <summary>
@@ -154,6 +157,15 @@ namespace PuzzleGame.Infrastructure.Implementations
             _defaults.Dispose();
         }
 
+        private static bool IsStateInSelection(IReadOnlyList<MoldState> selectedMolds, MoldState state)
+        {
+            for (int i = 0; i < selectedMolds.Count; i++)
+            {
+                if (selectedMolds[i] == state) return true;
+            }
+            return false;
+        }
+
         private void HandleInput(Vector2 screenPos)
         {
             if (!_inputHandler.Raycast(screenPos, _gameConfig.MoldLayerMask, out RaycastHit hit, out Collider hitCollider))
@@ -188,10 +200,15 @@ namespace PuzzleGame.Infrastructure.Implementations
             }
 
             var selectedState = _selectionService.SelectedMold;
+            bool isMultiPour = _currentLevelData != null && _currentLevelData.enableMultiPour;
 
             if (selectedState == null)
             {
-                TrySelectMold(clicked);
+                TrySelectMold(clicked, isMultiPour);
+            }
+            else if (isMultiPour && _selectionService.SelectedMolds.Count >= 1)
+            {
+                HandleMultiPourInput(clicked);
             }
             else if (clicked.State == selectedState)
             {
@@ -204,7 +221,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             }
         }
 
-        private void TrySelectMold(IMoldView mold)
+        private void TrySelectMold(IMoldView mold, bool isMultiPour = false)
         {
             if (mold.IsCapped)
             {
@@ -218,6 +235,9 @@ namespace PuzzleGame.Infrastructure.Implementations
                 return;
             }
 
+            if (isMultiPour)
+                _selectionService.SetMultiSelect(true);
+
             MoldLogger.LogInfo("Selected Mold.");
             _selectedOriginalPos = mold.Transform.position;
             _selectionService.Select(mold.State);
@@ -226,7 +246,45 @@ namespace PuzzleGame.Infrastructure.Implementations
             _animationService.AnimateMoldLift(
                 mold.Transform,
                 _animConfig.liftHeight, _animConfig.liftDuration,
-                keepHovering: () => _selectionService.SelectedMold == mold.State);
+                keepHovering: () => _selectionService.IsMultiSelect
+                    ? IsStateInSelection(_selectionService.SelectedMolds, mold.State)
+                    : _selectionService.SelectedMold == mold.State);
+        }
+
+        private void HandleMultiPourInput(IMoldView clicked)
+        {
+            var selectedMolds = _selectionService.SelectedMolds;
+
+            // Toggle clicked mold in/out of selection if it's a valid source
+            if (!clicked.IsEmpty && !clicked.IsCapped)
+            {
+                if (IsStateInSelection(_selectionService.SelectedMolds, clicked.State))
+                {
+                    // Deselect this specific mold
+                    clicked.SetSelectionHighlight(false);
+                    _selectionService.Deselect(clicked.State);
+                    MoldLogger.LogInfo("Mold deselected from multi-pour selection.");
+                    return;
+                }
+
+                // Add to multi-pour selection
+                _selectionService.Select(clicked.State);
+                clicked.SetSelectionHighlight(true);
+                _hapticService.Trigger(HapticIntensity.Selection);
+                MoldLogger.LogInfo("Mold added to multi-pour selection.");
+                return;
+            }
+
+            // If clicked mold is empty or capped, treat as target and attempt multi-cast
+            if (selectedMolds.Count >= 1)
+            {
+                TryMultiCast(selectedMolds, clicked);
+            }
+        }
+
+        private void TryMultiCast(IReadOnlyList<MoldState> sourceStates, IMoldView target)
+        {
+            _multiPourService.TryMultiPour(sourceStates, target, _selectedOriginalPos, _moldsProvider.Molds);
         }
 
         private void TryCast(IMoldView source, IMoldView target)

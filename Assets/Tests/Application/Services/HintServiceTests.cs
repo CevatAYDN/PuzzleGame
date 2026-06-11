@@ -12,9 +12,10 @@ namespace PuzzleGame.Tests.Application.Services
         private HintService _sut;
         private FakeCoinWallet _wallet;
         private EconomyConfig _config;
-        private EventAggregator _events;
+        private FakeEventAggregator _events;
         private FakeActiveMoldsProvider _molds;
         private LevelData _level;
+        private FakeAnimationService _animation;
 
         [SetUp]
         public void SetUp()
@@ -23,12 +24,13 @@ namespace PuzzleGame.Tests.Application.Services
             _config.hintCost = 10;
             _config.maxHintPerLevel = 3;
             _wallet = new FakeCoinWallet(initialBalance: 100);
-            _events = new EventAggregator();
+            _events = new FakeEventAggregator();
             _molds = new FakeActiveMoldsProvider();
             _level = ScriptableObject.CreateInstance<LevelData>();
             _level.maxLayersPerMold = 4;
             _level.colorCount = 3;
             _level.MoldCount = 3;
+            _animation = new FakeAnimationService();
 
             // Build a solvable layout: 2 mixed-color molds where the solver can find moves.
             // Mold A: red (bottom), green (top)  →  Mold B: empty
@@ -46,7 +48,7 @@ namespace PuzzleGame.Tests.Application.Services
                 new FakeMoldView(a), new FakeMoldView(b), new FakeMoldView(c)
             };
 
-            _sut = new HintService(_wallet, _config, _molds, _events);
+            _sut = new HintService(_wallet, _config, _molds, _events, _animation);
         }
 
         [TearDown]
@@ -68,7 +70,7 @@ namespace PuzzleGame.Tests.Application.Services
         [Test]
         public void Cost_WhenConfigIsNull_ReturnsZero()
         {
-            var noConfig = new HintService(_wallet, null, _molds, _events);
+            var noConfig = new HintService(_wallet, null, _molds, _events, _animation);
             Assert.That(noConfig.Cost, Is.EqualTo(0));
         }
 
@@ -93,7 +95,7 @@ namespace PuzzleGame.Tests.Application.Services
         [Test]
         public void TryGetHint_NullMoldsProvider_ReturnsFalse()
         {
-            var noMolds = new HintService(_wallet, _config, new FakeActiveMoldsProvider(), _events);
+            var noMolds = new HintService(_wallet, _config, new FakeActiveMoldsProvider(), _events, _animation);
             bool ok = noMolds.TryGetHint(_level, out _, out _);
 
             Assert.That(ok, Is.False);
@@ -106,6 +108,18 @@ namespace PuzzleGame.Tests.Application.Services
             bool ok = _sut.TryGetHint(_level, out _, out _);
 
             Assert.That(ok, Is.False);
+        }
+
+        [Test]
+        public void TryGetHint_WhenAnimating_ReturnsFalseWithoutCallingWallet()
+        {
+            _animation.IsAnimating = true;
+            int spendCallsBefore = _wallet.TrySpendCallCount;
+
+            bool ok = _sut.TryGetHint(_level, out _, out _);
+
+            Assert.That(ok, Is.False);
+            Assert.That(_wallet.TrySpendCallCount, Is.EqualTo(spendCallsBefore));
         }
 
         // ── TryGetHint: cost / limit guards ───────────────────────────────
@@ -132,7 +146,7 @@ namespace PuzzleGame.Tests.Application.Services
             
             // Set max hints to 0 to immediately hit the limit
             _config.maxHintPerLevel = 0;
-            _sut = new HintService(_wallet, _config, _molds, _events);
+            _sut = new HintService(_wallet, _config, _molds, _events, _animation);
 
             // Even with coins available, should return false due to limit
             bool result = _sut.TryGetHint(_level, out _, out _);
@@ -188,6 +202,52 @@ namespace PuzzleGame.Tests.Application.Services
 
             int afterReset = _sut.RemainingHintsForCurrentLevel;
             Assert.That(afterReset, Is.EqualTo(5));
+        }
+
+        [Test]
+        public void TryGetHint_OnSuccess_PublishesHintHighlightEvent()
+        {
+            // Build a solvable layout: 4 molds with mixed colors + 1 empty
+            var a = new PuzzleGame.Domain.Models.MoldState(4);
+            a.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(1f, 0f, 0f), 0.25f));
+            a.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(1f, 0f, 0f), 0.25f));
+            a.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(0f, 1f, 0f), 0.25f));
+            var b = new PuzzleGame.Domain.Models.MoldState(4);
+            b.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(0f, 1f, 0f), 0.25f));
+            b.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(0f, 1f, 0f), 0.25f));
+            b.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(1f, 0f, 0f), 0.25f));
+            var c = new PuzzleGame.Domain.Models.MoldState(4);
+            c.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(1f, 0f, 0f), 0.25f));
+            c.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(0f, 1f, 0f), 0.25f));
+            var d = new PuzzleGame.Domain.Models.MoldState(4);
+            _molds.Molds = new PuzzleGame.Application.Interfaces.IMoldView[]
+            {
+                new FakeMoldView(a), new FakeMoldView(b), new FakeMoldView(c), new FakeMoldView(d)
+            };
+
+            bool ok = _sut.TryGetHint(_level, out int srcIdx, out int dstIdx);
+
+            Assert.That(ok, Is.True);
+            Assert.That(srcIdx, Is.InRange(0, 2));
+            Assert.That(dstIdx, Is.EqualTo(3));
+
+            // Verify HintHighlightEvent was published with correct indices
+            var published = _events.LastOf<HintHighlightEvent>();
+            Assert.That(published, Is.Not.Null);
+            Assert.That(published.SourceIndex, Is.EqualTo(srcIdx));
+            Assert.That(published.TargetIndex, Is.EqualTo(dstIdx));
+        }
+
+        [Test]
+        public void TryGetHint_OnFailure_DoesNotPublishHintHighlightEvent()
+        {
+            // Force failure: insufficient coins
+            _wallet.CanAffordOverride = 0;
+
+            bool ok = _sut.TryGetHint(_level, out _, out _);
+
+            Assert.That(ok, Is.False);
+            Assert.That(_events.CountOf<HintHighlightEvent>(), Is.EqualTo(0));
         }
     }
 }

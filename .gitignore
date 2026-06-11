@@ -80,6 +80,13 @@ crashlytics-build.properties
 Temp_TestRun/
 unity_test*.log
 
+# Build/test output artifacts (non-committed)
+build_*.txt
+test_*.txt
+
+# AI agent runtime state directories
+.omo/
+
 # Ignore Unity package samples
 /[Aa]ssets/[Ss]amples/
 /[Aa]ssets/[Ss]amples.meta

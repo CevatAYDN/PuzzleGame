@@ -1,7 +1,9 @@
 using System;
 using NUnit.Framework;
 using PuzzleGame.Application.Configuration;
+using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Services;
+using PuzzleGame.Tests.Fakes;
 using UnityEngine;
 
 namespace PuzzleGame.Tests.Application.Services
@@ -14,6 +16,8 @@ namespace PuzzleGame.Tests.Application.Services
 
         private DailyChallengeService _sut;
         private GameConfig _config;
+        private FakeCoinWallet _wallet;
+        private FakeStreakService _streak;
 
         [SetUp]
         public void SetUp()
@@ -22,7 +26,9 @@ namespace PuzzleGame.Tests.Application.Services
             PlayerPrefs.DeleteKey(IssuedKey);
             PlayerPrefs.DeleteKey(CompletedKey);
             _config = ScriptableObject.CreateInstance<GameConfig>();
-            _sut = new DailyChallengeService(_config);
+            _wallet = new FakeCoinWallet(0);
+            _streak = new FakeStreakService();
+            _sut = new DailyChallengeService(_config, _wallet, _streak);
         }
 
         [TearDown]
@@ -123,7 +129,7 @@ namespace PuzzleGame.Tests.Application.Services
             _sut.GetTodayChallenge();
             _sut.MarkCompleted();
 
-            var second = new DailyChallengeService(_config);
+            var second = new DailyChallengeService(_config, _wallet, _streak);
             var state = second.GetTodayChallenge();
             Assert.That(state.Completed, Is.True);
         }

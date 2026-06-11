@@ -1,4 +1,5 @@
 using VContainer;
+using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Services;
 using PuzzleGame.Infrastructure.Implementations;
@@ -45,6 +46,33 @@ namespace PuzzleGame.Installers
             // Cast and reaction
             builder.Register<ICastService, CastService>(Lifetime.Singleton);
             builder.Register<IReactionService, ReactionService>(Lifetime.Singleton);
+
+            // Leaderboard
+            builder.Register<ILeaderboardService, LeaderboardService>(Lifetime.Singleton);
+
+            // Season / Progress
+            builder.Register<SeasonConfig>(Lifetime.Singleton);
+            builder.Register<IProgressService, ProgressService>(Lifetime.Singleton);
+
+            // Level editor
+            builder.Register<ILevelEditorService, LevelEditorService>(Lifetime.Singleton);
+
+            // Power-ups
+            builder.Register<IPowerUpService>(resolver =>
+            {
+                var events = resolver.Resolve<IEventAggregator>();
+                var animation = resolver.Resolve<IAnimationService>();
+                var storage = resolver.Resolve<IChargeStorageService>();
+                var random = resolver.Resolve<IRandomProvider>();
+                return new PowerUpService(events, animation, storage, random);
+            }, Lifetime.Singleton);
+
+            builder.Register<IChargeStorageService, PlayerPrefsChargeStorage>(Lifetime.Singleton);
+
+            builder.Register<IRandomProvider, SystemRandomProvider>(Lifetime.Singleton);
+
+            // Multi-pour orchestration
+            builder.Register<IMultiPourService, MultiPourService>(Lifetime.Singleton);
 
             // Input handler service
             builder.Register<IInputHandlerService, InputHandlerService>(Lifetime.Singleton);

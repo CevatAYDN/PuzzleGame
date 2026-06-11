@@ -40,6 +40,8 @@ namespace PuzzleGame.Editor.Tests
         private class FakeMoldValidator : IMoldValidator
         {
             public bool CanCast(MoldState source, MoldState target) => true;
+            public bool CanMultiCast(MoldState[] sources, MoldState target) => true;
+            public bool CanBreakCork(MoldState source, MoldState target) => true;
             public bool IsComplete(MoldState Mold) => true;
             public bool ColorsMatch(DomainColor a, DomainColor b) => true;
         }

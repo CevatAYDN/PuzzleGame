@@ -39,7 +39,8 @@ namespace PuzzleGame.Tests.Fakes
 
         public (List<List<OreLayer>> Molds, bool IsSolvable) GenerateSolvable(
             int MoldCount, int maxLayers, int emptyMoldCount,
-            DomainColor[] colorPalette, Difficulty difficulty, int seed, int maxAttempts)
+            DomainColor[] colorPalette, Difficulty difficulty, int seed, int maxAttempts,
+            bool enableFrozenLayers = false, bool enableMultiPour = false)
         {
             GenerateCallCount++;
             LastMoldCount = MoldCount;

@@ -14,6 +14,7 @@ namespace PuzzleGame.Tests.Application.Services
         private FakeHistoryManager _history;
         private EconomyConfig _config;
         private EventAggregator _events;
+        private FakeAnimationService _animation;
 
         [SetUp]
         public void SetUp()
@@ -24,8 +25,9 @@ namespace PuzzleGame.Tests.Application.Services
             _wallet = new FakeCoinWallet(initialBalance: 100);
             _history = new FakeHistoryManager { CanUndo = true };
             _events = new EventAggregator();
+            _animation = new FakeAnimationService();
 
-            _sut = new UndoService(_wallet, _history, _config, _events);
+            _sut = new UndoService(_wallet, _history, _config, _events, _animation);
         }
 
         [TearDown]
@@ -46,7 +48,7 @@ namespace PuzzleGame.Tests.Application.Services
         [Test]
         public void Cost_WhenConfigIsNull_ReturnsZero()
         {
-            var noConfig = new UndoService(_wallet, _history, null, _events);
+            var noConfig = new UndoService(_wallet, _history, null, _events, _animation);
             Assert.That(noConfig.Cost, Is.EqualTo(0));
         }
 
@@ -71,7 +73,7 @@ namespace PuzzleGame.Tests.Application.Services
         public void TryUndo_LimitReached_ReturnsFalseWithoutCallingHistory()
         {
             _config.maxUndoPerLevel = 1;
-            _sut = new UndoService(_wallet, _history, _config, _events);
+            _sut = new UndoService(_wallet, _history, _config, _events, _animation);
 
             Assert.That(_sut.TryUndo(), Is.True);
             int undoCallsAfterFirst = _history.UndoCallCount;
@@ -95,6 +97,20 @@ namespace PuzzleGame.Tests.Application.Services
             Assert.That(ok, Is.False);
             Assert.That(_history.UndoCallCount, Is.EqualTo(undoCallsBefore), "History.Undo must not be called when wallet rejects the spend.");
             Assert.That(_wallet.TrySpendCallCount, Is.EqualTo(spendCallsBefore + 1), "Wallet.TrySpend must be attempted even when the call is expected to fail.");
+        }
+
+        [Test]
+        public void TryUndo_WhenAnimating_ReturnsFalseWithoutCallingHistoryOrWallet()
+        {
+            _animation.IsAnimating = true;
+            int undoCallsBefore = _history.UndoCallCount;
+            int spendCallsBefore = _wallet.TrySpendCallCount;
+
+            bool ok = _sut.TryUndo();
+
+            Assert.That(ok, Is.False);
+            Assert.That(_history.UndoCallCount, Is.EqualTo(undoCallsBefore));
+            Assert.That(_wallet.TrySpendCallCount, Is.EqualTo(spendCallsBefore));
         }
 
         // ── TryUndo: success path ────────────────────────────────────────
@@ -134,7 +150,7 @@ namespace PuzzleGame.Tests.Application.Services
         public void TryUndo_LevelSelectedEvent_ResetsCounter()
         {
             _config.maxUndoPerLevel = 1;
-            _sut = new UndoService(_wallet, _history, _config, _events);
+            _sut = new UndoService(_wallet, _history, _config, _events, _animation);
 
             Assert.That(_sut.TryUndo(), Is.True);
             Assert.That(_sut.RemainingUndosForCurrentLevel, Is.EqualTo(0));
@@ -143,6 +159,74 @@ namespace PuzzleGame.Tests.Application.Services
             _events.Publish(new LevelSelectedEvent(1));
 
             Assert.That(_sut.RemainingUndosForCurrentLevel, Is.EqualTo(6));
+        }
+
+        // ── Reaction + Undo QA (TODO Step 4) ──────────────────────────────
+
+        [Test]
+        public void Undo_WhenAnimating_BlocksAllOperations()
+        {
+            _animation.IsAnimating = true;
+            int undoCallsBefore = _history.UndoCallCount;
+            int spendCallsBefore = _wallet.TrySpendCallCount;
+
+            bool ok = _sut.TryUndo();
+
+            Assert.That(ok, Is.False);
+            Assert.That(_history.UndoCallCount, Is.EqualTo(undoCallsBefore));
+            Assert.That(_wallet.TrySpendCallCount, Is.EqualTo(spendCallsBefore));
+        }
+
+        [Test]
+        public void Undo_AfterSuccessfulUndo_RemainingCountDecrementsCorrectly()
+        {
+            Assert.That(_sut.RemainingUndosForCurrentLevel, Is.EqualTo(4));
+            _sut.TryUndo();
+            Assert.That(_sut.RemainingUndosForCurrentLevel, Is.EqualTo(3));
+            _sut.TryUndo();
+            Assert.That(_sut.RemainingUndosForCurrentLevel, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void Undo_AfterLimitExhausted_DoesNotChargeWallet()
+        {
+            _config.maxUndoPerLevel = 1;
+            _sut = new UndoService(_wallet, _history, _config, _events, _animation);
+
+            _sut.TryUndo();
+            long balanceAfterFirst = _wallet.Balance;
+            int spendCallsAfterFirst = _wallet.TrySpendCallCount;
+
+            bool second = _sut.TryUndo();
+
+            Assert.That(second, Is.False);
+            Assert.That(_wallet.Balance, Is.EqualTo(balanceAfterFirst));
+            Assert.That(_wallet.TrySpendCallCount, Is.EqualTo(spendCallsAfterFirst));
+        }
+
+        [Test]
+        public void Undo_LevelReset_RestoresFullUndoCount()
+        {
+            _config.maxUndoPerLevel = 3;
+            _sut = new UndoService(_wallet, _history, _config, _events, _animation);
+
+            _sut.TryUndo();
+            _sut.TryUndo();
+            Assert.That(_sut.RemainingUndosForCurrentLevel, Is.EqualTo(1));
+
+            _events.Publish(new LevelSelectedEvent(2));
+            Assert.That(_sut.RemainingUndosForCurrentLevel, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void Undo_AnimationToggle_TransitionsCorrectly()
+        {
+            _animation.IsAnimating = true;
+            Assert.That(_sut.TryUndo(), Is.False);
+
+            _animation.IsAnimating = false;
+            Assert.That(_sut.TryUndo(), Is.True);
+            Assert.That(_history.UndoCallCount, Is.EqualTo(1));
         }
     }
 }

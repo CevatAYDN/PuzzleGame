@@ -29,5 +29,17 @@ namespace PuzzleGame.Application.Interfaces
 
         /// <summary>Returns descriptors for all power-up types (for UI rendering).</summary>
         PowerUpDescriptor[] GetAllDescriptors();
+
+        /// <summary>
+        /// Applies ColorBomb power-up: merges adjacent same-color layers in the specified mold.
+        /// Molds provider is required for runtime mold state access.
+        /// </summary>
+        void ApplyColorBomb(IActiveMoldsProvider molds, int moldIndex);
+
+        /// <summary>
+        /// Applies Shuffle power-up: collects all layers from all molds, shuffles them
+        /// using Fisher-Yates, and redistributes across molds respecting max layer counts.
+        /// </summary>
+        void ApplyShuffle(IActiveMoldsProvider molds);
     }
 }

@@ -17,6 +17,9 @@ namespace PuzzleGame.Installers
             builder.Register<ISaveCrypto, SaveCrypto>(Lifetime.Singleton);
             builder.Register<ISaveStorage, SaveStorage>(Lifetime.Singleton);
             builder.Register<ISaveManager, GameSaveManager>(Lifetime.Singleton);
+
+            // Cloud save (wraps leaderboard + progress + shop + crypto + storage)
+            builder.Register<ICloudSaveService, CloudSaveService>(Lifetime.Singleton);
         }
     }
 }

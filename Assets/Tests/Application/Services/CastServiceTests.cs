@@ -7,6 +7,7 @@ using PuzzleGame.Application.Events;
 using PuzzleGame.Application.Logging;
 using PuzzleGame.Tests.Fakes;
 using PuzzleGame.Application.Interfaces;
+using System.Collections.Generic;
 
 namespace PuzzleGame.Tests.Application.Services
 {
@@ -197,6 +198,71 @@ namespace PuzzleGame.Tests.Application.Services
 
             int count = _sut.GetCastLayerCount(source, target, levelData);
             Assert.That(count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void TryCast_ReactionExplodesTarget_UndoRestoresState()
+        {
+            // Set up real services for reaction integration test
+            var eventAggregator = new EventAggregator();
+            var colorAdapter = new PuzzleGame.Infrastructure.ColorAdapter();
+            var reactionService = new ReactionService(colorAdapter, eventAggregator);
+            var historyManager = new GameHistoryManager();
+            var validator = new PuzzleGame.Domain.Services.MoldValidationService(PuzzleGame.Domain.ForgeConstants.ColorMatchEpsilon);
+            var castService = new CastService(validator, historyManager, reactionService, eventAggregator, null);
+
+            var levelData = CreateLevelData(enableMultiLayer: false);
+            levelData.enableReactionSystem = true;
+            levelData.reactionConfig = new ReactionSystemData
+            {
+                enableReactions = true,
+                reactionRules = new List<ReactionRule>
+                {
+                    new ReactionRule
+                    {
+                        colorA = OreColor.Red,
+                        colorB = OreColor.Blue,
+                        resultColor = OreColor.Purple,
+                        reactionType = ReactionRule.ReactionType.Explode
+                    }
+                }
+            };
+            castService.SetLevelData(levelData);
+
+            // Mold A (source): Has Blue layer (top)
+            var sourceState = CreateMold();
+            sourceState.AddLayer(new OreLayer(OreColor.Blue.ToDefaultDomainColor(), 1.0f, OreColor.Blue));
+            var sourceView = CreateView(sourceState);
+
+            // Mold B (target): Has Red layer (top)
+            var targetState = CreateMold();
+            targetState.AddLayer(new OreLayer(OreColor.Red.ToDefaultDomainColor(), 1.0f, OreColor.Red));
+            var targetView = CreateView(targetState);
+
+            var activeMolds = new IMoldView[] { sourceView, targetView };
+            historyManager.Initialize(activeMolds);
+
+            // Verify initial states
+            Assert.That(sourceState.LayerCount, Is.EqualTo(1));
+            Assert.That(targetState.LayerCount, Is.EqualTo(1));
+            Assert.That(targetState.TopLayer.Value.ColorType, Is.EqualTo(OreColor.Red));
+
+            // Pour Blue from source to target
+            bool castSuccess = castService.TryCast(sourceView, targetView, levelData, activeMolds);
+            Assert.That(castSuccess, Is.True);
+
+            // Target had Red, we poured Blue. Red + Blue = Explode. Target mold should explode and be cleared!
+            // Source should be empty (since it poured its only layer).
+            Assert.That(sourceState.IsEmpty, Is.True);
+            Assert.That(targetState.IsEmpty, Is.True);
+
+            // Verify Undo restores pre-cast state
+            historyManager.Undo();
+
+            Assert.That(sourceState.LayerCount, Is.EqualTo(1));
+            Assert.That(sourceState.TopLayer.Value.ColorType, Is.EqualTo(OreColor.Blue));
+            Assert.That(targetState.LayerCount, Is.EqualTo(1));
+            Assert.That(targetState.TopLayer.Value.ColorType, Is.EqualTo(OreColor.Red));
         }
 
         // ── Helpers ────────────────────────────────────────────────────────────

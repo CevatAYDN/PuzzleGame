@@ -18,6 +18,7 @@ namespace PuzzleGame.Application.Services
         private readonly IGameHistoryManager _history;
         private readonly EconomyConfig _config;
         private readonly IEventAggregator _events;
+        private readonly IAnimationService _animationService;
         private int _undosUsedThisLevel;
 
         public int Cost => _config != null ? _config.undoCost : 0;
@@ -28,17 +29,24 @@ namespace PuzzleGame.Application.Services
             ICoinWallet wallet,
             IGameHistoryManager history,
             EconomyConfig config,
-            IEventAggregator events)
+            IEventAggregator events,
+            IAnimationService animationService)
         {
             _wallet = wallet;
             _history = history;
             _config = config;
             _events = events;
+            _animationService = animationService;
             _events.Subscribe<LevelSelectedEvent>(_ => _undosUsedThisLevel = 0);
         }
 
         public bool TryUndo()
         {
+            if (_animationService != null && _animationService.IsAnimating)
+            {
+                MoldLogger.LogWarning($"{LogTag} Undo ignored: Animation is active.");
+                return false;
+            }
             if (!_history.CanUndo)
             {
                 MoldLogger.LogInfo($"{LogTag} History stack empty.");

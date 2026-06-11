@@ -16,12 +16,17 @@ namespace PuzzleGame.Application.Services
         private const string SeedKey = "PuzzleGame.Daily.Seed";
         private const string IssuedKey = "PuzzleGame.Daily.IssuedAt";
         private const string CompletedKey = "PuzzleGame.Daily.Completed";
+        private const string RewardClaimedKey = "PuzzleGame.Daily.RewardClaimed";
 
         private readonly GameConfig _config;
+        private readonly ICoinWallet _wallet;
+        private readonly IStreakService _streak;
 
-        public DailyChallengeService(GameConfig config)
+        public DailyChallengeService(GameConfig config, ICoinWallet wallet, IStreakService streak)
         {
             _config = config;
+            _wallet = wallet;
+            _streak = streak;
         }
 
         public DailyChallengeState GetTodayChallenge()
@@ -61,10 +66,19 @@ namespace PuzzleGame.Application.Services
 
         public void MarkCompleted()
         {
+            bool alreadyClaimed = PlayerPrefs.GetInt(RewardClaimedKey, 0) == 1;
             PlayerPrefs.SetInt(CompletedKey, 1);
-            // Fix #M5: Removed explicit Save() call. Unity auto-saves on Quit/Dispose.
-            // Explicit Save() on every completion causes disk I/O overhead on low-end devices.
-            // For explicit flush needed, call PlayerPrefs.Save() from Application.quitting callback.
+
+            if (!alreadyClaimed)
+            {
+                int baseReward = _config != null ? _config.dailyChallengeCoinReward : 50;
+                int streak = _streak?.CurrentStreak ?? 0;
+                int multiplier = streak >= 30 ? 3 : streak >= 7 ? 2 : 1;
+                int reward = baseReward * multiplier;
+                _wallet?.Add(reward, "daily_challenge");
+                PlayerPrefs.SetInt(RewardClaimedKey, 1);
+                MoldLogger.LogInfo($"{LogTag} Reward claimed: {reward} coins (streak={streak}, x{multiplier}).");
+            }
         }
 
         public void Reset()
@@ -72,6 +86,7 @@ namespace PuzzleGame.Application.Services
             PlayerPrefs.DeleteKey(SeedKey);
             PlayerPrefs.DeleteKey(IssuedKey);
             PlayerPrefs.DeleteKey(CompletedKey);
+            PlayerPrefs.DeleteKey(RewardClaimedKey);
         }
     }
 }

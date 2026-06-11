@@ -52,6 +52,87 @@ namespace PuzzleGame.Application.Services
                 : TrySingleLayerCast(source, target, activeMolds);
         }
 
+        public bool TryMultiCast(IMoldView[] sources, IMoldView target, LevelData levelData, IMoldView[] activeMolds)
+        {
+            if (sources == null || sources.Length == 0) return false;
+            if (target == null) return false;
+            if (levelData == null) return false;
+
+            // Pre-validate all sources against target
+            var sourceStates = new MoldState[sources.Length];
+            for (int i = 0; i < sources.Length; i++)
+            {
+                if (sources[i] == null) return false;
+                sourceStates[i] = sources[i].State;
+            }
+
+            if (!_validator.CanMultiCast(sourceStates, target.State))
+            {
+                MoldLogger.LogWarning("[CastService] Multi-cast validation rejected.");
+                return false;
+            }
+
+            // Cork check: if target has a cork, each source must match the cork color
+            if (target.State.HasCork)
+            {
+                for (int i = 0; i < sources.Length; i++)
+                {
+                    if (!_validator.CanBreakCork(sourceStates[i], target.State))
+                    {
+                        MoldLogger.LogWarning("[CastService] Multi-cast cork blocked by source " + i);
+                        return false;
+                    }
+                }
+            }
+
+            // Freeze check: no source can be frozen
+            for (int i = 0; i < sources.Length; i++)
+            {
+                var top = sourceStates[i].TopLayer;
+                if (top != null && top.Value.IsFrozen)
+                {
+                    MoldLogger.LogWarning("[CastService] Multi-cast rejected: source " + i + " top layer is frozen.");
+                    return false;
+                }
+            }
+
+            _historyManager.RecordUndoSnapshot();
+
+            // Break cork if needed
+            if (target.State.HasCork)
+                target.State.BreakCork();
+
+            // Pop from each source, add to target
+            int casted = 0;
+            var poppedLayers = new OreLayer[sources.Length];
+            try
+            {
+                for (int i = 0; i < sources.Length; i++)
+                {
+                    OreLayer layer = sourceStates[i].PopTopLayer();
+                    poppedLayers[i] = layer;
+                    target.State.AddLayer(layer);
+                    casted++;
+                }
+
+                ThawFrozenLayers(target);
+                FinalizeCast(sources[0], target, activeMolds, casted);
+                return true;
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Rollback
+                for (int r = casted - 1; r >= 0; r--)
+                {
+                    target.State.PopTopLayer();
+                    sourceStates[r].AddLayer(poppedLayers[r]);
+                }
+                _historyManager.Undo();
+                MoldLogger.LogError($"[CastService] Multi-cast failed mid-loop: {ex.Message}");
+                return false;
+            }
+        }
+
         public int GetCastLayerCount(IMoldView source, IMoldView target, LevelData levelData)
         {
             if (source == null || target == null) return 0;
@@ -106,12 +187,25 @@ namespace PuzzleGame.Application.Services
                 return false;
             }
 
+            if (target.State.HasCork && !_validator.CanBreakCork(source.State, target.State))
+            {
+                _eventAggregator.Publish(new CastRejectedEvent(GetMoldIndex(source), GetMoldIndex(target), "cork_blocked"));
+                _errorIndicator?.ShowErrorOnMold(GetMoldIndex(target), "cork_blocked");
+                return false;
+            }
+
             _historyManager.RecordUndoSnapshot();
+
+            if (target.State.HasCork)
+            {
+                target.State.BreakCork();
+            }
             OreLayer layer = source.State.PopTopLayer();
 
             try
             {
                 target.State.AddLayer(layer);
+                ThawFrozenLayers(target);
             }
             catch (InvalidOperationException ex)
             {
@@ -176,6 +270,7 @@ namespace PuzzleGame.Application.Services
                     casted++;
                 }
 
+                ThawFrozenLayers(target);
                 FinalizeCast(source, target, activeMolds, casted);
                 return true;
             }
@@ -218,6 +313,25 @@ namespace PuzzleGame.Application.Services
         }
 
         private static int GetMoldIndex(IMoldView Mold) => Mold.MoldIndex;
+
+        private static void ThawFrozenLayers(IMoldView target)
+        {
+            var state = target.State;
+            int count = state.LayerCount;
+            if (count < 2) return;
+
+            for (int i = count - 2; i >= 0; i--)
+            {
+                var lower = state.GetLayerAt(i);
+                if (!lower.IsFrozen) continue;
+
+                var upper = state.GetLayerAt(i + 1);
+                if (upper.ColorType == lower.ColorType)
+                {
+                    state.ReplaceAtIndex(i, lower.WithModifier(LayerModifier.None));
+                }
+            }
+        }
 
         private void CheckForReactions(IMoldView source, IMoldView target, IMoldView[] activeMolds)
         {

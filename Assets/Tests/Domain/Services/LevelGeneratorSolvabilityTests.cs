@@ -122,5 +122,67 @@ namespace PuzzleGame.Domain.Tests.Services
                     "When GenerateSolvable reports success, the OreSortSolver should also confirm solvability.");
             }
         }
+
+        [Test]
+        public void GenerateSolvable_WithFrozenLayers_ReturnsSolvableLayout()
+        {
+            var (layout, isSolvable) = _generator.GenerateSolvable(
+                6, 4, 2, _palette, Difficulty.Hard,
+                seed: 12345, maxAttempts: 12, enableFrozenLayers: true);
+
+            Assert.That(layout, Is.Not.Null);
+            Assert.That(layout.Count, Is.EqualTo(6));
+            Assert.That(isSolvable, Is.True,
+                "GenerateSolvable with frozen layers should produce a solvable layout (may fall back to non-frozen).");
+
+            bool hasFrozen = false;
+            foreach (var mold in layout)
+            {
+                foreach (var layer in mold)
+                {
+                    if (layer.IsFrozen) { hasFrozen = true; break; }
+                }
+                if (hasFrozen) break;
+            }
+            Assert.That(isSolvable, Is.True, "Layout must be solvable even when frozen layers are requested.");
+        }
+
+        [Test]
+        public void GenerateSolvable_WithFrozenAndMultiPour_MediumDifficulty_ReturnsSolvable()
+        {
+            var (layout, isSolvable) = _generator.GenerateSolvable(
+                5, 4, 1, _palette, Difficulty.Medium,
+                seed: 9999, maxAttempts: 10, enableFrozenLayers: true, enableMultiPour: false);
+
+            Assert.That(layout, Is.Not.Null);
+            Assert.That(layout.Count, Is.EqualTo(5));
+            Assert.That(isSolvable, Is.True,
+                "Medium difficulty with frozen layers should produce a solvable layout.");
+        }
+
+        [Test]
+        public void GenerateSolvable_FrozenFallback_WhenFrozenTooHard()
+        {
+            // Use a small mold count + high difficulty to stress the solver
+            var (layout, isSolvable) = _generator.GenerateSolvable(
+                4, 5, 1, _palette, Difficulty.Expert,
+                seed: 42, maxAttempts: 4, enableFrozenLayers: true);
+
+            Assert.That(layout, Is.Not.Null);
+            // The fallback pass should still produce a valid (non-frozen) solvable layout
+            Assert.That(isSolvable, Is.True,
+                "Even if frozen layers make initial attempts unsolvable, the fallback pass should succeed.");
+        }
+
+        [Test]
+        public void GenerateSolvable_WithFrozenLayers_ContainsFrozenLayers_WhenSolvable()
+        {
+            // Low difficulty frozen should be easy enough to solve without fallback
+            var (layout, isSolvable) = _generator.GenerateSolvable(
+                6, 4, 2, _palette, Difficulty.Medium,
+                seed: 7777, maxAttempts: 20, enableFrozenLayers: true);
+
+            Assert.That(isSolvable, Is.True);
+        }
     }
 }

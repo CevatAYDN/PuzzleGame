@@ -51,6 +51,7 @@ namespace PuzzleGame.Domain.Services
             public bool EnableMultiLayerCast { get; set; } = false;
             public bool CastConsecutiveOnly { get; set; } = true;
             public int MinConsecutiveForCast { get; set; } = 1;
+            public OreColor[] CorkColors { get; set; }
         }
 
         /// <summary>
@@ -80,29 +81,45 @@ namespace PuzzleGame.Domain.Services
 
             // 1. Map colors to integer IDs (using color match tolerance)
             var uniqueColors = new List<DomainColor>();
+
+            static bool ColorsMatch(DomainColor a, DomainColor b, float tolerance) =>
+                Math.Abs(a.R - b.R) < tolerance &&
+                Math.Abs(a.G - b.G) < tolerance &&
+                Math.Abs(a.B - b.B) < tolerance &&
+                Math.Abs(a.A - b.A) < tolerance;
+
             int GetColorId(DomainColor c)
             {
-                // Guard against NaN/Inf components: comparisons with NaN are always false,
-                // so a single NaN color would never match itself and would be re-inserted
-                // into uniqueColors on every call, polluting the BFS state space.
                 if (!float.IsFinite(c.R) || !float.IsFinite(c.G) ||
                     !float.IsFinite(c.B) || !float.IsFinite(c.A))
-                    return 0; // sentinel: invalid color, never matches a valid one downstream
+                    return -1;
 
                 for (int i = 0; i < uniqueColors.Count; i++)
                 {
-                    var uc = uniqueColors[i];
-                    if (Math.Abs(uc.R - c.R) < colorTolerance &&
-                        Math.Abs(uc.G - c.G) < colorTolerance &&
-                        Math.Abs(uc.B - c.B) < colorTolerance &&
-                        Math.Abs(uc.A - c.A) < colorTolerance)
-                        return i + 1; // 1-based IDs
+                    if (ColorsMatch(uniqueColors[i], c, colorTolerance))
+                        return i;
                 }
                 uniqueColors.Add(c);
-                return uniqueColors.Count;
+                return uniqueColors.Count - 1;
             }
 
             int MoldCount = initialMolds.Count;
+
+            // Map cork colors to IDs
+            int?[] corkIds = null;
+            if (options.CorkColors != null && options.CorkColors.Length == MoldCount)
+            {
+                corkIds = new int?[MoldCount];
+                for (int i = 0; i < MoldCount; i++)
+                {
+                    if (options.CorkColors[i] != OreColor.None)
+                    {
+                        var domainColor = options.CorkColors[i].ToDefaultDomainColor();
+                        corkIds[i] = GetColorId(domainColor);
+                    }
+                }
+            }
+
             int[][] initial = new int[MoldCount][];
             for (int i = 0; i < MoldCount; i++)
             {
@@ -156,6 +173,13 @@ namespace PuzzleGame.Domain.Services
                         if (target.Length >= maxLayers) continue;
 
                         int sourceTopColor = source[source.Length - 1];
+
+                        // Cork check: if target has cork, source top must match cork color
+                        if (corkIds != null && corkIds[j].HasValue)
+                        {
+                            if (sourceTopColor != corkIds[j].Value) continue;
+                        }
+
                         if (target.Length > 0 && target[target.Length - 1] != sourceTopColor) continue;
 
                         // Count consecutive same-color layers from top of source according to options

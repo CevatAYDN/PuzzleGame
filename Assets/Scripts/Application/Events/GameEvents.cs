@@ -49,10 +49,14 @@ namespace PuzzleGame.Application.Events
     public readonly struct LevelCompletedEvent
     {
         public int MoveCount { get; }
+        public int Stars { get; }
+        public float CompletionTimeSeconds { get; }
 
-        public LevelCompletedEvent(int moveCount)
+        public LevelCompletedEvent(int moveCount, int stars, float completionTimeSeconds = 0f)
         {
             MoveCount = moveCount;
+            Stars = stars;
+            CompletionTimeSeconds = completionTimeSeconds;
         }
     }
 
@@ -165,6 +169,32 @@ namespace PuzzleGame.Application.Events
         {
             Type = type;
             MoldIndex = moldIndex;
+        }
+    }
+
+    public readonly struct MoveCountUpdatedEvent
+    {
+        public int MovesUsed { get; }
+        public int MovesRemaining { get; }
+        public bool IsLimitedMode { get; }
+
+        public MoveCountUpdatedEvent(int movesUsed, int movesRemaining, bool isLimitedMode)
+        {
+            MovesUsed = movesUsed;
+            MovesRemaining = movesRemaining;
+            IsLimitedMode = isLimitedMode;
+        }
+    }
+
+    public readonly struct HintHighlightEvent
+    {
+        public int SourceIndex { get; }
+        public int TargetIndex { get; }
+
+        public HintHighlightEvent(int sourceIndex, int targetIndex)
+        {
+            SourceIndex = sourceIndex;
+            TargetIndex = targetIndex;
         }
     }
 }

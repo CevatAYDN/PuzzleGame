@@ -37,14 +37,73 @@ namespace PuzzleGame.Domain.Services
             var sourceTop = source.TopLayer;
             if (sourceTop == null || sourceTop.Value.IsEmpty) return false;
 
+            // Frozen layers cannot be poured out.
+            if (sourceTop.Value.IsFrozen) return false;
+
             // Target "empty-like" check: sometimes a mold may contain layers that are
             // considered empty at the OreLayer level (transparent / amount epsilon / ColorType.None).
-            if (target.IsEmpty) return true;
+            if (target.IsEmpty)
+            {
+                if (target.HasCork) return false;
+                return true;
+            }
 
             var targetTop = target.TopLayer;
-            if (targetTop == null || targetTop.Value.IsEmpty) return true;
+            if (targetTop == null || targetTop.Value.IsEmpty)
+            {
+                if (target.HasCork) return false;
+                return true;
+            }
 
             return ColorsMatch(sourceTop.Value.Color, targetTop.Value.Color);
+        }
+
+        /// <exception cref="ArgumentNullException">If sources is null/empty or target is null.</exception>
+        public bool CanMultiCast(MoldState[] sources, MoldState target)
+        {
+            if (sources == null || sources.Length == 0)
+                throw new ArgumentNullException(nameof(sources));
+            if (target == null)
+                throw new ArgumentNullException(nameof(target));
+            if (target.IsEmpty) return false;
+            if (target.IsFull) return false;
+
+            int targetFreeSlots = target.MaxLayers - target.LayerCount;
+            if (targetFreeSlots < sources.Length) return false;
+
+            DomainColor? commonColor = null;
+
+            for (int i = 0; i < sources.Length; i++)
+            {
+                var src = sources[i];
+                if (src == null) return false;
+                if (src.IsEmpty) return false;
+                if (src == target) return false;
+
+                var top = src.TopLayer;
+                if (top == null || top.Value.IsEmpty) return false;
+                if (top.Value.IsFrozen) return false;
+
+                if (commonColor == null)
+                    commonColor = top.Value.Color;
+                else if (!ColorsMatch(commonColor.Value, top.Value.Color))
+                    return false;
+            }
+
+            return true;
+        }
+
+        public bool CanBreakCork(MoldState source, MoldState target)
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (target == null) throw new ArgumentNullException(nameof(target));
+            if (!target.HasCork) return false;
+            if (source.IsEmpty) return false;
+
+            var sourceTop = source.TopLayer;
+            if (sourceTop == null || sourceTop.Value.IsEmpty) return false;
+
+            return sourceTop.Value.ColorType == target.CorkColor;
         }
 
         /// <exception cref="ArgumentNullException">If Mold is null.</exception>

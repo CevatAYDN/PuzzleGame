@@ -78,6 +78,29 @@ namespace PuzzleGame.Presentation
 
         private void OnCastCompleted(CastCompletedEvent e)
         {
+            if (_isWon) return;
+
+            int movesUsed = _history.CurrentMoveCount;
+            int movesRemaining = _currentLevel != null && _currentLevel.limitedMoves
+                ? Math.Max(0, _currentLevel.maxMoves - movesUsed)
+                : -1;
+            bool isLimited = _currentLevel != null && _currentLevel.limitedMoves;
+
+            _events.Publish(new MoveCountUpdatedEvent(movesUsed, movesRemaining, isLimited));
+
+            if (isLimited && movesUsed >= _currentLevel.maxMoves)
+            {
+                _isWon = true;
+                _stateMachine.TransitionTo(GameState.LevelFailed);
+                _analytics?.Track(AnalyticsEvent.LevelFailed, new Dictionary<string, object>
+                {
+                    ["level"] = _currentLevel?.levelNumber ?? 0,
+                    ["moves_used"] = movesUsed,
+                    ["max_moves"] = _currentLevel.maxMoves
+                });
+                return;
+            }
+
             _tween.Delay(0.5f).OnComplete(CheckWin).Start();
         }
 
@@ -163,7 +186,7 @@ namespace PuzzleGame.Presentation
                 { "durationSec", (float)_levelStopwatch.Elapsed.TotalSeconds }
             });
 
-            _events.Publish(new LevelCompletedEvent(moveCount));
+            _events.Publish(new LevelCompletedEvent(moveCount, stars, (float)_levelStopwatch.Elapsed.TotalSeconds));
         }
     }
 }

@@ -27,6 +27,8 @@ namespace PuzzleGame.Domain.Interfaces
             DomainColor[] colorPalette,
             Difficulty difficulty,
             int seed = 0,
-            int maxAttempts = 8);
+            int maxAttempts = 8,
+            bool enableFrozenLayers = false,
+            bool enableMultiPour = false);
     }
 }

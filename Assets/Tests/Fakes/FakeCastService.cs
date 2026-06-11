@@ -32,6 +32,16 @@ namespace PuzzleGame.Tests.Fakes
             return TryCastResult;
         }
 
+        public bool TryMultiCast(IMoldView[] sources, IMoldView target, LevelData levelData, IMoldView[] activeMolds)
+        {
+            TryCastCallCount++;
+            if (sources != null && sources.Length > 0) LastSource = sources[0];
+            LastTarget = target;
+            LastLevelData = levelData;
+            LastActiveMolds = activeMolds;
+            return TryCastResult;
+        }
+
         public int GetCastLayerCount(IMoldView source, IMoldView target, LevelData levelData)
         {
             GetCastLayerCountCallCount++;

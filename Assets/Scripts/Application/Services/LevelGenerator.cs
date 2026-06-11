@@ -67,10 +67,12 @@ namespace PuzzleGame.Application.Services
             DomainColor[] colorPalette,
             Difficulty difficulty,
             int seed = 0,
-            int maxAttempts = 8)
+            int maxAttempts = 8,
+            bool enableFrozenLayers = false,
+            bool enableMultiPour = false)
         {
             var domainGen = new Domain.Services.DifficultyBasedLevelGenerator();
-            return domainGen.GenerateSolvable(MoldCount, maxLayers, emptyMoldCount, colorPalette, difficulty, seed, maxAttempts);
+            return domainGen.GenerateSolvable(MoldCount, maxLayers, emptyMoldCount, colorPalette, difficulty, seed, maxAttempts, enableFrozenLayers, enableMultiPour);
         }
     }
 }

@@ -224,6 +224,8 @@ namespace PuzzleGame
             // Fix #M7: Clear static MoldCorkController caches to prevent memory leaks
             // across scene loads. This cleans up the shared mesh/material cache.
             MoldCorkController.ClearCache();
+
+            _moldPoolInitializer?.Dispose();
         }
 
         private void OnSceneUnloaded(Scene scene)

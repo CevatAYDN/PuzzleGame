@@ -3,6 +3,7 @@ using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Services;
 using PuzzleGame.Application.Logging;
+using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Infrastructure.Implementations;
 using PuzzleGame.Presentation;
 
@@ -29,6 +30,17 @@ namespace PuzzleGame.Installers
             builder.Register<IHapticFeedbackService, HapticFeedbackService>(Lifetime.Singleton);
             builder.Register<HapticObserver>(Lifetime.Singleton);
             builder.Register<IAnalyticsService, NoOpAnalyticsService>(Lifetime.Singleton);
+
+            // Achievements
+            builder.Register<IAchievementService, AchievementService>(Lifetime.Singleton);
+
+            // Accessibility (color-blind mode)
+            builder.Register<AccessibilityConfig>(Lifetime.Singleton);
+            builder.Register<IAccessibilityService, AccessibilityService>(Lifetime.Singleton);
+
+            // Cosmetic shop
+            builder.Register<CosmeticConfig>(Lifetime.Singleton);
+            builder.Register<ICosmeticShopService, CosmeticShopService>(Lifetime.Singleton);
 
             // Crash reporting
             builder.Register<ICrashReportingService, NoOpCrashReportingService>(Lifetime.Singleton);

@@ -59,3 +59,30 @@ Type: convention
 Reins affected: harness (orchestrator)
 The orchestrator supports a 5-persona "Board of Directors" review mode (Lead Architect / Mechanics / Performance / UI-UX / QA). It is **only** triggered by explicit user keywords (`kurul`, `council`, `kurul oturumu`, `meclis`, `5 kişilik kurul`, `board of directors`). Format and rules live in `.harness/agent.md` → "Council Mode" section. Personas are role-plays, not separate LLM calls — project context stays unified.
 WHY: A 5-persona debate is expensive in tokens and noisy for trivial tasks. Keeping it opt-in preserves the default "route to one rein" flow and respects the user's "be concise" preference.
+
+### IMoldValidator.CanBreakCork added — update all implementors (2026-06-11)
+Type: architecture
+Reins affected: game-logic-expert, unity-expert, tester, code-reviewer
+`IMoldValidator` gained a `bool CanBreakCork(MoldState source, MoldState target)` method. Every class implementing `IMoldValidator` must implement it: `MoldValidationService` (Domain), `FakeMoldValidator` (Tests/Fakes), and the private `FakeMoldValidator` in `EditorServiceLocatorTests.cs`. Missing implementations break the build with CS0535.
+WHY: Interface changes are breaking changes. All implementors must be updated atomically — missing one produces compiler errors across 3 csproj files.
+
+### .NET 10 breaks Unity RP Core NativeArray→ReadOnlySpan implicit cast (2026-06-11)
+Type: dependency
+Reins affected: unity-expert, developer
+.NET 10's C# compiler (Roslyn) enforces stricter ref-safety analysis. `NativeArray<PassData>` implicit conversion to `ReadOnlySpan<PassData>` triggers CS8347/CS8168. Fix: replaced `NativeArray<PassData>` with managed `PassData[]` in `Library/PackageCache/com.unity.render-pipelines.core@.../Runtime/RenderGraph/Compiler/PassesData.cs:792-805`. This fix lives in `Library/PackageCache/` and will be overwritten when Unity regenerates package cache. Long-term: upgrade Unity 6 to a version that bundles a .NET 10-compatible RP Core package.
+WHY: Clearing the Library folder or running Unity package refresh will restore the original buggy code and break `dotnet build`. Need a permanent solution.
+
+### Unity csproj has EnableDefaultItems=false — new .cs files need manual Compile entries (2026-06-11)
+Type: gotcha
+Reins affected: developer, unity-expert
+Unity-generated csproj files (`PuzzleGame.*.csproj`) use `<EnableDefaultItems>false</EnableDefaultItems>` and list every `.cs` file manually with `<Compile Include="...">`. New files created outside Unity Editor (e.g., via IDE or CLI) are NOT automatically included and cause CS0246 build errors. Fix: manually add `<Compile Include="Assets/Scripts/...">` to the relevant csproj, or regenerate from Unity Editor.
+WHY: Every new `.cs` file that's not auto-detected by Unity's AssetDatabase will silently fail to compile until the csproj is updated.
+
+### Sprint C complete: Generator, Achievement rewards, PowerUpUI (2026-06-11)
+Type: architecture
+Reins affected: game-logic-expert, unity-expert, developer
+Sprint C (Game Mechanics) items are complete and building with 0 errors:
+- **C.1 — Generator frozen layers + multi-pour**: `DifficultyBasedLevelGenerator.GenerateSolvable()` now supports `enableFrozenLayers` flag (buried frozen ore for mid+ difficulty) and `enableMultiPour` flag (requires multiple separate pours to mix colors). Both guarded by `mixFactor >= 0.5f` (medium+ difficulty). Build verified.
+- **C.2 — Achievement coin rewards**: `AchievementService` injects `ICoinWallet`. `RewardCoins[]` static array maps each `AchievementId` to a coin amount (10–200). On unlock, calls `_wallet.Add(reward, $"achievement_{id}")`. Both `IncrementProgress` and `SetProgress` paths grant the reward.
+- **C.3 — PowerUpUI**: New `PowerUpUI` + `PowerUpSlotView` MonoBehaviours in `Presentation/UI/`. Shows all 5 power-up types with charge counts, activation buttons blocked during animation (matching `HudPresenter` pattern). Registered in `PresentationInstallerModule` via `FindOrFallback<PowerUpUI>`. Required manual csproj edit for new file inclusion (see gotcha above).
+WHY: Tracks that Sprint C game-mechanics work is shipped and building.

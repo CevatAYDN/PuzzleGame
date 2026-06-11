@@ -21,6 +21,7 @@ namespace PuzzleGame.Application.Configuration
     {
         public Color color = Color.white;
         [Range(0f, 1f)] public float amount = 0.25f;
+        public bool isFrozen = false;
     }
 
     [Serializable]
@@ -84,6 +85,20 @@ namespace PuzzleGame.Application.Configuration
 
         [Tooltip("Enable Chemical Reaction System")]
         public bool enableReactionSystem = false;
+
+        [Header("Multi-Pour")]
+        [Tooltip("Enable Multi-Pour: select multiple source molds and pour from all at once.")]
+        public bool enableMultiPour = false;
+
+        [Header("Frozen Layers")]
+        [Tooltip("Enable frozen layers that must be thawed by pouring matching color on top.")]
+        public bool enableFrozenLayers = false;
+
+        [Header("Limited Moves")]
+        [Tooltip("Restrict the level to a fixed number of moves. Fails when exhausted.")]
+        public bool limitedMoves = false;
+        [Tooltip("Maximum moves allowed before level fails.")]
+        [Min(1)] public int maxMoves = 20;
 
         [HideInInspector] public MultiLayerCastData multiLayerCastConfig;
         [HideInInspector] public ReactionSystemData reactionConfig;

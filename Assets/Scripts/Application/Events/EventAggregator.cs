@@ -26,15 +26,16 @@ namespace PuzzleGame.Application.Events
         {
             private readonly Action<T> _delegate;
             private readonly WeakReference _targetRef;
+            private readonly bool _isStaticOrLambda;
 
             public Subscription(Action<T> action)
             {
                 _delegate = action ?? throw new ArgumentNullException(nameof(action));
-                // Store a weak reference to the target object so GC can collect it
-                _targetRef = new WeakReference(action.Target);
+                _isStaticOrLambda = action.Target == null;
+                _targetRef = _isStaticOrLambda ? null : new WeakReference(action.Target);
             }
 
-            public bool IsAlive => _targetRef.IsAlive;
+            public bool IsAlive => _isStaticOrLambda || (_targetRef != null && _targetRef.IsAlive);
 
             public bool Matches(Delegate d)
             {
@@ -43,11 +44,7 @@ namespace PuzzleGame.Application.Events
 
             public void Invoke(object eventArgs)
             {
-                if (!IsAlive)
-                {
-                    // Target object was garbage collected, skip invocation
-                    return;
-                }
+                if (!IsAlive) return;
                 _delegate((T)eventArgs);
             }
         }
