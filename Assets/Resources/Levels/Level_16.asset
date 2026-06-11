@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 630f38cc1a5200b42a65243315126d0f, type: 3}
+  m_Name: Level_16
+  m_EditorClassIdentifier: PuzzleGame.Application::PuzzleGame.Application.Configuration.LevelData
+  levelNumber: 16
+  difficulty: 1
+  MoldCount: 4
+  emptyMoldCount: 1
+  colorCount: 5
+  maxLayersPerMold: 3
+  randomSeed: 21392
+  autoGenerate: 1
+  Molds: []
+  optionalTargets: []
+  parMoves: 18
+  goodMoves: 27
+  previewImage: {fileID: 0}
+  enableMultiLayerCast: 1
+  enableReactionSystem: 0
+  enableMultiPour: 0
+  enableFrozenLayers: 0
+  limitedMoves: 0
+  maxMoves: 20
+  multiLayerCastConfig:
+    featureType: 0
+    isEnabled: 0
+    CastAllMatching: 1
+    CastConsecutiveOnly: 1
+    minConsecutiveForCast: 2
+  reactionConfig:
+    featureType: 0
+    isEnabled: 0
+    enableReactions: 1
+    reactionRules: []
+    transformedLayerAmount: 1

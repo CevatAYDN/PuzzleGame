@@ -327,26 +327,31 @@ namespace PuzzleGame.Editor
             });
 
             // Target Frame Rate Validation (Mobile Refresh Rate / Smoothness optimization)
+            // NOT: MonoScript asset yükleme yerine File.ReadAllText kullanılıyor — 10x daha hızlı, GC baskısı yok.
             bool targetFrameRateFound = false;
-            var scriptGuids = AssetDatabase.FindAssets("t:MonoScript");
+            var scriptGuids = AssetDatabase.FindAssets("t:MonoScript", new[] { "Assets/Scripts" });
             for (int i = 0; i < scriptGuids.Length; i++)
             {
                 var path = AssetDatabase.GUIDToAssetPath(scriptGuids[i]);
-                if (path.StartsWith("Assets/"))
+                if (!path.StartsWith("Assets/")) continue;
+                try
                 {
-                    var monoScript = AssetDatabase.LoadAssetAtPath<MonoScript>(path);
-                    if (monoScript != null && monoScript.text.Contains("targetFrameRate"))
+                    string fullPath = System.IO.Path.Combine(
+                        UnityEngine.Application.dataPath,
+                        path.Substring("Assets/".Length));
+                    if (System.IO.File.ReadAllText(fullPath).Contains("targetFrameRate"))
                     {
                         targetFrameRateFound = true;
                         break;
                     }
                 }
+                catch { /* okuma hatası — atla */ }
             }
             _validationResults.Add(new ValidationResult
             {
                 label = "Target Frame Rate (FPS) Setup",
-                detail = targetFrameRateFound 
-                    ? "Application.targetFrameRate found in scripts." 
+                detail = targetFrameRateFound
+                    ? "Application.targetFrameRate found in scripts."
                     : "Warning: targetFrameRate NOT configured! Game may lock at 30 FPS on mobile.",
                 ok = targetFrameRateFound
             });

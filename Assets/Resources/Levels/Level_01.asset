@@ -18,37 +18,47 @@ MonoBehaviour:
   emptyMoldCount: 2
   colorCount: 3
   maxLayersPerMold: 4
-  randomSeed: 6685
+  randomSeed: 100275
   autoGenerate: 0
   Molds:
   - layers:
     - color: {r: 1, g: 0, b: 0, a: 1}
       amount: 0.25
+      isFrozen: 0
     - color: {r: 1, g: 0, b: 0, a: 1}
       amount: 0.25
+      isFrozen: 0
     isEmpty: 0
   - layers:
     - color: {r: 0, g: 0, b: 1, a: 1}
       amount: 0.25
+      isFrozen: 0
     - color: {r: 0, g: 0, b: 1, a: 1}
       amount: 0.25
+      isFrozen: 0
     isEmpty: 0
   - layers:
     - color: {r: 0, g: 1, b: 0, a: 1}
       amount: 0.25
+      isFrozen: 0
     - color: {r: 0, g: 1, b: 0, a: 1}
       amount: 0.25
+      isFrozen: 0
     isEmpty: 0
   - layers: []
     isEmpty: 1
   - layers: []
     isEmpty: 1
   optionalTargets: []
-  parMoves: 11
-  goodMoves: 15
+  parMoves: 6
+  goodMoves: 8
   previewImage: {fileID: 0}
   enableMultiLayerCast: 1
   enableReactionSystem: 1
+  enableMultiPour: 0
+  enableFrozenLayers: 0
+  limitedMoves: 0
+  maxMoves: 20
   multiLayerCastConfig:
     featureType: 0
     isEnabled: 0
@@ -65,3 +75,4 @@ MonoBehaviour:
       resultColor: 3
       reactionType: 3
       effectPrefab: {fileID: 0}
+    transformedLayerAmount: 1

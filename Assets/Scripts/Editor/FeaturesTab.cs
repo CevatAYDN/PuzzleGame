@@ -16,13 +16,25 @@ namespace PuzzleGame.Editor
         private int _selectedFeatureTab = 0;
         private string[] _featureTabNames = new string[] { "Multi-Layer Cast", "Reaction System" };
 
+        // ── Level listesi cache — her frame AssetDatabase.FindAssets çağrısını önler ──
+        private List<string> _cachedLevelOptions = new List<string>();
+        private List<string> _cachedLevelPaths   = new List<string>();
+        private bool _levelCacheDirty = true;
+
         public void OnEnable(ForgeEditorWindow window)
         {
             _window = window;
+            _levelCacheDirty = true;
         }
 
         public void OnDisable()
         {
+        }
+
+        /// <inheritdoc />
+        public void Refresh()
+        {
+            _levelCacheDirty = true;
         }
 
         public void OnGUI()
@@ -43,34 +55,25 @@ namespace PuzzleGame.Editor
             {
                 EditorGUILayout.LabelField("Select Level", EditorStyles.miniBoldLabel);
 
-                var levels = AssetDatabase.FindAssets("t:LevelData", new[] { "Assets/Resources/Levels" });
-                var levelOptions = new List<string> { "-- Select Level --" };
-                var levelPaths = new List<string> { null };
+                // Cache'i sadece dirty flag set edildiğinde yenile.
+                if (_levelCacheDirty)
+                    RefreshLevelCache();
 
-                foreach (var guid in levels)
-                {
-                    string path = AssetDatabase.GUIDToAssetPath(guid);
-                    var level = AssetDatabase.LoadAssetAtPath<LevelData>(path);
-                    if (level != null)
-                    {
-                        levelOptions.Add($"Level {level.levelNumber} - {level.difficulty}");
-                        levelPaths.Add(path);
-                    }
-                }
-
-                int currentIndex = _selectedLevelForFeatures != null ? 
-                    levelPaths.FindIndex(p => p != null && AssetDatabase.GetAssetPath(_selectedLevelForFeatures).Contains(p)) : 0;
+                int currentIndex = _selectedLevelForFeatures != null
+                    ? _cachedLevelPaths.FindIndex(p => p != null && AssetDatabase.GetAssetPath(_selectedLevelForFeatures) == p)
+                    : 0;
                 if (currentIndex < 0) currentIndex = 0;
-                
+
                 EditorGUILayout.Space(4);
-                int selected = EditorGUILayout.Popup("Level", currentIndex, levelOptions.ToArray());
-                
-                if (selected >= 0 && selected < levelPaths.Count)
+                int selected = EditorGUILayout.Popup("Level", currentIndex, _cachedLevelOptions.ToArray());
+
+                if (selected >= 0 && selected < _cachedLevelPaths.Count)
                 {
                     if (selected != currentIndex)
                     {
-                        _selectedLevelForFeatures = selected > 0 ? 
-                            AssetDatabase.LoadAssetAtPath<LevelData>(levelPaths[selected]) : null;
+                        _selectedLevelForFeatures = selected > 0
+                            ? AssetDatabase.LoadAssetAtPath<LevelData>(_cachedLevelPaths[selected])
+                            : null;
                     }
                 }
             }
@@ -117,6 +120,31 @@ namespace PuzzleGame.Editor
 
         public void OnSceneGUI(SceneView sceneView)
         {
+        }
+
+        /// <summary>
+        /// Level listesini AssetDatabase'den okuyup cache'e yazar.
+        /// Sadece _levelCacheDirty == true iken çağrılır — OnGUI frame'inde DEĞİL.
+        /// </summary>
+        private void RefreshLevelCache()
+        {
+            _cachedLevelOptions.Clear();
+            _cachedLevelPaths.Clear();
+            _cachedLevelOptions.Add("-- Select Level --");
+            _cachedLevelPaths.Add(null);
+
+            var guids = AssetDatabase.FindAssets("t:LevelData", new[] { "Assets/Resources/Levels" });
+            foreach (var guid in guids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var level = AssetDatabase.LoadAssetAtPath<LevelData>(path);
+                if (level != null)
+                {
+                    _cachedLevelOptions.Add($"Level {level.levelNumber} - {level.difficulty}");
+                    _cachedLevelPaths.Add(path);
+                }
+            }
+            _levelCacheDirty = false;
         }
 
         private void DrawMultiLayerCastSettings()
@@ -306,7 +334,9 @@ namespace PuzzleGame.Editor
 
             Undo.RecordObject(_selectedLevelForFeatures, "Reset Features");
 
-            _selectedLevelForFeatures.enableMultiLayerCast = true;
+            // DÜZELTME: null config ile enabled=true bırakmak OnGUI'de NullReferenceException'a yol açıyordu.
+            // Sıfırlama her şeyi kapatır; tasarımcı istediğini tekrar açar.
+            _selectedLevelForFeatures.enableMultiLayerCast = false;
             _selectedLevelForFeatures.enableReactionSystem = false;
             _selectedLevelForFeatures.multiLayerCastConfig = null;
             _selectedLevelForFeatures.reactionConfig = null;

@@ -215,28 +215,39 @@ namespace PuzzleGame.Editor
 
                 EditorGUILayout.Space(4);
 
-                // Toggle cheats
-                _infiniteMoves = EditorGUILayout.ToggleLeft("∞ Infinite Moves (Sınırsız Hamle)", _infiniteMoves);
-                _skipIntro = EditorGUILayout.ToggleLeft("Skip Intro (Girişi Atla)", _skipIntro);
+                // Toggle cheats — sadece Play Mode'da anlamlı
+                using (new EditorGUI.DisabledGroupScope(!UnityEngine.Application.isPlaying))
+                {
+                    _infiniteMoves = EditorGUILayout.ToggleLeft("∞ Infinite Moves (Sınırsız Hamle) [Play Mode gerekli]", _infiniteMoves);
+                    _skipIntro    = EditorGUILayout.ToggleLeft("Skip Intro (Girişi Atla) [Play Mode gerekli]", _skipIntro);
+                }
 
                 EditorGUILayout.Space(4);
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    if (GUILayout.Button("Auto-Win Current Level", GUILayout.Width(180)))
+                    // Auto-Win sadece Play Mode'da çalışır
+                    using (new EditorGUI.DisabledGroupScope(!UnityEngine.Application.isPlaying))
                     {
-                        _window.SetStatus("Auto-Win: Mevcut seviye otomatik kazanılacak", MessageType.Info);
+                        if (GUILayout.Button("Auto-Win Current Level", GUILayout.Width(180)))
+                        {
+                            _window.SetStatus("Auto-Win: Mevcut seviye otomatik kazanılacak", MessageType.Info);
+                        }
                     }
 
+                    // Reset Progress: onay dialog'u zorunlu (P0 düzetme)
+                    GUI.backgroundColor = new Color(0.9f, 0.5f, 0.5f);
                     if (GUILayout.Button("Reset Progress", GUILayout.Width(140)))
                     {
-                        if (EditorUtility.DisplayDialog("Reset Progress",
-                            "Tüm ilerlemeyi sıfırlamak istediğinizden emin misiniz?",
-                            "Yes", "Cancel"))
+                        if (EditorUtility.DisplayDialog(
+                            "Tüm ilerlemeyi sıfırla?",
+                            "Bu işlem geri alınamaz. Tüm PlayerPrefs ve oyuncu ilerlemesi silinecek.\n\nDevam etmek istediginizden emin misiniz?",
+                            "Evet, Sil", "Vazgeç"))
                         {
                             ResetPlayerProgress();
                         }
                     }
+                    GUI.backgroundColor = Color.white;
                 }
 
                 EditorGUILayout.Space(4);

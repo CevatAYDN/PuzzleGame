@@ -56,6 +56,7 @@
     <Compile Include="Assets\Scripts\Presentation\OptionalMoldActivator.cs" />
     <Compile Include="Assets\Scripts\Presentation\CameraEffectsController.cs" />
     <Compile Include="Assets\Scripts\Presentation\OnboardingFlowController.cs" />
+    <Compile Include="Assets\Scripts\Presentation\PlayTestBootstrap.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\LevelBiomeClassifier.cs" />
     <Compile Include="Assets\Scripts\Presentation\ErrorIndicatorBootstrap.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldController.cs" />

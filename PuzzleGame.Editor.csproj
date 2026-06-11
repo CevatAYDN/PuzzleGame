@@ -57,6 +57,7 @@
     <Compile Include="Assets\Scripts\Editor\ValidateTab.cs" />
     <Compile Include="Assets\Scripts\Editor\FeaturesTab.cs" />
     <Compile Include="Assets\Scripts\Editor\DataAssetCreator.cs" />
+    <Compile Include="Assets\Scripts\Editor\EconomyLiveOpsTab.cs" />
     <Compile Include="Assets\Scripts\Editor\EditorServiceLocatorTests.cs" />
     <Compile Include="Assets\Scripts\Editor\LevelsTab.cs" />
     <Compile Include="Assets\Scripts\Editor\SceneBuilderModel.cs" />

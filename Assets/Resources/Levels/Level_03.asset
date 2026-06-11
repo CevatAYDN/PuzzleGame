@@ -18,15 +18,19 @@ MonoBehaviour:
   emptyMoldCount: 1
   colorCount: 4
   maxLayersPerMold: 4
-  randomSeed: 4337
+  randomSeed: 124667
   autoGenerate: 1
   Molds: []
   optionalTargets: []
-  parMoves: 7
-  goodMoves: 10
+  parMoves: 5
+  goodMoves: 7
   previewImage: {fileID: 0}
   enableMultiLayerCast: 1
   enableReactionSystem: 0
+  enableMultiPour: 0
+  enableFrozenLayers: 0
+  limitedMoves: 0
+  maxMoves: 20
   multiLayerCastConfig:
     featureType: 0
     isEnabled: 0
@@ -38,3 +42,4 @@ MonoBehaviour:
     isEnabled: 0
     enableReactions: 1
     reactionRules: []
+    transformedLayerAmount: 1

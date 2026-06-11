@@ -23,7 +23,8 @@ namespace PuzzleGame.Editor
         public static void Open()
         {
             var window = GetWindow<ForgeEditorWindow>("PuzzleGame Editor");
-            window.minSize = new Vector2(420, 360);
+            // 11 sekme iki satıra bölündüğü için genişletildi
+            window.minSize = new Vector2(520, 400);
             window.RefreshData();
         }
 
@@ -41,7 +42,8 @@ namespace PuzzleGame.Editor
                 new LevelUITab(),
                 new TestTab(),
                 new LocalizationTab(),
-                new PouringLabTab()
+                new PouringLabTab(),
+                new EconomyLiveOpsTab()
             };
 
             foreach (var tab in _tabs)
@@ -131,27 +133,47 @@ namespace PuzzleGame.Editor
             }
         }
 
+        /// <summary>
+        /// Tab bar çizimi.
+        /// 6'dan fazla sekme varsa iki satıra bölünür — overflow önlenir.
+        /// </summary>
         private void DrawTabs()
         {
-            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-            for (int i = 0; i < _tabs.Count; i++)
+            const int MaxPerRow = 6;
+            int total = _tabs.Count;
+            int rows  = (total + MaxPerRow - 1) / MaxPerRow;
+
+            for (int row = 0; row < rows; row++)
             {
-                bool active = _activeTabIndex == i;
-                if (GUILayout.Toggle(active, _tabs[i].TabName, EditorStyles.toolbarButton))
+                EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+
+                int start = row * MaxPerRow;
+                int end   = Mathf.Min(start + MaxPerRow, total);
+
+                for (int i = start; i < end; i++)
                 {
-                    _activeTabIndex = i;
+                    bool active = _activeTabIndex == i;
+                    if (GUILayout.Toggle(active, _tabs[i].TabName, EditorStyles.toolbarButton))
+                        _activeTabIndex = i;
                 }
-            }
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Refresh", EditorStyles.toolbarButton, GUILayout.Width(70)))
-            {
-                EditorApplication.delayCall += () =>
+
+                GUILayout.FlexibleSpace();
+
+                // Refresh butonu sadece son satırda görünsün
+                if (row == rows - 1)
                 {
-                    RefreshData();
-                    SetStatus("Refreshed.", MessageType.Info);
-                };
+                    if (GUILayout.Button("Refresh", EditorStyles.toolbarButton, GUILayout.Width(70)))
+                    {
+                        EditorApplication.delayCall += () =>
+                        {
+                            RefreshData();
+                            SetStatus("Refreshed.", MessageType.Info);
+                        };
+                    }
+                }
+
+                EditorGUILayout.EndHorizontal();
             }
-            EditorGUILayout.EndHorizontal();
         }
 
         private void DrawStatusBar()
@@ -170,10 +192,14 @@ namespace PuzzleGame.Editor
         public void RefreshData()
         {
             if (_tabs == null) return;
-            var dataTab = _tabs.OfType<DataTab>().FirstOrDefault();
-            if (dataTab != null)
+            // Tüm tab'ların kendi Refresh() hook'unu çağır — tip bağımlılığı yok.
+            foreach (var tab in _tabs)
             {
-                dataTab.RefreshDataPresence();
+                try { tab.Refresh(); }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError($"[ForgeEditorWindow] Tab {tab.GetType().Name}.Refresh() failed: {ex.Message}");
+                }
             }
         }
 

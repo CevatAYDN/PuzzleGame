@@ -41,6 +41,9 @@ namespace PuzzleGame.Installers
             // Game manager (MonoBehaviour in hierarchy)
             builder.RegisterComponentInHierarchy<GameManager>();
 
+            // Play-test bootstrapper
+            GameInstaller.FindOrFallback<PlayTestBootstrap>(builder);
+
             // Presentation controllers — POCOs, scoped to scene lifetime via the container
             builder.Register<LevelFlowController>(Lifetime.Singleton);
             builder.Register<WinLoseEvaluator>(Lifetime.Singleton);

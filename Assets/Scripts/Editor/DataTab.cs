@@ -24,6 +24,9 @@ namespace PuzzleGame.Editor
         {
         }
 
+        /// <inheritdoc />
+        public void Refresh() => RefreshDataPresence();
+
         public void OnGUI()
         {
             EditorGUILayout.LabelField("ScriptableObject Asset Management", EditorStyles.boldLabel);

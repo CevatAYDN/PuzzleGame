@@ -44,6 +44,7 @@ namespace PuzzleGame
         private LevelFlowController _levelFlow;
         private OnboardingFlowController _onboardingFlow;
         private MoldPoolInitializer _moldPoolInitializer;
+        private PlayTestBootstrap _playTestBootstrap;
         private HapticObserver _hapticObserver;
         private IAnalyticsService _analytics;
         private float _sessionStartTime;
@@ -62,6 +63,7 @@ namespace PuzzleGame
             LevelFlowController levelFlow,
             OnboardingFlowController onboardingFlow,
             MoldPoolInitializer moldPoolInitializer,
+            PlayTestBootstrap playTestBootstrap,
             HapticObserver hapticObserver,
             IAnalyticsService analytics)
         {
@@ -75,6 +77,7 @@ namespace PuzzleGame
             _levelFlow = levelFlow;
             _onboardingFlow = onboardingFlow;
             _moldPoolInitializer = moldPoolInitializer;
+            _playTestBootstrap = playTestBootstrap;
             _hapticObserver = hapticObserver;
             _analytics = analytics;
 
@@ -110,9 +113,13 @@ namespace PuzzleGame
             
             _updateManager?.Register(this);
 
-            if (TryEnterPlayTestMode())
+            if (_playTestBootstrap != null)
             {
-                return;
+                _playTestBootstrap.Initialize(_moldPoolInitializer, _stateMachine);
+                if (_playTestBootstrap.TryEnterPlayTestMode(IsFallbackMenuActive()))
+                {
+                    return;
+                }
             }
 
             if (_onboardingFlow != null)
@@ -133,30 +140,17 @@ namespace PuzzleGame
                 _onboardingFlow.OnCompletedFlow -= OnOnboardingCompleted;
             }
 
-            if (!TryEnterPlayTestMode())
+            bool enteredPlayTest = false;
+            if (_playTestBootstrap != null)
+            {
+                _playTestBootstrap.Initialize(_moldPoolInitializer, _stateMachine);
+                enteredPlayTest = _playTestBootstrap.TryEnterPlayTestMode(IsFallbackMenuActive());
+            }
+
+            if (!enteredPlayTest)
             {
                 _stateMachine?.TransitionTo(GameState.Menu);
             }
-        }
-
-        /// <summary>
-        /// Detects play-test mode (no real Main Menu in scene, but Mold instances exist)
-        /// and short-circuits the normal Menu / Onboarding flow. Returns true when the
-        /// play-test branch was taken.
-        /// </summary>
-        private bool TryEnterPlayTestMode()
-        {
-            if (!IsFallbackMenuActive())
-                return false;
-
-            var moldsInScene = FindObjectsByType<MoldController>(FindObjectsInactive.Exclude);
-            if (moldsInScene.Length == 0)
-                return false;
-
-            MoldLogger.LogInfo("[PlayTest] Fallback Menu detected with Molds in scene. Initializing Play-Test mode.");
-            _moldPoolInitializer?.InitializeForLevel(null);
-            _stateMachine?.TransitionTo(GameState.Playing);
-            return true;
         }
 
         /// <summary>

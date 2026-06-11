@@ -324,8 +324,11 @@ namespace PuzzleGame.Editor
             };
 
             _localizationEntries.Add(entry);
+
+            // D\u00dcZELTME: key ad\u0131n\u0131 temizlemeden \u00f6nce cache'le \u2014 eskiden SetStatus bo\u015f string d\u00f6nd\u00fcr\u00fcyordu.
+            string addedKey = _newKeyName;
             _newKeyName = "";
-            _window.SetStatus($"Added key: {_newKeyName}", MessageType.Info);
+            _window.SetStatus($"Added key: {addedKey}", MessageType.Info);
         }
 
         private void AddTranslationKey()

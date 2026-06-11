@@ -57,6 +57,9 @@ namespace PuzzleGame.Editor
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
         }
 
+        /// <inheritdoc />
+        public void Refresh() => RefreshLevelList();
+
         private void OnPlayModeStateChanged(PlayModeStateChange state)
         {
             if (state == PlayModeStateChange.ExitingEditMode || state == PlayModeStateChange.EnteredPlayMode)
