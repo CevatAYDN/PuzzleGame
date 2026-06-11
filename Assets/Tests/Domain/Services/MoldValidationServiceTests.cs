@@ -19,7 +19,7 @@ namespace PuzzleGame.Domain.Tests.Services
         }
 
         private DomainColor DC(float r, float g, float b, float a = 1f) => new DomainColor(r, g, b, a);
-        private OreLayer Layer(DomainColor c, float a = 0.25f) => new OreLayer(c, a);
+        private OreLayer Layer(DomainColor c, float a = 0.25f, OreColor type = OreColor.Red) => new OreLayer(c, a, type);
 
         private void FillMold(MoldState Mold, int count, DomainColor? color = null)
         {

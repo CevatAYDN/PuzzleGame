@@ -4,6 +4,8 @@ using PuzzleGame.Application.Events;
 using PuzzleGame.Application.Services;
 using PuzzleGame.Tests.Fakes;
 using UnityEngine;
+using PuzzleGame.Domain;
+using PuzzleGame.Domain.Models;
 
 namespace PuzzleGame.Tests.Application.Services
 {
@@ -36,16 +38,20 @@ namespace PuzzleGame.Tests.Application.Services
             // Mold A: red (bottom), green (top)  →  Mold B: empty
             // Mold C: green (bottom), red (top)  →  Mold D: empty
             // Solver can suggest: cast green from A to B, or red from C to D.
+            var redColor = PuzzleGame.Domain.Models.OreColor.Red.ToDefaultDomainColor();
+            var greenColor = PuzzleGame.Domain.Models.OreColor.Green.ToDefaultDomainColor();
             var a = new PuzzleGame.Domain.Models.MoldState(4);
-            a.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(1f, 0f, 0f), 0.25f));
-            a.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(0f, 1f, 0f), 0.25f));
+            a.AddLayer(new PuzzleGame.Domain.Models.OreLayer(redColor, 0.25f));
+            a.AddLayer(new PuzzleGame.Domain.Models.OreLayer(greenColor, 0.25f));
             var b = new PuzzleGame.Domain.Models.MoldState(4);
             var c = new PuzzleGame.Domain.Models.MoldState(4);
-            c.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(0f, 1f, 0f), 0.25f));
-            c.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(1f, 0f, 0f), 0.25f));
+            c.AddLayer(new PuzzleGame.Domain.Models.OreLayer(greenColor, 0.25f));
+            c.AddLayer(new PuzzleGame.Domain.Models.OreLayer(redColor, 0.25f));
             _molds.Molds = new PuzzleGame.Application.Interfaces.IMoldView[]
             {
-                new FakeMoldView(a), new FakeMoldView(b), new FakeMoldView(c)
+                new FakeMoldView(a) { MoldIndex = 0 },
+                new FakeMoldView(b) { MoldIndex = 1 },
+                new FakeMoldView(c) { MoldIndex = 2 }
             };
 
             _sut = new HintService(_wallet, _config, _molds, _events, _animation);
@@ -163,21 +169,26 @@ namespace PuzzleGame.Tests.Application.Services
             // Mold 0: red, red, green (3 layers)  Mold 1: green, green, red (3 layers)
             // Mold 2: red, green (2 layers)        Mold 3: empty
             // Solver path: cast green from 0→3, red from 1→3, green from 1→2, etc.
+            var redColor = PuzzleGame.Domain.Models.OreColor.Red.ToDefaultDomainColor();
+            var greenColor = PuzzleGame.Domain.Models.OreColor.Green.ToDefaultDomainColor();
             var a = new PuzzleGame.Domain.Models.MoldState(4);
-            a.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(1f, 0f, 0f), 0.25f));
-            a.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(1f, 0f, 0f), 0.25f));
-            a.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(0f, 1f, 0f), 0.25f));
+            a.AddLayer(new PuzzleGame.Domain.Models.OreLayer(redColor, 0.25f));
+            a.AddLayer(new PuzzleGame.Domain.Models.OreLayer(redColor, 0.25f));
+            a.AddLayer(new PuzzleGame.Domain.Models.OreLayer(greenColor, 0.25f));
             var b = new PuzzleGame.Domain.Models.MoldState(4);
-            b.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(0f, 1f, 0f), 0.25f));
-            b.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(0f, 1f, 0f), 0.25f));
-            b.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(1f, 0f, 0f), 0.25f));
+            b.AddLayer(new PuzzleGame.Domain.Models.OreLayer(greenColor, 0.25f));
+            b.AddLayer(new PuzzleGame.Domain.Models.OreLayer(greenColor, 0.25f));
+            b.AddLayer(new PuzzleGame.Domain.Models.OreLayer(redColor, 0.25f));
             var c = new PuzzleGame.Domain.Models.MoldState(4);
-            c.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(1f, 0f, 0f), 0.25f));
-            c.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(0f, 1f, 0f), 0.25f));
+            c.AddLayer(new PuzzleGame.Domain.Models.OreLayer(redColor, 0.25f));
+            c.AddLayer(new PuzzleGame.Domain.Models.OreLayer(greenColor, 0.25f));
             var d = new PuzzleGame.Domain.Models.MoldState(4); // empty
             _molds.Molds = new PuzzleGame.Application.Interfaces.IMoldView[]
             {
-                new FakeMoldView(a), new FakeMoldView(b), new FakeMoldView(c), new FakeMoldView(d)
+                new FakeMoldView(a) { MoldIndex = 0 }, 
+                new FakeMoldView(b) { MoldIndex = 1 }, 
+                new FakeMoldView(c) { MoldIndex = 2 }, 
+                new FakeMoldView(d) { MoldIndex = 3 }
             };
 
             int before = _sut.RemainingHintsForCurrentLevel;
@@ -208,21 +219,26 @@ namespace PuzzleGame.Tests.Application.Services
         public void TryGetHint_OnSuccess_PublishesHintHighlightEvent()
         {
             // Build a solvable layout: 4 molds with mixed colors + 1 empty
+            var redColor = PuzzleGame.Domain.Models.OreColor.Red.ToDefaultDomainColor();
+            var greenColor = PuzzleGame.Domain.Models.OreColor.Green.ToDefaultDomainColor();
             var a = new PuzzleGame.Domain.Models.MoldState(4);
-            a.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(1f, 0f, 0f), 0.25f));
-            a.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(1f, 0f, 0f), 0.25f));
-            a.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(0f, 1f, 0f), 0.25f));
+            a.AddLayer(new PuzzleGame.Domain.Models.OreLayer(redColor, 0.25f));
+            a.AddLayer(new PuzzleGame.Domain.Models.OreLayer(redColor, 0.25f));
+            a.AddLayer(new PuzzleGame.Domain.Models.OreLayer(greenColor, 0.25f));
             var b = new PuzzleGame.Domain.Models.MoldState(4);
-            b.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(0f, 1f, 0f), 0.25f));
-            b.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(0f, 1f, 0f), 0.25f));
-            b.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(1f, 0f, 0f), 0.25f));
+            b.AddLayer(new PuzzleGame.Domain.Models.OreLayer(greenColor, 0.25f));
+            b.AddLayer(new PuzzleGame.Domain.Models.OreLayer(greenColor, 0.25f));
+            b.AddLayer(new PuzzleGame.Domain.Models.OreLayer(redColor, 0.25f));
             var c = new PuzzleGame.Domain.Models.MoldState(4);
-            c.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(1f, 0f, 0f), 0.25f));
-            c.AddLayer(new PuzzleGame.Domain.Models.OreLayer(new PuzzleGame.Domain.Models.DomainColor(0f, 1f, 0f), 0.25f));
+            c.AddLayer(new PuzzleGame.Domain.Models.OreLayer(redColor, 0.25f));
+            c.AddLayer(new PuzzleGame.Domain.Models.OreLayer(greenColor, 0.25f));
             var d = new PuzzleGame.Domain.Models.MoldState(4);
             _molds.Molds = new PuzzleGame.Application.Interfaces.IMoldView[]
             {
-                new FakeMoldView(a), new FakeMoldView(b), new FakeMoldView(c), new FakeMoldView(d)
+                new FakeMoldView(a) { MoldIndex = 0 }, 
+                new FakeMoldView(b) { MoldIndex = 1 }, 
+                new FakeMoldView(c) { MoldIndex = 2 }, 
+                new FakeMoldView(d) { MoldIndex = 3 }
             };
 
             bool ok = _sut.TryGetHint(_level, out int srcIdx, out int dstIdx);

@@ -8,6 +8,7 @@ using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Services;
 using PuzzleGame.Domain.Services;
 using PuzzleGame.Domain.Interfaces;
+using PuzzleGame.Application.Configuration;
 
 namespace PuzzleGame.Tests.Editor
 {
@@ -45,6 +46,8 @@ namespace PuzzleGame.Tests.Editor
         public void CoreServices_RegistersPourDebugController()
         {
             var builder = new ContainerBuilder();
+            // Provide GameConfig which IMoldValidator depends on
+            builder.Register<GameConfig>(resolver => ScriptableObject.CreateInstance<GameConfig>(), Lifetime.Singleton);
             CoreServicesInstallerModule.Configure(builder); // Provides IMoldValidator needed by CastService
             GameplayInstallerModule.Configure(builder);
             // PourSystemController is a plain C# class registered in

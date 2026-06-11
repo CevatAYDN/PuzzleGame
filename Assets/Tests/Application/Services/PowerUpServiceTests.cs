@@ -6,6 +6,7 @@ using PuzzleGame.Application.Services;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Tests.Fakes;
 using PuzzleGame.Infrastructure.Implementations;
+using PuzzleGame.Domain;
 
 namespace PuzzleGame.Tests.Application.Services
 {
@@ -18,9 +19,9 @@ namespace PuzzleGame.Tests.Application.Services
         private FakeChargeStorageService _chargeStorage;
         private FakeRandomProvider _randomProvider;
 
-        private static readonly DomainColor Red   = new DomainColor(1f, 0f, 0f);
-        private static readonly DomainColor Green = new DomainColor(0f, 1f, 0f);
-        private static readonly DomainColor Blue  = new DomainColor(0f, 0f, 1f);
+        private static readonly DomainColor Red   = PuzzleGame.Domain.Models.OreColor.Red.ToDefaultDomainColor();
+        private static readonly DomainColor Green = PuzzleGame.Domain.Models.OreColor.Green.ToDefaultDomainColor();
+        private static readonly DomainColor Blue  = PuzzleGame.Domain.Models.OreColor.Blue.ToDefaultDomainColor();
 
         [SetUp]
         public void SetUp()

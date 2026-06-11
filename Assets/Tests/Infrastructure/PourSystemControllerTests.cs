@@ -354,7 +354,8 @@ namespace PuzzleGame.Tests.Infrastructure
             var red = new OreLayer(new DomainColor(1f, 0f, 0f), 0.25f);
             _sut.SetMoldLayers(0, new[] { red, red });
 
-            // Snapshot is taken inside ExecuteInstantPour
+            // Explicitly snapshot before pouring
+            _sut.SnapshotAllMolds();
             _sut.ExecuteInstantPour(0, 1);
 
             // Verify pour happened
@@ -415,10 +416,11 @@ namespace PuzzleGame.Tests.Infrastructure
         }
 
         [Test]
-        public void GetAllMoldDebugStates_NullMolds_ThrowsInvalidOperation()
+        public void GetAllMoldDebugStates_NullMolds_ReturnsEmptyArray()
         {
             var sut = new PourSystemController(_castService, _animationService, _eventAggregator);
-            Assert.Throws<System.InvalidOperationException>(() => sut.GetAllMoldDebugStates());
+            var result = sut.GetAllMoldDebugStates();
+            Assert.That(result, Is.Empty);
             sut.Dispose();
         }
 

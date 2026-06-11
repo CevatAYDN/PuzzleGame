@@ -43,6 +43,7 @@ namespace PuzzleGame.Infrastructure.Implementations
             // Note: animationService is unused in business logic but kept in the
             // constructor signature to prevent breaking backwards compatibility
             // with existing installer modules and unit tests.
+            _ = animationService ?? throw new ArgumentNullException(nameof(animationService));
             
             _historyService = new PourHistoryService(() => _molds, eventAggregator);
             _simulator = new PourSimulator(() => _molds, castService, eventAggregator);

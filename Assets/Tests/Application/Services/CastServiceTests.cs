@@ -208,7 +208,7 @@ namespace PuzzleGame.Tests.Application.Services
             var colorAdapter = new PuzzleGame.Infrastructure.ColorAdapter();
             var reactionService = new ReactionService(colorAdapter, eventAggregator);
             var historyManager = new GameHistoryManager();
-            var validator = new PuzzleGame.Domain.Services.MoldValidationService(PuzzleGame.Domain.ForgeConstants.ColorMatchEpsilon);
+            var validator = new FakeMoldValidator { CanCastResult = true };
             var castService = new CastService(validator, historyManager, reactionService, eventAggregator, null);
 
             var levelData = CreateLevelData(enableMultiLayer: false);

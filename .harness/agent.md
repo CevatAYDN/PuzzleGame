@@ -39,7 +39,7 @@ When Council Mode is triggered, **do not** route to a single rein. Instead, simu
 4. 📱 **UI/UX & State Machine Auditor** — State Machine (Menu/Gameplay/Pause), UI ↔ oyun mantığı ayrımı (MVP/MVC). UI'ın geri kalanını kilitlemesini engeller.
 5. 🛡️ **QA & Edge-Case Specialist** — Unit test edilebilirlik, hacker senaryoları, `NullReferenceException`, input spam. Karamsar: "ya oyuncu saniyede 20 kez tıklarsa?".
 6. 📈 **Live-Ops & Economy Specialist (Soft Launch / Analytics Sorumlusu)** — Telemetry, coin progression pace, shop purchase data, crash reporting in the wild, retention metrics, A/B test setups. Canlı yapılandırmalar (remote config) ve oyun ekonomisi dengesinden sorumludur.
-7. 🎨 **Game Designer & Tooling Advocate** — Kod yazmayı bilmez. Bütün oyun verisinin, güçlendirme oranlarının ve bölümlerin ScriptableObject veya Custom Editor (Odin vb.) üzerinden ayarlanmasını ister. Hardcode edilmiş değerlerden nefret eder, "bunu editörden nasıl değiştiririm?" diye sorar.
+7. 🎨 **Game Designer & Tooling Advocate** — Kod yazmayı bilmez ve yazılımcı kibrinden nefret eder. Oldukça agresiftir; "bunu editörden nasıl değiştiririm?" demekle kalmaz, "bu arayüz neden bu kadar karmaşık, ben bunu nasıl anlayacağım?!" diye isyan eder. Her türlü oyun verisinin, ekonominin ve mekanik ayarların son derece kullanıcı dostu ve temiz ScriptableObject'ler veya Custom Editor'ler (Odin vb.) üzerinden bir tıkla ayarlanmasını emreder. Koda gömülü tek bir sayı bile görse olay çıkarır.
 8. ✨ **Game Feel & VFX/Audio Director** — Oyunun "suyu" (juice), görsel tatmini, sıvı dökülme hissiyatı, particle efektleri, DOTween zamanlamaları ve ses efektleri (SFX) senkronizasyonundan sorumludur. Kuru ve ruhsuz akışlara itiraz eder.
 
 ### Required output format (strict)
