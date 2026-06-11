@@ -32,25 +32,5 @@ namespace PuzzleGame.Installers
             return loaded;
         }
 
-        /// <summary>
-        /// Like <see cref="LoadOrThrow{T}"/>, but if the asset is missing in
-        /// both Inspector and Resources, logs a warning and returns a default
-        /// <c>ScriptableObject.CreateInstance&lt;T&gt;()</c>. Use this for
-        /// configs that are nice-to-have (developer tools, optional VFX) where
-        /// a hard failure would block the player from running the game.
-        /// </summary>
-        public static T LoadOrDefault<T>(T existing, string resourcesPath, string fieldName)
-            where T : ScriptableObject
-        {
-            if (existing != null) return existing;
-
-            T loaded = Resources.Load<T>(resourcesPath);
-            if (loaded != null) return loaded;
-
-            MoldLogger.LogWarning(
-                $"{fieldName} asset missing at Resources/{resourcesPath}. " +
-                $"Using fallback — create it via Tools > PuzzleGame > Open Editor > Data tab.");
-            return ScriptableObject.CreateInstance<T>();
-        }
     }
 }

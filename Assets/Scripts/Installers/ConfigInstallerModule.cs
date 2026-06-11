@@ -58,8 +58,8 @@ namespace PuzzleGame.Installers
 
             // These two are tolerated missing (developer tools) but still
             // get a default-instance fallback so downstream code never sees null.
-            installer.streamVFXConfig  = ConfigLoader.LoadOrDefault(installer.streamVFXConfig, "Data/StreamVFXConfig", nameof(installer.streamVFXConfig));
-            installer.economyConfig    = ConfigLoader.LoadOrDefault(installer.economyConfig,   "Data/EconomyConfig",   nameof(installer.economyConfig));
+            installer.streamVFXConfig  = ConfigLoader.LoadOrThrow(installer.streamVFXConfig, "Data/StreamVFXConfig", nameof(installer.streamVFXConfig));
+            installer.economyConfig    = ConfigLoader.LoadOrThrow(installer.economyConfig,   "Data/EconomyConfig",   nameof(installer.economyConfig));
 
             installer.wobbleConfig     = ConfigLoader.LoadOrThrow(installer.wobbleConfig,     "Data/WobbleConfig",     nameof(installer.wobbleConfig));
 

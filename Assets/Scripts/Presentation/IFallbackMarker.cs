@@ -2,7 +2,7 @@ namespace PuzzleGame.Presentation
 {
     /// <summary>
     /// Marker for components that were synthesised at runtime by the DI fallback
-    /// path (i.e. <c>GameInstaller.FindOrFallback</c>) instead of being authored
+    /// path (i.e. <c>GameInstaller.FindOrThrow</c>) instead of being authored
     /// in the scene. Used by <c>GameManager</c> to detect play-test mode without
     /// paying the per-frame cost of <c>GameObject.name.Contains("[Fallback]")</c>.
     /// </summary>

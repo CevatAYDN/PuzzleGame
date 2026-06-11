@@ -144,16 +144,7 @@ namespace PuzzleGame
                 visualConfig = visualConfigOverride;
                 if (visualConfig == null)
                 {
-                    visualConfig = Resources.Load<MoldVisualConfig>("Data/MoldVisualConfig");
-                    if (visualConfig == null)
-                    {
-                        MoldLogger.LogWarning(
-                            "[MoldController] MoldVisualConfig not injected on " +
-                            gameObject.name + ". And default not found in 'Resources/Data/MoldVisualConfig'. Using fallback SO.",
-                            this);
-                        visualConfig = ScriptableObject.CreateInstance<MoldVisualConfig>();
-                        visualConfig.name = "MoldVisualConfig_Fallback";
-                    }
+                    throw new InvalidOperationException($"[MoldController] MoldVisualConfig is not assigned on {gameObject.name} and was not injected! Fail-Fast triggered.");
                 }
             }
             if (_renderer == null)
@@ -256,7 +247,7 @@ namespace PuzzleGame
 
             if (visualConfig == null)
             {
-                visualConfig = Resources.Load<MoldVisualConfig>("Data/MoldVisualConfig");
+                throw new InvalidOperationException($"[MoldController] RestoreStateFromSerialized: MoldVisualConfig is not assigned on {gameObject.name}. Fail-Fast triggered.");
             }
             int maxLayers = visualConfig != null ? visualConfig.maxLayers : ForgeConstants.DefaultLayerCapacity;
             if (_stateManager == null) _stateManager = new MoldStateManager(_serializedLayers);

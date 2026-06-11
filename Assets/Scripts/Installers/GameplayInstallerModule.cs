@@ -54,11 +54,9 @@ namespace PuzzleGame.Installers
             builder.Register<SeasonConfig>(resolver =>
             {
                 var config = UnityEngine.Resources.Load<SeasonConfig>("Data/SeasonConfig");
-                if (config == null)
-                    config = UnityEngine.ScriptableObject.CreateInstance<SeasonConfig>();
+                if (config == null) throw new System.InvalidOperationException("SeasonConfig missing at Resources/Data/SeasonConfig");
                 return config;
             }, Lifetime.Singleton);
-            builder.Register<IProgressRepository, PlayerPrefsProgressRepository>(Lifetime.Singleton);
             builder.Register<IProgressService, ProgressService>(Lifetime.Singleton);
 
             // Level editor

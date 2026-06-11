@@ -45,32 +45,32 @@ namespace PuzzleGame.Installers
             builder.RegisterEntryPoint<GameLifecycleBootstrapper>();
 
             // Play-test bootstrapper
-            GameInstaller.FindOrFallback<PlayTestBootstrap>(builder);
+            GameInstaller.FindOrThrow<PlayTestBootstrap>(builder);
 
             // Presentation controllers — POCOs, scoped to scene lifetime via the container
             builder.Register<LevelFlowController>(Lifetime.Singleton);
             builder.Register<WinLoseEvaluator>(Lifetime.Singleton);
 
             // UI components (MonoBehaviours that may or may not be in scene)
-            GameInstaller.FindOrFallback<HudPresenter>(builder);
+            GameInstaller.FindOrThrow<HudPresenter>(builder);
 
-            GameInstaller.FindOrFallback<PowerUpUI>(builder);
-            GameInstaller.FindOrFallback<AchievementNotificationUI>(builder);
+            GameInstaller.FindOrThrow<PowerUpUI>(builder);
+            GameInstaller.FindOrThrow<AchievementNotificationUI>(builder);
 
             // Consent flow UI — MonoBehaviours live on the consent scene prefab
-            GameInstaller.FindOrFallback<AgeGateModal>(builder);
-            GameInstaller.FindOrFallback<ConsentModal>(builder);
-            GameInstaller.FindOrFallback<SettingsPrivacyController>(builder);
-            GameInstaller.FindOrFallback<SettingsSoundController>(builder);
+            GameInstaller.FindOrThrow<AgeGateModal>(builder);
+            GameInstaller.FindOrThrow<ConsentModal>(builder);
+            GameInstaller.FindOrThrow<SettingsPrivacyController>(builder);
+            GameInstaller.FindOrThrow<SettingsSoundController>(builder);
 
             // Main menu — entry point after onboarding; manages Play/Daily/Settings/Privacy buttons
-            GameInstaller.FindOrFallback<MainMenuController>(builder);
+            GameInstaller.FindOrThrow<MainMenuController>(builder);
 
             // World map — shows 2 biome cards (Crystal Mines + Volcanic Forge) with progress
-            GameInstaller.FindOrFallback<WorldMapController>(builder);
+            GameInstaller.FindOrThrow<WorldMapController>(builder);
 
             // Daily challenge — entry screen with streak/countdown/play
-            GameInstaller.FindOrFallback<DailyChallengeController>(builder);
+            GameInstaller.FindOrThrow<DailyChallengeController>(builder);
 
             // AI art provider — reads from BiomeArtCatalog ScriptableObject (optional, returns defaults if empty)
             // Fix #A3: Load catalog from Resources and register, otherwise always returns null/default

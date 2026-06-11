@@ -38,8 +38,7 @@ namespace PuzzleGame.Installers
             builder.Register<AccessibilityConfig>(resolver =>
             {
                 var config = UnityEngine.Resources.Load<AccessibilityConfig>("Data/AccessibilityConfig");
-                if (config == null)
-                    config = UnityEngine.ScriptableObject.CreateInstance<AccessibilityConfig>();
+                if (config == null) throw new System.InvalidOperationException("AccessibilityConfig missing at Resources/Data/AccessibilityConfig");
                 return config;
             }, Lifetime.Singleton);
             builder.Register<IAccessibilityService, AccessibilityService>(Lifetime.Singleton);
@@ -48,8 +47,7 @@ namespace PuzzleGame.Installers
             builder.Register<CosmeticConfig>(resolver =>
             {
                 var config = UnityEngine.Resources.Load<CosmeticConfig>("Data/CosmeticConfig");
-                if (config == null)
-                    config = UnityEngine.ScriptableObject.CreateInstance<CosmeticConfig>();
+                if (config == null) throw new System.InvalidOperationException("CosmeticConfig missing at Resources/Data/CosmeticConfig");
                 return config;
             }, Lifetime.Singleton);
             builder.Register<ICosmeticShopService, CosmeticShopService>(Lifetime.Singleton);
