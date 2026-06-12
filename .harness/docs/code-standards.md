@@ -68,3 +68,37 @@ The solution has six projects in `PuzzleGame.slnx`:
 - Input: `com.unity.inputsystem` only. Never the legacy `Input` class.
 - Localization: `ILocalizationService.GetString("key")`. Never hard-code UI strings in views.
 - Commit `.meta` files alongside their assets; never hand-edit a GUID.
+
+## Accessibility (Erişilebilirlik)
+
+- **Renk-bağımsız tasarım:** Renk ile ayırt edilen her öğe (sıvı, buton, ikon) için şekil/desen/ikon alternatifi zorunludur. `DomainColor` yanında `DomainPattern` / `DomainIcon` tanımlanmalı.
+- **Kontrast oranı:** UI metinleri ve interaktif öğeler WCAG 2.1 AA minimum 4.5:1 kontrast oranını sağlamalı.
+- **Dokunma hedefi:** Tüm dokunulabilir öğeler minimum 44×44pt.
+- **Reduced motion:** Animasyonlar `IAccessibilityService.IsReducedMotionEnabled` kontrolü ile basitleştirilebilmeli.
+- **Screen reader:** UI öğelerinin `accessibilityLabel` / `contentDescription` tanımları zorunludur.
+- **Fail Fast:** Erişilebilirlik alternatifi tanımlanmamışsa `MissingAccessibilityFallbackException` fırlatılır.
+
+## Localization (Lokalizasyon)
+
+- **Hardcoded string toleransı sıfır.** UI'da görünen hiçbir metin doğrudan string olarak yazılmaz. Tümü `ILocalizationService.GetString("key")` üzerinden çekilir.
+- **Eksik key → Fail Fast:** Lokalizasyon key'i bulunamazsa `MissingLocalizationKeyException` fırlatılır (sessiz fallback yasak).
+- **RTL düzen desteği:** Arapça/İbranice gibi sağdan-sola dillerde UI düzeni doğru çalışmalı.
+- **Font fallback zinciri:** Latin → CJK → Arabic → Devanagari sırasında font'lar yüklenebilmeli.
+- **Dinamik UI genişleme:** Almanca gibi uzun çeviriler için UI öğeleri taşmamalı (overflow test).
+
+## Security (Güvenlik)
+
+- **Save dosyası koruması:** Oyun kayıtları HMAC-SHA256 checksum ile korunur. Manipüle edildiğinde `SaveCorruptionException` fırlatılır.
+- **IAP receipt doğrulama:** Client-side receipt → Backend API → Google Play Developer API zinciri. Client-side tek başına güvenilmez.
+- **PlayerPrefs'te hassas veri yasak.** Token, şifre veya kişisel veri asla `PlayerPrefs`'te veya açık dosyada saklanmaz.
+- **Input sanitization:** Kullanıcı girdisi (isim, skor vb.) sanitize edilir.
+- **Leaderboard anti-cheat:** Skorlar server-authoritative validation ile doğrulanır.
+
+## Competitive standards (Rekabet)
+
+- **APK boyutu hedefi:** İlk indirme ≤50MB. Unity Addressables, ASTC texture sıkıştırma, code stripping aktif.
+- **Haptic feedback:** Her dokunma etkileşimi `IHapticService` üzerinden haptic pattern tanımı içermeli.
+- **Analitik event:** Her yeni kullanıcı etkileşimi `IAnalyticsService.LogEvent()` ile işaretlenmeli. Zorunlu event'ler: `level_started`, `level_completed`, `level_failed`, `tutorial_step_N`, `ad_shown`, `iap_purchased`, `accessibility_mode_changed`, `rating_prompt_shown`.
+- **Meta-game hook:** Yeni özellikler meta-game ilerleme sistemiyle (`IProgressionService`) entegre edilmeli.
+- **Solvability:** Prosedürel üretilen her bölüm `ISolvabilityChecker.IsSolvable()` ile doğrulanmalı.
+

@@ -59,6 +59,10 @@ namespace PuzzleGame.Installers
             }, Lifetime.Singleton);
             builder.Register<IProgressService, ProgressService>(Lifetime.Singleton);
 
+            // XP & Season progress persistence for IProgressService
+            builder.Register<IProgressRepository, PlayerPrefsProgressRepository>(Lifetime.Singleton);
+
+
             // Level editor
             builder.Register<ILevelEditorService, LevelEditorService>(Lifetime.Singleton);
 

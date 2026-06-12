@@ -63,3 +63,30 @@ The Domain layer's whole point is that it compiles and tests without Unity. If a
 - **Unity Editor:** `Window > General > Test Runner > EditMode` for the bulk of tests; `PlayMode` only when a test genuinely needs the runtime.
 - **CLI:** `dotnet test PuzzleGame.Tests.csproj -c Debug` works for the pure-Domain / pure-Application tests that don't need the Unity runtime. The full suite needs the Editor.
 - A green test run is part of the "done" definition for any change. A skipped test is a code-review issue.
+
+## Security tests (Güvenlik)
+
+Security tests are **mandatory** for any code touching save files, IAP, leaderboards, or user input:
+
+- **Save dosyası bütünlük testi:** Kayıt dosyası manipüle edildiğinde (checksum bozulduğunda) `SaveCorruptionException` fırlatıldığını doğrula.
+- **IAP receipt sahteciliği testi:** Sahte/geçersiz IAP receipt gönderildiğinde satın alma işleminin reddedildiğini doğrula.
+- **Input spam / rapid-fire testi:** Aynı eylemi saniyede 20+ kez tetiklediğinde state machine'in kilitlenmediğini (deadlock) veya çökmediğini doğrula.
+- **Bellek manipülasyonu testi:** Oyun state'inde doğrudan alan değişikliği yapıldığında (reflection ile) bütünlük kontrolünün bunu yakaladığını doğrula.
+- **Leaderboard score injection testi:** Geçersiz skor gönderildiğinde server-side validation tarafından reddedildiğini doğrula.
+
+## Accessibility tests (Erişilebilirlik)
+
+Accessibility tests are **mandatory** for any code touching UI elements, colors, or liquid types:
+
+- **Renk-bağımsız test:** Her sıvı tipi için `DomainPattern` veya `DomainIcon` eşleştirmesinin mevcut olduğunu doğrula. Eksik eşleştirme → `MissingAccessibilityFallbackException`.
+- **Lokalizasyon key testi:** Tüm UI string key'lerinin lokalizasyon tablosunda karşılığının bulunduğunu doğrula. Eksik key → `MissingLocalizationKeyException`.
+- **Kontrast oranı testi:** Tema renk paletlerinin WCAG 2.1 AA minimum 4.5:1 kontrastı sağladığını doğrula (computed test).
+
+## Solvability & Level Pipeline tests (Bölüm Üretimi)
+
+Solvability tests are **mandatory** for any code touching `ProceduralLevelGenerator`, `DifficultyBasedLevelGenerator`, or `LiquidSortSolver`:
+
+- **Solvability testi:** `ProceduralLevelGenerator` ile üretilen bölümlerin %100 çözülebilir olduğunu en az 100 rastgele seed ile doğrula.
+- **Zorluk eğrisi testi:** Ardışık bölümlerin zorluk değerlerinin beklenen eğri patternine uyduğunu (kolay→orta→zor→dinlenme) doğrula.
+- **Deterministik üretim testi:** Aynı seed ile iki kez üretilen bölümün birebir aynı olduğunu doğrula.
+
