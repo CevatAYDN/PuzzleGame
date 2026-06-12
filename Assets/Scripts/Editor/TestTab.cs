@@ -527,7 +527,7 @@ namespace PuzzleGame.Editor
 
         private void LogMoldInfo()
         {
-            var Molds = UnityEngine.Object.FindObjectsByType<PuzzleGame.MoldController>(FindObjectsInactive.Exclude);
+            var Molds = UnityEngine.Object.FindObjectsByType<PuzzleGame.Presentation.MoldController>(FindObjectsInactive.Exclude);
             Debug.Log($"[DEBUG] Active Molds in scene: {Molds.Length}");
             foreach (var Mold in Molds)
             {

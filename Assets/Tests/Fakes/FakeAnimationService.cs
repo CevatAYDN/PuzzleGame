@@ -74,5 +74,12 @@ namespace PuzzleGame.Tests.Fakes
             AnimateSettleBounceCallCount++;
             onComplete?.Invoke();
         }
+
+        public int ForceUnlockCallCount { get; private set; }
+        public void ForceUnlock()
+        {
+            ForceUnlockCallCount++;
+            IsAnimating = false;
+        }
     }
 }

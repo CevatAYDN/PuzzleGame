@@ -92,7 +92,7 @@ namespace PuzzleGame.Application.Services
                         foreach (var layerData in MoldData.layers)
                         {
                             var modifier = layerData.isFrozen ? LayerModifier.Frozen : LayerModifier.None;
-                            layers.Add(new OreLayer(ToDomainColor(layerData.color), layerData.amount, OreColor.None, false, modifier));
+                            layers.Add(new OreLayer(ToDomainColor(layerData.color), layerData.amount, OreColor.None).WithModifier(modifier));
                         }
                     }
                     assignments.Add(layers);

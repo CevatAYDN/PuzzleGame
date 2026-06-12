@@ -101,8 +101,8 @@ namespace PuzzleGame.Infrastructure.Implementations
                         float bri = config != null ? config.brightnessBoost : 1.15f;
                         color      = AdjustColor(_colorAdapter.ToUnity(layer.Color), sat, bri);
                         
-                        // Default pattern from enum mapping
-                        patternValue = (int)PuzzleGame.Domain.Models.OreColorExtensions.GetDefaultPattern(layer.Color);
+                        // Get pattern from layer
+                        patternValue = (int)layer.Pattern;
                     }
                     cumulative += layer.Amount;
                     fill       = cumulative;

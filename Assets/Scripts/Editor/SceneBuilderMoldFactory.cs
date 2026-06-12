@@ -6,6 +6,7 @@ using PuzzleGame.Domain.Models;
 using PuzzleGame.Domain.Services;
 using PuzzleGame.Infrastructure;
 using PuzzleGame.Infrastructure.Implementations;
+using PuzzleGame.Presentation;
 using static PuzzleGame.Editor.SceneBuilderModel;
 
 namespace PuzzleGame.Editor

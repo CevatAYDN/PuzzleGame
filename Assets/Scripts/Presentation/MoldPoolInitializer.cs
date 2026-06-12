@@ -8,6 +8,7 @@ using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Logging;
 using UnityEngine;
 using PuzzleGame.Application.Events;
+using PuzzleGame.Presentation;
 
 namespace PuzzleGame
 {

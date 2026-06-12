@@ -8,7 +8,7 @@ namespace PuzzleGame.Domain.Tests.Services
 {
     public class LevelGeneratorTests
     {
-        private readonly ILevelGenerator _generator = new DifficultyBasedLevelGenerator();
+        private readonly ILevelGenerator _generator = new ProceduralLevelGenerator();
         private readonly DomainColor[] _palette = new DomainColor[]
         {
             new DomainColor(1, 0, 0), // red

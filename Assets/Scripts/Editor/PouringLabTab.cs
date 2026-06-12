@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Configuration;
+using PuzzleGame.Presentation;
 
 namespace PuzzleGame.Editor
 {

@@ -50,8 +50,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\Domain\Models\LayerModifier.cs" />
+    <Compile Include="Assets\Scripts\Domain\Services\ProceduralLevelGenerator.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\IGameStateMachine.cs" />
+    <Compile Include="Assets\Scripts\Domain\Exceptions\MissingAccessibilityFallbackException.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\Achievement.cs" />
+    <Compile Include="Assets\Scripts\Domain\Exceptions\MissingLocalizationKeyException.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\PourPreviewResult.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\PourRejectReason.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\MoldState.cs" />
@@ -61,6 +64,7 @@
     <Compile Include="Assets\Scripts\Domain\Interfaces\IAchievementService.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\Biome.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\OreColor.cs" />
+    <Compile Include="Assets\Scripts\Domain\Models\DomainPattern.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\LocalizationEntry.cs" />
     <Compile Include="Assets\Scripts\Domain\Services\OreSortSolver.cs" />
     <Compile Include="Assets\Scripts\Domain\Interfaces\IMoldValidator.cs" />
@@ -68,7 +72,6 @@
     <Compile Include="Assets\Scripts\Domain\Interfaces\ILocalizationService.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\LayerSnapshot.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\AchievementState.cs" />
-    <Compile Include="Assets\Scripts\Domain\Services\DifficultyBasedLevelGenerator.cs" />
     <Compile Include="Assets\Scripts\Domain\Difficulty.cs" />
     <Compile Include="Assets\Scripts\Domain\ForgeConstants.cs" />
     <Compile Include="Assets\Scripts\Domain\Models\OreLayer.cs" />

@@ -21,7 +21,8 @@ namespace PuzzleGame.Application.Interfaces
         TutorialStarted,
         TutorialCompleted,
         Crash,
-        ErrorShown
+        ErrorShown,
+        IAPPurchase
     }
 
     public interface IAnalyticsService

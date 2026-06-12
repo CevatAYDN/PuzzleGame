@@ -122,6 +122,7 @@ namespace PuzzleGame.Application.Services
                         current.Color,
                         prev.Amount + current.Amount,
                         current.ColorType,
+                        current.Pattern,
                         current.IsHidden,
                         current.Modifier);
                 }

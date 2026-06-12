@@ -85,6 +85,7 @@
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\HardcodedTranslationProvider.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\FirebaseAnalyticsService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\MobileInputHandler.cs" />
+    <Compile Include="Assets\Scripts\Infrastructure\Implementations\PlayReviewService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\InputHandler.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\AdMobService.cs" />
     <Compile Include="Assets\Scripts\Infrastructure\Implementations\PourHistoryService.cs" />

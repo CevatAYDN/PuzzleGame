@@ -84,6 +84,7 @@
     <Compile Include="Assets\Scripts\Application\Interfaces\AudioClipId.cs" />
     <Compile Include="Assets\Scripts\Application\Services\HintService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\PrimeTweenService.cs" />
+    <Compile Include="Assets\Scripts\Application\Interfaces\IReviewService.cs" />
     <Compile Include="Assets\Scripts\Application\Services\NoOpCrashReportingService.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IMoldView.cs" />
     <Compile Include="Assets\Scripts\Application\Interfaces\IPoolManager.cs" />

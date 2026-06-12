@@ -125,7 +125,7 @@ namespace PuzzleGame.Domain.Services
                 var layers = assignments[moldIdx];
                 int frozenPos = rng.Next(0, layers.Count - 1);
                 var layer = layers[frozenPos];
-                layers[frozenPos] = new OreLayer(layer.Color, layer.Amount, layer.ColorType, layer.IsHidden, LayerModifier.Frozen);
+                layers[frozenPos] = layer.WithModifier(LayerModifier.Frozen);
             }
         }
 

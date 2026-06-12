@@ -334,7 +334,7 @@ namespace PuzzleGame.Domain.Tests.Services
         [Test]
         public void CanMultiCast_FrozenSourceTopLayer_ReturnsFalse()
         {
-            var frozenLayer = new OreLayer(DC(1f, 0f, 0f), 0.25f, OreColor.Red, false, LayerModifier.Frozen);
+            var frozenLayer = new OreLayer(DC(1f, 0f, 0f), 0.25f, OreColor.Red).WithModifier(LayerModifier.Frozen);
             _source.AddLayer(frozenLayer);
             _target.AddLayer(Layer(Blue()));
             _target.AddLayer(Layer(Blue()));

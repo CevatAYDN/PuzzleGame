@@ -5,6 +5,7 @@ using System.Linq;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Infrastructure;
+using PuzzleGame.Presentation;
 
 namespace PuzzleGame.Editor
 {

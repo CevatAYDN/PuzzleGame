@@ -12,7 +12,7 @@ namespace PuzzleGame.Domain.Tests.Services
 {
     public class LevelGeneratorSolvabilityTests
     {
-        private readonly ILevelGenerator _generator = new DifficultyBasedLevelGenerator();
+        private readonly ILevelGenerator _generator = new ProceduralLevelGenerator();
         private readonly DomainColor[] _palette = new DomainColor[]
         {
             new DomainColor(1f, 0f, 0f),
