@@ -28,16 +28,27 @@ namespace PuzzleGame.Presentation
             _stateMachine = stateMachine;
         }
 
+        [SerializeField] private bool _forcePlayTestMode = false;
+        public bool ForcePlayTestMode 
+        {
+            get => _forcePlayTestMode;
+            set => _forcePlayTestMode = value;
+        }
+
         public bool TryEnterPlayTestMode(bool isFallbackMenuActive)
         {
-            if (!isFallbackMenuActive)
+            if (!_forcePlayTestMode && !isFallbackMenuActive)
                 return false;
 
             var moldsInScene = FindObjectsByType<MoldController>(FindObjectsInactive.Exclude);
             if (moldsInScene.Length == 0)
                 return false;
 
-            MoldLogger.LogInfo("[PlayTest] Fallback Menu detected with Molds in scene. Initializing Play-Test mode via PlayTestBootstrap.");
+            if (_forcePlayTestMode)
+                MoldLogger.LogInfo("[PlayTest] ForcePlayTestMode is TRUE. Ignoring MainMenu and initializing Play-Test mode.");
+            else
+                MoldLogger.LogInfo("[PlayTest] Fallback Menu detected with Molds in scene. Initializing Play-Test mode via PlayTestBootstrap.");
+            
             _moldPoolInitializer?.InitializeForLevel(null);
             _stateMachine?.TransitionTo(GameState.Playing);
             return true;

@@ -20,11 +20,7 @@ namespace PuzzleGame.Infrastructure.Providers
             var asset = Resources.Load<T>(address);
             if (asset == null)
             {
-                // Optional assets are common during early dev (particles, prefabs not yet authored).
-                // Downgrade to Debug so it doesn't pollute the editor console.
-                UnityEngine.Debug.Log(
-                    $"[ResourcesAssetProvider] Optional asset '{address}' missing — using fallback. " +
-                    "Add it under Resources/ to silence this log.");
+                throw new InvalidOperationException($"[ResourcesAssetProvider] Required asset '{address}' missing. Fallback is strictly disabled.");
             }
             onComplete?.Invoke(asset);
         }
@@ -39,11 +35,7 @@ namespace PuzzleGame.Infrastructure.Providers
             var prefab = Resources.Load<GameObject>(address);
             if (prefab == null)
             {
-                UnityEngine.Debug.Log(
-                    $"[ResourcesAssetProvider] Optional prefab '{address}' missing — using fallback. " +
-                    "Add it under Resources/ to silence this log.");
-                onComplete?.Invoke(null);
-                return;
+                throw new InvalidOperationException($"[ResourcesAssetProvider] Required prefab '{address}' missing. Fallback is strictly disabled.");
             }
             var go = UnityEngine.Object.Instantiate(prefab, parent);
             onComplete?.Invoke(go);

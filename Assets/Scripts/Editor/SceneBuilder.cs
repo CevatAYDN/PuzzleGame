@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using PuzzleGame.Application.Configuration;
+using PuzzleGame.Presentation;
 // Type aliases — disambiguate from UnityEditor.BuildOptions, etc. and keep call sites concise.
 using BuildOptions = PuzzleGame.Editor.SceneBuilderModel.BuildOptions;
 using MoldConfig = PuzzleGame.Editor.SceneBuilderModel.MoldConfig;
@@ -69,7 +70,10 @@ namespace PuzzleGame.Editor
         public static void CreateGameManager()
         {
             if (Object.FindAnyObjectByType<GameManager>() != null) return;
-            new GameObject("GameManager").AddComponent<GameManager>();
+            var go = new GameObject("GameManager");
+            go.AddComponent<GameManager>();
+            var ptb = go.AddComponent<PlayTestBootstrap>();
+            ptb.ForcePlayTestMode = true;
         }
 
         public static void SetupCurrentScene()

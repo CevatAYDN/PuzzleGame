@@ -37,6 +37,9 @@ namespace PuzzleGame.Editor
             string uniqueName = GetUniqueName(cfg.namePrefix);
             var go = new GameObject(uniqueName) { transform = { position = cfg.position } };
 
+            int moldLayer = LayerMask.NameToLayer("Mold");
+            if (moldLayer >= 0) go.layer = moldLayer;
+
             var col = go.AddComponent<CapsuleCollider>();
             col.radius = 0.4f;
             col.height = MoldHeight;
