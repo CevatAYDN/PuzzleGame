@@ -11,7 +11,7 @@ namespace PuzzleGame.Domain.Services
     /// Advanced level generator with difficulty curves and smart color mixing.
     /// Implements ILevelGenerator.
     /// </summary>
-    public class DifficultyBasedLevelGenerator : ILevelGenerator
+    public class ProceduralLevelGenerator : ILevelGenerator
     {
         public List<List<OreLayer>> Generate(
             int MoldCount,

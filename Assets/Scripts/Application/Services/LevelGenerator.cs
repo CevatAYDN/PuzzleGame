@@ -10,10 +10,10 @@ using UnityEngine;
 namespace PuzzleGame.Application.Services
 {
     /// <summary>
-    /// WARNING (Fix #2): This file was a stale copy of <c>DifficultyBasedLevelGenerator</c>
+    /// WARNING (Fix #2): This file was a stale copy of <c>ProceduralLevelGenerator</c>
     /// that did not implement <c>ILevelGenerator</c> despite declaring it. The real
-    /// implementation lives in <c>PuzzleGame.Domain.Services.DifficultyBasedLevelGenerator</c>
-    /// (Assets/Scripts/Domain/Services/DifficultyBasedLevelGenerator.cs).
+    /// implementation lives in <c>PuzzleGame.Domain.Services.ProceduralLevelGenerator</c>
+    /// (Assets/Scripts/Domain/Services/ProceduralLevelGenerator.cs).
     ///
     /// This Application-layer copy was abandoned mid-refactor and has been throwing
     /// CS0535 since <c>ILevelGenerator</c> gained <c>Generate()</c> /
@@ -22,14 +22,14 @@ namespace PuzzleGame.Application.Services
     ///
     /// The correct flow is:
     ///   1. <c>GameInstaller</c> registers <c>ILevelGenerator</c> →
-    ///      <c>Domain.Services.DifficultyBasedLevelGenerator</c>
+    ///      <c>Domain.Services.ProceduralLevelGenerator</c>
     ///   2. <c>LevelSetupService</c> (Application) calls <c>ILevelGenerator.GenerateSolvable()</c>
     ///   3. The Domain generator handles solvability guarantee via <c>OreSortSolver</c>
     ///
     /// This file is preserved as a reference only. Delete it when the migration is
     /// complete and DI registration is updated.
     /// </summary>
-    [Obsolete("Use PuzzleGame.Domain.Services.DifficultyBasedLevelGenerator instead")]
+    [Obsolete("Use PuzzleGame.Domain.Services.ProceduralLevelGenerator instead")]
     public class LegacyLevelGenerator : ILevelGenerator
     {
         private readonly LevelConfig _config;
@@ -53,7 +53,7 @@ namespace PuzzleGame.Application.Services
             Difficulty difficulty,
             int seed = 0)
         {
-            var domainGen = new Domain.Services.DifficultyBasedLevelGenerator();
+            var domainGen = new Domain.Services.ProceduralLevelGenerator();
             return domainGen.Generate(MoldCount, maxLayers, emptyMoldCount, colorPalette, difficulty, seed);
         }
 
@@ -71,7 +71,7 @@ namespace PuzzleGame.Application.Services
             bool enableFrozenLayers = false,
             bool enableMultiPour = false)
         {
-            var domainGen = new Domain.Services.DifficultyBasedLevelGenerator();
+            var domainGen = new Domain.Services.ProceduralLevelGenerator();
             return domainGen.GenerateSolvable(MoldCount, maxLayers, emptyMoldCount, colorPalette, difficulty, seed, maxAttempts, enableFrozenLayers, enableMultiPour);
         }
     }

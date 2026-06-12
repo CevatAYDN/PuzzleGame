@@ -4,7 +4,7 @@ using PuzzleGame.Domain;
 namespace PuzzleGame.Domain.Models
 {
     /// <summary>
-    /// Pure C# renk temsilidir — UnityEngine bağımlılığı yoktur.
+    /// Pure C# renk temsilidir — Unity oyun motoruna bağımlılığı yoktur.
     /// <c>Color</c> ↔ <c>DomainColor</c> dönüşümü için
     /// <c>ColorAdapter</c> (Infrastructure katmanında) kullanılmalıdır.
     /// Bu tür Domain katmanında kalır; Infrastructure katmanı Domain'e bağımlıdır

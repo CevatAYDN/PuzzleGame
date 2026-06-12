@@ -53,18 +53,21 @@ namespace PuzzleGame.Domain.Services
                 return fallback;
             }
 
-            return key;
+            throw new PuzzleGame.Domain.Exceptions.MissingLocalizationKeyException(
+                $"Localization key '{key}' is missing for language '{_currentLanguage}' and no English fallback was found.");
         }
 
         public string GetStringOrDefault(string key, string fallback)
         {
             if (string.IsNullOrEmpty(key)) return fallback;
-            var value = GetString(key);
-            // Treat "key-as-is" fallback (i.e. missing translation) as a miss so
-            // callers never see a raw translation key in the UI.
-            if (string.IsNullOrEmpty(value) || value == key)
+            try
+            {
+                return GetString(key);
+            }
+            catch (PuzzleGame.Domain.Exceptions.MissingLocalizationKeyException)
+            {
                 return fallback;
-            return value;
+            }
         }
 
         public void SetLanguage(SupportedLanguage language)

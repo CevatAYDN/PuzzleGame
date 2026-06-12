@@ -31,7 +31,7 @@ namespace PuzzleGame.Domain.Models
 
     /// <summary>
     /// Pure Domain extension methods for OreColor ↔ DomainColor conversion.
-    /// UnityEngine.Color conversions live in <c>ColorAdapter</c> (Infrastructure)
+    /// Unity Color conversions live in <c>ColorAdapter</c> (Infrastructure)
     /// — chain <c>OreColor.ToDefaultDomainColor()</c> + <c>ColorAdapter.ToUnityStatic()</c>
     /// when a Unity Color is needed from a OreColor.
     /// </summary>
@@ -82,6 +82,28 @@ namespace PuzzleGame.Domain.Models
                    Math.Abs(a.G - b.G) < tolerance &&
                    Math.Abs(a.B - b.B) < tolerance &&
                    Math.Abs(a.A - b.A) < tolerance;
+        }
+
+        /// <summary>
+        /// Get default DomainPattern for this OreColor enum value.
+        /// </summary>
+        public static DomainPattern GetDefaultPattern(this OreColor color)
+        {
+            return color switch
+            {
+                OreColor.Red    => DomainPattern.Solid,
+                OreColor.Blue   => DomainPattern.Waves,
+                OreColor.Green  => DomainPattern.Dots,
+                OreColor.Yellow => DomainPattern.Stripes,
+                OreColor.Orange => DomainPattern.Checkered,
+                OreColor.Purple => DomainPattern.Crosshatch,
+                OreColor.Cyan   => DomainPattern.Diamonds,
+                OreColor.Pink   => DomainPattern.Stars,
+                OreColor.Brown  => DomainPattern.Zigzag,
+                OreColor.White  => DomainPattern.Rings,
+                OreColor.Black  => DomainPattern.Triangles,
+                _ => DomainPattern.None
+            };
         }
     }
 }

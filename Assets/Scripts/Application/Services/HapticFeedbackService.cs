@@ -43,6 +43,8 @@ namespace PuzzleGame.Application.Services
                     HapticIntensity.Success => 45,
                     HapticIntensity.Warning => 50,
                     HapticIntensity.Error => 80,
+                    HapticIntensity.ContinuousPour => 5,
+                    HapticIntensity.PourComplete => 40,
                     _ => 25
                 };
 
@@ -98,6 +100,8 @@ namespace PuzzleGame.Application.Services
                 HapticIntensity.Success => 4,
                 HapticIntensity.Warning => 5,
                 HapticIntensity.Error => 6,
+                HapticIntensity.ContinuousPour => 0, // Light/Selection
+                HapticIntensity.PourComplete => 4, // Success
                 _ => 1
             };
             _PGTriggerHaptic(style);

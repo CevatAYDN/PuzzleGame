@@ -2,13 +2,14 @@ using System;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Logging;
+using PuzzleGame.Domain.Models;
 using UnityEngine;
 
 namespace PuzzleGame.Infrastructure.Implementations
 {
     /// <summary>
     /// PlayerPrefs-backed accessibility service.
-    /// Persists color-blind mode toggle and provides pattern overlay lookup
+    /// Persists color-blind mode and provides pattern overlay lookup
     /// for each OreColor when color-blind mode is active.
     /// </summary>
     public sealed class AccessibilityService : IAccessibilityService
@@ -17,41 +18,38 @@ namespace PuzzleGame.Infrastructure.Implementations
         private const string PrefKey = "PuzzleGame.Accessibility.ColorBlindMode";
 
         private readonly AccessibilityConfig _config;
-        private bool _colorBlindMode;
+        private ColorBlindMode _currentMode;
 
-        public bool ColorBlindModeEnabled => _colorBlindMode;
+        public bool ColorBlindModeEnabled => _currentMode != ColorBlindMode.None;
+        public ColorBlindMode CurrentColorBlindMode => _currentMode;
 
-        public event Action<bool> OnColorBlindModeChanged;
+        public event Action<ColorBlindMode> OnColorBlindModeChanged;
 
         public AccessibilityService(AccessibilityConfig config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
-            _colorBlindMode = PlayerPrefs.GetInt(PrefKey, _config.colorBlindModeDefault ? 1 : 0) == 1;
-            MoldLogger.LogInfo($"{LogTag} Initialized (colorBlindMode={_colorBlindMode}).");
+            int savedMode = PlayerPrefs.GetInt(PrefKey, 0);
+            _currentMode = (ColorBlindMode)savedMode;
+            MoldLogger.LogInfo($"{LogTag} Initialized (mode={_currentMode}).");
         }
 
-        public PatternId GetPatternForColor(int oreColorIndex)
+        public DomainPattern GetPatternForColor(int oreColorIndex)
         {
-            if (!_colorBlindMode)
-                return PatternId.None;
+            if (!ColorBlindModeEnabled)
+                return DomainPattern.None;
 
             return _config.GetPattern(oreColorIndex);
         }
 
-        public void SetColorBlindMode(bool enabled)
+        public void SetColorBlindMode(ColorBlindMode mode)
         {
-            if (_colorBlindMode == enabled) return;
+            if (_currentMode == mode) return;
 
-            _colorBlindMode = enabled;
-            PlayerPrefs.SetInt(PrefKey, enabled ? 1 : 0);
+            _currentMode = mode;
+            PlayerPrefs.SetInt(PrefKey, (int)mode);
             PlayerPrefs.Save();
-            MoldLogger.LogInfo($"{LogTag} Color-blind mode set to {enabled}.");
-            OnColorBlindModeChanged?.Invoke(enabled);
-        }
-
-        public void ToggleColorBlindMode()
-        {
-            SetColorBlindMode(!_colorBlindMode);
+            MoldLogger.LogInfo($"{LogTag} Color-blind mode set to {mode}.");
+            OnColorBlindModeChanged?.Invoke(mode);
         }
     }
 }

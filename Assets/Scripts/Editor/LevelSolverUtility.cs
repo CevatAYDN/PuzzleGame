@@ -54,7 +54,7 @@ namespace PuzzleGame.Editor
             if (level == null) return new List<List<OreLayer>>();
             if (level.autoGenerate)
             {
-                var generator = new DifficultyBasedLevelGenerator();
+                var generator = new ProceduralLevelGenerator();
                 Color[] palette = levelConfig != null && levelConfig.palette.Length > 0 ? levelConfig.palette : SceneBuilderModel.DefaultPalette;
                 var domainPalette = GetOrConvertPalette(palette);
 

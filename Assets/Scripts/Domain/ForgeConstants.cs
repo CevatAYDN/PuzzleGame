@@ -9,7 +9,7 @@
 // 3. If a designer might want to tweak it from the inspector (per-level,
 //    per-device, per-feature), it lives in a ScriptableObject under
 //    Configuration/ — NOT here.
-// 4. NO `using UnityEngine;` — Domain layer must remain pure C# so the
+// 4. NO Unity engine references — Domain layer must remain pure C# so the
 //    solver, replay, and CI validations can run headless.
 // =====================================================================
 

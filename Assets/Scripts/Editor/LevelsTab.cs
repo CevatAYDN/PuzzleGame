@@ -650,7 +650,7 @@ namespace PuzzleGame.Editor
                     for (int attempt = 1; attempt <= 100; attempt++)
                     {
                         seed += 1337;
-                        var tempAssignments = new DifficultyBasedLevelGenerator().Generate(
+                        var tempAssignments = new ProceduralLevelGenerator().Generate(
                             levelData.MoldCount,
                             levelData.maxLayersPerMold,
                             levelData.emptyMoldCount,

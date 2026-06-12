@@ -8,7 +8,9 @@ namespace PuzzleGame.Application.Interfaces
         Success = 3,
         Warning = 4,
         Error = 5,
-        Selection = 6
+        Selection = 6,
+        ContinuousPour = 7,
+        PourComplete = 8
     }
 
     public interface IHapticFeedbackService

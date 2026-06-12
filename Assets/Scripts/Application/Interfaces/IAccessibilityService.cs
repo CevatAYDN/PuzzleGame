@@ -1,25 +1,17 @@
 using System;
+using PuzzleGame.Domain.Models;
 
 namespace PuzzleGame.Application.Interfaces
 {
     /// <summary>
-    /// Pattern overlay identifiers for color-blind mode.
-    /// Each pattern is a visual texture drawn on top of the ore layer
-    /// so that colors can be distinguished even without perceiving hue.
+    /// Supported color-blind modes.
     /// </summary>
-    public enum PatternId
+    public enum ColorBlindMode
     {
         None = 0,
-        Dots = 1,
-        Stripes = 2,
-        Crosshatch = 3,
-        Wavy = 4,
-        Zigzag = 5,
-        Plaid = 6,
-        Rings = 7,
-        Diagonal = 8,
-        Grid = 9,
-        Chevron = 10,
+        Protanopia = 1,
+        Deuteranopia = 2,
+        Tritanopia = 3
     }
 
     /// <summary>
@@ -30,23 +22,23 @@ namespace PuzzleGame.Application.Interfaces
     /// </summary>
     public interface IAccessibilityService
     {
-        /// <summary>Whether color-blind mode is currently active.</summary>
+        /// <summary>Whether any color-blind mode is currently active.</summary>
         bool ColorBlindModeEnabled { get; }
 
-        /// <summary>Fired when color-blind mode is toggled.</summary>
-        event Action<bool> OnColorBlindModeChanged;
+        /// <summary>The currently active color-blind mode.</summary>
+        ColorBlindMode CurrentColorBlindMode { get; }
+
+        /// <summary>Fired when color-blind mode is changed.</summary>
+        event Action<ColorBlindMode> OnColorBlindModeChanged;
 
         /// <summary>
-        /// Get the pattern ID for a given OreColor index (1-based).
-        /// When <see cref="ColorBlindModeEnabled"/> is false, always returns <see cref="PatternId.None"/>.
-        /// When enabled, returns a deterministic pattern based on the color index.
+        /// Get the pattern for a given OreColor index (1-based).
+        /// When <see cref="ColorBlindModeEnabled"/> is false, always returns <see cref="DomainPattern.None"/>.
+        /// When enabled, returns a deterministic pattern based on the color index and the current mode.
         /// </summary>
-        PatternId GetPatternForColor(int oreColorIndex);
+        DomainPattern GetPatternForColor(int oreColorIndex);
 
-        /// <summary>Enable or disable color-blind mode. Persists immediately.</summary>
-        void SetColorBlindMode(bool enabled);
-
-        /// <summary>Toggle color-blind mode.</summary>
-        void ToggleColorBlindMode();
+        /// <summary>Set the active color-blind mode. Persists immediately.</summary>
+        void SetColorBlindMode(ColorBlindMode mode);
     }
 }

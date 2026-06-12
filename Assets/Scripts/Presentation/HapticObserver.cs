@@ -33,12 +33,12 @@ namespace PuzzleGame.Presentation
 
         private void OnCastCompleted(CastCompletedEvent evt)
         {
-            _hapticService.Trigger(HapticIntensity.Medium);
+            _hapticService.Trigger(HapticIntensity.PourComplete);
         }
 
         private void OnCastRejected(CastRejectedEvent evt)
         {
-            _hapticService.Trigger(HapticIntensity.Warning);
+            _hapticService.Trigger(HapticIntensity.Error);
         }
 
         private void OnLevelCompleted(LevelCompletedEvent evt)

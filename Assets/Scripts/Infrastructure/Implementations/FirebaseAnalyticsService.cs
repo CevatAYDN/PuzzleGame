@@ -96,8 +96,6 @@ namespace PuzzleGame.Infrastructure.Implementations
             AnalyticsEvent.CoinEarned => "coin_earned",
             AnalyticsEvent.CoinSpent => "coin_spent",
             AnalyticsEvent.AdWatched => "ad_watched",
-            AnalyticsEvent.IAPPurchase => "iap_purchase",
-            AnalyticsEvent.ShopOpened => "shop_open",
             AnalyticsEvent.DailyChallengeStarted => "daily_start",
             AnalyticsEvent.DailyChallengeCompleted => "daily_complete",
             AnalyticsEvent.SettingsChanged => "settings_change",

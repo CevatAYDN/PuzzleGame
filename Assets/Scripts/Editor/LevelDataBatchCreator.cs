@@ -140,7 +140,7 @@ namespace PuzzleGame.Editor
                     level.randomSeed = p.RandomSeed;
                     level.parMoves = p.ParMoves;
                     level.goodMoves = p.GoodMoves;
-                    level.autoGenerate = true; // runtime DifficultyBasedLevelGenerator populates Molds
+                    level.autoGenerate = true; // runtime ProceduralLevelGenerator populates Molds
 
                     AssetDatabase.CreateAsset(level, fullPath);
                     created.Add(level);

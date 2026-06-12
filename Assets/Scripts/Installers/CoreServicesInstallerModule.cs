@@ -61,7 +61,7 @@ namespace PuzzleGame.Installers
             builder.Register<ILevelRepository, ScriptableObjectLevelRepository>(Lifetime.Singleton);
 
             // Level generator
-            builder.Register<ILevelGenerator, DifficultyBasedLevelGenerator>(Lifetime.Singleton);
+            builder.Register<ILevelGenerator, ProceduralLevelGenerator>(Lifetime.Singleton);
         }
     }
 }

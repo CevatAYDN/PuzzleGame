@@ -38,7 +38,31 @@ namespace PuzzleGame.Application.Services
         public LevelData GetByNumber(int levelNumber)
         {
             // Fix #M8: O(1) dictionary lookup instead of O(n) linear scan
-            return _byNumber.TryGetValue(levelNumber, out var level) ? level : null;
+            if (_byNumber.TryGetValue(levelNumber, out var level))
+            {
+                return level;
+            }
+
+            // Infinite Levels Fallback: dynamically generate a level if we run out of pre-authored ones.
+            var proceduralLevel = UnityEngine.ScriptableObject.CreateInstance<LevelData>();
+            proceduralLevel.name = $"Level_{levelNumber}_Procedural";
+            proceduralLevel.levelNumber = levelNumber;
+            proceduralLevel.autoGenerate = true;
+            proceduralLevel.randomSeed = levelNumber * 1337;
+            
+            // Progressive curve for procedural levels
+            proceduralLevel.MoldCount = System.Math.Clamp(5 + (levelNumber / 15), 5, 14);
+            proceduralLevel.emptyMoldCount = 2;
+            proceduralLevel.maxLayersPerMold = 4;
+            
+            if (levelNumber > 200) proceduralLevel.difficulty = PuzzleGame.Domain.Difficulty.Expert;
+            else if (levelNumber > 80) proceduralLevel.difficulty = PuzzleGame.Domain.Difficulty.Hard;
+            else proceduralLevel.difficulty = PuzzleGame.Domain.Difficulty.Medium;
+
+            // Cache it so it remains consistent during the session
+            _byNumber[levelNumber] = proceduralLevel;
+            
+            return proceduralLevel;
         }
     }
 }
