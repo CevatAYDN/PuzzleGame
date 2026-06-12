@@ -19,6 +19,7 @@ namespace PuzzleGame.Infrastructure.Implementations
         private readonly IEventAggregator _eventAggregator;
         private readonly IAssetProvider _assetProvider;
         private VisualEffectAsset _cachedAsset;
+        private bool _isAsyncLoading;
         private int _frameCounter;
 
         // Last published source/target mouth positions. Used to skip redundant
@@ -38,9 +39,11 @@ namespace PuzzleGame.Infrastructure.Implementations
 
             if (_assetProvider != null)
             {
+                _isAsyncLoading = true;
                 _assetProvider.LoadAssetAsync<VisualEffectAsset>("MagmaFlow", asset =>
                 {
                     _cachedAsset = asset;
+                    _isAsyncLoading = false;
                     if (asset != null)
                     {
                         MoldLogger.LogInfo("MagmaFlow.vfx preloaded asynchronously via IAssetProvider.");
@@ -55,10 +58,20 @@ namespace PuzzleGame.Infrastructure.Implementations
             if (vfx == null)
             {
                 vfx = owner.AddComponent<VisualEffect>();
+            }
+
+            // Fix 3: Race Condition and Frame-Drop protection
+            if (vfx.visualEffectAsset == null)
+            {
                 if (_cachedAsset != null)
                 {
                     vfx.visualEffectAsset = _cachedAsset;
                     MoldLogger.LogDebug("MagmaFlow.vfx applied from preloaded cache.");
+                }
+                else if (_isAsyncLoading)
+                {
+                    MoldLogger.LogDebug("MagmaFlow.vfx is still loading asynchronously. Skipping sync fallback.");
+                    // Will retry next frame when Update calls EnsureEffect.
                 }
                 else
                 {
@@ -165,6 +178,28 @@ namespace PuzzleGame.Infrastructure.Implementations
                     _config.particleCapacity,
                     Mathf.RoundToInt(distance * _config.particlesPerUnitDistance));
                 vfx.SetInt("ParticleCount", particleCount);
+            }
+
+            // Polish Task 2: Splash VFX Hook
+            // Liquid typically reaches the target around t=0.3 to 0.4.
+            // We expose SplashIntensity and SplashPos so the VFX artist can trigger droplets.
+            if (t > 0.3f && t < 0.95f)
+            {
+                if (vfx.HasFloat("SplashIntensity"))
+                {
+                    vfx.SetFloat("SplashIntensity", intensity * 0.7f);
+                }
+                if (vfx.HasVector3("SplashPos"))
+                {
+                    vfx.SetVector3("SplashPos", targetMouth - Vector3.up * 0.1f);
+                }
+            }
+            else
+            {
+                if (vfx.HasFloat("SplashIntensity"))
+                {
+                    vfx.SetFloat("SplashIntensity", 0f);
+                }
             }
 
             // Throttled status reporting for debug overlay

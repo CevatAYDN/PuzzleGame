@@ -12,6 +12,9 @@ namespace PuzzleGame.Application.Interfaces
         /// <summary>True while any tween is running.</summary>
         bool IsAnimating { get; }
 
+        /// <summary>Forcefully clears the animation lock if stuck.</summary>
+        void ForceUnlock();
+
         /// <summary>Lifts a Mold upward by <paramref name="height"/> units.</summary>
         void AnimateMoldLift(Transform Mold,
                                float height, float duration,

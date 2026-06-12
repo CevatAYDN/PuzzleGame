@@ -10,7 +10,7 @@ namespace PuzzleGame.Application.Services
     /// after charging the configured cost via <see cref="ICoinWallet"/>.
     /// Resets per-level counter on <see cref="LevelSelectedEvent"/>.
     /// </summary>
-    public sealed class UndoService : IUndoService
+    public sealed class UndoService : IUndoService, System.IDisposable
     {
         private const string LogTag = "[UndoService]";
 
@@ -37,7 +37,17 @@ namespace PuzzleGame.Application.Services
             _config = config;
             _events = events;
             _animationService = animationService;
-            _events.Subscribe<LevelSelectedEvent>(_ => _undosUsedThisLevel = 0);
+            _events.Subscribe<LevelSelectedEvent>(OnLevelSelected);
+        }
+
+        private void OnLevelSelected(LevelSelectedEvent e)
+        {
+            _undosUsedThisLevel = 0;
+        }
+
+        public void Dispose()
+        {
+            _events?.Unsubscribe<LevelSelectedEvent>(OnLevelSelected);
         }
 
         public bool TryUndo()

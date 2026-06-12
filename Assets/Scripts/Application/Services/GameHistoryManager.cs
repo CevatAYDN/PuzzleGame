@@ -108,6 +108,13 @@ namespace PuzzleGame.Application.Services
             var snapshot = _history.Pop();
             if (snapshot == null) return;
 
+            // Polish Task 4: Undo State Drift Protection
+            float totalFillBefore = 0f;
+            for (int i = 0; i < _Molds.Length; i++)
+            {
+                if (_Molds[i]?.State != null) totalFillBefore += _Molds[i].State.TotalFill;
+            }
+
             for (int i = 0; i < snapshot.Length && i < _Molds.Length; i++)
             {
                 if (_Molds[i] == null || _Molds[i].State == null) continue;
@@ -123,6 +130,17 @@ namespace PuzzleGame.Application.Services
                     throw new InvalidOperationException(
                         $"Undo failed for Mold {i}: snapshot is invalid (layer count > MaxLayers).", ex);
                 }
+            }
+
+            float totalFillAfter = 0f;
+            for (int i = 0; i < _Molds.Length; i++)
+            {
+                if (_Molds[i]?.State != null) totalFillAfter += _Molds[i].State.TotalFill;
+            }
+
+            if (Math.Abs(totalFillBefore - totalFillAfter) > 0.01f)
+            {
+                MoldLogger.LogWarning($"[Undo Drift Guard] TotalFill drifted during Undo! Before: {totalFillBefore}, After: {totalFillAfter}");
             }
 
             if (snapshot.Length == _maxMolds)

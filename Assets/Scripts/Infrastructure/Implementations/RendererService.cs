@@ -18,6 +18,8 @@ namespace PuzzleGame.Infrastructure.Implementations
     {
         private static readonly int[] ColorIDs = BuildShaderPropertyIDs("_Color", ForgeConstants.MaxLayers);
         private static readonly int[] FillIDs  = BuildShaderPropertyIDs("_Fill",  ForgeConstants.MaxLayers);
+        private static readonly int[] PatternIDs = BuildShaderPropertyIDs("_Pattern", ForgeConstants.MaxLayers);
+        private static readonly int[] PatternTilingIDs = BuildShaderPropertyIDs("_PatternTilingY", ForgeConstants.MaxLayers);
 
         private static int[] BuildShaderPropertyIDs(string prefix, int count)
         {
@@ -82,25 +84,38 @@ namespace PuzzleGame.Infrastructure.Implementations
                 Color color = Color.clear;
                 float fill  = cumulative;
 
+                int patternValue = 0;
+                float patternTiling = 1f;
+
                 if (i < _mergedLayers.Count)
                 {
                     var layer = _mergedLayers[i];
                     if (layer.IsHidden)
                     {
                         color = new Color(0.35f, 0.35f, 0.35f, 1f);
+                        patternValue = 0;
                     }
                     else
                     {
                         float sat = config != null ? config.saturationBoost : 1.25f;
                         float bri = config != null ? config.brightnessBoost : 1.15f;
                         color      = AdjustColor(_colorAdapter.ToUnity(layer.Color), sat, bri);
+                        
+                        // Default pattern from enum mapping
+                        patternValue = (int)PuzzleGame.Domain.Models.OreColorExtensions.GetDefaultPattern(layer.Color);
                     }
                     cumulative += layer.Amount;
                     fill       = cumulative;
+                    
+                    // Polish Task 3: Dynamic Pattern Tiling based on layer amount
+                    // Ensure larger amounts get more tiling so the pattern doesn't stretch awkwardly
+                    patternTiling = Mathf.Max(1f, layer.Amount * 2.5f);
                 }
 
                 _OreBlock.SetColor(ColorIDs[i], color);
                 _OreBlock.SetFloat(FillIDs[i],  fill);
+                _OreBlock.SetFloat(PatternIDs[i], patternValue);
+                _OreBlock.SetFloat(PatternTilingIDs[i], patternTiling);
             }
 
             _OreBlock.SetFloat(SurfaceHeightID, totalFill);

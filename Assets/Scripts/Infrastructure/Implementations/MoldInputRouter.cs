@@ -58,6 +58,9 @@ namespace PuzzleGame.Infrastructure.Implementations
         private Vector3 _selectedOriginalPos;
         // Fix #24: Frame guard to prevent processing multiple inputs per frame
         private int _lastProcessedFrame = -1;
+        
+        // Fix #4: Softlock timeout tracker
+        private float _animationLockStartTime = -1f;
 
         public MoldInputRouter(
             IInputHandler inputHandler,
@@ -131,9 +134,27 @@ namespace PuzzleGame.Infrastructure.Implementations
             }
             if (_animationService.IsAnimating)
             {
-                MoldLogger.LogWarning("[MoldInputRouter] ProcessInput skipped: _animationService.IsAnimating is true.");
+                // Fix 4: Animation lock timeout protection (Softlock fix)
+                if (_animationLockStartTime < 0f)
+                {
+                    _animationLockStartTime = Time.time;
+                }
+                else if (Time.time - _animationLockStartTime > 3f)
+                {
+                    MoldLogger.LogWarning("[MoldInputRouter] Animation lock timeout reached (>3s). Forcing unlock to prevent softlock.");
+                    _animationService.ForceUnlock();
+                    _animationLockStartTime = -1f;
+                    return; // Next frame will process normally
+                }
+
+                // MoldLogger.LogWarning("[MoldInputRouter] ProcessInput skipped: _animationService.IsAnimating is true.");
                 return;
             }
+            else
+            {
+                _animationLockStartTime = -1f;
+            }
+
             if (_inputHandler == null)
             {
                 MoldLogger.LogWarning("[MoldInputRouter] ProcessInput skipped: _inputHandler is null.");

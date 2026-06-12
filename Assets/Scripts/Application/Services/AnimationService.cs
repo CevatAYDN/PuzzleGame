@@ -69,6 +69,20 @@ namespace PuzzleGame.Application.Services
 
         public bool IsAnimating => _activeTweenCount > 0;
 
+        public void ForceUnlock()
+        {
+            if (_activeTweenCount > 0)
+            {
+                MoldLogger.LogWarning($"[AnimationService] Forcing unlock. Active tweens before kill: {_activeTweens.Count}, count: {_activeTweenCount}");
+                foreach (var tween in new List<ITweenHandle>(_activeTweens))
+                {
+                    tween?.Kill();
+                }
+                _activeTweens.Clear();
+                _activeTweenCount = 0;
+            }
+        }
+
         public AnimationService(AnimationConfig config, ITweenService tween, IAudioService audioService, IPoolManager poolManager, IColorAdapter colorAdapter, IParticleFactory particleFactory, IStreamRenderer streamRenderer, IStreamTrailController trailController, IFeatureFlagService featureFlagService)
         {
             _config = config;
