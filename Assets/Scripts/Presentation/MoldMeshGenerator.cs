@@ -31,6 +31,8 @@ namespace PuzzleGame
         private bool _isBuildingInProgress;
 #endif
 
+        private Mesh _instantiatedMesh;
+
         private void Awake()
         {
             _meshFilter = GetComponent<MeshFilter>();
@@ -142,7 +144,7 @@ namespace PuzzleGame
                 tris.Add(lastRing + s1);
             }
 
-            Mesh oldMesh = _meshFilter.sharedMesh;
+            Mesh oldMesh = _instantiatedMesh;
             var mesh = new Mesh { name = "Mold" };
             mesh.SetVertices(verts);
             mesh.SetNormals(norms);
@@ -152,6 +154,7 @@ namespace PuzzleGame
             mesh.RecalculateTangents();
 
             _meshFilter.sharedMesh = mesh;
+            _instantiatedMesh = mesh;
 
             if (oldMesh != null)
             {
@@ -172,12 +175,10 @@ namespace PuzzleGame
 
         private void OnDestroy()
         {
-            if (_meshFilter != null && _meshFilter.sharedMesh != null)
+            if (_instantiatedMesh != null)
             {
-                if (_meshFilter.sharedMesh.name == "Mold")
-                {
-                    SafeDestroy(_meshFilter.sharedMesh);
-                }
+                SafeDestroy(_instantiatedMesh);
+                _instantiatedMesh = null;
             }
         }
 

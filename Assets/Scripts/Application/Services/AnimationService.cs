@@ -132,21 +132,12 @@ namespace PuzzleGame.Application.Services
             }
             _activeTweens.Clear();
 
-            if (UnityEngine.Application.isPlaying)
-            {
-                if (_splashPrefab != null)
-                {
-                    UnityEngine.Object.Destroy(_splashPrefab.gameObject);
-                }
-                if (_bubblePrefab != null)
-                {
-                    UnityEngine.Object.Destroy(_bubblePrefab.gameObject);
-                }
-            }
+            // Prefabs are loaded as Assets via ParticleFactory. We must not destroy them here,
+            // as it would trigger Unity's "Destroying assets is not permitted" data loss error.
+            // Asset lifecycle is managed by the AssetProvider.
 
             _poolManager.RemovePool<ParticleSystem>("SplashPool");
             _poolManager.RemovePool<ParticleSystem>("BubblePool");
-
         }
 
         // ──────────────────────────────────────────────

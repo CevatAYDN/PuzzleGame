@@ -117,18 +117,9 @@ namespace PuzzleGame
         {
             if (_corkObject == null || !_isProcedural) return;
 
-            // Only destroy non-cached resources (externally assigned meshes/materials)
-            var filter = _corkObject.GetComponent<MeshFilter>();
-            if (filter != null && filter.sharedMesh != null && filter.sharedMesh.name != "CorkMesh")
-            {
-                SafeDestroy(filter.sharedMesh);
-            }
-
-            var corkRenderer = _corkObject.GetComponent<MeshRenderer>();
-            if (corkRenderer != null && corkRenderer.sharedMaterial != null && corkRenderer.sharedMaterial != s_sharedMaterial)
-            {
-                SafeDestroy(corkRenderer.sharedMaterial);
-            }
+            // Our procedural meshes are cached in s_meshCache and s_sharedMaterial.
+            // We do not destroy instance-level meshes or materials here, as they might be external Assets.
+            // Call ClearCache() when the application quits or scene unloads.
         }
 
         private GameObject CreateProceduralCork()
@@ -168,11 +159,8 @@ namespace PuzzleGame
 
             Mesh oldMesh = filter.sharedMesh;
             filter.sharedMesh = mesh;
-            // Only destroy old mesh if it was not from cache
-            if (oldMesh != null && oldMesh != mesh && oldMesh.name != "CorkMesh")
-            {
-                SafeDestroy(oldMesh);
-            }
+            // Do not destroy oldMesh here. If it's an external Asset, destroying it causes data loss errors.
+            // Our procedural meshes are safely tracked in s_meshCache and cleaned by ClearCache().
 
             // ── Material: use shared singleton ──
             if (s_sharedMaterial == null)
@@ -182,11 +170,7 @@ namespace PuzzleGame
 
             Material oldMat = corkRenderer.sharedMaterial;
             corkRenderer.sharedMaterial = s_sharedMaterial;
-            // Only destroy old material if it was not the shared one
-            if (oldMat != null && oldMat != s_sharedMaterial)
-            {
-                SafeDestroy(oldMat);
-            }
+            // Do not destroy oldMat here. It might be an external Asset.
         }
 
         /// <summary>
