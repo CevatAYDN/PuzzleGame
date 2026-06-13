@@ -74,6 +74,7 @@ namespace PuzzleGame.Editor
             go.AddComponent<GameManager>();
             var ptb = go.AddComponent<PlayTestBootstrap>();
             ptb.ForcePlayTestMode = true;
+            Undo.RegisterCreatedObjectUndo(go, "Create GameManager");
         }
 
         public static void SetupCurrentScene()
@@ -149,11 +150,13 @@ namespace PuzzleGame.Editor
 
             var go = new GameObject("GameInstaller");
             var installer = go.AddComponent<Installers.GameInstaller>();
+            Undo.RegisterCreatedObjectUndo(go, "Create GameInstaller");
 
             // Auto-assign configs from Resources, create defaults if not found
             if (!System.IO.Directory.Exists("Assets/Resources/Data"))
             {
                 System.IO.Directory.CreateDirectory("Assets/Resources/Data");
+                UnityEditor.AssetDatabase.Refresh();
             }
 
             installer.gameConfig = Resources.Load<GameConfig>("Data/GameConfig");

@@ -79,7 +79,9 @@ namespace PuzzleGame.Infrastructure.Pool
             if (!_active.Remove(instance)) return; // already returned or unknown
 
             instance.gameObject.SetActive(false);
-            instance.transform.SetParent(null);
+            // Fix #23: Memory/Hierarchy Pollution. SetParent(null) throws pooled objects
+            // to the scene root, causing severe hierarchy bloat and lag.
+            instance.transform.SetParent(_defaultParent);
 
             _onReturn?.Invoke(instance);
 

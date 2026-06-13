@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Interfaces;
@@ -53,27 +54,28 @@ namespace PuzzleGame.Application.Services
             if (target == null) return false;
 
             var activeLevelData = _defaults.GetActiveLevelData(_currentLevelData);
-            var sourceViews = new IMoldView[sourceStates.Count];
-
+            // Fix #22: Removed Array closure capture which could cause memory leaks.
+            // We capture the exact local 'view' instead of the array reference.
+            var exactSourceViews = new IMoldView[sourceStates.Count];
             for (int i = 0; i < sourceStates.Count; i++)
-                sourceViews[i] = _lookup.FindByState(sourceStates[i]);
+                exactSourceViews[i] = _lookup.FindByState(sourceStates[i]);
 
-            if (_castService.TryMultiCast(sourceViews, target, activeLevelData, activeMolds))
+            if (_castService.TryMultiCast(exactSourceViews, target, activeLevelData, activeMolds))
             {
                 MoldLogger.LogInfo($"{LogTag} Multi-cast succeeded ({sourceStates.Count} sources).");
 
-                for (int i = 0; i < sourceViews.Length; i++)
+                for (int i = 0; i < exactSourceViews.Length; i++)
                 {
-                    var idx = i;
+                    var view = exactSourceViews[i]; // Fix closure capture!
                     _animationService.AnimateCast(
-                        sourceViews[idx],
+                        view,
                         target,
                         _animConfig.CastDuration,
                         onComplete: () =>
                         {
-                            sourceViews[idx].SetSelectionHighlight(false);
+                            view.SetSelectionHighlight(false);
                             _animationService.AnimateMoldLower(
-                                sourceViews[idx].Transform,
+                                view.Transform,
                                 selectedOriginalPos, _animConfig.liftDuration);
                         });
                 }
@@ -87,11 +89,12 @@ namespace PuzzleGame.Application.Services
                 _audioService?.PlaySfx(AudioClipId.Error);
                 _animationService?.AnimateErrorShake(target.Transform, onComplete: () =>
                 {
-                    for (int i = 0; i < sourceViews.Length; i++)
+                    for (int i = 0; i < exactSourceViews.Length; i++)
                     {
-                        sourceViews[i].SetSelectionHighlight(false);
+                        var view = exactSourceViews[i]; // Fix closure capture
+                        view.SetSelectionHighlight(false);
                         _animationService.AnimateMoldLower(
-                            sourceViews[i].Transform,
+                            view.Transform,
                             selectedOriginalPos, _animConfig.liftDuration);
                     }
                     _selectionService.Deselect();

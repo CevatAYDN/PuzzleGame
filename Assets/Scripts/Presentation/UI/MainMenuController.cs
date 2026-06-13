@@ -56,6 +56,7 @@ namespace PuzzleGame.Presentation.UI
         private IStreakService _streak;
         private IDailyChallengeService _daily;
         private ITweenService _tween;
+        private ITweenHandle _fadeTween;
 
         [Inject]
         public void Construct(
@@ -290,13 +291,19 @@ namespace PuzzleGame.Presentation.UI
                 onComplete?.Invoke();
                 return;
             }
+
+            // Fix #24: Aggressive QA detected overlapping tweens.
+            // Rapid state transitions could cause an old fade-out to complete
+            // and disable the GameObject while a new fade-in was running.
+            _fadeTween?.Kill();
+
             float from = rootCanvasGroup.alpha;
             if (Mathf.Approximately(from, toAlpha))
             {
                 onComplete?.Invoke();
                 return;
             }
-            _tween.TweenCustom(rootCanvasGroup, from, toAlpha, SubPanelFadeDuration, (target, t) =>
+            _fadeTween = _tween.TweenCustom(rootCanvasGroup, from, toAlpha, SubPanelFadeDuration, (target, t) =>
             {
                 if (target is CanvasGroup cg) cg.alpha = Mathf.Lerp(from, toAlpha, t);
             }).OnComplete(() => onComplete?.Invoke());

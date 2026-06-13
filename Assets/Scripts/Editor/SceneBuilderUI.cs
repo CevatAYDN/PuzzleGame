@@ -73,7 +73,7 @@ namespace PuzzleGame.Editor
             var controller = cam.GetComponent<Presentation.CameraEffectsController>();
             if (controller != null) return;
 
-            cam.gameObject.AddComponent<Presentation.CameraEffectsController>();
+            Undo.AddComponent<Presentation.CameraEffectsController>(cam.gameObject);
         }
 
         // ── Core infrastructure ──────────────────────────────────────────────

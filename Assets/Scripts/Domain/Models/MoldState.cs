@@ -168,22 +168,26 @@ namespace PuzzleGame.Domain.Models
             if (newLayers == null)
                 throw new ArgumentNullException(nameof(newLayers), "Layer sequence cannot be null.");
 
-            // Fix #15: Materialize in one pass — avoids double enumeration of IEnumerable sources
-            // (e.g. LINQ pipelines that would be executed twice).
-            var temp = new List<OreLayer>(MaxLayers);
+            if (newLayers is IReadOnlyCollection<OreLayer> coll && coll.Count > MaxLayers)
+                throw new ArgumentException($"Too many layers (> {MaxLayers}).", nameof(newLayers));
+
+            // Fix #21: Memory Leak / GC Allocation removed.
+            // We no longer allocate a temp List<OreLayer>. We write directly to _layers
+            // and rollback if the capacity is exceeded.
+            _layers.Clear();
             float total = 0f;
             foreach (var layer in newLayers)
             {
-                temp.Add(layer);
+                if (_layers.Count >= MaxLayers)
+                {
+                    _layers.Clear(); // rollback
+                    _totalFill = 0f;
+                    throw new ArgumentException($"Too many layers (> {MaxLayers}).", nameof(newLayers));
+                }
+                _layers.Add(layer);
                 total += layer.Amount;
-                if (temp.Count > MaxLayers)
-                    throw new ArgumentException(
-                        $"Too many layers (> {MaxLayers}).", nameof(newLayers));
             }
 
-            // All valid — atomically update state.
-            _layers.Clear();
-            _layers.AddRange(temp);
             _totalFill = total;
 
             // Observer pattern: notify listeners (e.g. MoldController.UpdateVisualsFromState).

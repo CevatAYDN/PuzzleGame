@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEditor;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using PuzzleGame.Application.Configuration;
@@ -32,6 +33,7 @@ namespace PuzzleGame.Editor
         public static Light CreateDirectionalLight(string name, Color color, float intensity, Quaternion rotation)
         {
             var go = new GameObject(name);
+            Undo.RegisterCreatedObjectUndo(go, "Create " + name);
             var light = go.AddComponent<Light>();
             light.type = LightType.Directional;
             light.color = color;
@@ -43,6 +45,7 @@ namespace PuzzleGame.Editor
         public static Light CreatePointLight(string name, Color color, float intensity, float range, Vector3 pos)
         {
             var go = new GameObject(name);
+            Undo.RegisterCreatedObjectUndo(go, "Create " + name);
             var light = go.AddComponent<Light>();
             light.type = LightType.Point;
             light.color = color;
@@ -94,6 +97,7 @@ namespace PuzzleGame.Editor
         public static void SetupCamera()
         {
             var go = new GameObject("Main Camera") { tag = "MainCamera" };
+            Undo.RegisterCreatedObjectUndo(go, "Create Main Camera");
             var cam = go.AddComponent<Camera>();
             cam.backgroundColor = CamBackground;
             cam.clearFlags = CameraClearFlags.SolidColor;
@@ -107,6 +111,7 @@ namespace PuzzleGame.Editor
         public static void SetupPostProcessing()
         {
             var go = new GameObject("PostProcessing");
+            Undo.RegisterCreatedObjectUndo(go, "Create PostProcessing");
             var volume = go.AddComponent<Volume>();
             volume.isGlobal = true;
             volume.priority = 1f;
@@ -135,6 +140,7 @@ namespace PuzzleGame.Editor
         public static void CreateCauldron()
         {
             var cauldron = new GameObject("Cauldron") { transform = { position = CauldronPos } };
+            Undo.RegisterCreatedObjectUndo(cauldron, "Create Cauldron");
             var cauldronMat = CreateLitMaterial(CauldronColor, 0.8f, 0.4f);
 
             var body = CreatePrimitive("CauldronBody", PrimitiveType.Sphere);
@@ -168,6 +174,7 @@ namespace PuzzleGame.Editor
         public static void CreateFireParticles(Transform parent)
         {
             var go = new GameObject("FireEffect");
+            Undo.RegisterCreatedObjectUndo(go, "Create FireEffect");
             go.transform.SetParent(parent);
             go.transform.localPosition = new Vector3(0f, 1.2f, 0f);
 
@@ -278,6 +285,7 @@ namespace PuzzleGame.Editor
         {
             var go = GameObject.CreatePrimitive(type);
             go.name = name;
+            Undo.RegisterCreatedObjectUndo(go, "Create " + name);
             return go;
         }
 
