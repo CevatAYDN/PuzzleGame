@@ -63,7 +63,7 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void Constructor_NoSavedPrefs_LoadsDefaults()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             Assert.That(svc.TotalXp, Is.EqualTo(0));
             Assert.That(svc.SeasonXp, Is.EqualTo(0));
             Assert.That(svc.PlayerLevel, Is.EqualTo(0));
@@ -75,7 +75,7 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void AddXp_Positive_IncreasesTotalAndSeason()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             svc.AddXp(100);
             Assert.That(svc.TotalXp, Is.EqualTo(100));
             Assert.That(svc.SeasonXp, Is.EqualTo(100));
@@ -84,7 +84,7 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void AddXp_Zero_DoesNothing()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             svc.AddXp(50);
             svc.AddXp(0);
             Assert.That(svc.TotalXp, Is.EqualTo(50));
@@ -93,7 +93,7 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void AddXp_Negative_DoesNothing()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             svc.AddXp(50);
             svc.AddXp(-30);
             Assert.That(svc.TotalXp, Is.EqualTo(50));
@@ -102,7 +102,7 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void AddXp_MultipleCalls_Accumulates()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             svc.AddXp(100);
             svc.AddXp(200);
             svc.AddXp(300);
@@ -115,7 +115,7 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void AddLevelXp_NoStarsNotEfficient_GivesBaseXp()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             svc.AddLevelXp(1, 0, false);
             Assert.That(svc.TotalXp, Is.EqualTo(50));
         }
@@ -123,7 +123,7 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void AddLevelXp_WithStars_AddsStarBonus()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             svc.AddLevelXp(1, 3, false);
             Assert.That(svc.TotalXp, Is.EqualTo(50 + 3 * 10));
         }
@@ -131,7 +131,7 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void AddLevelXp_StarsClampedTo3()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             svc.AddLevelXp(1, 5, false);
             // Mathf.Clamp(5, 0, 3) = 3
             Assert.That(svc.TotalXp, Is.EqualTo(50 + 3 * 10));
@@ -140,7 +140,7 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void AddLevelXp_StarsClampedTo0()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             svc.AddLevelXp(1, -1, false);
             // Mathf.Clamp(-1, 0, 3) = 0
             Assert.That(svc.TotalXp, Is.EqualTo(50));
@@ -149,7 +149,7 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void AddLevelXp_Efficient_AddsEfficiencyBonus()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             svc.AddLevelXp(1, 3, true);
             Assert.That(svc.TotalXp, Is.EqualTo(50 + 3 * 10 + 25));
         }
@@ -159,7 +159,7 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void PlayerLevel_ComputedFromTotalXp()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             // xpPerPlayerLevel = 500
             svc.AddXp(1200);
             Assert.That(svc.PlayerLevel, Is.EqualTo(1200 / 500));
@@ -168,14 +168,14 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void PlayerLevel_ZeroXp_ReturnsZero()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             Assert.That(svc.PlayerLevel, Is.EqualTo(0));
         }
 
         [Test]
         public void PlayerLevel_BelowOneLevel_ReturnsZero()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             svc.AddXp(499);
             Assert.That(svc.PlayerLevel, Is.EqualTo(0));
         }
@@ -185,14 +185,14 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void IsSeasonActive_WithAlwaysActiveSeason_ReturnsTrue()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             Assert.That(svc.IsSeasonActive, Is.True);
         }
 
         [Test]
         public void GetAllSeasons_ReturnsConfiguredSeasons()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             Assert.That(svc.GetAllSeasons().Count, Is.EqualTo(1));
             Assert.That(svc.GetAllSeasons()[0].seasonId, Is.EqualTo("test_season"));
         }
@@ -200,7 +200,7 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void CurrentTierIndex_NoXp_ReturnsMinusOne()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             // No season XP → CurrentTierIndex should be 0 (first tier) since
             // ComputeCurrentTier loops backwards and returns 0 as fallback
             Assert.That(svc.CurrentTierIndex, Is.EqualTo(0));
@@ -209,7 +209,7 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void CanClaimTier_NotEnoughXp_ReturnsFalse()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             // Tier 1 needs baseXp + 1*xpPerTier = 100 + 50 = 150
             Assert.That(svc.CanClaimTier(1), Is.False);
         }
@@ -217,7 +217,7 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void CanClaimTier_EnoughXp_ReturnsTrue()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             svc.AddXp(200);
             // Tier 1 needs 150 XP, we have 200
             Assert.That(svc.CanClaimTier(1), Is.True);
@@ -226,7 +226,7 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void CanClaimTier_AlreadyClaimed_ReturnsFalse()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             svc.AddXp(200);
             var wallet = new FakeCoinWallet();
             svc.ClaimTierReward(1, wallet);
@@ -236,21 +236,21 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void CanClaimTier_NegativeIndex_ReturnsFalse()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             Assert.That(svc.CanClaimTier(-1), Is.False);
         }
 
         [Test]
         public void CanClaimTier_OutOfRangeIndex_ReturnsFalse()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             Assert.That(svc.CanClaimTier(99), Is.False);
         }
 
         [Test]
         public void ClaimTierReward_Coins_AddsToWallet()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             svc.AddXp(200);
             var wallet = new FakeCoinWallet(0);
 
@@ -265,7 +265,7 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void ClaimTierReward_AlreadyClaimed_ReturnsFalse()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             svc.AddXp(200);
             var wallet = new FakeCoinWallet();
             svc.ClaimTierReward(0, wallet);
@@ -276,7 +276,7 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void ClaimTierReward_NotEnoughXp_ReturnsFalse()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             var wallet = new FakeCoinWallet();
             bool claimed = svc.ClaimTierReward(2, wallet);
             Assert.That(claimed, Is.False);
@@ -285,7 +285,7 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void ClaimTierReward_MarksTierAsClaimed()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             svc.AddXp(200);
             var wallet = new FakeCoinWallet();
             svc.ClaimTierReward(0, wallet);
@@ -297,7 +297,7 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void SeasonXpToNextTier_ReturnsCorrectDelta()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             // Tier 0: 100 XP, Tier 1: 150 XP
             // With 0 XP, next tier is 0, xp needed = 100 - 0 = 100
             Assert.That(svc.SeasonXpToNextTier, Is.GreaterThan(0));
@@ -308,7 +308,7 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void ResetAll_ClearsEverything()
         {
-            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var svc = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             svc.AddXp(500);
             var wallet = new FakeCoinWallet();
             svc.ClaimTierReward(0, wallet);
@@ -325,10 +325,10 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void Constructor_LoadsPersistedData()
         {
-            var first = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var first = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             first.AddXp(350);
 
-            var second = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var second = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             Assert.That(second.TotalXp, Is.EqualTo(350));
             Assert.That(second.SeasonXp, Is.EqualTo(350));
         }
@@ -336,12 +336,12 @@ namespace PuzzleGame.Tests.Infrastructure
         [Test]
         public void PersistedClaimedTiers_AreLoaded()
         {
-            var first = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var first = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             first.AddXp(200);
             var wallet = new FakeCoinWallet();
             first.ClaimTierReward(0, wallet);
 
-            var second = new ProgressService(_config, new PlayerPrefsProgressRepository());
+            var second = new ProgressService(_config, new PlayerPrefsProgressRepository(new SaveCrypto()));
             var claimed = second.GetClaimedTierIds();
             Assert.That(claimed, Contains.Item(0));
         }

@@ -53,9 +53,7 @@ namespace PuzzleGame.Installers
             // Season / Progress
             builder.Register<SeasonConfig>(resolver =>
             {
-                var config = UnityEngine.Resources.Load<SeasonConfig>("Data/SeasonConfig");
-                if (config == null) throw new System.InvalidOperationException("SeasonConfig missing at Resources/Data/SeasonConfig");
-                return config;
+                return ConfigLoader.LoadOrThrow<SeasonConfig>(null, "Data/SeasonConfig", "SeasonConfig");
             }, Lifetime.Singleton);
             builder.Register<IProgressService, ProgressService>(Lifetime.Singleton);
 

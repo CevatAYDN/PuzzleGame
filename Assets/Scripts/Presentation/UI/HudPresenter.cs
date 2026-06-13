@@ -281,7 +281,8 @@ namespace PuzzleGame.Presentation.UI
             if (_currentLevel.levelNumber == _lastLevelNumber) return;
             _lastLevelNumber = _currentLevel.levelNumber;
             _sb.Clear();
-            _sb.Append("Level ").Append(_currentLevel.levelNumber);
+            string levelLabel = _localization != null ? _localization.GetString("level_title") : "Level";
+            _sb.Append(levelLabel).Append(" ").Append(_currentLevel.levelNumber);
             levelTitleText.SetText(_sb);
         }
 
@@ -358,16 +359,14 @@ namespace PuzzleGame.Presentation.UI
             if (e.TargetIndex >= 0 && e.TargetIndex < molds.Length && e.TargetIndex != e.SourceIndex)
                 molds[e.TargetIndex].SetSelectionHighlight(true);
 
-            StartCoroutine(ClearHintHighlight(e, molds));
-        }
-
-        private System.Collections.IEnumerator ClearHintHighlight(HintHighlightEvent e, IMoldView[] molds)
-        {
-            yield return new WaitForSeconds(1.5f);
-            if (e.SourceIndex >= 0 && e.SourceIndex < molds.Length)
-                molds[e.SourceIndex].SetSelectionHighlight(false);
-            if (e.TargetIndex >= 0 && e.TargetIndex < molds.Length && e.TargetIndex != e.SourceIndex)
-                molds[e.TargetIndex].SetSelectionHighlight(false);
+            // Fix Phase 3: Replaced Coroutine with PrimeTween for delay
+            PrimeTween.Tween.Delay(1.5f).OnComplete(() =>
+            {
+                if (e.SourceIndex >= 0 && e.SourceIndex < molds.Length)
+                    molds[e.SourceIndex].SetSelectionHighlight(false);
+                if (e.TargetIndex >= 0 && e.TargetIndex < molds.Length && e.TargetIndex != e.SourceIndex)
+                    molds[e.TargetIndex].SetSelectionHighlight(false);
+            });
         }
     }
 }

@@ -59,7 +59,7 @@ namespace PuzzleGame.Infrastructure.Pool
                 // objects are born into the correct scene.
                 var targetParent = parent != null ? parent : _defaultParent;
                 instance = UnityEngine.Object.Instantiate(_prefab, targetParent);
-                instance.gameObject.name = _prefab.name;
+                // GC Fix: Removed instance.gameObject.name assignment to prevent string allocations on hot path spawn.
             }
             else if (parent != null)
             {

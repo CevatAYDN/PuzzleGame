@@ -37,18 +37,14 @@ namespace PuzzleGame.Installers
             // Accessibility (color-blind mode)
             builder.Register<AccessibilityConfig>(resolver =>
             {
-                var config = UnityEngine.Resources.Load<AccessibilityConfig>("Data/AccessibilityConfig");
-                if (config == null) throw new System.InvalidOperationException("AccessibilityConfig missing at Resources/Data/AccessibilityConfig");
-                return config;
+                return ConfigLoader.LoadOrThrow<AccessibilityConfig>(null, "Data/AccessibilityConfig", "AccessibilityConfig");
             }, Lifetime.Singleton);
             builder.Register<IAccessibilityService, AccessibilityService>(Lifetime.Singleton);
 
             // Cosmetic shop
             builder.Register<CosmeticConfig>(resolver =>
             {
-                var config = UnityEngine.Resources.Load<CosmeticConfig>("Data/CosmeticConfig");
-                if (config == null) throw new System.InvalidOperationException("CosmeticConfig missing at Resources/Data/CosmeticConfig");
-                return config;
+                return ConfigLoader.LoadOrThrow<CosmeticConfig>(null, "Data/CosmeticConfig", "CosmeticConfig");
             }, Lifetime.Singleton);
             builder.Register<ICosmeticShopService, CosmeticShopService>(Lifetime.Singleton);
 

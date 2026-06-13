@@ -181,9 +181,9 @@ namespace PuzzleGame.Editor
                 }
                 else
                 {
-                    // Placeholder controls to keep layout deterministic
-                    EditorGUILayout.LabelField("");
-                    EditorGUILayout.LabelField("");
+                    // Placeholder controls to keep layout deterministic (must match LabelField with 2 string arguments)
+                    EditorGUILayout.LabelField("Last Played Level", "-");
+                    EditorGUILayout.LabelField("Completed Levels", "-");
                 }
 
                 EditorGUILayout.Space(4);

@@ -74,9 +74,11 @@ namespace PuzzleGame.Installers
 
             // AI art provider — reads from BiomeArtCatalog ScriptableObject (optional, returns defaults if empty)
             // Fix #A3: Load catalog from Resources and register, otherwise always returns null/default
-            var catalog = UnityEngine.Resources.Load<BiomeArtCatalog>("Data/BiomeArtCatalog");
             builder.Register<IBiomeArtProvider>(resolver =>
-                new ScriptableObjectBiomeArtProvider(catalog), Lifetime.Singleton);
+            {
+                var catalog = ConfigLoader.LoadOrThrow<BiomeArtCatalog>(null, "Data/BiomeArtCatalog", "BiomeArtCatalog");
+                return new ScriptableObjectBiomeArtProvider(catalog);
+            }, Lifetime.Singleton);
 
             // Onboarding orchestrator — POCO, owned by container; runs Splash → AgeGate → Consent → MainMenu
             builder.Register<OnboardingFlowController>(Lifetime.Singleton);
