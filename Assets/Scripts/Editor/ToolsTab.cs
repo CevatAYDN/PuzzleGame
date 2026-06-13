@@ -6,6 +6,7 @@ namespace PuzzleGame.Editor
     public class ToolsTab : IEditorTab
     {
         public string TabName => "Tools";
+        public string Category => "Systems & QA";
         private ForgeEditorWindow _window;
 
         private Vector2 _scrollPos;

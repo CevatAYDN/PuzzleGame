@@ -14,6 +14,7 @@ namespace PuzzleGame.Editor
     public class LevelsTab : IEditorTab
     {
         public string TabName => "Levels";
+        public string Category => "Game Design";
         private ForgeEditorWindow _window;
 
         private float _levelStart = 1;

@@ -10,6 +10,7 @@ namespace PuzzleGame.Editor
     public class FeaturesTab : IEditorTab
     {
         public string TabName => "Features";
+        public string Category => "Game Design";
         private ForgeEditorWindow _window;
 
         private LevelData _selectedLevelForFeatures;
@@ -310,7 +311,7 @@ namespace PuzzleGame.Editor
                                 {
                                     Undo.RecordObject(_selectedLevelForFeatures, "Remove Rule");
                                     config.reactionRules.RemoveAt(i);
-                                    i--;
+                                    GUIUtility.ExitGUI();
                                 }
                             }
                         }

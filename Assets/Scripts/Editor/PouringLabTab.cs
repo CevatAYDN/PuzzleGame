@@ -17,6 +17,7 @@ namespace PuzzleGame.Editor
     public class PouringLabTab : IEditorTab
     {
         public string TabName => "Pouring Lab";
+        public string Category => "Environment";
         private ForgeEditorWindow _window;
 
         // ── Pouring Lab State ──────────────────────────────────────────────────

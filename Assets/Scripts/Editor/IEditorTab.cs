@@ -8,6 +8,7 @@ namespace PuzzleGame.Editor
     public interface IEditorTab
     {
         string TabName { get; }
+        string Category { get; }
         void OnEnable(ForgeEditorWindow window);
         void OnDisable();
         void OnGUI();

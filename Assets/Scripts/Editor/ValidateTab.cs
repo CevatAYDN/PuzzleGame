@@ -9,6 +9,7 @@ namespace PuzzleGame.Editor
     public class ValidateTab : IEditorTab
     {
         public string TabName => "Validate";
+        public string Category => "Systems & QA";
         private ForgeEditorWindow _window;
 
         private List<ValidationResult> _validationResults = new List<ValidationResult>();

@@ -71,19 +71,33 @@ namespace PuzzleGame.Editor
             }
         }
 
+        private Vector2 _sidebarScroll;
+
         private void OnGUI()
         {
             if (_tabs == null || _tabs.Count == 0) return;
 
             HandleKeyboardShortcuts();
 
-            DrawTabs();
-            EditorGUILayout.Space(6);
+            EditorGUILayout.BeginHorizontal();
+            
+            // Sidebar
+            DrawSidebar();
 
-            if (_activeTabIndex >= 0 && _activeTabIndex < _tabs.Count)
+            // Separator
+            GUILayout.Box("", GUILayout.Width(1), GUILayout.ExpandHeight(true));
+
+            // Content Area
+            using (new EditorGUILayout.VerticalScope())
             {
-                _tabs[_activeTabIndex].OnGUI();
+                EditorGUILayout.Space(4);
+                if (_activeTabIndex >= 0 && _activeTabIndex < _tabs.Count)
+                {
+                    _tabs[_activeTabIndex].OnGUI();
+                }
             }
+
+            EditorGUILayout.EndHorizontal();
 
             DrawStatusBar();
         }
@@ -128,46 +142,63 @@ namespace PuzzleGame.Editor
             }
         }
 
-        /// <summary>
-        /// Tab bar çizimi.
-        /// 6'dan fazla sekme varsa iki satıra bölünür — overflow önlenir.
-        /// </summary>
-        private void DrawTabs()
+        private void DrawSidebar()
         {
-            const int MaxPerRow = 6;
-            int total = _tabs.Count;
-            int rows  = (total + MaxPerRow - 1) / MaxPerRow;
-
-            for (int row = 0; row < rows; row++)
+            float sidebarWidth = 180f;
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox, GUILayout.Width(sidebarWidth)))
             {
-                EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+                EditorGUILayout.Space(4);
+                EditorGUILayout.LabelField("Forge Dashboard", EditorStyles.boldLabel);
+                EditorGUILayout.Space(8);
 
-                int start = row * MaxPerRow;
-                int end   = Mathf.Min(start + MaxPerRow, total);
-
-                for (int i = start; i < end; i++)
+                _sidebarScroll = EditorGUILayout.BeginScrollView(_sidebarScroll);
+                
+                var groupedTabs = _tabs.GroupBy(t => t.Category).OrderBy(g => g.Key);
+                
+                foreach (var group in groupedTabs)
                 {
-                    bool active = _activeTabIndex == i;
-                    if (GUILayout.Toggle(active, _tabs[i].TabName, EditorStyles.toolbarButton))
-                        _activeTabIndex = i;
+                    EditorGUILayout.LabelField(group.Key.ToUpper(), EditorStyles.miniBoldLabel);
+                    EditorGUILayout.Space(2);
+                    
+                    foreach (var tab in group)
+                    {
+                        int tabIndex = _tabs.IndexOf(tab);
+                        bool isActive = _activeTabIndex == tabIndex;
+                        
+                        GUIStyle btnStyle = new GUIStyle(EditorStyles.toolbarButton);
+                        btnStyle.alignment = TextAnchor.MiddleLeft;
+                        btnStyle.fixedHeight = 24;
+                        btnStyle.padding = new RectOffset(10, 0, 0, 0);
+
+                        var oldColor = GUI.backgroundColor;
+                        if (isActive)
+                            GUI.backgroundColor = new Color(0.2f, 0.6f, 1f, 1f);
+                        
+                        if (GUILayout.Toggle(isActive, tab.TabName, btnStyle))
+                        {
+                            if (_activeTabIndex != tabIndex)
+                            {
+                                _activeTabIndex = tabIndex;
+                                GUI.FocusControl(null);
+                            }
+                        }
+                        
+                        GUI.backgroundColor = oldColor;
+                    }
+                    EditorGUILayout.Space(10);
                 }
+                
+                EditorGUILayout.EndScrollView();
 
                 GUILayout.FlexibleSpace();
-
-                // Refresh butonu sadece son satırda görünsün
-                if (row == rows - 1)
+                if (GUILayout.Button("Refresh Data", GUILayout.Height(30)))
                 {
-                    if (GUILayout.Button("Refresh", EditorStyles.toolbarButton, GUILayout.Width(70)))
+                    EditorApplication.delayCall += () =>
                     {
-                        EditorApplication.delayCall += () =>
-                        {
-                            RefreshData();
-                            SetStatus("Refreshed.", MessageType.Info);
-                        };
-                    }
+                        RefreshData();
+                        SetStatus("Refreshed.", MessageType.Info);
+                    };
                 }
-
-                EditorGUILayout.EndHorizontal();
             }
         }
 

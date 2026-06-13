@@ -12,6 +12,7 @@ namespace PuzzleGame.Editor
     public class PaletteTab : IEditorTab
     {
         public string TabName => "Palette";
+        public string Category => "Game Design";
         private ForgeEditorWindow _window;
 
         private LevelData _selectedLevelForEdit;

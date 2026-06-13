@@ -16,6 +16,7 @@ namespace PuzzleGame.Editor
     public class TestTab : IEditorTab
     {
         public string TabName => "Test";
+        public string Category => "Systems & QA";
         private ForgeEditorWindow _window;
 
         private Vector2 _testScroll;

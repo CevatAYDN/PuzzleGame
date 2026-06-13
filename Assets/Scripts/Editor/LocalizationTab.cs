@@ -17,6 +17,7 @@ namespace PuzzleGame.Editor
     public class LocalizationTab : IEditorTab
     {
         public string TabName => "Localization";
+        public string Category => "LiveOps & Data";
         private ForgeEditorWindow _window;
 
         private Vector2 _localizationScroll;

@@ -23,6 +23,7 @@ namespace PuzzleGame.Editor
     public class EconomyLiveOpsTab : IEditorTab
     {
         public string TabName => "Economy";
+        public string Category => "LiveOps & Data";
 
         private ForgeEditorWindow _window;
         private Vector2 _scroll;
@@ -446,7 +447,7 @@ namespace PuzzleGame.Editor
                         if (GUILayout.Button("X", GUILayout.Width(22)))
                         {
                             _remoteConfigEntries.RemoveAt(i);
-                            i--;
+                            GUIUtility.ExitGUI();
                         }
                     }
                 }
@@ -546,8 +547,7 @@ namespace PuzzleGame.Editor
                         if (GUILayout.Button("Sil", GUILayout.Width(40)))
                         {
                             _abTests.RemoveAt(i);
-                            i--;
-                            continue;
+                            GUIUtility.ExitGUI();
                         }
                     }
 

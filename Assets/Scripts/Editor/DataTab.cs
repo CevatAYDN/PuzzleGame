@@ -9,6 +9,7 @@ namespace PuzzleGame.Editor
     public class DataTab : IEditorTab
     {
         public string TabName => "Data";
+        public string Category => "LiveOps & Data";
         private ForgeEditorWindow _window;
 
         private bool _overrideExisting = false;

@@ -10,6 +10,7 @@ namespace PuzzleGame.Editor
     public class LevelUITab : IEditorTab
     {
         public string TabName => "Level UI";
+        public string Category => "Game Design";
         private ForgeEditorWindow _window;
 
         private LevelData _selectedLevelForUI;
@@ -179,7 +180,7 @@ namespace PuzzleGame.Editor
                             _selectedLevelForUI.Molds.RemoveAt(i);
                             if (_selectedMoldIndex >= _selectedLevelForUI.Molds.Count)
                                 _selectedMoldIndex = _selectedLevelForUI.Molds.Count - 1;
-                            i--;
+                            GUIUtility.ExitGUI();
                         }
                     }
                 }
@@ -270,7 +271,7 @@ namespace PuzzleGame.Editor
                         {
                             Undo.RecordObject(_selectedLevelForUI, "Delete Layer");
                             Mold.layers.RemoveAt(i);
-                            i--;
+                            GUIUtility.ExitGUI();
                         }
 
                         if (i > 0 && GUILayout.Button("▲", GUILayout.Width(25)))

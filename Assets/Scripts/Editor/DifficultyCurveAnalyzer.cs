@@ -14,6 +14,7 @@ namespace PuzzleGame.Editor
     public class DifficultyCurveAnalyzer : IEditorTab
     {
         public string TabName => "Difficulty Curve";
+        public string Category => "Game Design";
         private ForgeEditorWindow _window;
 
         private Vector2 _scrollPos;

@@ -12,6 +12,7 @@ namespace PuzzleGame.Editor
     public class SceneTab : IEditorTab
     {
         public string TabName => "Scene";
+        public string Category => "Environment";
         private ForgeEditorWindow _window;
 
         private SceneBuilderModel.BuildOptions _buildOpts = SceneBuilderModel.All;
