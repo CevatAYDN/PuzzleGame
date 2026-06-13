@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 5508223385432012636}
   - component: {fileID: 4246098201346610503}
   - component: {fileID: 1797390874969205551}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: SettingsSoundController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -119,7 +119,7 @@ GameObject:
   - component: {fileID: 5359429473411441746}
   - component: {fileID: 4853810734513546080}
   - component: {fileID: 2575860335671901873}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: ContentPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -218,7 +218,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4764287753977482274}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: SafeArea
   m_TagString: Untagged
   m_Icon: {fileID: 0}

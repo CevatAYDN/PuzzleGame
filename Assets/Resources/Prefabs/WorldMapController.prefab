@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4994575471436211505}
   - component: {fileID: 3675731936662717578}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: CrystalMinesCard
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -71,7 +71,7 @@ GameObject:
   - component: {fileID: 7137432962949328058}
   - component: {fileID: 6007195626886487263}
   - component: {fileID: 4463333992662696960}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: BackButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -239,7 +239,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2361941790217454087}
   - component: {fileID: 8263329370961909043}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: VolcanicForgeCard
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -297,7 +297,7 @@ GameObject:
   - component: {fileID: 5799620174912719755}
   - component: {fileID: 6431373651324849337}
   - component: {fileID: 4153352621879710056}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: ContentPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -398,7 +398,7 @@ GameObject:
   - component: {fileID: 3800438440938535475}
   - component: {fileID: 4765651088300663783}
   - component: {fileID: 833165563288759306}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Label
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -537,7 +537,7 @@ GameObject:
   - component: {fileID: 6227850032213825669}
   - component: {fileID: 2373903563075009182}
   - component: {fileID: 4861209065476732}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: WorldMapController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -641,7 +641,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6341843567991612411}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: SafeArea
   m_TagString: Untagged
   m_Icon: {fileID: 0}

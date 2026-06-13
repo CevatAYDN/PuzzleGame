@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8506893609672553167}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: SafeArea
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -48,7 +48,7 @@ GameObject:
   - component: {fileID: 9110830867138370239}
   - component: {fileID: 8596417276329631117}
   - component: {fileID: 1706832927116820572}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: ContentPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -151,7 +151,7 @@ GameObject:
   - component: {fileID: 8674367390553491889}
   - component: {fileID: 1080163538064927658}
   - component: {fileID: 1090958006151188939}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: ConsentModal
   m_TagString: Untagged
   m_Icon: {fileID: 0}

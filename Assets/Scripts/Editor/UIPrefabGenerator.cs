@@ -42,6 +42,7 @@ namespace PuzzleGame.Editor
             EnsureConfig();
             LoadConfig();
             GenerateAllCore();
+            HideAllExceptMainMenu();
         }
 
         public static void GenerateAllColorBlind()
@@ -68,6 +69,16 @@ namespace PuzzleGame.Editor
                 UnityEngine.ColorUtility.TryParseHtmlString("#a855f7", out _config.colorSecondary);
                 UnityEngine.ColorUtility.TryParseHtmlString("#ef4444", out _config.colorError);
                 UnityEngine.ColorUtility.TryParseHtmlString("#fbbf24", out _config.colorGold);
+            }
+        }
+
+        private static void HideAllExceptMainMenu()
+        {
+            if (_testCanvas == null) return;
+            foreach (Transform child in _testCanvas.transform)
+            {
+                if (child.name != "MainMenuController")
+                    child.gameObject.SetActive(false);
             }
         }
 
@@ -105,11 +116,16 @@ namespace PuzzleGame.Editor
             if (!System.IO.Directory.Exists("Assets/Scenes"))
                 System.IO.Directory.CreateDirectory("Assets/Scenes");
 
-            var scene = UnityEditor.SceneManagement.EditorSceneManager.OpenScene(scenePath, UnityEditor.SceneManagement.OpenSceneMode.Single);
-            if (string.IsNullOrEmpty(scene.path))
+            UnityEngine.SceneManagement.Scene scene;
+            if (!System.IO.File.Exists(scenePath))
             {
                 scene = UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.EmptyScene, UnityEditor.SceneManagement.NewSceneMode.Single);
                 scene.name = "UITest";
+                UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene, scenePath);
+            }
+            else
+            {
+                scene = UnityEditor.SceneManagement.EditorSceneManager.OpenScene(scenePath, UnityEditor.SceneManagement.OpenSceneMode.Single);
             }
             
             // Create EventSystem if needed
@@ -117,7 +133,17 @@ namespace PuzzleGame.Editor
             {
                 var eventSystemGo = new GameObject("EventSystem");
                 eventSystemGo.AddComponent<UnityEngine.EventSystems.EventSystem>();
-                eventSystemGo.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+                
+                // Add the correct Input Module for the New Input System
+                var inputModuleType = Type.GetType("UnityEngine.InputSystem.UI.InputSystemUIInputModule, Unity.InputSystem");
+                if (inputModuleType != null)
+                {
+                    eventSystemGo.AddComponent(inputModuleType);
+                }
+                else
+                {
+                    eventSystemGo.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+                }
             }
 
             _testCanvas = UnityEngine.Object.FindAnyObjectByType<Canvas>();
@@ -247,26 +273,71 @@ namespace PuzzleGame.Editor
             badgeGo.transform.SetParent(content.transform, false);
             SetField(ctrl, "dailyChallengeBadge", badgeGo);
             badgeGo.SetActive(false);
+
+            // --- SUB-PANELS (Managed Visibility) ---
+            SetField(ctrl, "worldMapPanel", CreateEmptyChild(root, "WorldMapPanel"));
+            SetField(ctrl, "levelSelectPanel", CreateEmptyChild(root, "LevelSelectPanel"));
+            SetField(ctrl, "dailyChallengePanel", CreateEmptyChild(root, "DailyChallengePanel"));
+            SetField(ctrl, "settingsPanel", CreateEmptyChild(root, "SettingsPanel"));
+            SetField(ctrl, "soundPanel", CreateEmptyChild(root, "SoundPanel"));
+
+            // --- TRANSITION CANVAS GROUP ---
+            SetField(ctrl, "rootCanvasGroup", root.GetComponent<CanvasGroup>());
+            
+            Save(root, "MainMenuController.prefab");
         }
 
         private static void GenerateHud()
         {
-            var root = CreateRoot("HudPresenter");
-            var hud = root.AddComponent<HudPresenter>();
+            GenerateHUDWidget();
+            GeneratePausePanel();
+            GenerateWinPanel();
+            GenerateGlobalHud();
+        }
 
-            CreateLabelAndAssign(root, "MoveCountText", "Moves: 0", hud, "moveCountText");
-            CreateLabelAndAssign(root, "BestMovesText", "Best: 0", hud, "bestMovesText");
-            CreateLabelAndAssign(root, "LevelTitleText", "Level 1", hud, "levelTitleText");
+        private static void GenerateHUDWidget()
+        {
+            var root = CreateRoot("HUDWidgetPresenter");
+            var hud = root.AddComponent<HUDWidgetPresenter>();
 
-            SetField(hud, "undoButton", CreateButton(root, "UndoButton", "UNDO"));
-            SetField(hud, "hintButton", CreateButton(root, "HintButton", "HINT"));
+            CreateLabelAndAssign(root, "MoveCountText", "Moves: 0", hud, "_moveCountText");
+            CreateLabelAndAssign(root, "LevelTitleText", "Level 1", hud, "_levelTitleText");
 
-            SetField(hud, "winPanel", CreateEmptyChild(root, "WinPanel"));
-            SetField(hud, "pausePanel", CreateEmptyChild(root, "PausePanel"));
-            SetField(hud, "loadingPanel", CreateEmptyChild(root, "LoadingPanel"));
-            SetField(hud, "diErrorPanel", CreateEmptyChild(root, "DIErrorPanel"));
+            SetField(hud, "_undoButton", CreateButton(root, "UndoButton", "UNDO"));
+            SetField(hud, "_hintButton", CreateButton(root, "HintButton", "HINT"));
 
-            var starContainer = CreateEmptyChild(root, "StarContainer");
+            Save(root, "HUDWidgetPresenter.prefab");
+        }
+
+        private static void GeneratePausePanel()
+        {
+            var root = CreateRoot("PausePanelPresenter");
+            var pause = root.AddComponent<PausePanelPresenter>();
+
+            var pauseRoot = CreateEmptyChild(root, "PausePanelRoot");
+            SetField(pause, "_pausePanelRoot", pauseRoot);
+            
+            SetField(pause, "_resumeButton", CreateButton(pauseRoot, "ResumeButton", "RESUME"));
+            SetField(pause, "_pauseMainMenuButton", CreateButton(pauseRoot, "PauseMainMenuButton", "MENU"));
+            SetField(pause, "_pauseRestartButton", CreateButton(pauseRoot, "PauseRestartButton", "RESTART"));
+
+            Save(root, "PausePanelPresenter.prefab");
+        }
+
+        private static void GenerateWinPanel()
+        {
+            var root = CreateRoot("WinPanelPresenter");
+            var win = root.AddComponent<WinPanelPresenter>();
+
+            var winRoot = CreateEmptyChild(root, "WinPanelRoot");
+            SetField(win, "_winPanelRoot", winRoot);
+
+            CreateLabelAndAssign(winRoot, "WinMoveCountText", "Moves: 0", win, "_winMoveCountText");
+            SetField(win, "_nextLevelButton", CreateButton(winRoot, "NextLevelButton", "NEXT"));
+            SetField(win, "_replayButton", CreateButton(winRoot, "ReplayButton", "REPLAY"));
+            SetField(win, "_mainMenuButton", CreateButton(winRoot, "MainMenuButton", "MENU"));
+
+            var starContainer = CreateEmptyChild(winRoot, "StarContainer");
             var starImages = new Image[3];
             for (int i = 0; i < 3; i++)
             {
@@ -274,23 +345,24 @@ namespace PuzzleGame.Editor
                 star.transform.SetParent(starContainer.transform, false);
                 starImages[i] = star.GetComponent<Image>();
             }
-            SetField(hud, "starImages", starImages);
+            SetField(win, "_starImages", starImages);
 
-            CreateLabelAndAssign(root, "WinMoveCountText", "Moves: 0", hud, "winMoveCountText");
-            SetField(hud, "nextLevelButton", CreateButton(root, "NextLevelButton", "NEXT"));
-            SetField(hud, "replayButton", CreateButton(root, "ReplayButton", "REPLAY"));
-            SetField(hud, "mainMenuButton", CreateButton(root, "MainMenuButton", "MENU"));
+            CreateLabelAndAssign(winRoot, "WinXpGainedText", "+0 XP", win, "_winXpGainedText");
+            CreateLabelAndAssign(winRoot, "WinLeaderboardText", "", win, "_winLeaderboardText");
+            CreateLabelAndAssign(winRoot, "WinSeasonXpText", "", win, "_winSeasonXpText");
+            SetField(win, "_winSeasonSlider", CreateSlider(winRoot, "WinSeasonSlider"));
 
-            CreateLabelAndAssign(root, "WinXpGainedText", "+0 XP", hud, "winXpGainedText");
-            CreateLabelAndAssign(root, "WinLeaderboardText", "", hud, "winLeaderboardText");
-            CreateLabelAndAssign(root, "WinSeasonXpText", "", hud, "winSeasonXpText");
-            SetField(hud, "winSeasonSlider", CreateSlider(root, "WinSeasonSlider"));
+            Save(root, "WinPanelPresenter.prefab");
+        }
 
-            SetField(hud, "resumeButton", CreateButton(root, "ResumeButton", "RESUME"));
-            SetField(hud, "pauseMainMenuButton", CreateButton(root, "PauseMainMenuButton", "MENU"));
-            SetField(hud, "pauseRestartButton", CreateButton(root, "PauseRestartButton", "RESTART"));
+        private static void GenerateGlobalHud()
+        {
+            var root = CreateRoot("HudPresenter");
+            var hud = root.AddComponent<HudPresenter>();
 
-            CreateLabelAndAssign(root, "DIErrorText", "DI Error", hud, "diErrorText");
+            SetField(hud, "_loadingPanel", CreateEmptyChild(root, "LoadingPanel"));
+            SetField(hud, "_diErrorPanel", CreateEmptyChild(root, "DIErrorPanel"));
+            CreateLabelAndAssign(root, "DIErrorText", "DI Error", hud, "_diErrorText");
 
             Save(root, "HudPresenter.prefab");
         }
@@ -345,6 +417,7 @@ namespace PuzzleGame.Editor
             CreateLegacyTextAndAssign(root, "ConfirmMessage", "Are you sure?", ctrl, "_confirmMessage");
             SetField(ctrl, "_confirmYesButton", CreateButton(root, "ConfirmYesButton", "YES"));
             SetField(ctrl, "_confirmNoButton", CreateButton(root, "ConfirmNoButton", "NO"));
+            SetField(ctrl, "_backButton", CreateButton(root, "BackButton", "BACK"));
 
             Save(root, "SettingsPrivacyController.prefab");
         }
@@ -494,7 +567,7 @@ namespace PuzzleGame.Editor
             {
                 importer.textureType = TextureImporterType.Sprite;
                 importer.alphaIsTransparency = true;
-                importer.spriteBorder = new Vector4(radius, radius, radius, radius);
+                importer.spriteBorder = new Vector4(radius - 1, radius - 1, radius - 1, radius - 1);
                 importer.spritePixelsPerUnit = 20f;
                 importer.SaveAndReimport();
             }
@@ -556,6 +629,22 @@ namespace PuzzleGame.Editor
                 _textMeshProType.GetProperty("text")?.SetValue(tmp, text);
                 _textMeshProType.GetProperty("fontSize")?.SetValue(tmp, (float)fontSize);
                 _textMeshProType.GetProperty("color")?.SetValue(tmp, Color.white);
+                
+                // Try to load default font to make text visible
+                var settingsType = _textMeshProType.Assembly.GetType("TMPro.TMP_Settings");
+                if (settingsType != null)
+                {
+                    var defaultFontProp = settingsType.GetProperty("defaultFontAsset", BindingFlags.Public | BindingFlags.Static);
+                    if (defaultFontProp != null)
+                    {
+                        var defaultFont = defaultFontProp.GetValue(null);
+                        if (defaultFont != null)
+                        {
+                            _textMeshProType.GetProperty("font")?.SetValue(tmp, defaultFont);
+                        }
+                    }
+                }
+
                 // alignment = Center
                 var alignType = _textMeshProType.Assembly.GetType("TMPro.TextAlignmentOptions");
                 if (alignType != null)
@@ -780,8 +869,18 @@ namespace PuzzleGame.Editor
             return go;
         }
 
+        private static void SetLayerRecursively(GameObject obj, int newLayer)
+        {
+            obj.layer = newLayer;
+            foreach (Transform child in obj.transform)
+            {
+                SetLayerRecursively(child.gameObject, newLayer);
+            }
+        }
+
         private static void Save(GameObject root, string fileName)
         {
+            SetLayerRecursively(root, 5); // UI Layer
             string path = $"{_currentPrefabRoot}/{fileName}";
 
             var dir = System.IO.Path.GetDirectoryName(path);

@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 5224929392568219733}
   - component: {fileID: 4476197274314775118}
   - component: {fileID: 2074616524421799940}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: AchievementNotificationUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -118,7 +118,7 @@ GameObject:
   - component: {fileID: 5661881046444583771}
   - component: {fileID: 5165555383430966377}
   - component: {fileID: 2831855102872515000}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: ContentPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -217,7 +217,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5110925998723449643}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: SafeArea
   m_TagString: Untagged
   m_Icon: {fileID: 0}

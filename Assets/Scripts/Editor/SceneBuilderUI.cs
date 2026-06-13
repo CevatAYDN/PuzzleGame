@@ -40,6 +40,7 @@ namespace PuzzleGame.Editor
             CreateFromPrefab<Presentation.UI.AgeGateModal>("AgeGateModal");
             CreateFromPrefab<Presentation.UI.ConsentModal>("ConsentModal");
             CreateFromPrefab<Presentation.UI.MainMenuController>("MainMenuController");
+            CreateFromPrefab<Presentation.UI.SettingsController>("SettingsController");
             CreateFromPrefab<Presentation.UI.SettingsPrivacyController>("SettingsPrivacyController");
             CreateFromPrefab<Presentation.UI.SettingsSoundController>("SettingsSoundController");
             CreateFromPrefab<Presentation.UI.WorldMapController>("WorldMapController");

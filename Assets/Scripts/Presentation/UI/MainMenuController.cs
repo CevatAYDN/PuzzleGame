@@ -87,6 +87,7 @@ namespace PuzzleGame.Presentation.UI
                 _events.Subscribe<ShowSoundPanelRequestEvent>(OnShowSoundPanel);
                 _events.Subscribe<HideSoundPanelRequestEvent>(OnHideSoundPanel);
                 _events.Subscribe<HideSettingsRequestEvent>(OnHideSettings);
+                _events.Subscribe<HidePrivacyRequestEvent>(OnHidePrivacy);
             }
             if (_coinWallet != null) _coinWallet.OnBalanceChanged += OnCoinBalanceChanged;
         }
@@ -105,8 +106,14 @@ namespace PuzzleGame.Presentation.UI
                 _events.Unsubscribe<ShowSoundPanelRequestEvent>(OnShowSoundPanel);
                 _events.Unsubscribe<HideSoundPanelRequestEvent>(OnHideSoundPanel);
                 _events.Unsubscribe<HideSettingsRequestEvent>(OnHideSettings);
+                _events.Unsubscribe<HidePrivacyRequestEvent>(OnHidePrivacy);
             }
             if (_coinWallet != null) _coinWallet.OnBalanceChanged -= OnCoinBalanceChanged;
+        }
+
+        private void OnHidePrivacy(HidePrivacyRequestEvent e)
+        {
+            FadeRoot(1f);
         }
 
         private void Start()
@@ -119,7 +126,6 @@ namespace PuzzleGame.Presentation.UI
             if (quitButton != null) quitButton.onClick.AddListener(OnQuitClicked);
 
             RefreshDisplays();
-            HideAllSubPanels();
             SetRootAlpha(1f); // visible by default; fade-in only on first Menu transition
         }
 
@@ -130,7 +136,6 @@ namespace PuzzleGame.Presentation.UI
             {
                 gameObject.SetActive(true);
                 RefreshDisplays();
-                HideAllSubPanels();
                 FadeRoot(toAlpha: 1f);
             }
             else
@@ -208,14 +213,14 @@ namespace PuzzleGame.Presentation.UI
         private void OnSettingsClicked()
         {
             MoldLogger.LogInfo($"{LogTag} Settings clicked.");
-            if (settingsPanel != null) settingsPanel.SetActive(true);
+            _events?.Publish(new ShowSettingsRequestEvent());
             FadeRoot(0f);
         }
 
         private void OnPrivacyClicked()
         {
             MoldLogger.LogInfo($"{LogTag} Privacy clicked.");
-            if (settingsPanel != null) settingsPanel.SetActive(true);
+            _events?.Publish(new ShowPrivacyRequestEvent());
             FadeRoot(0f);
         }
 
@@ -258,15 +263,6 @@ namespace PuzzleGame.Presentation.UI
         }
 
         private void OnCoinBalanceChanged(int newBalance) => UpdateCoinDisplay();
-
-        private void HideAllSubPanels()
-        {
-            if (worldMapPanel != null) worldMapPanel.SetActive(false);
-            if (levelSelectPanel != null) levelSelectPanel.SetActive(false);
-            if (dailyChallengePanel != null) dailyChallengePanel.SetActive(false);
-            if (settingsPanel != null) settingsPanel.SetActive(false);
-            if (soundPanel != null) soundPanel.SetActive(false);
-        }
 
         // ──────────────────────────────────────────────
         //  Fade helpers — use ITweenService if available, else snap.
@@ -337,4 +333,8 @@ namespace PuzzleGame.Presentation.UI
     /// SettingsSoundController subscribes to show itself.
     /// </summary>
     public class ShowSoundPanelRequestEvent { }
+
+    public class ShowSettingsRequestEvent { }
+    public class ShowPrivacyRequestEvent { }
+    public class HidePrivacyRequestEvent { }
 }

@@ -49,6 +49,7 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.4.10f1\Editor\Data\Tools\BuildPipeline\Unity.SourceGenerators\Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Scripts\Presentation\UI\HUDWidgetPresenter.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\AchievementNotificationUI.cs" />
     <Compile Include="Assets\Scripts\Presentation\WinLoseEvaluator.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\SettingsSoundController.cs" />
@@ -59,6 +60,7 @@
     <Compile Include="Assets\Scripts\Presentation\OnboardingFlowController.cs" />
     <Compile Include="Assets\Scripts\Presentation\PlayTestBootstrap.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\LevelBiomeClassifier.cs" />
+    <Compile Include="Assets\Scripts\Presentation\UI\WinPanelPresenter.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\PowerUpSlotView.cs" />
     <Compile Include="Assets\Scripts\Presentation\ErrorIndicatorBootstrap.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldController.cs" />
@@ -76,17 +78,20 @@
     <Compile Include="Assets\Scripts\Presentation\ErrorIndicatorController.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\LevelSelectUI.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldCorkController.cs" />
+    <Compile Include="Assets\Scripts\Presentation\UI\PausePanelPresenter.cs" />
     <Compile Include="Assets\Scripts\Presentation\URPConfigHelper.cs" />
     <Compile Include="Assets\Scripts\Presentation\HapticObserver.cs" />
     <Compile Include="Assets\Scripts\Presentation\CameraEffectsBootstrap.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\ConsentModal.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\UIButtonJuice.cs" />
+    <Compile Include="Assets\Scripts\Presentation\UI\AccessibilityColorOverride.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldStateManager.cs" />
     <Compile Include="Assets\Scripts\Presentation\GameManager.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\PowerUpUI.cs" />
     <Compile Include="Assets\Scripts\Presentation\Wobble.cs" />
     <Compile Include="Assets\Scripts\Presentation\ActiveMoldsProvider.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\WorldMapController.cs" />
+    <Compile Include="Assets\Scripts\Presentation\UI\SafeAreaFitter.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldBootstrapper.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\SettingsPrivacyController.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\MainMenuController.cs" />
@@ -94,6 +99,7 @@
     <Compile Include="Assets\Scripts\Presentation\UI\SettingsController.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldAnimator.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\ShopUI.cs" />
+    <Compile Include="Assets\Scripts\Presentation\UI\UINavigationManager.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\HudPresenter.cs" />
     <Compile Include="Assets\Scripts\Presentation\GameLifecycleBootstrapper.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\SeasonProgressUI.cs" />

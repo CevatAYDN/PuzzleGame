@@ -10,27 +10,38 @@ namespace PuzzleGame.Presentation.UI
     public class UIStyleConfig : ScriptableObject
     {
         [Header("Colors (OreSorter Theme)")]
-        [Tooltip("Obsidian Void: #0D1117")]
-        public Color colorBackground = new Color(0.05f, 0.06f, 0.09f, 1f); 
+        [Tooltip("Surface Lowest: #091421")]
+        public Color colorBackground = new Color(0.035f, 0.078f, 0.129f, 1f); 
         
-        [Tooltip("Glass Panel: #1F2937 with 60% opacity")]
-        public Color colorPanel = new Color(0.12f, 0.16f, 0.22f, 0.6f);
+        [Tooltip("Surface Container High: #212b39 with 80% opacity for Glassmorphism")]
+        public Color colorPanel = new Color(0.129f, 0.168f, 0.223f, 0.8f);
         
-        [Tooltip("Emerald: #34D399")]
-        public Color colorPrimary = new Color(0.20f, 0.82f, 0.60f, 1f);
+        [Tooltip("Primary Container: #34D399")]
+        public Color colorPrimary = new Color(0.203f, 0.827f, 0.600f, 1f);
         
-        [Tooltip("Amethyst: #A855F7")]
-        public Color colorSecondary = new Color(0.66f, 0.33f, 0.96f, 1f);
+        [Tooltip("Secondary Container: #6F00BE")]
+        public Color colorSecondary = new Color(0.435f, 0f, 0.745f, 1f);
         
-        [Tooltip("Ruby: #EF4444")]
-        public Color colorError = new Color(0.93f, 0.26f, 0.26f, 1f);
+        [Tooltip("Error Container: #93000A")]
+        public Color colorError = new Color(0.576f, 0f, 0.039f, 1f);
         
-        [Tooltip("Gold: #FBBF24")]
-        public Color colorGold = new Color(0.98f, 0.75f, 0.14f, 1f);
+        [Tooltip("Tertiary Container (Gold): #FFA668")]
+        public Color colorGold = new Color(1f, 0.650f, 0.407f, 1f);
 
         [Header("Text Colors")]
-        public Color colorTextPrimary = Color.white;
-        public Color colorTextSecondary = new Color(0.85f, 0.89f, 0.96f, 1f);
+        [Tooltip("On-Surface: #D9E3F6")]
+        public Color colorTextPrimary = new Color(0.850f, 0.890f, 0.964f, 1f);
+        [Tooltip("On-Surface-Variant: #BBCAC0")]
+        public Color colorTextSecondary = new Color(0.733f, 0.792f, 0.752f, 1f);
+
+        [Header("Accessibility (WCAG 2.1 AA)")]
+        [Tooltip("Fallback colors for high contrast or colorblind modes")]
+        public Color colorPrimaryHighContrast = new Color(0f, 1f, 0f, 1f);
+        public Color colorErrorHighContrast = new Color(1f, 0f, 0f, 1f);
+        public Color colorSecondaryHighContrast = new Color(0f, 0f, 1f, 1f);
+        
+        [Tooltip("If true, UI animations (PrimeTween) should use zero duration or fade instead of scaling/bouncing")]
+        public bool reduceMotion = false;
 
         [Header("Typography")]
         [Tooltip("Sora (TMP_FontAsset)")]

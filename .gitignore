@@ -86,6 +86,7 @@ test_*.txt
 
 # AI agent runtime state directories
 .omo/
+.agents/
 
 # Ignore Unity package samples
 /[Aa]ssets/[Ss]amples/

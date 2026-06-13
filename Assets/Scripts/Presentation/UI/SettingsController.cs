@@ -68,7 +68,24 @@ namespace PuzzleGame.Presentation.UI
 
         private void OnEnable()
         {
+            if (_events != null)
+            {
+                _events.Subscribe<ShowSettingsRequestEvent>(OnShowSettings);
+            }
             RefreshUI();
+        }
+
+        private void OnDisable()
+        {
+            if (_events != null)
+            {
+                _events.Unsubscribe<ShowSettingsRequestEvent>(OnShowSettings);
+            }
+        }
+
+        private void OnShowSettings(ShowSettingsRequestEvent e)
+        {
+            gameObject.SetActive(true);
         }
 
         // ─── Language ────────────────────────────────────────────────────────

@@ -20,6 +20,7 @@ namespace PuzzleGame.Presentation.UI
         [SerializeField] private Toggle _personalizedAdsToggle;
 
         [Header("Buttons")]
+        [SerializeField] private Button _backButton;
         [SerializeField] private Button _resetConsentButton;
         [SerializeField] private Button _deleteDataButton;
         [SerializeField] private Button _privacyPolicyButton;
@@ -32,6 +33,7 @@ namespace PuzzleGame.Presentation.UI
         [SerializeField] private Button _confirmYesButton;
         [SerializeField] private Button _confirmNoButton;
 
+        private IEventAggregator _events;
         private IConsentManager _consentManager;
         private IAdService _adService;
         private IAnalyticsService _analyticsService;
@@ -39,11 +41,13 @@ namespace PuzzleGame.Presentation.UI
 
         [Inject]
         public void Initialize(
+            IEventAggregator events,
             IConsentManager consentManager,
             IAdService adService,
             IAnalyticsService analyticsService,
             IAgeVerificationService ageService)
         {
+            _events = events;
             _consentManager = consentManager;
             _adService = adService;
             _analyticsService = analyticsService;
@@ -54,6 +58,7 @@ namespace PuzzleGame.Presentation.UI
             if (_resetConsentButton != null) _resetConsentButton.onClick.AddListener(OnResetConsent);
             if (_deleteDataButton != null) _deleteDataButton.onClick.AddListener(OnDeleteData);
             if (_ageVerifyButton != null) _ageVerifyButton.onClick.AddListener(OnReVerifyAge);
+            if (_backButton != null) _backButton.onClick.AddListener(OnBackClicked);
 
             if (_privacyPolicyButton != null)
                 _privacyPolicyButton.onClick.AddListener(() => UnityEngine.Application.OpenURL("https://oresorter.app/privacy"));
@@ -67,6 +72,32 @@ namespace PuzzleGame.Presentation.UI
 
         public void Show() => gameObject.SetActive(true);
         public void Hide() => gameObject.SetActive(false);
+
+        private void OnEnable()
+        {
+            if (_events != null)
+            {
+                _events.Subscribe<ShowPrivacyRequestEvent>(OnShowPrivacy);
+                _events.Subscribe<HidePrivacyRequestEvent>(OnHidePrivacy);
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (_events != null)
+            {
+                _events.Unsubscribe<ShowPrivacyRequestEvent>(OnShowPrivacy);
+                _events.Unsubscribe<HidePrivacyRequestEvent>(OnHidePrivacy);
+            }
+        }
+
+        private void OnShowPrivacy(ShowPrivacyRequestEvent e) => Show();
+        private void OnHidePrivacy(HidePrivacyRequestEvent e) => Hide();
+
+        private void OnBackClicked()
+        {
+            _events?.Publish(new HidePrivacyRequestEvent());
+        }
 
         private void RefreshToggles()
         {
@@ -137,6 +168,7 @@ namespace PuzzleGame.Presentation.UI
             if (_resetConsentButton != null) _resetConsentButton.onClick.RemoveListener(OnResetConsent);
             if (_deleteDataButton != null) _deleteDataButton.onClick.RemoveListener(OnDeleteData);
             if (_ageVerifyButton != null) _ageVerifyButton.onClick.RemoveListener(OnReVerifyAge);
+            if (_backButton != null) _backButton.onClick.RemoveListener(OnBackClicked);
         }
     }
 }

@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 6815841930982089694}
   - component: {fileID: 6316874137251652844}
   - component: {fileID: 3983842862271379773}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: ContentPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -115,7 +115,7 @@ GameObject:
   - component: {fileID: 6379097453445542096}
   - component: {fileID: 3322270569128547019}
   - component: {fileID: 9028698492858379696}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: AgeGateModal
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -221,7 +221,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6262289171088837550}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: SafeArea
   m_TagString: Untagged
   m_Icon: {fileID: 0}

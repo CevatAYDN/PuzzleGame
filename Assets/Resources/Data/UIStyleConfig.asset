@@ -20,6 +20,10 @@ MonoBehaviour:
   colorGold: {r: 0.9843137, g: 0.7490196, b: 0.14117648, a: 1}
   colorTextPrimary: {r: 1, g: 1, b: 1, a: 1}
   colorTextSecondary: {r: 0.85, g: 0.89, b: 0.96, a: 1}
+  colorPrimaryHighContrast: {r: 0, g: 1, b: 0, a: 1}
+  colorErrorHighContrast: {r: 1, g: 0, b: 0, a: 1}
+  colorSecondaryHighContrast: {r: 0, g: 0, b: 1, a: 1}
+  reduceMotion: 0
   headlineFont: {fileID: 0}
   bodyFont: {fileID: 0}
   glassmorphismPanelMaterial: {fileID: 0}
