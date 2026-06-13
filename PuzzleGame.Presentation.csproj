@@ -50,12 +50,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\Presentation\UI\HUDWidgetPresenter.cs" />
+    <Compile Include="Assets\Scripts\Presentation\UI\Components\UIButtonHaptic.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\AchievementNotificationUI.cs" />
     <Compile Include="Assets\Scripts\Presentation\WinLoseEvaluator.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\SettingsSoundController.cs" />
     <Compile Include="Assets\Scripts\Presentation\MoldVisualSync.cs" />
     <Compile Include="Assets\Scripts\Presentation\OptionalMoldActivator.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\ShopItemView.cs" />
+    <Compile Include="Assets\Scripts\Presentation\UI\Components\UITextLocalizer.cs" />
     <Compile Include="Assets\Scripts\Presentation\CameraEffectsController.cs" />
     <Compile Include="Assets\Scripts\Presentation\OnboardingFlowController.cs" />
     <Compile Include="Assets\Scripts\Presentation\PlayTestBootstrap.cs" />

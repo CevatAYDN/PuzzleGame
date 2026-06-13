@@ -84,9 +84,11 @@ namespace PuzzleGame.Presentation.UI
                 _events.Subscribe<HideWorldMapRequestEvent>(OnHideWorldMap);
                 _events.Subscribe<ShowDailyChallengeRequestEvent>(OnShowDailyChallenge);
                 _events.Subscribe<HideDailyChallengeRequestEvent>(OnHideDailyChallenge);
+                _events.Subscribe<ShowSettingsRequestEvent>(OnShowSettings);
+                _events.Subscribe<HideSettingsRequestEvent>(OnHideSettings);
+                _events.Subscribe<ShowPrivacyRequestEvent>(OnShowPrivacy);
                 _events.Subscribe<ShowSoundPanelRequestEvent>(OnShowSoundPanel);
                 _events.Subscribe<HideSoundPanelRequestEvent>(OnHideSoundPanel);
-                _events.Subscribe<HideSettingsRequestEvent>(OnHideSettings);
                 _events.Subscribe<HidePrivacyRequestEvent>(OnHidePrivacy);
             }
             if (_coinWallet != null) _coinWallet.OnBalanceChanged += OnCoinBalanceChanged;
@@ -103,9 +105,11 @@ namespace PuzzleGame.Presentation.UI
                 _events.Unsubscribe<HideWorldMapRequestEvent>(OnHideWorldMap);
                 _events.Unsubscribe<ShowDailyChallengeRequestEvent>(OnShowDailyChallenge);
                 _events.Unsubscribe<HideDailyChallengeRequestEvent>(OnHideDailyChallenge);
+                _events.Unsubscribe<ShowSettingsRequestEvent>(OnShowSettings);
+                _events.Unsubscribe<HideSettingsRequestEvent>(OnHideSettings);
+                _events.Unsubscribe<ShowPrivacyRequestEvent>(OnShowPrivacy);
                 _events.Unsubscribe<ShowSoundPanelRequestEvent>(OnShowSoundPanel);
                 _events.Unsubscribe<HideSoundPanelRequestEvent>(OnHideSoundPanel);
-                _events.Unsubscribe<HideSettingsRequestEvent>(OnHideSettings);
                 _events.Unsubscribe<HidePrivacyRequestEvent>(OnHidePrivacy);
             }
             if (_coinWallet != null) _coinWallet.OnBalanceChanged -= OnCoinBalanceChanged;
@@ -192,10 +196,22 @@ namespace PuzzleGame.Presentation.UI
             FadeRoot(1f);
         }
 
+        private void OnShowSettings(ShowSettingsRequestEvent e)
+        {
+            if (settingsPanel != null) settingsPanel.SetActive(true);
+            FadeRoot(0f);
+        }
+
         private void OnHideSettings(HideSettingsRequestEvent e)
         {
             if (settingsPanel != null) settingsPanel.SetActive(false);
             FadeRoot(1f);
+        }
+
+        private void OnShowPrivacy(ShowPrivacyRequestEvent e)
+        {
+            if (settingsPanel != null) settingsPanel.SetActive(true);
+            FadeRoot(0f);
         }
 
         private void OnPlayClicked()

@@ -42,10 +42,6 @@ namespace PuzzleGame.Editor
                     {
                         EditorApplication.delayCall += UIPrefabGenerator.GenerateAll;
                     }
-                    if (GUILayout.Button("Generate UI (ColorBlind)", GUILayout.Height(28)))
-                    {
-                        EditorApplication.delayCall += UIPrefabGenerator.GenerateAllColorBlind;
-                    }
                 }
             }
 

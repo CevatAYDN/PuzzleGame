@@ -71,6 +71,7 @@ namespace PuzzleGame.Presentation.UI
             if (_events != null)
             {
                 _events.Subscribe<ShowSettingsRequestEvent>(OnShowSettings);
+                _events.Subscribe<ShowPrivacyRequestEvent>(OnShowPrivacyFromOutside);
             }
             RefreshUI();
         }
@@ -80,12 +81,19 @@ namespace PuzzleGame.Presentation.UI
             if (_events != null)
             {
                 _events.Unsubscribe<ShowSettingsRequestEvent>(OnShowSettings);
+                _events.Unsubscribe<ShowPrivacyRequestEvent>(OnShowPrivacyFromOutside);
             }
         }
 
         private void OnShowSettings(ShowSettingsRequestEvent e)
         {
             gameObject.SetActive(true);
+        }
+
+        private void OnShowPrivacyFromOutside(ShowPrivacyRequestEvent e)
+        {
+            gameObject.SetActive(true);
+            OnPrivacyClicked();
         }
 
         // ─── Language ────────────────────────────────────────────────────────

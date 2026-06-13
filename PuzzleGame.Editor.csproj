@@ -58,6 +58,7 @@
     <Compile Include="Assets\Scripts\Editor\FixMissingStyleConfig.cs" />
     <Compile Include="Assets\Scripts\Editor\PaletteTab.cs" />
     <Compile Include="Assets\Scripts\Editor\ValidateTab.cs" />
+    <Compile Include="Assets\Scripts\Editor\UI\UIBuilderBase.cs" />
     <Compile Include="Assets\Scripts\Editor\FeaturesTab.cs" />
     <Compile Include="Assets\Scripts\Editor\DataAssetCreator.cs" />
     <Compile Include="Assets\Scripts\Editor\EconomyLiveOpsTab.cs" />
@@ -69,11 +70,11 @@
     <Compile Include="Assets\Scripts\Editor\TestTab.cs" />
     <Compile Include="Assets\Scripts\Editor\LevelSolverUtility.cs" />
     <Compile Include="Assets\Scripts\Editor\PouringLabTab.cs" />
-    <Compile Include="Assets\Scripts\Editor\UIPrefabAutoGenerate.cs" />
     <Compile Include="Assets\Scripts\Editor\DifficultyCurveAnalyzer.cs" />
     <Compile Include="Assets\Scripts\Editor\BuildScript.cs" />
     <Compile Include="Assets\Scripts\Editor\LevelUITab.cs" />
     <Compile Include="Assets\Scripts\Editor\AddressablesInstaller.cs" />
+    <Compile Include="Assets\Scripts\Editor\UI\UIBuilders.cs" />
     <Compile Include="Assets\Scripts\Editor\ForgeEditorWindow.cs" />
     <Compile Include="Assets\Scripts\Editor\SceneBuilderMoldFactory.cs" />
     <Compile Include="Assets\Scripts\Editor\SceneTab.cs" />
