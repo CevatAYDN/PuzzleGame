@@ -38,6 +38,9 @@ namespace PuzzleGame.Infrastructure.Implementations
         private static readonly int LayerBoundaryWidthID = Shader.PropertyToID("_LayerBoundaryWidth");
 
         private readonly IColorAdapter _colorAdapter;
+        private readonly IAccessibilityService _accessibilityService;
+
+        public bool ColorBlindModeEnabled => _accessibilityService != null && _accessibilityService.ColorBlindModeEnabled;
 
         // MaterialPropertyBlock instances are reused across every mold render.
         // Crucially we do NOT create per-renderer Material instances — that
@@ -47,11 +50,14 @@ namespace PuzzleGame.Infrastructure.Implementations
         private readonly MaterialPropertyBlock _glassBlock  = new MaterialPropertyBlock();
         private readonly List<OreLayer> _mergedLayers = new List<OreLayer>();
 
-        public RendererService() : this(new ColorAdapter()) { }
+        public RendererService() : this(new ColorAdapter(), null) { }
 
-        public RendererService(IColorAdapter colorAdapter)
+        public RendererService(IColorAdapter colorAdapter) : this(colorAdapter, null) { }
+
+        public RendererService(IColorAdapter colorAdapter, IAccessibilityService accessibilityService)
         {
             _colorAdapter = colorAdapter ?? throw new ArgumentNullException(nameof(colorAdapter));
+            _accessibilityService = accessibilityService;
         }
 
         public void UpdateOre(Renderer renderer, IReadOnlyList<OreLayer> layers, float totalFill, PuzzleGame.Application.Configuration.MoldVisualConfig config)
@@ -101,8 +107,17 @@ namespace PuzzleGame.Infrastructure.Implementations
                         float bri = config != null ? config.brightnessBoost : 1.15f;
                         color      = AdjustColor(_colorAdapter.ToUnity(layer.Color), sat, bri);
                         
-                        // Get pattern from layer
-                        patternValue = (int)layer.Pattern;
+                        // Get pattern dynamically from accessibility service if active
+                        if (_accessibilityService != null)
+                        {
+                            patternValue = _accessibilityService.ColorBlindModeEnabled
+                                ? (int)_accessibilityService.GetPatternForColor((int)layer.ColorType)
+                                : 0;
+                        }
+                        else
+                        {
+                            patternValue = (int)layer.Pattern;
+                        }
                     }
                     cumulative += layer.Amount;
                     fill       = cumulative;

@@ -26,6 +26,7 @@ namespace PuzzleGame
         // Dirty flag cache to avoid redundant renderer service calls (Fix #12)
         private int _lastLayerHash = -1;
         private float _lastTotalFill = -1f;
+        private bool _lastColorBlindActive = false;
 
         private static readonly int FresnelIntensityID = Shader.PropertyToID("_FresnelIntensity");
 
@@ -56,13 +57,19 @@ namespace PuzzleGame
 
             // Dirty flag: compute hash of current state
             int layerHash = visualLayers != null ? ComputeLayerHash(visualLayers) : 0;
+            bool colorBlindActive = _rendererService.ColorBlindModeEnabled;
 
             // Skip if state unchanged
-            if (layerHash == _lastLayerHash && Mathf.Abs(visualTotalFill - _lastTotalFill) < 0.0001f)
+            if (layerHash == _lastLayerHash && 
+                Mathf.Abs(visualTotalFill - _lastTotalFill) < 0.0001f && 
+                colorBlindActive == _lastColorBlindActive)
+            {
                 return;
+            }
 
             _lastLayerHash = layerHash;
             _lastTotalFill = visualTotalFill;
+            _lastColorBlindActive = colorBlindActive;
 
             // Fix #K3: Guard against null visualLayers after dirty flag
             if (visualLayers == null)

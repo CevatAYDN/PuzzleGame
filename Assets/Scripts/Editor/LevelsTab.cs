@@ -44,6 +44,9 @@ namespace PuzzleGame.Editor
         private bool _isLongRunning = false;
         private bool _cancelLongRunning = false;
 
+        private int _currentPage = 0;
+        private int _itemsPerPage = 50;
+
         public void OnEnable(ForgeEditorWindow window)
         {
             _window = window;
@@ -214,8 +217,29 @@ namespace PuzzleGame.Editor
 
                 EditorGUILayout.Space(4);
 
+                int totalPages = Mathf.Max(1, (_existingLevels.Count + _itemsPerPage - 1) / _itemsPerPage);
+                if (_currentPage >= totalPages) _currentPage = totalPages - 1;
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.Label($"Page {_currentPage + 1}/{totalPages}", GUILayout.Width(80));
+                    if (GUILayout.Button("◀ Prev", EditorStyles.miniButtonLeft, GUILayout.Width(60)))
+                        if (_currentPage > 0) _currentPage--;
+                    
+                    if (GUILayout.Button("Next ▶", EditorStyles.miniButtonRight, GUILayout.Width(60)))
+                        if (_currentPage < totalPages - 1) _currentPage++;
+                    
+                    GUILayout.FlexibleSpace();
+                    GUILayout.Label("Items/Page:", GUILayout.Width(70));
+                    _itemsPerPage = EditorGUILayout.IntField(_itemsPerPage, GUILayout.Width(50));
+                    if (_itemsPerPage < 10) _itemsPerPage = 10;
+                }
+                EditorGUILayout.Space(2);
+
                 _listScroll = EditorGUILayout.BeginScrollView(_listScroll, GUILayout.Height(350));
-                for (int i = 0; i < _existingLevels.Count; i++)
+                int startIndex = _currentPage * _itemsPerPage;
+                int endIndex = Mathf.Min(startIndex + _itemsPerPage, _existingLevels.Count);
+                for (int i = startIndex; i < endIndex; i++)
                 {
                     var lvl = _existingLevels[i];
                     using (new EditorGUILayout.HorizontalScope())

@@ -112,6 +112,7 @@
     <Compile Include="Assets\Tests\Fakes\FakeStreamTrailController.cs" />
     <Compile Include="Assets\Tests\Domain\Services\LevelGeneratorV2Tests.cs" />
     <Compile Include="Assets\Tests\Fakes\FakeHistoryManager.cs" />
+    <Compile Include="Assets\Tests\Infrastructure\AccessibilityServiceTests.cs" />
     <Compile Include="Assets\Tests\Application\Services\ScriptableObjectLevelRepositoryTests.cs" />
     <Compile Include="Assets\Tests\Infrastructure\CosmeticShopServiceTests.cs" />
     <Compile Include="Assets\Tests\Infrastructure\ShaderOptimizerTests.cs" />

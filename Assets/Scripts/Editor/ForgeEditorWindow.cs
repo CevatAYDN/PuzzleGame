@@ -71,6 +71,7 @@ namespace PuzzleGame.Editor
                     catch (Exception ex)
                     {
                         Debug.LogError($"[ForgeEditorWindow] Tab {tab.GetType().Name}.OnDisable() failed: {ex.Message}");
+                        EditorUtility.DisplayDialog("Editor Tab Error", $"Tab {tab.GetType().Name} encountered an error during OnDisable:\n{ex.Message}", "OK");
                     }
                 }
             }
@@ -199,6 +200,7 @@ namespace PuzzleGame.Editor
                 catch (System.Exception ex)
                 {
                     Debug.LogError($"[ForgeEditorWindow] Tab {tab.GetType().Name}.Refresh() failed: {ex.Message}");
+                    EditorUtility.DisplayDialog("Editor Tab Error", $"Tab {tab.GetType().Name} encountered an error during Refresh:\n{ex.Message}", "OK");
                 }
             }
         }

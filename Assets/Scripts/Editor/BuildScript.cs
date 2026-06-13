@@ -15,6 +15,7 @@ namespace PuzzleGame.Editor
         public static void BuildAndroidRelease()
         {
             Debug.Log("[BuildScript] Starting Android IL2CPP Release build...");
+            AddressablesInstaller.Setup();
 
             // Ensure AdMob define is set for release builds
             var androidTarget = UnityEditor.Build.NamedBuildTarget.Android;
@@ -58,6 +59,7 @@ namespace PuzzleGame.Editor
         public static void BuildWindowsRelease()
         {
             Debug.Log("[BuildScript] Starting Windows Standalone build...");
+            AddressablesInstaller.Setup();
 
             var options = new BuildPlayerOptions
             {
@@ -87,6 +89,7 @@ namespace PuzzleGame.Editor
         public static void BuildiOSRelease()
         {
             Debug.Log("[BuildScript] Starting iOS build...");
+            AddressablesInstaller.Setup();
 
             var options = new BuildPlayerOptions
             {

@@ -12,13 +12,19 @@ namespace PuzzleGame.Editor
     /// Consent, WorldMap, DailyChallenge) so DI does not need to create fallback
     /// GameObjects at runtime. Reduces per-frame Update overhead and silences WARN logs.
     ///
-    /// Uses only UnityEngine.UI (built-in) — no TextMeshPro dependency to keep
-    /// the Editor assembly's reference footprint minimal.
+    /// Uses prefab Instantiate instead of AddComponent to ensure serialized fields
+    /// (buttons, labels, panels) are wired up from the prefab hierarchy. Fixes
+    /// council blocker B2.
+    ///
+    /// Prefabs live under Assets/Resources/Prefabs/ and are loaded via Resources.Load.
+    /// Run Tools > PuzzleGame > Generate UI Prefabs to (re)create them.
     /// </summary>
     internal static class SceneBuilderUI
     {
         // UI root name used to avoid duplicate Canvas creation
         private const string UIRootName = "PuzzleGame_Canvas";
+        // Prefab resource path (without extension) — matches Assets/Resources/Prefabs/
+        private const string PrefabPrefix = "Prefabs/";
 
         /// <summary>
         /// Creates the full UI hierarchy in the current scene: EventSystem, Canvas,
@@ -31,15 +37,15 @@ namespace PuzzleGame.Editor
             EnsureErrorIndicator();
             EnsureCameraEffectsController();
             CreateHudPresenter();
-            CreateModal<Presentation.UI.AgeGateModal>("AgeGateModal");
-            CreateModal<Presentation.UI.ConsentModal>("ConsentModal");
-            CreateModal<Presentation.UI.MainMenuController>("MainMenuController");
-            CreateModal<Presentation.UI.SettingsPrivacyController>("SettingsPrivacyController");
-            CreateModal<Presentation.UI.SettingsSoundController>("SettingsSoundController");
-            CreateModal<Presentation.UI.WorldMapController>("WorldMapController");
-            CreateModal<Presentation.UI.DailyChallengeController>("DailyChallengeController");
-            CreateModal<Presentation.UI.PowerUpUI>("PowerUpUI");
-            CreateModal<Presentation.UI.AchievementNotificationUI>("AchievementNotificationUI");
+            CreateFromPrefab<Presentation.UI.AgeGateModal>("AgeGateModal");
+            CreateFromPrefab<Presentation.UI.ConsentModal>("ConsentModal");
+            CreateFromPrefab<Presentation.UI.MainMenuController>("MainMenuController");
+            CreateFromPrefab<Presentation.UI.SettingsPrivacyController>("SettingsPrivacyController");
+            CreateFromPrefab<Presentation.UI.SettingsSoundController>("SettingsSoundController");
+            CreateFromPrefab<Presentation.UI.WorldMapController>("WorldMapController");
+            CreateFromPrefab<Presentation.UI.DailyChallengeController>("DailyChallengeController");
+            CreateFromPrefab<Presentation.UI.PowerUpUI>("PowerUpUI");
+            CreateFromPrefab<Presentation.UI.AchievementNotificationUI>("AchievementNotificationUI");
 
             Debug.Log("[SceneBuilderUI] UI controllers created successfully.");
         }
@@ -114,57 +120,54 @@ namespace PuzzleGame.Editor
 
         private static void CreateHudPresenter()
         {
-            var canvas = GameObject.Find(UIRootName);
-            if (canvas == null) return;
-
-            // Skip if already present (idempotent)
-            if (Object.FindAnyObjectByType<Presentation.UI.HudPresenter>(FindObjectsInactive.Include) != null)
-                return;
-
-            var hudGo = new GameObject("HudPresenter",
-                typeof(RectTransform), typeof(CanvasGroup));
-            hudGo.transform.SetParent(canvas.transform, false);
-            SetFullScreen(hudGo);
-            hudGo.transform.SetAsFirstSibling();
-
-            var group = hudGo.GetComponent<CanvasGroup>();
-            group.blocksRaycasts = false;
-
-            // Placeholder Text so any null-guard against label binding does not NRE.
-            var label = new GameObject("HudLabel",
-                typeof(RectTransform), typeof(Text));
-            label.transform.SetParent(hudGo.transform, false);
-            SetFullScreen(label);
-            var text = label.GetComponent<Text>();
-            text.text = string.Empty;
-            text.alignment = TextAnchor.MiddleCenter;
-            text.color = Color.white;
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-
-            hudGo.AddComponent<Presentation.UI.HudPresenter>();
-            Undo.RegisterCreatedObjectUndo(hudGo, "Create HudPresenter");
+            InstantiatePrefab<Presentation.UI.HudPresenter>("HudPresenter", asFirstSibling: true);
         }
 
-        // ── Generic modal scaffolding ────────────────────────────────────────
+        // ── Generic modal scaffolding (prefab-based) ──────────────────────────
 
-        private static void CreateModal<T>(string name) where T : MonoBehaviour
+        private static void CreateFromPrefab<T>(string prefabName) where T : MonoBehaviour
+        {
+            InstantiatePrefab<T>(prefabName, asFirstSibling: false);
+        }
+
+        private static void InstantiatePrefab<T>(string prefabName, bool asFirstSibling) where T : MonoBehaviour
         {
             if (Object.FindAnyObjectByType<T>(FindObjectsInactive.Include) != null) return;
 
             var canvas = GameObject.Find(UIRootName);
             if (canvas == null) return;
 
-            var go = new GameObject(name, typeof(RectTransform), typeof(CanvasGroup));
-            go.transform.SetParent(canvas.transform, false);
+            // Try prefab first; fall back to empty GameObject + AddComponent
+            string resPath = PrefabPrefix + prefabName;
+            GameObject prefab = Resources.Load<GameObject>(resPath);
+            GameObject go;
+
+            if (prefab != null)
+            {
+                go = (GameObject)PrefabUtility.InstantiatePrefab(prefab, canvas.transform);
+                go.name = prefabName;
+
+                // Ensure the target component exists
+                if (go.GetComponent<T>() == null)
+                    go.AddComponent<T>();
+            }
+            else
+            {
+                // Fallback: empty GameObject with component (original behavior)
+                go = new GameObject(prefabName, typeof(RectTransform), typeof(CanvasGroup));
+                go.transform.SetParent(canvas.transform, false);
+                var group = go.GetComponent<CanvasGroup>();
+                group.alpha = 0f;
+                group.interactable = false;
+                group.blocksRaycasts = false;
+                go.AddComponent<T>();
+            }
+
             SetFullScreen(go);
+            if (asFirstSibling)
+                go.transform.SetAsFirstSibling();
 
-            var group = go.GetComponent<CanvasGroup>();
-            group.alpha = 0f;
-            group.interactable = false;
-            group.blocksRaycasts = false;
-
-            go.AddComponent<T>();
-            Undo.RegisterCreatedObjectUndo(go, $"Create {name}");
+            Undo.RegisterCreatedObjectUndo(go, $"Create {prefabName}");
         }
 
         private static void SetFullScreen(GameObject go)

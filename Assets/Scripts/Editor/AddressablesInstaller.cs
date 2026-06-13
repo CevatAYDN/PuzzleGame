@@ -124,11 +124,19 @@ namespace PuzzleGame.Editor
         [MenuItem("Tools/PuzzleGame/Setup Addressables")]
         public static void Setup()
         {
-            EditorUtility.DisplayDialog(
-                "Addressables Missing",
-                "Addressables package is not installed or 'ENABLE_ADDRESSABLES' is not defined in Scripting Define Symbols.\n\n" +
-                "To fix: Install Addressables package via Package Manager, and define 'ENABLE_ADDRESSABLES' in Project Settings > Player > Scripting Define Symbols.",
-                "OK");
+            if (UnityEngine.Application.isBatchMode)
+            {
+                UnityEngine.Debug.LogError("[AddressablesInstaller] Addressables package is not installed or 'ENABLE_ADDRESSABLES' is not defined.");
+                EditorApplication.Exit(1);
+            }
+            else
+            {
+                EditorUtility.DisplayDialog(
+                    "Addressables Missing",
+                    "Addressables package is not installed or 'ENABLE_ADDRESSABLES' is not defined in Scripting Define Symbols.\n\n" +
+                    "To fix: Install Addressables package via Package Manager, and define 'ENABLE_ADDRESSABLES' in Project Settings > Player > Scripting Define Symbols.",
+                    "OK");
+            }
         }
     }
 }

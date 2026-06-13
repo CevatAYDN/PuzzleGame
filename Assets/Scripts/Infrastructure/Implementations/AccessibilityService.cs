@@ -38,7 +38,16 @@ namespace PuzzleGame.Infrastructure.Implementations
             if (!ColorBlindModeEnabled)
                 return DomainPattern.None;
 
-            return _config.GetPattern(oreColorIndex);
+            var pattern = _config.GetPattern(oreColorIndex);
+            
+            // Fail-Fast: Throw exception if a required color (1..10) is missing an accessibility pattern fallback
+            if (oreColorIndex >= 1 && oreColorIndex != 11 && pattern == DomainPattern.None)
+            {
+                throw new PuzzleGame.Domain.Exceptions.MissingAccessibilityFallbackException(
+                    $"No accessibility pattern fallback defined for color index {oreColorIndex} when color-blind mode is enabled.");
+            }
+            
+            return pattern;
         }
 
         public void SetColorBlindMode(ColorBlindMode mode)

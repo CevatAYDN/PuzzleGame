@@ -90,3 +90,6 @@ test_*.txt
 # Ignore Unity package samples
 /[Aa]ssets/[Ss]amples/
 /[Aa]ssets/[Ss]amples.meta
+
+# Ignore OpenCode config containing secrets
+opencode.json

@@ -11,6 +11,11 @@ namespace PuzzleGame.Application.Interfaces
     public interface IRendererService
     {
         /// <summary>
+        /// Gets whether color-blind accessibility mode is currently active.
+        /// </summary>
+        bool ColorBlindModeEnabled { get; }
+
+        /// <summary>
         /// Update Ore material properties on a renderer.
         /// </summary>
         void UpdateOre(Renderer renderer, IReadOnlyList<OreLayer> layers, float totalFill, Configuration.MoldVisualConfig config);

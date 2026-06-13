@@ -3,6 +3,7 @@ using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Logging;
 using UnityEngine;
 using UnityEngine.UI;
+using VContainer;
 
 namespace PuzzleGame.Presentation.UI
 {
@@ -36,6 +37,7 @@ namespace PuzzleGame.Presentation.UI
         private IAnalyticsService _analyticsService;
         private IAgeVerificationService _ageService;
 
+        [Inject]
         public void Initialize(
             IConsentManager consentManager,
             IAdService adService,
