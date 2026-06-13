@@ -114,7 +114,6 @@ namespace PuzzleGame.Editor
             Debug.Log("[SceneBuilder] Current scene set up with GameManager + DI. Ctrl+Z to undo.");
         }
 
-        [MenuItem("Tools/PuzzleGame/Fix URP Pipeline Settings")]
         public static void FixURPPipeline()
         {
             var guids = AssetDatabase.FindAssets("t:UniversalRenderPipelineAsset PC_RPAsset");

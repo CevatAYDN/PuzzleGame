@@ -6,7 +6,6 @@ namespace PuzzleGame.Editor
 {
     public static class ParticlePrefabGenerator
     {
-        [MenuItem("Tools/PuzzleGame/Generate Missing Particles")]
         public static void GenerateParticles()
         {
             string dir = "Assets/Resources/Particles";

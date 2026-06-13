@@ -11,21 +11,27 @@ namespace PuzzleGame.Editor
     /// Detects spikes, gaps, and flat zones in the difficulty curve.
     /// Useful for designers to ensure smooth player progression.
     /// </summary>
-    public class DifficultyCurveAnalyzer : EditorWindow
+    public class DifficultyCurveAnalyzer : IEditorTab
     {
+        public string TabName => "Difficulty Curve";
+        private ForgeEditorWindow _window;
+
         private Vector2 _scrollPos;
         private List<LevelData> _levels = new List<LevelData>();
         private List<DifficultyPoint> _curve = new List<DifficultyPoint>();
         private bool _dataLoaded;
 
-        [MenuItem("Tools/PuzzleGame/Difficulty Curve Analyzer")]
-        public static void ShowWindow()
+        public void OnEnable(ForgeEditorWindow window)
         {
-            var window = GetWindow<DifficultyCurveAnalyzer>("Difficulty Curve");
-            window.minSize = new Vector2(500, 400);
+            _window = window;
+            LoadLevels();
         }
 
-        private void OnEnable()
+        public void OnDisable()
+        {
+        }
+
+        public void Refresh()
         {
             LoadLevels();
         }
@@ -79,7 +85,7 @@ namespace PuzzleGame.Editor
             return moldFactor + layerFactor + colorFactor + emptyMoldBonus;
         }
 
-        private void OnGUI()
+        public void OnGUI()
         {
             EditorGUILayout.Space(8);
             EditorGUILayout.LabelField("Difficulty Curve Analyzer", EditorStyles.boldLabel);
@@ -160,6 +166,10 @@ namespace PuzzleGame.Editor
             // ── Legend ───────────────────────────────────────────────────────
             EditorGUILayout.Space(4);
             EditorGUILayout.LabelField("▲ = Difficulty spike (>30% jump)   ▼ = Difficulty drop (>20% drop)", EditorStyles.miniLabel);
+        }
+
+        public void OnSceneGUI(SceneView sceneView)
+        {
         }
 
         private struct DifficultyPoint

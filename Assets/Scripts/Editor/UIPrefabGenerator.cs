@@ -35,7 +35,6 @@ namespace PuzzleGame.Editor
 
         // ── Generation entry point ──────────────────────────────────────────
 
-        [MenuItem("Tools/PuzzleGame/Generate & Apply Stitch UI")]
         public static void GenerateAll()
         {
             _currentPrefabRoot = "Assets/Resources/Prefabs";
@@ -45,7 +44,6 @@ namespace PuzzleGame.Editor
             GenerateAllCore();
         }
 
-        [MenuItem("Tools/PuzzleGame/Generate & Apply Stitch UI (ColorBlind)")]
         public static void GenerateAllColorBlind()
         {
             _currentPrefabRoot = "Assets/Resources/Prefabs/ColorBlind";
@@ -75,6 +73,8 @@ namespace PuzzleGame.Editor
 
         private static void GenerateAllCore()
         {
+            SetupUITestScene();
+
             GenerateMainMenu();
             GenerateHud();
             GenerateWorldMap();
@@ -94,6 +94,44 @@ namespace PuzzleGame.Editor
         }
 
         // ── Individual prefab generators ─────────────────────────────────────
+
+        private static Canvas _testCanvas;
+
+        private static void SetupUITestScene()
+        {
+            // Create or open UITest scene
+            string scenePath = "Assets/Scenes/UITest.unity";
+            
+            if (!System.IO.Directory.Exists("Assets/Scenes"))
+                System.IO.Directory.CreateDirectory("Assets/Scenes");
+
+            var scene = UnityEditor.SceneManagement.EditorSceneManager.OpenScene(scenePath, UnityEditor.SceneManagement.OpenSceneMode.Single);
+            if (string.IsNullOrEmpty(scene.path))
+            {
+                scene = UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.EmptyScene, UnityEditor.SceneManagement.NewSceneMode.Single);
+                scene.name = "UITest";
+            }
+            
+            // Create EventSystem if needed
+            if (UnityEngine.Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
+            {
+                var eventSystemGo = new GameObject("EventSystem");
+                eventSystemGo.AddComponent<UnityEngine.EventSystems.EventSystem>();
+                eventSystemGo.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            }
+
+            _testCanvas = UnityEngine.Object.FindAnyObjectByType<Canvas>();
+            if (_testCanvas == null)
+            {
+                var canvasGo = new GameObject("MasterCanvas");
+                _testCanvas = canvasGo.AddComponent<Canvas>();
+                _testCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                var scaler = canvasGo.AddComponent<UnityEngine.UI.CanvasScaler>();
+                scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1080, 1920);
+                canvasGo.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+            }
+        }
 
         private static void GenerateMainMenu()
         {
@@ -553,6 +591,9 @@ namespace PuzzleGame.Editor
         private static GameObject CreateRoot(string name, out GameObject contentPanel)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(CanvasGroup));
+            if (_testCanvas != null)
+                go.transform.SetParent(_testCanvas.transform, false);
+
             var rect = go.GetComponent<RectTransform>();
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;
@@ -743,30 +784,16 @@ namespace PuzzleGame.Editor
         {
             string path = $"{_currentPrefabRoot}/{fileName}";
 
-            // Check if prefab already exists
-            var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-
-            // Ensure directory exists
             var dir = System.IO.Path.GetDirectoryName(path);
             if (!System.IO.Directory.Exists(dir))
                 System.IO.Directory.CreateDirectory(dir);
 
-            if (existing != null)
+            // Connect to prefab in scene
+            GameObject prefabAsset = PrefabUtility.SaveAsPrefabAssetAndConnect(root, path, InteractionMode.AutomatedAction);
+            if (prefabAsset == null)
             {
-                // Replace existing
-                PrefabUtility.SaveAsPrefabAsset(root, path, out bool success);
-                if (!success)
-                    Debug.LogWarning($"[UIPrefabGenerator] Failed to save prefab: {path}");
+                Debug.LogWarning($"[UIPrefabGenerator] Failed to save prefab: {path}");
             }
-            else
-            {
-                // Create new
-                PrefabUtility.SaveAsPrefabAsset(root, path, out bool success);
-                if (!success)
-                    Debug.LogWarning($"[UIPrefabGenerator] Failed to save prefab: {path}");
-            }
-
-            UnityEngine.Object.DestroyImmediate(root);
         }
     }
 }
