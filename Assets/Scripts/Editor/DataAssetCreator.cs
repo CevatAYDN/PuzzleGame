@@ -28,7 +28,10 @@ namespace PuzzleGame.Editor
             where T : ScriptableObject
         {
             if (!System.IO.Directory.Exists(DataPath))
+            {
                 System.IO.Directory.CreateDirectory(DataPath);
+                AssetDatabase.Refresh();
+            }
 
             string fullPath = $"{DataPath}/{fileName}.asset";
             var existing = AssetDatabase.LoadAssetAtPath<T>(fullPath);

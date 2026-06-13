@@ -30,25 +30,20 @@ namespace PuzzleGame.Editor
 
         private void OnEnable()
         {
-            // Initialize modular tabs
-            _tabs = new List<IEditorTab>
+            // Initialize modular tabs dynamically using reflection to adhere to Open-Closed Principle
+            _tabs = new List<IEditorTab>();
+            var tabTypes = UnityEditor.TypeCache.GetTypesDerivedFrom<IEditorTab>();
+            foreach (var type in tabTypes)
             {
-                new DataTab(),
-                new LevelsTab(),
-                new SceneTab(),
-                new ValidateTab(),
-                new PaletteTab(),
-                new FeaturesTab(),
-                new LevelUITab(),
-                new TestTab(),
-                new LocalizationTab(),
-                new PouringLabTab(),
-                new EconomyLiveOpsTab()
-            };
-
-            foreach (var tab in _tabs)
-            {
-                tab.OnEnable(this);
+                if (!type.IsAbstract && !type.IsInterface)
+                {
+                    var tab = Activator.CreateInstance(type) as IEditorTab;
+                    if (tab != null)
+                    {
+                        _tabs.Add(tab);
+                        tab.OnEnable(this);
+                    }
+                }
             }
 
             SceneView.duringSceneGui += OnSceneGUIInternal;
@@ -71,7 +66,6 @@ namespace PuzzleGame.Editor
                     catch (Exception ex)
                     {
                         Debug.LogError($"[ForgeEditorWindow] Tab {tab.GetType().Name}.OnDisable() failed: {ex.Message}");
-                        EditorUtility.DisplayDialog("Editor Tab Error", $"Tab {tab.GetType().Name} encountered an error during OnDisable:\n{ex.Message}", "OK");
                     }
                 }
             }
@@ -200,7 +194,6 @@ namespace PuzzleGame.Editor
                 catch (System.Exception ex)
                 {
                     Debug.LogError($"[ForgeEditorWindow] Tab {tab.GetType().Name}.Refresh() failed: {ex.Message}");
-                    EditorUtility.DisplayDialog("Editor Tab Error", $"Tab {tab.GetType().Name} encountered an error during Refresh:\n{ex.Message}", "OK");
                 }
             }
         }

@@ -151,33 +151,41 @@ namespace PuzzleGame.Editor
             var installer = go.AddComponent<Installers.GameInstaller>();
 
             // Auto-assign configs from Resources, create defaults if not found
+            if (!System.IO.Directory.Exists("Assets/Resources/Data"))
+            {
+                System.IO.Directory.CreateDirectory("Assets/Resources/Data");
+            }
+
             installer.gameConfig = Resources.Load<GameConfig>("Data/GameConfig");
             if (installer.gameConfig == null)
             {
                 installer.gameConfig = ScriptableObject.CreateInstance<GameConfig>();
-                installer.gameConfig.name = "GameConfig";
-                Debug.LogWarning("[SceneBuilder] GameConfig not found in Resources — created default.");
+                UnityEditor.AssetDatabase.CreateAsset(installer.gameConfig, "Assets/Resources/Data/GameConfig.asset");
+                Debug.LogWarning("[SceneBuilder] GameConfig not found in Resources — created and saved default asset.");
             }
 
             installer.animationConfig = Resources.Load<AnimationConfig>("Data/AnimationConfig");
             if (installer.animationConfig == null)
             {
                 installer.animationConfig = ScriptableObject.CreateInstance<AnimationConfig>();
-                installer.animationConfig.name = "AnimationConfig";
+                UnityEditor.AssetDatabase.CreateAsset(installer.animationConfig, "Assets/Resources/Data/AnimationConfig.asset");
+                Debug.LogWarning("[SceneBuilder] AnimationConfig not found in Resources — created and saved default asset.");
             }
 
             installer.levelConfig = Resources.Load<LevelConfig>("Data/LevelConfig");
             if (installer.levelConfig == null)
             {
                 installer.levelConfig = ScriptableObject.CreateInstance<LevelConfig>();
-                installer.levelConfig.name = "LevelConfig";
+                UnityEditor.AssetDatabase.CreateAsset(installer.levelConfig, "Assets/Resources/Data/LevelConfig.asset");
+                Debug.LogWarning("[SceneBuilder] LevelConfig not found in Resources — created and saved default asset.");
             }
 
             installer.audioConfig = Resources.Load<AudioConfig>("Data/AudioConfig");
             if (installer.audioConfig == null)
             {
                 installer.audioConfig = ScriptableObject.CreateInstance<AudioConfig>();
-                installer.audioConfig.name = "AudioConfig";
+                UnityEditor.AssetDatabase.CreateAsset(installer.audioConfig, "Assets/Resources/Data/AudioConfig.asset");
+                Debug.LogWarning("[SceneBuilder] AudioConfig not found in Resources — created and saved default asset.");
             }
 
             Debug.Log("[SceneBuilder] GameInstaller created and configs assigned.");

@@ -104,7 +104,10 @@ namespace PuzzleGame.Editor
             try
             {
                 if (!System.IO.Directory.Exists(LevelPath))
+                {
                     System.IO.Directory.CreateDirectory(LevelPath);
+                    AssetDatabase.Refresh();
+                }
 
                 var created = new List<LevelData>();
                 int skipped = 0;

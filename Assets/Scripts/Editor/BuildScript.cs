@@ -50,9 +50,9 @@ namespace PuzzleGame.Editor
             }
             else
             {
-                Debug.LogError($"[BuildScript] Android build FAILED — {summary.result}, " +
-                               $"errors={summary.totalErrors}, warnings={summary.totalWarnings}");
-                EditorApplication.Exit(1);
+                string errorMsg = $"[BuildScript] Android build FAILED — {summary.result}, errors={summary.totalErrors}, warnings={summary.totalWarnings}";
+                Debug.LogError(errorMsg);
+                throw new UnityEditor.Build.BuildFailedException(errorMsg);
             }
         }
 
@@ -80,9 +80,9 @@ namespace PuzzleGame.Editor
             }
             else
             {
-                Debug.LogError($"[BuildScript] Windows build FAILED — {summary.result}, " +
-                               $"errors={summary.totalErrors}, warnings={summary.totalWarnings}");
-                EditorApplication.Exit(1);
+                string errorMsg = $"[BuildScript] Windows build FAILED — {summary.result}, errors={summary.totalErrors}, warnings={summary.totalWarnings}";
+                Debug.LogError(errorMsg);
+                throw new UnityEditor.Build.BuildFailedException(errorMsg);
             }
         }
 
@@ -109,9 +109,9 @@ namespace PuzzleGame.Editor
             }
             else
             {
-                Debug.LogError($"[BuildScript] iOS build FAILED — {summary.result}, " +
-                               $"errors={summary.totalErrors}, warnings={summary.totalWarnings}");
-                EditorApplication.Exit(1);
+                string errorMsg = $"[BuildScript] iOS build FAILED — {summary.result}, errors={summary.totalErrors}, warnings={summary.totalWarnings}";
+                Debug.LogError(errorMsg);
+                throw new UnityEditor.Build.BuildFailedException(errorMsg);
             }
         }
 

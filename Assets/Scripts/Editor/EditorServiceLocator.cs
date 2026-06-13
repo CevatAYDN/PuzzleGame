@@ -34,16 +34,10 @@ namespace PuzzleGame.Editor
             throw new InvalidOperationException($"Service of type {typeof(T).Name} is not registered.");
         }
 
-        /// <summary>
-        /// Removes all registered services and re-applies the defaults. Use this
-        /// from editor test <c>[TearDown]</c> to keep tests isolated — otherwise a
-        /// fake registered in one test leaks into the next.
-        /// </summary>
         public static void Clear()
         {
             _services.Clear();
-            // Re-register defaults so the locator remains usable after a clear.
-            Register<IMoldValidator>(new MoldValidationService(Domain.ForgeConstants.ColorMatchEpsilon));
+            // Re-register kaldırıldı! Sessiz fallback yok. Fail Fast!
         }
     }
 }

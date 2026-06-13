@@ -20,13 +20,45 @@ namespace PuzzleGame.Editor
         private float _batchEnd = 10;
         private const int MaxPaletteColors = 16;
 
+        // Level caching fields to prevent GC allocations in OnGUI
+        private List<string> _cachedLevelOptions = new List<string>();
+        private List<string> _cachedLevelPaths = new List<string>();
+        private bool _levelCacheDirty = true;
+
         public void OnEnable(ForgeEditorWindow window)
         {
             _window = window;
+            _levelCacheDirty = true;
         }
 
         public void OnDisable()
         {
+        }
+
+        public void Refresh()
+        {
+            _levelCacheDirty = true;
+        }
+
+        private void RefreshLevelCache()
+        {
+            _cachedLevelOptions.Clear();
+            _cachedLevelPaths.Clear();
+            _cachedLevelOptions.Add("-- Select Level --");
+            _cachedLevelPaths.Add(null);
+
+            var guids = AssetDatabase.FindAssets("t:LevelData", new[] { LevelDataBatchCreator.LevelPath });
+            foreach (var guid in guids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var level = AssetDatabase.LoadAssetAtPath<LevelData>(path);
+                if (level != null)
+                {
+                    _cachedLevelOptions.Add($"Level {level.levelNumber} - {level.difficulty}");
+                    _cachedLevelPaths.Add(path);
+                }
+            }
+            _levelCacheDirty = false;
         }
 
         public void OnGUI()
@@ -132,8 +164,25 @@ namespace PuzzleGame.Editor
                     "Select a level to edit its properties (difficulty, Mold count, par moves, etc.)",
                     MessageType.None);
 
-                _selectedLevelForEdit = (LevelData)EditorGUILayout.ObjectField(
-                    "Select Level", _selectedLevelForEdit, typeof(LevelData), false);
+                if (_levelCacheDirty)
+                    RefreshLevelCache();
+
+                int currentIndex = _selectedLevelForEdit != null
+                    ? _cachedLevelPaths.FindIndex(p => p != null && AssetDatabase.GetAssetPath(_selectedLevelForEdit) == p)
+                    : 0;
+                if (currentIndex < 0) currentIndex = 0;
+
+                int selected = EditorGUILayout.Popup("Select Level", currentIndex, _cachedLevelOptions.ToArray());
+
+                if (selected >= 0 && selected < _cachedLevelPaths.Count)
+                {
+                    if (selected != currentIndex)
+                    {
+                        _selectedLevelForEdit = selected > 0
+                            ? AssetDatabase.LoadAssetAtPath<LevelData>(_cachedLevelPaths[selected])
+                            : null;
+                    }
+                }
 
                 if (_selectedLevelForEdit != null)
                 {
@@ -177,6 +226,7 @@ namespace PuzzleGame.Editor
                             }
                         }
                         AssetDatabase.Refresh();
+                        _levelCacheDirty = true;
                         _window.SetStatus($"Deleted {deleted} levels.", MessageType.Info);
                         _window.RefreshLevelList();
                     }
@@ -323,6 +373,7 @@ namespace PuzzleGame.Editor
                 {
                     EditorUtility.SetDirty(level);
                     AssetDatabase.SaveAssets();
+                    _levelCacheDirty = true;
                     _window.SetStatus($"Level {level.levelNumber:D2} saved.", MessageType.Info);
                     _window.RefreshLevelList();
                 }
@@ -339,6 +390,7 @@ namespace PuzzleGame.Editor
                         {
                             AssetDatabase.Refresh();
                             _selectedLevelForEdit = null;
+                            _levelCacheDirty = true;
                             _window.SetStatus("Level deleted.", MessageType.Info);
                             _window.RefreshLevelList();
                         }

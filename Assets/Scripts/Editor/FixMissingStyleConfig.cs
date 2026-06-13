@@ -20,7 +20,10 @@ namespace PuzzleGame.Editor
                     var config = ScriptableObject.CreateInstance<UIStyleConfig>();
                     
                     if (!System.IO.Directory.Exists("Assets/Resources"))
+                    {
                         System.IO.Directory.CreateDirectory("Assets/Resources");
+                        AssetDatabase.Refresh();
+                    }
                         
                     AssetDatabase.CreateAsset(config, "Assets/Resources/UIStyleConfig.asset");
                     AssetDatabase.SaveAssets();

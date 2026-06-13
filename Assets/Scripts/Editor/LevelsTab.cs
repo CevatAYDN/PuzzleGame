@@ -444,7 +444,8 @@ namespace PuzzleGame.Editor
             if (_isLongRunning) return false;
             _isLongRunning = true;
             _cancelLongRunning = false;
-            _window.SetStatus(reasonStatus, MessageType.Info);
+            if (_window != null)
+                _window.SetStatus(reasonStatus, MessageType.Info);
             return true;
         }
 
@@ -452,7 +453,7 @@ namespace PuzzleGame.Editor
         {
             _isLongRunning = false;
             _cancelLongRunning = false;
-            if (!string.IsNullOrEmpty(finalStatus))
+            if (!string.IsNullOrEmpty(finalStatus) && _window != null)
                 _window.SetStatus(finalStatus, finalType);
         }
 
@@ -595,7 +596,8 @@ namespace PuzzleGame.Editor
                 {
                     if (_cancelLongRunning)
                     {
-                        _window.SetStatus("Verification cancelled.", MessageType.Warning);
+                        if (_window != null)
+                            _window.SetStatus("Verification cancelled.", MessageType.Warning);
                         break;
                     }
 
@@ -623,14 +625,18 @@ namespace PuzzleGame.Editor
 
                 if (!_cancelLongRunning)
                 {
-                    _window.SetStatus($"Verification completed. Solvable: {solvableCount}, Unsolvable: {unsolvableCount}",
-                        unsolvableCount == 0 ? MessageType.Info : MessageType.Warning);
+                    if (_window != null)
+                    {
+                        _window.SetStatus($"Verification completed. Solvable: {solvableCount}, Unsolvable: {unsolvableCount}",
+                            unsolvableCount == 0 ? MessageType.Info : MessageType.Warning);
+                    }
                 }
             }
             catch (System.Exception ex)
             {
                 Debug.LogError($"[LevelsTab] SolveAndVerifyAll failed: {ex.Message}");
-                _window.SetStatus($"Error: {ex.Message}", MessageType.Error);
+                if (_window != null)
+                    _window.SetStatus($"Error: {ex.Message}", MessageType.Error);
             }
             finally
             {
@@ -655,7 +661,8 @@ namespace PuzzleGame.Editor
                 {
                     if (_cancelLongRunning)
                     {
-                        _window.SetStatus("Reseed cancelled.", MessageType.Warning);
+                        if (_window != null)
+                            _window.SetStatus("Reseed cancelled.", MessageType.Warning);
                         break;
                     }
 
@@ -715,12 +722,14 @@ namespace PuzzleGame.Editor
 
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
-                _window.SetStatus($"Reseed complete. Successfully reseeded & solved {reseededCount} levels.", MessageType.Info);
+                if (_window != null)
+                    _window.SetStatus($"Reseed complete. Successfully reseeded & solved {reseededCount} levels.", MessageType.Info);
             }
             catch (System.Exception ex)
             {
                 Debug.LogError($"[LevelsTab] AutoReseedUnsolvableLevels failed: {ex.Message}");
-                _window.SetStatus($"Error: {ex.Message}", MessageType.Error);
+                if (_window != null)
+                    _window.SetStatus($"Error: {ex.Message}", MessageType.Error);
             }
             finally
             {
@@ -745,7 +754,8 @@ namespace PuzzleGame.Editor
                 {
                     if (_cancelLongRunning)
                     {
-                        _window.SetStatus("Optimize cancelled.", MessageType.Warning);
+                        if (_window != null)
+                            _window.SetStatus("Optimize cancelled.", MessageType.Warning);
                         break;
                     }
 
@@ -777,12 +787,14 @@ namespace PuzzleGame.Editor
                 }
 
                 AssetDatabase.SaveAssets();
-                _window.SetStatus($"Optimized par/good moves for {optimizedCount} solvable levels.", MessageType.Info);
+                if (_window != null)
+                    _window.SetStatus($"Optimized par/good moves for {optimizedCount} solvable levels.", MessageType.Info);
             }
             catch (System.Exception ex)
             {
                 Debug.LogError($"[LevelsTab] AutoOptimizeAllPars failed: {ex.Message}");
-                _window.SetStatus($"Error: {ex.Message}", MessageType.Error);
+                if (_window != null)
+                    _window.SetStatus($"Error: {ex.Message}", MessageType.Error);
             }
             finally
             {
@@ -901,13 +913,16 @@ namespace PuzzleGame.Editor
                     {
                         _playbackStep++;
                         ApplyPlaybackState(_playbackStep);
-                        _window.Repaint();
+                        if (_window != null) _window.Repaint();
                     }
                     else
                     {
                         _isPlayingPlayback = false;
-                        _window.SetStatus("Playback completed.", MessageType.Info);
-                        _window.Repaint();
+                        if (_window != null)
+                        {
+                            _window.SetStatus("Playback completed.", MessageType.Info);
+                            _window.Repaint();
+                        }
                     }
                 }
             }
@@ -997,7 +1012,8 @@ namespace PuzzleGame.Editor
                 var move = _playbackMoves[step - 1];
                 moveMsg = $" (Move: Mold {move.FromIndex} ➔ Mold {move.ToIndex})";
             }
-            _window.SetStatus($"Playback Step {step}/{_playbackStates.Count - 1}{moveMsg}", MessageType.Info);
+            if (_window != null)
+                _window.SetStatus($"Playback Step {step}/{_playbackStates.Count - 1}{moveMsg}", MessageType.Info);
         }
 
         private List<List<OreLayer>> CloneState(List<List<OreLayer>> state)

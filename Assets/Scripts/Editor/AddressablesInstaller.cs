@@ -5,6 +5,7 @@ using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
 using UnityEditor.AddressableAssets.Settings.GroupSchemas;
 using UnityEngine;
+using PuzzleGame.Application.Configuration;
 
 namespace PuzzleGame.Editor
 {
@@ -78,21 +79,10 @@ namespace PuzzleGame.Editor
             foreach (string guid in guids)
             {
                 string path = AssetDatabase.GUIDToAssetPath(guid);
-                var levelData = AssetDatabase.LoadAssetAtPath<UnityEngine.ScriptableObject>(path);
+                var levelData = AssetDatabase.LoadAssetAtPath<LevelData>(path);
                 if (levelData == null) continue;
 
-                // Try to read levelNumber via reflection (avoids compile dependency on Domain)
-                var levelNumberProp = levelData.GetType().GetProperty("levelNumber") ?? levelData.GetType().GetField("levelNumber");
-                if (levelNumberProp == null)
-                {
-                    Debug.LogWarning($"[AddressablesInstaller] No levelNumber field/property on {levelData.name}");
-                    continue;
-                }
-
-                int levelNum = levelNumberProp is System.Reflection.PropertyInfo pi
-                    ? (int)pi.GetValue(levelData)
-                    : (int)((System.Reflection.FieldInfo)levelNumberProp).GetValue(levelData);
-
+                int levelNum = levelData.levelNumber;
                 string address = string.Format(LevelAddressFormat, levelNum);
 
                 // Find or create entry

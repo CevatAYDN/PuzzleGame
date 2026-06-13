@@ -20,6 +20,12 @@ namespace PuzzleGame.Editor.Tests
             Assert.IsInstanceOf<MoldValidationService>(service);
         }
 
+        [TearDown]
+        public void TearDown()
+        {
+            EditorServiceLocator.Clear(); // Keep tests isolated on failure
+        }
+
         [Test]
         public void Register_NewService_RetrievesSameInstance()
         {
@@ -32,10 +38,8 @@ namespace PuzzleGame.Editor.Tests
 
             // Assert
             Assert.AreSame(testService, retrieved);
-
-            // Cleanup: reset default
-            EditorServiceLocator.Register<IMoldValidator>(new MoldValidationService(Domain.ForgeConstants.ColorMatchEpsilon));
         }
+
 
         private class FakeMoldValidator : IMoldValidator
         {

@@ -153,14 +153,7 @@ namespace PuzzleGame.Editor
             }
             else
             {
-                // Fallback: empty GameObject with component (original behavior)
-                go = new GameObject(prefabName, typeof(RectTransform), typeof(CanvasGroup));
-                go.transform.SetParent(canvas.transform, false);
-                var group = go.GetComponent<CanvasGroup>();
-                group.alpha = 0f;
-                group.interactable = false;
-                group.blocksRaycasts = false;
-                go.AddComponent<T>();
+                throw new System.IO.FileNotFoundException($"[Fail-Fast] UI Prefab not found at Resources/{resPath}. Please run 'Tools > PuzzleGame > Generate UI Prefabs' first.");
             }
 
             SetFullScreen(go);

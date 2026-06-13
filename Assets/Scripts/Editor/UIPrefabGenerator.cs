@@ -59,13 +59,18 @@ namespace PuzzleGame.Editor
             UnityEngine.ColorUtility.TryParseHtmlString("#d62728", out _config.colorError); // Accessible Red
             UnityEngine.ColorUtility.TryParseHtmlString("#ffbb78", out _config.colorGold); // Accessible Yellow/Gold
             
-            GenerateAllCore();
-            
-            // Restore default colors
-            UnityEngine.ColorUtility.TryParseHtmlString("#34d399", out _config.colorPrimary);
-            UnityEngine.ColorUtility.TryParseHtmlString("#a855f7", out _config.colorSecondary);
-            UnityEngine.ColorUtility.TryParseHtmlString("#ef4444", out _config.colorError);
-            UnityEngine.ColorUtility.TryParseHtmlString("#fbbf24", out _config.colorGold);
+            try
+            {
+                GenerateAllCore();
+            }
+            finally
+            {
+                // Restore default colors
+                UnityEngine.ColorUtility.TryParseHtmlString("#34d399", out _config.colorPrimary);
+                UnityEngine.ColorUtility.TryParseHtmlString("#a855f7", out _config.colorSecondary);
+                UnityEngine.ColorUtility.TryParseHtmlString("#ef4444", out _config.colorError);
+                UnityEngine.ColorUtility.TryParseHtmlString("#fbbf24", out _config.colorGold);
+            }
         }
 
         private static void GenerateAllCore()

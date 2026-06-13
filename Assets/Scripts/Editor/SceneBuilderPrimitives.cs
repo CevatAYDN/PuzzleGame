@@ -284,7 +284,11 @@ namespace PuzzleGame.Editor
         public static Shader FindShader(string name)
         {
             var guids = UnityEditor.AssetDatabase.FindAssets($"t:Shader {name}");
-            if (guids.Length == 0) return null;
+            if (guids.Length == 0)
+            {
+                Debug.LogError($"[SceneBuilderPrimitives] Shader '{name}' is missing! Material will fall back to default.");
+                return null;
+            }
             return UnityEditor.AssetDatabase.LoadAssetAtPath<Shader>(UnityEditor.AssetDatabase.GUIDToAssetPath(guids[0]));
         }
     }

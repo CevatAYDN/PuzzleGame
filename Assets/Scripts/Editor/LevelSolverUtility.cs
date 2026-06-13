@@ -34,17 +34,28 @@ namespace PuzzleGame.Editor
             s_paletteCacheValue = null;
         }
 
+        private static bool PaletteMatches(Color[] palette)
+        {
+            if (palette == null || s_paletteCacheKey == null) return false;
+            if (palette.Length != s_paletteCacheKey.Length) return false;
+            for (int i = 0; i < palette.Length; i++)
+            {
+                if (palette[i] != s_paletteCacheKey[i]) return false;
+            }
+            return true;
+        }
+
         private static DomainColor[] GetOrConvertPalette(Color[] palette)
         {
             if (palette == null) return System.Array.Empty<DomainColor>();
-            if (ReferenceEquals(palette, s_paletteCacheKey) && s_paletteCacheValue != null)
+            if (PaletteMatches(palette) && s_paletteCacheValue != null)
                 return s_paletteCacheValue;
 
             var converted = new DomainColor[palette.Length];
             for (int i = 0; i < palette.Length; i++)
                 converted[i] = ColorAdapter.FromUnityStatic(palette[i]);
 
-            s_paletteCacheKey = palette;
+            s_paletteCacheKey = (Color[])palette.Clone(); // clone to prevent mutating key
             s_paletteCacheValue = converted;
             return converted;
         }

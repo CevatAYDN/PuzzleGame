@@ -13,6 +13,7 @@ namespace PuzzleGame.Editor
             if (!Directory.Exists(dir))
             {
                 Directory.CreateDirectory(dir);
+                AssetDatabase.Refresh();
             }
 
             // Create Splash
