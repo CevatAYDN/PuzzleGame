@@ -47,6 +47,9 @@ namespace PuzzleGame.Editor.UI
                     _tmpDropdownType = asm.GetType("TMPro.TMP_Dropdown");
                 if (_textMeshProType != null && _tmpDropdownType != null) break;
             }
+
+            if (_textMeshProType == null || _tmpDropdownType == null)
+                Debug.LogWarning("[UIBuilderBase] TMPro types not found. Text will fall back to null — UI may render without proper text components.");
         }
 
         protected GameObject CreateRoot(string name, out GameObject contentPanel)
@@ -54,6 +57,8 @@ namespace PuzzleGame.Editor.UI
             var go = new GameObject(name, typeof(RectTransform), typeof(CanvasGroup));
             if (Context.TestCanvas != null)
                 go.transform.SetParent(Context.TestCanvas.transform, false);
+            else
+                Debug.LogWarning("[UIBuilderBase] TestCanvas is null — root will not be parented to any canvas.");
 
             var rect = go.GetComponent<RectTransform>();
             rect.anchorMin = Vector2.zero;
@@ -298,7 +303,13 @@ namespace PuzzleGame.Editor.UI
 
         protected void Save(GameObject root, string fileName)
         {
-            SetLayerRecursively(root, 5); // UI Layer
+            int uiLayer = LayerMask.NameToLayer("UI");
+            if (uiLayer == -1)
+            {
+                Debug.LogError("[UIBuilderBase] 'UI' layer not found in project layers. Assigning default layer 5.");
+                uiLayer = 5;
+            }
+            SetLayerRecursively(root, uiLayer);
             string path = $"{Context.PrefabRootPath}/{fileName}";
 
             var dir = System.IO.Path.GetDirectoryName(path);

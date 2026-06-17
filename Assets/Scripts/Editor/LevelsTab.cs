@@ -205,11 +205,11 @@ namespace PuzzleGame.Editor
                     using (new EditorGUI.DisabledGroupScope(_isLongRunning))
                     {
                         if (GUILayout.Button("Verify All 100", EditorStyles.miniButton, GUILayout.Width(100)))
-                            EditorApplication.delayCall += () => SolveAndVerifyAll();
+                            EditorApplication.delayCall += () => _ = SolveAndVerifyAll();
                         if (GUILayout.Button("Auto-Reseed", EditorStyles.miniButton, GUILayout.Width(90)))
-                            EditorApplication.delayCall += () => AutoReseedUnsolvableLevels();
+                            EditorApplication.delayCall += () => _ = AutoReseedUnsolvableLevels();
                         if (GUILayout.Button("Optimize Pars", EditorStyles.miniButton, GUILayout.Width(95)))
-                            EditorApplication.delayCall += () => AutoOptimizeAllPars();
+                            EditorApplication.delayCall += () => _ = AutoOptimizeAllPars();
                         if (GUILayout.Button("Refresh List", EditorStyles.miniButton, GUILayout.Width(90)))
                             EditorApplication.delayCall += RefreshLevelList;
                     }
@@ -579,7 +579,7 @@ namespace PuzzleGame.Editor
             _window.SetStatus($"Level {lvl.number:D2} par moves optimized to {levelData.parMoves} (good moves: {levelData.goodMoves}).", MessageType.Info);
         }
 
-        private async void SolveAndVerifyAll()
+        private async System.Threading.Tasks.Task SolveAndVerifyAll()
         {
             if (_isPlayingPlayback)
                 StopPlayback("Playback stopped (starting Verify All).", MessageType.Info);
@@ -646,7 +646,7 @@ namespace PuzzleGame.Editor
             }
         }
 
-        private async void AutoReseedUnsolvableLevels()
+        private async System.Threading.Tasks.Task AutoReseedUnsolvableLevels()
         {
             if (_isPlayingPlayback)
                 StopPlayback("Playback stopped (starting Reseed).", MessageType.Info);
@@ -739,7 +739,7 @@ namespace PuzzleGame.Editor
             }
         }
 
-        private async void AutoOptimizeAllPars()
+        private async System.Threading.Tasks.Task AutoOptimizeAllPars()
         {
             if (_isPlayingPlayback)
                 StopPlayback("Playback stopped (starting Optimize Pars).", MessageType.Info);

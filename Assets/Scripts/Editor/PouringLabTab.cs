@@ -34,7 +34,6 @@ namespace PuzzleGame.Editor
 
         // Mold state inspection
         private int _labInspectIndex;
-        private string _labInspectLayersText = "";
 
         private const string LabEmptyOption = "-- None --";
 
@@ -178,13 +177,13 @@ namespace PuzzleGame.Editor
                     // Layers breakdown
                     if (state.Layers != null && state.Layers.Count > 0)
                     {
-                        _labInspectLayersText = "";
+                        var layersText = "";
                         for (int i = state.Layers.Count - 1; i >= 0; i--)
                         {
                             var layer = state.Layers[i];
-                            _labInspectLayersText += $"[{i}] R:{layer.Color.R:F2} G:{layer.Color.G:F2} B:{layer.Color.B:F2} A:{layer.Color.A:F2} x{layer.Amount:F3}\n";
+                            layersText += $"[{i}] R:{layer.Color.R:F2} G:{layer.Color.G:F2} B:{layer.Color.B:F2} A:{layer.Color.A:F2} x{layer.Amount:F3}\n";
                         }
-                        EditorGUILayout.TextArea(_labInspectLayersText, GUILayout.Height(60));
+                        EditorGUILayout.TextArea(layersText, GUILayout.Height(60));
                     }
                 }
             }

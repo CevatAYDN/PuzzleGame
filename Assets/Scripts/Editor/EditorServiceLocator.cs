@@ -9,6 +9,9 @@ namespace PuzzleGame.Editor
     /// Simple Service Locator for editor-only domain service resolution.
     /// Decouples editor GUI classes from concrete service instantiations.
     /// </summary>
+    [Obsolete("EditorServiceLocator is a Service Locator anti-pattern. " +
+              "Prefer VContainer DI (GameInstaller) for runtime services. " +
+              "For editor-only use cases, construct dependencies explicitly or use a factory.")]
     public static class EditorServiceLocator
     {
         private static readonly Dictionary<Type, object> _services = new Dictionary<Type, object>();

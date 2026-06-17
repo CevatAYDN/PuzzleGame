@@ -62,6 +62,7 @@
     <Compile Include="Assets\Scripts\Presentation\OnboardingFlowController.cs" />
     <Compile Include="Assets\Scripts\Presentation\PlayTestBootstrap.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\LevelBiomeClassifier.cs" />
+    <Compile Include="Assets\Scripts\Presentation\UI\EditorUIRoot.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\WinPanelPresenter.cs" />
     <Compile Include="Assets\Scripts\Presentation\UI\PowerUpSlotView.cs" />
     <Compile Include="Assets\Scripts\Presentation\ErrorIndicatorBootstrap.cs" />

@@ -46,6 +46,7 @@ namespace PuzzleGame.Editor
                 }
             }
 
+            SceneView.duringSceneGui -= OnSceneGUIInternal;
             SceneView.duringSceneGui += OnSceneGUIInternal;
             RefreshData();
         }
@@ -72,10 +73,20 @@ namespace PuzzleGame.Editor
         }
 
         private Vector2 _sidebarScroll;
+        private static GUIStyle _sidebarButtonStyle;
 
         private void OnGUI()
         {
             if (_tabs == null || _tabs.Count == 0) return;
+
+            // During UITest PlayMode, editor tabs can trigger scene/DI/UI mutations
+            // and break the "real game" flow. Freeze tab GUI while playing in UITest.
+            if (UnityEngine.Application.isPlaying && IsUItTestActiveScene())
+            {
+                HandleKeyboardShortcuts();
+                DrawStatusBar();
+                return;
+            }
 
             HandleKeyboardShortcuts();
 
@@ -136,10 +147,23 @@ namespace PuzzleGame.Editor
 
         private void OnSceneGUIInternal(SceneView sceneView)
         {
+            // During UITest PlayMode, prevent scene GUI overlays from editor tabs
+            // interfering with runtime play.
+            if (UnityEngine.Application.isPlaying && IsUItTestActiveScene())
+                return;
+
             if (_tabs != null && _activeTabIndex >= 0 && _activeTabIndex < _tabs.Count)
             {
                 _tabs[_activeTabIndex].OnSceneGUI(sceneView);
             }
+        }
+
+        private bool IsUItTestActiveScene()
+        {
+            var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (scene.IsValid() == false) return false;
+            // Match by name only to work regardless of extension/platform.
+            return scene.name == "UITest";
         }
 
         private void DrawSidebar()
@@ -165,10 +189,14 @@ namespace PuzzleGame.Editor
                         int tabIndex = _tabs.IndexOf(tab);
                         bool isActive = _activeTabIndex == tabIndex;
                         
-                        GUIStyle btnStyle = new GUIStyle(EditorStyles.toolbarButton);
-                        btnStyle.alignment = TextAnchor.MiddleLeft;
-                        btnStyle.fixedHeight = 24;
-                        btnStyle.padding = new RectOffset(10, 0, 0, 0);
+                        if (_sidebarButtonStyle == null)
+                        {
+                            _sidebarButtonStyle = new GUIStyle(EditorStyles.toolbarButton);
+                            _sidebarButtonStyle.alignment = TextAnchor.MiddleLeft;
+                            _sidebarButtonStyle.fixedHeight = 24;
+                            _sidebarButtonStyle.padding = new RectOffset(10, 0, 0, 0);
+                        }
+                        GUIStyle btnStyle = _sidebarButtonStyle;
 
                         var oldColor = GUI.backgroundColor;
                         if (isActive)

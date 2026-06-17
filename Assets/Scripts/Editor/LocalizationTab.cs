@@ -360,12 +360,13 @@ namespace PuzzleGame.Editor
 
             _localizationEntries.Add(entry);
 
-            // Clear inputs
+            // Clear inputs (cache key name before clearing for status message)
+            string addedKey = _newKeyName;
             _newKeyName = "";
             _newTranslationTR = "";
             _newTranslationEN = "";
 
-            _window.SetStatus($"Added: {_newKeyName}", MessageType.Info);
+            _window.SetStatus($"Added: {addedKey}", MessageType.Info);
         }
 
         private void GenerateMissingKeys(string[] keys)

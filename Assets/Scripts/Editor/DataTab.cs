@@ -130,14 +130,21 @@ namespace PuzzleGame.Editor
             EditorGUILayout.LabelField("Player Save Data", EditorStyles.boldLabel);
             EditorGUILayout.Space(4);
 
-            var exists = Application.Services.GameSaveManager.EditorInstance.HasSaveData;
-            var size = Application.Services.GameSaveManager.EditorInstance.FileSizeBytes;
-            var integ = exists ? Application.Services.GameSaveManager.EditorInstance.VerifyIntegrity() : false;
+            var editorInstance = Application.Services.GameSaveManager.EditorInstance;
+            if (editorInstance == null)
+            {
+                EditorGUILayout.HelpBox("GameSaveManager.EditorInstance is null. Ensure runtime systems are initialized.", MessageType.Warning);
+                return;
+            }
+
+            var exists = editorInstance.HasSaveData;
+            var size = editorInstance.FileSizeBytes;
+            var integ = exists ? editorInstance.VerifyIntegrity() : false;
 
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 EditorGUILayout.LabelField("Status", EditorStyles.miniBoldLabel);
-                EditorGUILayout.LabelField("File", Application.Services.GameSaveManager.EditorInstance.SaveFilePath);
+                EditorGUILayout.LabelField("File", editorInstance.SaveFilePath);
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
@@ -175,7 +182,7 @@ namespace PuzzleGame.Editor
 
                 if (exists && integ)
                 {
-                    var data = Application.Services.GameSaveManager.EditorInstance.PeekVerified();
+                    var data = editorInstance.PeekVerified();
                     EditorGUILayout.LabelField("Last Played Level", data.lastPlayedLevel.ToString());
                     EditorGUILayout.LabelField("Completed Levels",
                         data.levels.FindAll(l => l.isCompleted).Count + "/" + data.levels.Count);

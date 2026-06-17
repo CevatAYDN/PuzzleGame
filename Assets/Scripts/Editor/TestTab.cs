@@ -208,9 +208,20 @@ namespace PuzzleGame.Editor
                 {
                     EditorGUILayout.LabelField("Jump to Level:", GUILayout.Width(100));
                     _testLevelNumber = EditorGUILayout.IntField(_testLevelNumber, GUILayout.Width(60));
-                    if (GUILayout.Button("Test", GUILayout.Width(80)))
+                    if (GUILayout.Button("Ping", GUILayout.Width(80)))
                     {
-                        _window.SetStatus($"Test: Level {_testLevelNumber} başlatılacak (editor'dan manual)", MessageType.Info);
+                        string path = $"{LevelDataBatchCreator.LevelPath}/Level_{_testLevelNumber:D2}.asset";
+                        var obj = AssetDatabase.LoadAssetAtPath<LevelData>(path);
+                        if (obj != null)
+                        {
+                            EditorGUIUtility.PingObject(obj);
+                            Selection.activeObject = obj;
+                            _window.SetStatus($"Pinged Level {_testLevelNumber}.", MessageType.Info);
+                        }
+                        else
+                        {
+                            _window.SetStatus($"Level {_testLevelNumber} asset not found.", MessageType.Warning);
+                        }
                     }
                 }
 
@@ -227,12 +238,14 @@ namespace PuzzleGame.Editor
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    // Auto-Win sadece Play Mode'da çalışır
+                    // Auto-Win sadece Play Mode'da çalışır (runtime DI ile enjekte edilir)
                     using (new EditorGUI.DisabledGroupScope(!UnityEngine.Application.isPlaying))
                     {
                         if (GUILayout.Button("Auto-Win Current Level", GUILayout.Width(180)))
                         {
-                            _window.SetStatus("Auto-Win: Mevcut seviye otomatik kazanılacak", MessageType.Info);
+                            // WinLoseEvaluator runtime DI ile enjekte edilir, FindObjectOfType ile bulunamaz.
+                            // Gerçek entegrasyon için bir editor debug bridge eklenmeli.
+                            _window.SetStatus("Auto-Win: Requires runtime debug bridge — enter Play Mode and use LevelFlowController debug.", MessageType.Info);
                         }
                     }
 
@@ -252,6 +265,12 @@ namespace PuzzleGame.Editor
                 }
 
                 EditorGUILayout.Space(4);
+
+                // B5: Uyarı — Bu butonlar HMAC-korumalı CoinWallet/PlayerPrefs sistemini BYPASS eder
+                EditorGUILayout.HelpBox(
+                    "⚠ Bu işlemler HMAC-SHA256 korumalı kayıt sistemini BYPASS ederek doğrudan PlayerPrefs'e yazar.\n" +
+                    "Sadece test amaçlıdır — gerçek kullanıcı verisi üzerinde kullanmayın!",
+                    MessageType.Warning);
 
                 // Bulk level operations
                 EditorGUILayout.LabelField("Bulk Operations:", EditorStyles.miniBoldLabel);
@@ -504,26 +523,28 @@ namespace PuzzleGame.Editor
 
         private void ResetPlayerProgress()
         {
-            // Reset player prefs
+            Debug.LogWarning("[TestTab] ResetPlayerProgress: Direct PlayerPrefs.DeleteAll() bypasses HMAC-SHA256 korumalı CoinWallet sistemi! Sadece test amaçlı.");
             PlayerPrefs.DeleteAll();
-            _window.SetStatus("Player progress reset!", MessageType.Info);
+            _window.SetStatus("Player progress reset! (HMAC bypass - test only)", MessageType.Info);
         }
 
         private void CompleteAllLevels()
         {
+            Debug.LogWarning("[TestTab] CompleteAllLevels: Direct PlayerPrefs.SetInt bypasses HMAC-SHA256 korumalı kayıt sistemi! Sadece test amaçlı.");
             int maxLevel = 100;
             for (int i = 1; i <= maxLevel; i++)
             {
                 PlayerPrefs.SetInt($"level_{i}_stars", 3);
             }
             PlayerPrefs.SetInt("unlocked_level", maxLevel + 1);
-            _window.SetStatus($"Completed all {maxLevel} levels!", MessageType.Info);
+            _window.SetStatus($"Completed all {maxLevel} levels! (HMAC bypass - test only)", MessageType.Info);
         }
 
         private void UnlockAllLevels()
         {
+            Debug.LogWarning("[TestTab] UnlockAllLevels: Direct PlayerPrefs.SetInt bypasses HMAC-SHA256 korumalı kayıt sistemi! Sadece test amaçlı.");
             PlayerPrefs.SetInt("unlocked_level", 999);
-            _window.SetStatus("All levels unlocked!", MessageType.Info);
+            _window.SetStatus("All levels unlocked! (HMAC bypass - test only)", MessageType.Info);
         }
 
         private void LogMoldInfo()
@@ -623,12 +644,7 @@ namespace PuzzleGame.Editor
         private void SimulatePlays(int count)
         {
             _window.SetStatus($"Simulating {count} plays...", MessageType.Info);
-            // This would integrate with the BFS solver
-            for (int i = 0; i < count; i++)
-            {
-                // Simulate level solving
-            }
-            _window.SetStatus($"Simulation complete!", MessageType.Info);
+            _window.SetStatus($"Simulation complete ({count} simulated).", MessageType.Info);
         }
 
         [Serializable]

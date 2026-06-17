@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using PuzzleGame.Domain;
+using PuzzleGame.Domain.Models;
 using UnityEngine;
 using PuzzleGame.Application.Configuration.FeatureSystem;
 
@@ -21,6 +22,7 @@ namespace PuzzleGame.Application.Configuration
     {
         public Color color = Color.white;
         [Range(0f, 1f)] public float amount = 0.25f;
+        public DomainPattern pattern = DomainPattern.None;
         public bool isFrozen = false;
     }
 

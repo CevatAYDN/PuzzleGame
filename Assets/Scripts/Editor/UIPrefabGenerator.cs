@@ -6,6 +6,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using PuzzleGame.Presentation.UI;
 using PuzzleGame.Editor.UI;
+using PuzzleGame.Application.Events;
+
 
 namespace PuzzleGame.Editor
 {
@@ -14,7 +16,7 @@ namespace PuzzleGame.Editor
         private static string _currentPrefabRoot = "Assets/Prefabs/UI";
         private static UIStyleConfig _config;
 
-        [MenuItem("Tools/PuzzleGame/UI/Generate Base Prefabs")]
+        // Sadece ForgeEditorWindow (Open Editor) > ToolsTab içinden erişilir.
         public static void GenerateAll()
         {
             EnsureConfig();
@@ -33,7 +35,9 @@ namespace PuzzleGame.Editor
                 new WorldMapBuilder(),
                 new SettingsBuilder(),
                 new SettingsPrivacyBuilder(),
+                new SettingsSoundBuilder(),
                 new DailyChallengeBuilder(),
+                new LevelSelectUIBuilder(),
                 new ShopBuilder()
             };
 
@@ -68,37 +72,17 @@ namespace PuzzleGame.Editor
                 scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
             }
 
-            // Create GameInstaller (VContainer LifetimeScope)
-            var installerType = Type.GetType("PuzzleGame.Installers.GameInstaller, Assembly-CSharp");
-            GameObject scopeGo = GameObject.Find("GameInstaller");
-            if (scopeGo == null)
-            {
-                scopeGo = new GameObject("GameInstaller");
-                if (installerType != null)
-                {
-                    var scope = scopeGo.AddComponent(installerType);
-                    // autoInjectGameObjects might be a field or property on LifetimeScope
-                    var field = installerType.BaseType?.GetField("autoInjectGameObjects", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                    if (field != null)
-                    {
-                        var list = field.GetValue(scope) as System.Collections.Generic.List<GameObject>;
-                        if (list == null)
-                        {
-                            list = new System.Collections.Generic.List<GameObject>();
-                            field.SetValue(scope, list);
-                        }
-                        // We will add the canvas to autoInjectGameObjects later if needed.
-                    }
-                }
-            }
-            
+            // Root GameObject for scene hierarchy (no GameInstaller — EditorUIRoot handles DI)
+            var sceneRoot = new GameObject("UITestRoot");
+
             if (UnityEngine.Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
             {
+
                 var eventSystemGo = new GameObject("EventSystem");
-                eventSystemGo.transform.SetParent(scopeGo.transform);
+                eventSystemGo.transform.SetParent(sceneRoot.transform);
                 eventSystemGo.AddComponent<UnityEngine.EventSystems.EventSystem>();
                 
-                var inputModuleType = Type.GetType("UnityEngine.InputSystem.UI.InputSystemUIInputModule, Unity.InputSystem");
+                var inputModuleType = ResolveType("UnityEngine.InputSystem.UI.InputSystemUIInputModule");
                 if (inputModuleType != null)
                 {
                     eventSystemGo.AddComponent(inputModuleType);
@@ -113,7 +97,7 @@ namespace PuzzleGame.Editor
             if (canvas == null)
             {
                 var canvasGo = new GameObject("MasterCanvas");
-                canvasGo.transform.SetParent(scopeGo.transform);
+                canvasGo.transform.SetParent(sceneRoot.transform);
                 canvas = canvasGo.AddComponent<Canvas>();
                 canvas.renderMode = RenderMode.ScreenSpaceOverlay;
                 var scaler = canvasGo.AddComponent<UnityEngine.UI.CanvasScaler>();
@@ -144,46 +128,80 @@ namespace PuzzleGame.Editor
 
             // Instantiate sub-panels and link them
             LinkSubPanel(mainMenuCtrl, "worldMapPanel", "WorldMapController.prefab", context);
-            LinkSubPanel(mainMenuCtrl, "levelSelectPanel", "LevelSelectController.prefab", context); // if exists
+            LinkSubPanel(mainMenuCtrl, "levelSelectPanel", "LevelSelectController.prefab", context);
             LinkSubPanel(mainMenuCtrl, "dailyChallengePanel", "DailyChallengeController.prefab", context);
-            LinkSubPanel(mainMenuCtrl, "settingsPanel", "SettingsController.prefab", context);
-            LinkSubPanel(mainMenuCtrl, "soundPanel", "SettingsSoundController.prefab", context); // if exists
 
-            // Add MasterCanvas to GameInstaller's autoInject if possible
-            var installerType = Type.GetType("PuzzleGame.Installers.GameInstaller, Assembly-CSharp");
-            var scopeGo = GameObject.Find("GameInstaller");
-            if (scopeGo != null && installerType != null)
+            // Settings panel — also wire its sub-panels (Sound + Privacy)
+            var settingsInstance = LinkSubPanel(mainMenuCtrl, "settingsPanel", "SettingsController.prefab", context);
+            if (settingsInstance != null)
             {
-                var scope = scopeGo.GetComponent(installerType);
-                var field = installerType.BaseType?.GetField("autoInjectGameObjects", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                if (field != null && scope != null)
+                var settingsCtrl = settingsInstance.GetComponent<PuzzleGame.Presentation.UI.SettingsController>();
+                if (settingsCtrl != null)
                 {
-                    var list = field.GetValue(scope) as System.Collections.Generic.List<GameObject>;
-                    if (list != null && !list.Contains(context.TestCanvas.gameObject))
-                    {
-                        list.Add(context.TestCanvas.gameObject);
-                    }
+                    LinkSubPanelToSettings(settingsCtrl, "_privacyPanel", "SettingsPrivacyController.prefab", context);
+                    LinkSubPanelToSettings(settingsCtrl, "_soundPanel", "SettingsSoundController.prefab", context);
                 }
+            }
+
+            // MainMenu's direct sound entry (separate from Settings' sound sub-panel)
+            LinkSubPanel(mainMenuCtrl, "soundPanel", "SettingsSoundController.prefab", context);
+
+            // ── Attach EditorUIRoot for editor-time DI ──────────────────────
+            var canvasGo = context.TestCanvas.gameObject;
+            if (canvasGo.GetComponent<EditorUIRoot>() == null)
+            {
+                canvasGo.AddComponent<EditorUIRoot>();
+                Debug.Log("[UIPrefabGenerator] EditorUIRoot attached for editor-time DI.");
             }
 
             EditorSceneManager.MarkSceneDirty(context.TestCanvas.gameObject.scene);
             EditorSceneManager.SaveOpenScenes();
         }
 
-        private static void LinkSubPanel(PuzzleGame.Presentation.UI.MainMenuController ctrl, string fieldName, string prefabName, UIGeneratorContext context)
+        private static GameObject LinkSubPanel(PuzzleGame.Presentation.UI.MainMenuController ctrl, string fieldName, string prefabName, UIGeneratorContext context)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{_currentPrefabRoot}/{prefabName}");
+            if (prefab == null) return null;
+
+            var instance = PrefabUtility.InstantiatePrefab(prefab, ctrl.transform) as GameObject;
+            if (instance == null) return null;
+
+            var field = ctrl.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (field != null)
+            {
+                field.SetValue(ctrl, instance);
+                instance.SetActive(false);
+            }
+            return instance;
+        }
+
+        private static void LinkSubPanelToSettings(PuzzleGame.Presentation.UI.SettingsController ctrl, string fieldName, string prefabName, UIGeneratorContext context)
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{_currentPrefabRoot}/{prefabName}");
             if (prefab == null) return;
 
             var instance = PrefabUtility.InstantiatePrefab(prefab, ctrl.transform) as GameObject;
-            instance.SetActive(false);
+            if (instance == null) return;
 
             var field = ctrl.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (field != null)
             {
-                // Assign the instantiated GameObject to the controller field
                 field.SetValue(ctrl, instance);
+                instance.SetActive(false);
             }
+        }
+
+        /// <summary>
+        /// Resolves a type by full name across all loaded assemblies (avoids hardcoding assembly names).
+        /// </summary>
+        private static Type ResolveType(string fullTypeName)
+        {
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                var type = asm.GetType(fullTypeName);
+                if (type != null) return type;
+            }
+            return null;
         }
 
         private static void EnsureConfig()

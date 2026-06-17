@@ -7,6 +7,7 @@ using System.Collections.Generic;
 namespace PuzzleGame.Editor.Tests
 {
     [TestFixture]
+#pragma warning disable CS0618 // EditorServiceLocator is intentionally tested despite [Obsolete]
     public class EditorServiceLocatorTests
     {
         [Test]

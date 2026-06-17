@@ -26,10 +26,15 @@ namespace PuzzleGame.Editor
         private List<string> _cachedLevelPaths = new List<string>();
         private bool _levelCacheDirty = true;
 
+        // Cache for LevelConfig asset to avoid loading every OnGUI frame
+        private LevelConfig _cachedLevelConfig;
+        private bool _configCacheDirty = true;
+
         public void OnEnable(ForgeEditorWindow window)
         {
             _window = window;
             _levelCacheDirty = true;
+            _configCacheDirty = true;
         }
 
         public void OnDisable()
@@ -39,6 +44,7 @@ namespace PuzzleGame.Editor
         public void Refresh()
         {
             _levelCacheDirty = true;
+            _configCacheDirty = true;
         }
 
         private void RefreshLevelCache()
@@ -74,8 +80,13 @@ namespace PuzzleGame.Editor
             {
                 EditorGUILayout.LabelField("Level Configuration", EditorStyles.miniBoldLabel);
 
-                var levelConfig = AssetDatabase.LoadAssetAtPath<LevelConfig>(
-                    $"{DataAssetCreator.DataPath}/LevelConfig.asset");
+                if (_configCacheDirty)
+                {
+                    _cachedLevelConfig = AssetDatabase.LoadAssetAtPath<LevelConfig>(
+                        $"{DataAssetCreator.DataPath}/LevelConfig.asset");
+                    _configCacheDirty = false;
+                }
+                var levelConfig = _cachedLevelConfig;
 
                 if (levelConfig == null)
                 {
@@ -87,10 +98,13 @@ namespace PuzzleGame.Editor
 
                     if (levelConfig.palette == null || levelConfig.palette.Length == 0)
                     {
-                        EditorGUILayout.HelpBox("Palette is empty. Add colors below.", MessageType.Info);
-                        Undo.RecordObject(levelConfig, "Initialize Palette");
-                        levelConfig.palette = new Color[4]; // Default 4 colors
-                        EditorUtility.SetDirty(levelConfig);
+                        EditorGUILayout.HelpBox("Palette is empty. Click \"Initialize Palette\" to set default colors.", MessageType.Warning);
+                        if (GUILayout.Button("Initialize Palette", GUILayout.Height(24)))
+                        {
+                            Undo.RecordObject(levelConfig, "Initialize Palette");
+                            levelConfig.palette = new Color[4]; // Default 4 colors
+                            EditorUtility.SetDirty(levelConfig);
+                        }
                     }
 
                     EditorGUILayout.Space(4);

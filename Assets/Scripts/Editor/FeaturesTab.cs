@@ -155,11 +155,12 @@ namespace PuzzleGame.Editor
                 EditorGUILayout.LabelField("Multi-Layer Cast Settings", EditorStyles.miniBoldLabel);
                 EditorGUILayout.Space(4);
 
-                Undo.RecordObject(_selectedLevelForFeatures, "MultiLayer Cast");
-
+                EditorGUI.BeginChangeCheck();
                 _selectedLevelForFeatures.enableMultiLayerCast = EditorGUILayout.ToggleLeft(
                     "Enable Multi-Layer Cast", 
                     _selectedLevelForFeatures.enableMultiLayerCast);
+                if (EditorGUI.EndChangeCheck())
+                    Undo.RecordObject(_selectedLevelForFeatures, "Toggle Multi-Layer Cast");
 
                 EditorGUILayout.Space(4);
 
@@ -211,11 +212,12 @@ namespace PuzzleGame.Editor
                 EditorGUILayout.LabelField("Reaction System Settings", EditorStyles.miniBoldLabel);
                 EditorGUILayout.Space(4);
 
-                Undo.RecordObject(_selectedLevelForFeatures, "Reaction System");
-
+                EditorGUI.BeginChangeCheck();
                 _selectedLevelForFeatures.enableReactionSystem = EditorGUILayout.ToggleLeft(
                     "Enable Reaction System", 
                     _selectedLevelForFeatures.enableReactionSystem);
+                if (EditorGUI.EndChangeCheck())
+                    Undo.RecordObject(_selectedLevelForFeatures, "Toggle Reaction System");
 
                 EditorGUILayout.Space(4);
 

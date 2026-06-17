@@ -17,7 +17,7 @@ namespace PuzzleGame.Editor
     /// council blocker B2.
     ///
     /// Prefabs live under Assets/Resources/Prefabs/ and are loaded via Resources.Load.
-    /// Run Tools > PuzzleGame > Generate UI Prefabs to (re)create them.
+    /// Use Tools > PuzzleGame > Open Editor > Tools tab > Generate UI Prefabs to (re)create them.
     /// </summary>
     internal static class SceneBuilderUI
     {
@@ -154,7 +154,7 @@ namespace PuzzleGame.Editor
             }
             else
             {
-                throw new System.IO.FileNotFoundException($"[Fail-Fast] UI Prefab not found at Resources/{resPath}. Please run 'Tools > PuzzleGame > Generate UI Prefabs' first.");
+                throw new System.IO.FileNotFoundException($"[Fail-Fast] UI Prefab not found at Resources/{resPath}. Please use 'Tools > PuzzleGame > Open Editor > Tools tab > Generate UI Prefabs' first.");
             }
 
             SetFullScreen(go);

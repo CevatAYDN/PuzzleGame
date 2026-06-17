@@ -106,17 +106,63 @@ namespace PuzzleGame.Editor.UI
         protected override void BuildCore()
         {
             var root = CreateRoot("WorldMapController");
+            root.AddComponent<Canvas>(); // Isolate from parent CanvasGroup alpha
+            root.AddComponent<UnityEngine.UI.GraphicRaycaster>();
             var ctrl = root.AddComponent<WorldMapController>();
 
             SetField(ctrl, "backButton", CreateButton(root, "BackButton", "ui_btn_back"));
 
-            var crystal = CreateEmptyChild(root, "CrystalMinesCard");
-            crystal.AddComponent<BiomeCardView>();
+            var crystal = BuildBiomeCard(root, "CrystalMinesCard");
+            var volcanic = BuildBiomeCard(root, "VolcanicForgeCard");
 
-            var volcanic = CreateEmptyChild(root, "VolcanicForgeCard");
-            volcanic.AddComponent<BiomeCardView>();
+            SetField(ctrl, "crystalMinesCard", crystal);
+            SetField(ctrl, "volcanicForgeCard", volcanic);
 
             Save(root, "WorldMapController.prefab");
+        }
+
+        private BiomeCardView BuildBiomeCard(GameObject root, string cardName)
+        {
+            var card = CreateEmptyChild(root, cardName);
+            var rect = card.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0, 0.5f);
+            rect.anchorMax = new Vector2(0, 0.5f);
+            rect.sizeDelta = new Vector2(400, 300);
+            rect.anchoredPosition = new Vector2(100, 0);
+
+            var bg = card.AddComponent<Image>();
+            bg.color = new Color(0.2f, 0.25f, 0.3f, 1f);
+
+            var btn = card.AddComponent<Button>();
+            btn.targetGraphic = bg;
+
+            var nameGo = new GameObject("BiomeName", typeof(RectTransform));
+            nameGo.transform.SetParent(card.transform, false);
+            var nameText = AddTextComponent(nameGo, "biome_name", 36);
+
+            var progressGo = new GameObject("ProgressText", typeof(RectTransform));
+            progressGo.transform.SetParent(card.transform, false);
+            var progressText = AddTextComponent(progressGo, "0/0", 24);
+
+            var starGo = new GameObject("StarProgress", typeof(RectTransform));
+            starGo.transform.SetParent(card.transform, false);
+            var starText = AddTextComponent(starGo, "\u2605 0/0", 24);
+
+            var badge = CreateEmptyChild(card, "CompletedBadge");
+            badge.SetActive(false);
+
+            var view = card.GetComponent<BiomeCardView>();
+            if (view == null) view = card.AddComponent<BiomeCardView>();
+
+            // Assign view's serialized fields via reflection
+            SetField(view, "biomeNameText", nameText);
+            SetField(view, "progressText", progressText);
+            SetField(view, "starProgressText", starText);
+            SetField(view, "backgroundImage", bg);
+            SetField(view, "completedBadge", badge);
+            SetField(view, "button", btn);
+
+            return view;
         }
     }
 
@@ -125,6 +171,8 @@ namespace PuzzleGame.Editor.UI
         protected override void BuildCore()
         {
             var root = CreateRoot("SettingsController");
+            root.AddComponent<Canvas>(); // Isolate from parent CanvasGroup alpha
+            root.AddComponent<UnityEngine.UI.GraphicRaycaster>();
             var ctrl = root.AddComponent<SettingsController>();
 
             SetField(ctrl, "_languageDropdown", CreateDropdown(root, "LanguageDropdown"));
@@ -146,6 +194,8 @@ namespace PuzzleGame.Editor.UI
         protected override void BuildCore()
         {
             var root = CreateRoot("SettingsPrivacyController");
+            root.AddComponent<Canvas>(); // Isolate from parent CanvasGroup alpha
+            root.AddComponent<UnityEngine.UI.GraphicRaycaster>();
             var ctrl = root.AddComponent<SettingsPrivacyController>();
 
             SetField(ctrl, "_analyticsToggle", CreateToggle(root, "AnalyticsToggle"));
@@ -170,6 +220,8 @@ namespace PuzzleGame.Editor.UI
         protected override void BuildCore()
         {
             var root = CreateRoot("DailyChallengeController");
+            root.AddComponent<Canvas>(); // Isolate from parent CanvasGroup alpha
+            root.AddComponent<UnityEngine.UI.GraphicRaycaster>();
             var ctrl = root.AddComponent<DailyChallengeController>();
 
             CreateLabelAndAssign(root, "TitleText", "ui_title_daily_challenge", ctrl, "titleText");
@@ -186,11 +238,83 @@ namespace PuzzleGame.Editor.UI
         }
     }
 
+    public class SettingsSoundBuilder : UIBuilderBase
+    {
+        protected override void BuildCore()
+        {
+            var root = CreateRoot("SettingsSoundController");
+            root.AddComponent<Canvas>(); // Isolate from parent CanvasGroup alpha
+            root.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+            var ctrl = root.AddComponent<SettingsSoundController>();
+
+            SetField(ctrl, "_musicToggle", CreateToggle(root, "MusicToggle"));
+            SetField(ctrl, "_sfxToggle", CreateToggle(root, "SfxToggle"));
+            SetField(ctrl, "_musicVolumeSlider", CreateSlider(root, "MusicVolumeSlider"));
+            SetField(ctrl, "_sfxVolumeSlider", CreateSlider(root, "SfxVolumeSlider"));
+            SetField(ctrl, "_backButton", CreateButton(root, "BackButton", "ui_btn_back"));
+
+            Save(root, "SettingsSoundController.prefab");
+        }
+    }
+
+    public class LevelSelectUIBuilder : UIBuilderBase
+    {
+        protected override void BuildCore()
+        {
+            var root = CreateRoot("LevelSelectController");
+            root.AddComponent<Canvas>(); // Isolate from parent CanvasGroup alpha
+            root.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+            var ctrl = root.AddComponent<LevelSelectUI>();
+
+            var scrollGo = CreateEmptyChild(root, "ScrollArea");
+            var scrollRect = scrollGo.AddComponent<ScrollRect>();
+            var viewport = CreateEmptyChild(scrollGo, "Viewport");
+            var viewportRect = viewport.GetComponent<RectTransform>();
+            viewport.AddComponent<Image>(); // Viewport requires Image for masking
+            var mask = viewport.AddComponent<Mask>();
+            mask.showMaskGraphic = false;
+            scrollRect.viewport = viewportRect;
+
+            var content = CreateEmptyChild(viewport, "Content");
+            var contentRect = content.GetComponent<RectTransform>();
+            scrollRect.content = contentRect;
+            var contentLayout = content.AddComponent<VerticalLayoutGroup>();
+            contentLayout.childAlignment = TextAnchor.UpperCenter;
+            contentLayout.childControlWidth = true;
+            contentLayout.childForceExpandWidth = true;
+
+            var buttonTemplate = CreateEmptyChild(content, "LevelButton_Template");
+            buttonTemplate.AddComponent<LayoutElement>().minHeight = 100;
+            buttonTemplate.SetActive(false);
+            var btnBg = buttonTemplate.AddComponent<Image>();
+            btnBg.color = new Color(0.2f, 0.3f, 0.4f, 1f);
+            var btnButton = buttonTemplate.AddComponent<Button>();
+            btnButton.targetGraphic = btnBg;
+            var btnLabel = new GameObject("Label", typeof(RectTransform));
+            btnLabel.transform.SetParent(buttonTemplate.transform, false);
+            AddTextComponent(btnLabel, "1", 36);
+
+            SetField(ctrl, "backButton", CreateButton(root, "BackButton", "ui_btn_back"));
+            SetField(ctrl, "buttonContainer", content.transform);
+            SetField(ctrl, "contentRect", contentRect);
+            SetField(ctrl, "scrollRect", scrollRect);
+            SetField(ctrl, "levelButtonPrefab", buttonTemplate);
+            SetField(ctrl, "columns", 3);
+            SetField(ctrl, "buttonWidth", 100f);
+            SetField(ctrl, "buttonHeight", 100f);
+            SetField(ctrl, "spacing", 10f);
+
+            Save(root, "LevelSelectController.prefab");
+        }
+    }
+
     public class ShopBuilder : UIBuilderBase
     {
         protected override void BuildCore()
         {
             var root = CreateRoot("ShopUI");
+            root.AddComponent<Canvas>(); // Isolate from parent CanvasGroup alpha
+            root.AddComponent<UnityEngine.UI.GraphicRaycaster>();
             var shop = root.AddComponent<ShopUI>();
 
             CreateLabelAndAssign(root, "CoinBalanceText", "0", shop, "coinBalanceText");
