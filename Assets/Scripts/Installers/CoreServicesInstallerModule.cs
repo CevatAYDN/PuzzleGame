@@ -1,12 +1,10 @@
-using VContainer;
-using VContainer.Unity;
 using UnityEngine;
+using Nexus.Core;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Services;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Services;
-using PuzzleGame.Application.Events;
 using PuzzleGame.Infrastructure.Implementations;
 using PuzzleGame.Infrastructure.Pool;
 using PuzzleGame.Infrastructure;
@@ -19,49 +17,58 @@ namespace PuzzleGame.Installers
     /// </summary>
     public static class CoreServicesInstallerModule
     {
-        public static void Configure(IContainerBuilder builder)
+        public static void Configure(IContextBuilder builder, NexusDI container)
         {
             // Infrastructure — no dependencies
-            builder.Register<IRendererService, RendererService>(Lifetime.Singleton);
-            builder.Register<IPoolManager, PoolManager>(Lifetime.Singleton);
-            builder.Register<IColorAdapter, ColorAdapter>(Lifetime.Singleton);
-            builder.Register<IEventAggregator, EventAggregator>(Lifetime.Singleton);
-            builder.Register<IShaderOptimizer, ShaderOptimizer>(Lifetime.Singleton);
-            builder.RegisterComponentOnNewGameObject<UpdateManager>(Lifetime.Singleton)
-                .UnderTransform((Transform)null)
-                .AsImplementedInterfaces()
-                .AsSelf(); // DontDestroyOnLoad — root GameObject
+            builder.Bind<IRendererService, RendererService>();
+            builder.Bind<IPoolManager, PoolManager>();
+            builder.Bind<IColorAdapter, ColorAdapter>();
+            builder.Bind<IEventAggregator, EventAggregator>();
+            builder.Bind<IShaderOptimizer, ShaderOptimizer>();
 
-            // Tween service — PrimeTween is the chosen impl. Coroutine fallback removed (orphan v2).
-            builder.Register<ITweenService, PrimeTweenService>(Lifetime.Singleton);
+            // UpdateManager MonoBehaviour
+            var updateManagerGo = new GameObject("UpdateManager");
+            UnityEngine.Object.DontDestroyOnLoad(updateManagerGo);
+            var updateManager = updateManagerGo.AddComponent<UpdateManager>();
+            builder.BindInstance<IUpdateManager>(updateManager);
+            builder.BindInstance(updateManager);
 
-            // Input handler — MobileInputHandler is the chosen impl for touch devices.
-            // Both implementations are kept; selection happens at startup based on platform.
+            // Tween service
+            builder.Bind<ITweenService, PrimeTweenService>();
+
+            // Input handler
 #if UNITY_ANDROID || UNITY_IOS
-            builder.Register<IInputHandler, MobileInputHandler>(Lifetime.Singleton);
+            builder.Bind<IInputHandler, MobileInputHandler>();
 #else
-            builder.Register<IInputHandler, InputHandler>(Lifetime.Singleton);
+            builder.Bind<IInputHandler, InputHandler>();
 #endif
 
             // Domain services
-            builder.Register<IMoldValidator>(resolver =>
-                new MoldValidationService(resolver.Resolve<GameConfig>().colorMatchTolerance),
-                Lifetime.Singleton);
+            IMoldValidator moldValidator = null;
+            container.BindFactory<IMoldValidator>(() =>
+            {
+                if (moldValidator == null)
+                {
+                    var config = container.Resolve<GameConfig>();
+                    moldValidator = new MoldValidationService(config.colorMatchTolerance);
+                }
+                return moldValidator;
+            });
 
             // Game state machine
-            builder.Register<IGameStateMachine, GameStateMachine>(Lifetime.Singleton);
+            builder.Bind<IGameStateMachine, GameStateMachine>();
 
             // Game history manager
-            builder.Register<IGameHistoryManager, GameHistoryManager>(Lifetime.Singleton);
+            builder.Bind<IGameHistoryManager, GameHistoryManager>();
 
             // Level progress service
-            builder.Register<ILevelProgressService, SecureFileLevelProgressService>(Lifetime.Singleton);
+            builder.Bind<ILevelProgressService, SecureFileLevelProgressService>();
 
             // Level repository
-            builder.Register<ILevelRepository, ScriptableObjectLevelRepository>(Lifetime.Singleton);
+            builder.Bind<ILevelRepository, ScriptableObjectLevelRepository>();
 
             // Level generator
-            builder.Register<ILevelGenerator, ProceduralLevelGenerator>(Lifetime.Singleton);
+            builder.Bind<ILevelGenerator, ProceduralLevelGenerator>();
         }
     }
 }

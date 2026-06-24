@@ -2,7 +2,7 @@ using UnityEngine;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Events;
-using VContainer;
+using Nexus.Core;
 
 namespace PuzzleGame.Presentation
 {

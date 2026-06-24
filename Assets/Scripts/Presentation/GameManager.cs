@@ -10,7 +10,7 @@ using PuzzleGame.Application.Logging;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Presentation;
 using PuzzleGame.Presentation.UI;
-using VContainer;
+using Nexus.Core;
 
 namespace PuzzleGame
 {
@@ -51,7 +51,7 @@ namespace PuzzleGame
 
         [Inject]
         public void Construct(
-            IObjectResolver resolver,
+            NexusDI container,
             IEventAggregator eventAggregator,
             IUpdateManager updateManager,
             IInputHandlerService inputHandlerService,
@@ -72,7 +72,10 @@ namespace PuzzleGame
             _hapticObserver = hapticObserver;
             _analytics = analytics;
 
-            resolver.TryResolve(out _playTestBootstrap);
+            if (container.IsRegistered(typeof(PlayTestBootstrap)))
+            {
+                _playTestBootstrap = container.Resolve<PlayTestBootstrap>();
+            }
 
             _isInitialized = true;
         }

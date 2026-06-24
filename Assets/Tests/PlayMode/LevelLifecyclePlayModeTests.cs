@@ -2,7 +2,7 @@ using System.Collections;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
-using VContainer;
+using Nexus.Core;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Events;
 using PuzzleGame.Presentation;
@@ -11,15 +11,15 @@ namespace PuzzleGame.Tests.PlayMode
 {
     public class LevelLifecyclePlayModeTests
     {
-        private IObjectResolver _resolver;
+        private NexusDI _resolver;
         private IEventAggregator _eventAggregator;
 
         [UnitySetUp]
         public IEnumerator SetUp()
         {
-            var builder = new ContainerBuilder();
-            builder.Register<IEventAggregator, EventAggregator>(Lifetime.Singleton);
-            _resolver = builder.Build();
+            var context = new Context();
+            context.Container.Bind<IEventAggregator, EventAggregator>();
+            _resolver = context.Container;
             _eventAggregator = _resolver.Resolve<IEventAggregator>();
             yield return null;
         }

@@ -1,4 +1,4 @@
-using VContainer;
+using Nexus.Core;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Services;
 using PuzzleGame.Infrastructure.Implementations;
@@ -11,15 +11,15 @@ namespace PuzzleGame.Installers
     /// </summary>
     internal static class PersistenceInstallerModule
     {
-        public static void Configure(IContainerBuilder builder)
+        public static void Configure(IContextBuilder builder, NexusDI container)
         {
             // Save system
-            builder.Register<ISaveCrypto, SaveCrypto>(Lifetime.Singleton);
-            builder.Register<ISaveStorage, SaveStorage>(Lifetime.Singleton);
-            builder.Register<ISaveManager, GameSaveManager>(Lifetime.Singleton);
+            builder.Bind<ISaveCrypto, SaveCrypto>();
+            builder.Bind<ISaveStorage, SaveStorage>();
+            builder.Bind<ISaveManager, GameSaveManager>();
 
             // Cloud save (wraps leaderboard + progress + shop + crypto + storage)
-            builder.Register<ICloudSaveService, CloudSaveService>(Lifetime.Singleton);
+            builder.Bind<ICloudSaveService, CloudSaveService>();
         }
     }
 }

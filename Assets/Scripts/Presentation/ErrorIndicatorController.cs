@@ -4,7 +4,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Configuration;
-using VContainer;
+using Nexus.Core;
 
 namespace PuzzleGame.Presentation
 {

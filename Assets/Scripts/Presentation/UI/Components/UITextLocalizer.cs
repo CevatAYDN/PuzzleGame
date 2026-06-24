@@ -2,7 +2,7 @@ using UnityEngine;
 using TMPro;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
-using VContainer;
+using Nexus.Core;
 
 namespace PuzzleGame.Presentation.UI.Components
 {

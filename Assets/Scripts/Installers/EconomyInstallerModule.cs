@@ -1,8 +1,8 @@
-using VContainer;
+using UnityEngine;
+using Nexus.Core;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Services;
-using PuzzleGame.Application.Logging;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Infrastructure.Implementations;
 using PuzzleGame.Presentation;
@@ -16,85 +16,90 @@ namespace PuzzleGame.Installers
     /// </summary>
     internal static class EconomyInstallerModule
     {
-        public static void Configure(IContainerBuilder builder)
+        public static void Configure(IContextBuilder builder, NexusDI container)
         {
             // Economy
-            builder.Register<ICoinWallet, CoinWallet>(Lifetime.Singleton);
-            builder.Register<IHintService, HintService>(Lifetime.Singleton);
-            builder.Register<IUndoService, UndoService>(Lifetime.Singleton);
+            builder.Bind<ICoinWallet, CoinWallet>();
+            builder.Bind<IHintService, HintService>();
+            builder.Bind<IUndoService, UndoService>();
 
             // Tutorial
-            builder.Register<ITutorialService, TutorialService>(Lifetime.Singleton);
+            builder.Bind<ITutorialService, TutorialService>();
 
             // Haptics + analytics (mobile platform hooks; no-op by default)
-            builder.Register<IHapticFeedbackService, HapticFeedbackService>(Lifetime.Singleton);
-            builder.Register<HapticObserver>(Lifetime.Singleton);
-            builder.Register<IAnalyticsService, NoOpAnalyticsService>(Lifetime.Singleton);
+            builder.Bind<IHapticFeedbackService, HapticFeedbackService>();
+            builder.Bind<HapticObserver>();
+            builder.Bind<IAnalyticsService, NoOpAnalyticsService>();
 
             // Achievements
-            builder.Register<IAchievementService, AchievementService>(Lifetime.Singleton);
+            builder.Bind<IAchievementService, AchievementService>();
 
-            // Accessibility (color-blind mode)
-            builder.Register<AccessibilityConfig>(resolver =>
+            // Accessibility (color-blind mode) config with singleton closure caching
+            AccessibilityConfig accessibilityConfig = null;
+            container.BindFactory<AccessibilityConfig>(() =>
             {
-                return ConfigLoader.LoadOrThrow<AccessibilityConfig>(null, "Data/AccessibilityConfig", "AccessibilityConfig");
-            }, Lifetime.Singleton);
-            builder.Register<IAccessibilityService, AccessibilityService>(Lifetime.Singleton);
+                if (accessibilityConfig == null)
+                {
+                    accessibilityConfig = ConfigLoader.LoadOrThrow<AccessibilityConfig>(null, "Data/AccessibilityConfig", "AccessibilityConfig");
+                }
+                return accessibilityConfig;
+            });
+            builder.Bind<IAccessibilityService, AccessibilityService>();
 
-            // Cosmetic shop
-            builder.Register<CosmeticConfig>(resolver =>
+            // Cosmetic shop config with singleton closure caching
+            CosmeticConfig cosmeticConfig = null;
+            container.BindFactory<CosmeticConfig>(() =>
             {
-                return ConfigLoader.LoadOrThrow<CosmeticConfig>(null, "Data/CosmeticConfig", "CosmeticConfig");
-            }, Lifetime.Singleton);
-            builder.Register<ICosmeticShopService, CosmeticShopService>(Lifetime.Singleton);
+                if (cosmeticConfig == null)
+                {
+                    cosmeticConfig = ConfigLoader.LoadOrThrow<CosmeticConfig>(null, "Data/CosmeticConfig", "CosmeticConfig");
+                }
+                return cosmeticConfig;
+            });
+            builder.Bind<ICosmeticShopService, CosmeticShopService>();
 
             // Crash reporting
-            builder.Register<ICrashReportingService, NoOpCrashReportingService>(Lifetime.Singleton);
-            builder.RegisterBuildCallback(resolver =>
-            {
-                CrashReporter.Current = resolver.Resolve<ICrashReportingService>();
-            });
+            builder.Bind<ICrashReportingService, NoOpCrashReportingService>();
+            // Note: CrashReporter.Current callback is run during GameplayLifecycle.OnInitializeAsync
 
-            // Ads — compile-time selection between AdMobService and the NoOp
-            // fallback. The HasGoogleMobileAds symbol is defined by the
-            // Infrastructure asmdef when the Google Mobile Ads package is
-            // installed; otherwise we never even reference AdMobService, so a
-            // missing package can never produce a runtime TypeLoadException.
-            builder.Register<IAdService>(resolver =>
+            // Ads with singleton closure caching
+            IAdService adService = null;
+            container.BindFactory<IAdService>(() =>
             {
+                if (adService == null)
+                {
 #if HAS_GOOGLE_MOBILE_ADS
-                var config = resolver.Resolve<GameConfig>();
-                return new AdMobService(
-                    gameConfig: config,
-                    rewardedAdUnitId: null,
-                    interstitialAdUnitId: null,
-                    analytics: resolver.Resolve<IAnalyticsService>());
+                    var config = container.Resolve<GameConfig>();
+                    var analytics = container.Resolve<IAnalyticsService>();
+                    adService = new AdMobService(
+                        gameConfig: config,
+                        rewardedAdUnitId: null,
+                        interstitialAdUnitId: null,
+                        analytics: analytics);
 #else
-                return new NoOpAdService();
+                    adService = new NoOpAdService();
 #endif
-            }, Lifetime.Singleton);
-            builder.Register<PurchaseController>(Lifetime.Singleton);
+                }
+                return adService;
+            });
+            builder.Bind<PurchaseController>();
 
             // GDPR consent + COPPA age gate
-            builder.Register<IAgeVerificationService, AgeGateService>(Lifetime.Singleton);
-            builder.Register<IConsentManager, ConsentManager>(Lifetime.Singleton);
+            builder.Bind<IAgeVerificationService, AgeGateService>();
+            builder.Bind<IConsentManager, ConsentManager>();
 
             // Feature flags
-            builder.Register<IFeatureFlagService, FeatureFlagService>(Lifetime.Singleton);
+            builder.Bind<IFeatureFlagService, FeatureFlagService>();
 
             // Daily challenge + streak (retention)
-            builder.Register<IDailyChallengeService, DailyChallengeService>(Lifetime.Singleton);
-            builder.Register<IStreakService, StreakService>(Lifetime.Singleton);
+            builder.Bind<IDailyChallengeService, DailyChallengeService>();
+            builder.Bind<IStreakService, StreakService>();
 
-            // Audio settings (persistent BGM/SFX enable + volume; survives restarts).
-            // IEventAggregator is auto-injected by VContainer; the constructor default
-            // (null) keeps persistence working even when aggregator is absent.
-            builder.Register<IAudioSettingsService, PlayerPrefsAudioSettingsService>(Lifetime.Singleton);
+            // Audio settings
+            builder.Bind<IAudioSettingsService, PlayerPrefsAudioSettingsService>();
 
-            // Memory snapshot — Unity Profiler-backed (built-in, no package).
-            // Used for leak detection (e.g. capture before/after level load).
-            // Swap to Memory Profiler package-backed impl for deep snapshots.
-            builder.Register<IMemorySnapshotService, UnityMemorySnapshotService>(Lifetime.Singleton);
+            // Memory snapshot
+            builder.Bind<IMemorySnapshotService, UnityMemorySnapshotService>();
         }
     }
 }

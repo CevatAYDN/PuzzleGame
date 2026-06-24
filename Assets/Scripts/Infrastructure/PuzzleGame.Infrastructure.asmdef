@@ -4,7 +4,7 @@
     "references": [
         "PuzzleGame.Domain",
         "PuzzleGame.Application",
-        "VContainer",
+        "com.nexus.core",
         "PrimeTween.Runtime",
         "Unity.InputSystem"
     ],

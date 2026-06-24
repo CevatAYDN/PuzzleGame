@@ -1,0 +1,25 @@
+{
+  "name": "com.nexus.core",
+  "version": "0.1.0",
+  "displayName": "Nexus Observable Architecture",
+  "description": "An open source observable architecture for Unity 6 featuring 0 GC allocation, execution modes, causal tracing, and build validation.",
+  "unity": "6000.0",
+  "dependencies": {},
+  "keywords": [
+    "nexus",
+    "architecture",
+    "mvcs",
+    "observable"
+  ],
+  "author": {
+    "name": "Nexus",
+    "url": "https://github.com/GameContainer/Nexus"
+  },
+  "samples": [
+    {
+      "displayName": "Counter Example",
+      "description": "A simple counter application demonstrating generic 0-GC commands, reactive model, and mediator bindings in Nexus.",
+      "path": "Samples~/Counter"
+    }
+  ]
+}

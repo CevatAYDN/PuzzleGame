@@ -1,5 +1,5 @@
-using VContainer;
 using UnityEngine;
+using Nexus.Core;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Services;
 using PuzzleGame.Domain.Interfaces;
@@ -17,28 +17,35 @@ namespace PuzzleGame.Installers
     /// </summary>
     internal static class LocalizationInstallerModule
     {
-        public static void Configure(IContainerBuilder builder)
+        public static void Configure(IContextBuilder builder, NexusDI container)
         {
-            // Sprint #12 + #15: JsonTranslationProvider is the default sync loader
-            // (Editor + Standalone: File.ReadAllText works). On Android the
-            // StreamingAssets path lives inside the APK and requires UnityWebRequest,
-            // so the platform-specific async provider is registered instead and the
-            // LocalizationBootstrap MonoBehaviour is created to preload it.
-            builder.Register<ITranslationProvider>(resolver => new JsonTranslationProvider(), Lifetime.Singleton);
-            builder.Register<ILocalizationService, LocalizationService>(Lifetime.Singleton)
-                   .WithParameter(SupportedLanguage.Turkish);
+            // JsonTranslationProvider is the default sync loader
+            builder.Bind<ITranslationProvider, JsonTranslationProvider>();
+
+            // LocalizationService uses SupportedLanguage enum (value type). 
+            // We use BindFactory to support instantiation and caching (Singleton behavior).
+            ILocalizationService localizationService = null;
+            container.BindFactory<ILocalizationService>(() =>
+            {
+                if (localizationService == null)
+                {
+                    var provider = container.Resolve<ITranslationProvider>();
+                    localizationService = new LocalizationService(SupportedLanguage.Turkish, provider);
+                }
+                return localizationService;
+            });
 
 #if UNITY_ANDROID && !UNITY_EDITOR
             // Android override: sync File.ReadAllText on StreamingAssets returns 0 bytes.
-            // The async provider caches the JSON via UnityWebRequest; LocalizationBootstrap
-            // awaits the load during Start() so the first GetString call finds data ready.
-            builder.Register<StreamingAssetsJsonTranslationProvider>(Lifetime.Singleton);
-            builder.Register<ITranslationProvider>(resolver =>
-                resolver.Resolve<StreamingAssetsJsonTranslationProvider>(), Lifetime.Singleton);
-            builder.Register<IAsyncTranslationProvider>(resolver =>
-                resolver.Resolve<StreamingAssetsJsonTranslationProvider>(), Lifetime.Singleton);
+            // Register the provider and point the interfaces to the same resolved instance.
+            builder.Bind<StreamingAssetsJsonTranslationProvider>();
+            
+            container.BindFactory<ITranslationProvider>(() => container.Resolve<StreamingAssetsJsonTranslationProvider>());
+            container.BindFactory<IAsyncTranslationProvider>(() => container.Resolve<StreamingAssetsJsonTranslationProvider>());
+
             var bootstrapGo = new GameObject("LocalizationBootstrap");
-            builder.RegisterComponent(bootstrapGo.AddComponent<LocalizationBootstrap>());
+            var bootstrap = bootstrapGo.AddComponent<LocalizationBootstrap>();
+            builder.BindInstance(bootstrap);
 #endif
         }
     }

@@ -1,0 +1,3 @@
+[submodule "GameContainer"]
+	path = GameContainer
+	url = https://github.com/CevatAYDN/GameContainer.git

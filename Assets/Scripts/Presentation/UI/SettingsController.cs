@@ -6,7 +6,7 @@ using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Events;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
-using VContainer;
+using Nexus.Core;
 
 namespace PuzzleGame.Presentation.UI
 {

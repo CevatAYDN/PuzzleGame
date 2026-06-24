@@ -2,21 +2,19 @@ using System;
 using System.Reflection;
 using System.Collections.Generic;
 using UnityEngine;
-using VContainer;
-using VContainer.Unity;
+using Nexus.Core;
 using PuzzleGame.Application.Events;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
-using PuzzleGame.Presentation.UI;
 
 namespace PuzzleGame.Presentation.UI
 {
     [ExecuteInEditMode]
     public class EditorUIRoot : MonoBehaviour
     {
-        private IObjectResolver _resolver;
+        private NexusDI _resolver;
         private bool _initialized;
 
         private void Awake()
@@ -39,32 +37,30 @@ namespace PuzzleGame.Presentation.UI
             if (this == null) return;
             _initialized = true;
 
-            var builder = new ContainerBuilder();
+            _resolver = new NexusDI();
 
-            builder.Register<IEventAggregator, EventAggregator>(Lifetime.Singleton);
-            builder.Register<ICoinWallet>(_ => new EditorCoinWallet(), Lifetime.Singleton);
-            builder.Register<IStreakService>(_ => new EditorStreakService(), Lifetime.Singleton);
-            builder.Register<IDailyChallengeService>(_ => new EditorDailyChallengeService(), Lifetime.Singleton);
-            builder.Register<ILocalizationService>(_ => new EditorLocalizationService(), Lifetime.Singleton);
-            builder.Register<IHapticFeedbackService>(_ => new EditorHapticService(), Lifetime.Singleton);
-            builder.Register<ILevelProgressService>(_ => new EditorLevelProgressService(), Lifetime.Singleton);
-            builder.Register<IAudioSettingsService>(_ => new EditorAudioSettingsService(), Lifetime.Singleton);
-            builder.Register<IAudioService>(_ => new EditorAudioService(), Lifetime.Singleton);
-            builder.Register<IConsentManager>(_ => new EditorConsentManager(), Lifetime.Singleton);
-            builder.Register<IAdService>(_ => new EditorAdService(), Lifetime.Singleton);
-            builder.Register<IAnalyticsService>(_ => new EditorAnalyticsService(), Lifetime.Singleton);
-            builder.Register<IAgeVerificationService>(_ => new EditorAgeVerificationService(), Lifetime.Singleton);
-            builder.Register<ILevelRepository>(_ => new EditorLevelRepository(), Lifetime.Singleton);
-            builder.Register<ITweenService>(_ => new EditorTweenService(), Lifetime.Singleton);
-
-            _resolver = builder.Build();
+            _resolver.BindInstance<IEventAggregator>(new EventAggregator());
+            _resolver.BindInstance<ICoinWallet>(new EditorCoinWallet());
+            _resolver.BindInstance<IStreakService>(new EditorStreakService());
+            _resolver.BindInstance<IDailyChallengeService>(new EditorDailyChallengeService());
+            _resolver.BindInstance<ILocalizationService>(new EditorLocalizationService());
+            _resolver.BindInstance<IHapticFeedbackService>(new EditorHapticService());
+            _resolver.BindInstance<ILevelProgressService>(new EditorLevelProgressService());
+            _resolver.BindInstance<IAudioSettingsService>(new EditorAudioSettingsService());
+            _resolver.BindInstance<IAudioService>(new EditorAudioService());
+            _resolver.BindInstance<IConsentManager>(new EditorConsentManager());
+            _resolver.BindInstance<IAdService>(new EditorAdService());
+            _resolver.BindInstance<IAnalyticsService>(new EditorAnalyticsService());
+            _resolver.BindInstance<IAgeVerificationService>(new EditorAgeVerificationService());
+            _resolver.BindInstance<ILevelRepository>(new EditorLevelRepository());
+            _resolver.BindInstance<ITweenService>(new EditorTweenService());
 
             var controllers = FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include);
             foreach (var ctrl in controllers)
             {
                 if (!IsKnownController(ctrl)) continue;
 
-                _resolver.InjectGameObject(ctrl.gameObject);
+                _resolver.Inject(ctrl);
                 Debug.Log($"[EditorUIRoot] Injected {ctrl.GetType().Name}");
 
                 // Use reflection instead of SendMessage to bypass Unity's

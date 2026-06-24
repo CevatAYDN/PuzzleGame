@@ -1,7 +1,6 @@
 using NUnit.Framework;
-using VContainer;
-using VContainer.Unity;
 using UnityEngine;
+using Nexus.Core;
 using PuzzleGame.Installers;
 using PuzzleGame.Application.Events;
 using PuzzleGame.Application.Interfaces;
@@ -15,15 +14,11 @@ namespace PuzzleGame.Tests.Editor
     /// <summary>
     /// Verifies that the core services installer module registers the
     /// non-Unity-bound services that downstream layers depend on.
-    ///
-    /// Tests in this fixture exercise the VContainer builder directly — the
-    /// MonoBehaviour-bound installer modules (UI, scene-bound services) are
-    /// not exercised here and remain a separate integration concern.
     /// </summary>
     [TestFixture]
     public class CoreServicesInstallerTests
     {
-        private IObjectResolver _container;
+        private NexusDI _container;
 
         [TearDown]
         public void Teardown()
@@ -35,9 +30,10 @@ namespace PuzzleGame.Tests.Editor
         [Test]
         public void CoreServices_RegistersEventAggregator()
         {
-            var builder = new ContainerBuilder();
-            CoreServicesInstallerModule.Configure(builder);
-            _container = builder.Build();
+            var context = new Context();
+            var builder = new ContextBuilder(context.Container, context.SignalBusInternal);
+            CoreServicesInstallerModule.Configure(builder, context.Container);
+            _container = context.Container;
             Assert.IsNotNull(_container.Resolve<IEventAggregator>(),
                 "EventAggregator must be registered as a core service.");
         }
@@ -45,24 +41,26 @@ namespace PuzzleGame.Tests.Editor
         [Test]
         public void CoreServices_RegistersPourDebugController()
         {
-            var builder = new ContainerBuilder();
+            var context = new Context();
+            var builder = new ContextBuilder(context.Container, context.SignalBusInternal);
+            
             // Provide GameConfig which IMoldValidator depends on
-            builder.Register<GameConfig>(resolver => ScriptableObject.CreateInstance<GameConfig>(), Lifetime.Singleton);
+            context.Container.BindInstance(ScriptableObject.CreateInstance<GameConfig>());
             // Provide AnimationConfig which AnimationService depends on
-            builder.Register<AnimationConfig>(resolver => ScriptableObject.CreateInstance<AnimationConfig>(), Lifetime.Singleton);
+            context.Container.BindInstance(ScriptableObject.CreateInstance<AnimationConfig>());
             // Provide AudioConfig which AudioService depends on
-            builder.Register<AudioConfig>(resolver => ScriptableObject.CreateInstance<AudioConfig>(), Lifetime.Singleton);
+            context.Container.BindInstance(ScriptableObject.CreateInstance<AudioConfig>());
             // Provide StreamVFXConfig which StreamRenderer depends on
-            builder.Register<StreamVFXConfig>(resolver => ScriptableObject.CreateInstance<StreamVFXConfig>(), Lifetime.Singleton);
+            context.Container.BindInstance(ScriptableObject.CreateInstance<StreamVFXConfig>());
             // Provide IFeatureFlagService which AnimationService depends on
-            builder.Register<IFeatureFlagService, PuzzleGame.Tests.Fakes.FakeFeatureFlagService>(Lifetime.Singleton);
+            context.Container.Bind<IFeatureFlagService, PuzzleGame.Tests.Fakes.FakeFeatureFlagService>();
             // Provide IErrorIndicatorService which CastService depends on
-            builder.Register<IErrorIndicatorService, PuzzleGame.Tests.Fakes.FakeErrorIndicatorService>(Lifetime.Singleton);
-            CoreServicesInstallerModule.Configure(builder); // Provides IMoldValidator needed by CastService
-            GameplayInstallerModule.Configure(builder);
-            // PourSystemController is a plain C# class registered in
-            // GameplayInstallerModule — verify the debug interface resolves.
-            _container = builder.Build();
+            context.Container.Bind<IErrorIndicatorService, PuzzleGame.Tests.Fakes.FakeErrorIndicatorService>();
+            
+            CoreServicesInstallerModule.Configure(builder, context.Container); // Provides IMoldValidator needed by CastService
+            GameplayInstallerModule.Configure(builder, context.Container);
+            
+            _container = context.Container;
             Assert.IsNotNull(_container.Resolve<IPourDebugController>(),
                 "IPourDebugController (facade portion of IPourSystemController) " +
                 "must be resolvable after the gameplay module is configured.");
@@ -71,9 +69,10 @@ namespace PuzzleGame.Tests.Editor
         [Test]
         public void CoreServices_EventAggregator_IsSingleton()
         {
-            var builder = new ContainerBuilder();
-            CoreServicesInstallerModule.Configure(builder);
-            _container = builder.Build();
+            var context = new Context();
+            var builder = new ContextBuilder(context.Container, context.SignalBusInternal);
+            CoreServicesInstallerModule.Configure(builder, context.Container);
+            _container = context.Container;
 
             var a = _container.Resolve<IEventAggregator>();
             var b = _container.Resolve<IEventAggregator>();

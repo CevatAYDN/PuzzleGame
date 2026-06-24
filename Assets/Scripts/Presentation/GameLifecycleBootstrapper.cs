@@ -1,14 +1,12 @@
 using System;
 using UnityEngine;
-using VContainer;
-using VContainer.Unity;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Logging;
 
 namespace PuzzleGame.Presentation
 {
-    public class GameLifecycleBootstrapper : IInitializable
+    public class GameLifecycleBootstrapper
     {
         private readonly GameConfig _gameConfig;
         private readonly AudioConfig _audioConfig;

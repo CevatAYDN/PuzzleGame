@@ -8,7 +8,7 @@
         "PuzzleGame.Application",
         "PuzzleGame.Infrastructure",
         "PuzzleGame.Presentation",
-        "VContainer"
+        "com.nexus.core"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

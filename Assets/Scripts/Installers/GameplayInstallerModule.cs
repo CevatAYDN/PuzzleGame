@@ -1,4 +1,5 @@
-using VContainer;
+using UnityEngine;
+using Nexus.Core;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Services;
@@ -16,90 +17,101 @@ namespace PuzzleGame.Installers
     /// </summary>
     public static class GameplayInstallerModule
     {
-        public static void Configure(IContainerBuilder builder)
+        public static void Configure(IContextBuilder builder, NexusDI container)
         {
             // Application services
-            builder.Register<IMoldSelectionService, MoldSelectionService>(Lifetime.Singleton);
-            builder.Register<IAudioService, AudioService>(Lifetime.Singleton);
+            builder.Bind<IMoldSelectionService, MoldSelectionService>();
+            builder.Bind<IAudioService, AudioService>();
 
             // Asset provider (Addressables or Resources)
 #if ENABLE_ADDRESSABLES
-            builder.Register<IAssetProvider, AddressablesAssetProvider>(Lifetime.Singleton);
-            builder.RegisterBuildCallback(resolver => resolver.Resolve<IAssetProvider>().Initialize());
+            builder.Bind<IAssetProvider, AddressablesAssetProvider>();
 #else
-            builder.Register<IAssetProvider, ResourcesAssetProvider>(Lifetime.Singleton);
-            builder.RegisterBuildCallback(resolver => resolver.Resolve<IAssetProvider>().Initialize());
+            builder.Bind<IAssetProvider, ResourcesAssetProvider>();
 #endif
+            // Note: IAssetProvider.Initialize() is run in GameplayLifecycle.OnInitializeAsync
 
             // Particle and streaming
-            builder.Register<IParticleFactory, ParticleFactory>(Lifetime.Singleton);
-            builder.Register<IStreamRenderer, StreamRenderer>(Lifetime.Singleton);
-            builder.Register<IStreamTrailController, StreamTrailController>(Lifetime.Singleton);
+            builder.Bind<IParticleFactory, ParticleFactory>();
+            builder.Bind<IStreamRenderer, StreamRenderer>();
+            builder.Bind<IStreamTrailController, StreamTrailController>();
 
             // Animation
-            builder.Register<IAnimationService, AnimationService>(Lifetime.Singleton);
+            builder.Bind<IAnimationService, AnimationService>();
 
             // Level setup and validation
-            builder.Register<ILevelSetupService, LevelSetupService>(Lifetime.Singleton);
-            builder.Register<ILevelValidationService, LevelValidationService>(Lifetime.Singleton);
+            builder.Bind<ILevelSetupService, LevelSetupService>();
+            builder.Bind<ILevelValidationService, LevelValidationService>();
 
             // Cast and reaction
-            builder.Register<ICastService, CastService>(Lifetime.Singleton);
-            builder.Register<IReactionService, ReactionService>(Lifetime.Singleton);
+            builder.Bind<ICastService, CastService>();
+            builder.Bind<IReactionService, ReactionService>();
 
             // Leaderboard
-            builder.Register<ILeaderboardService, LeaderboardService>(Lifetime.Singleton);
+            builder.Bind<ILevelEditorService, LevelEditorService>();
+            builder.Bind<ILeaderboardService, LeaderboardService>();
 
             // Season / Progress
-            builder.Register<SeasonConfig>(resolver =>
+            SeasonConfig seasonConfig = null;
+            container.BindFactory<SeasonConfig>(() =>
             {
-                return ConfigLoader.LoadOrThrow<SeasonConfig>(null, "Data/SeasonConfig", "SeasonConfig");
-            }, Lifetime.Singleton);
-            builder.Register<IProgressService, ProgressService>(Lifetime.Singleton);
+                if (seasonConfig == null)
+                {
+                    seasonConfig = ConfigLoader.LoadOrThrow<SeasonConfig>(null, "Data/SeasonConfig", "SeasonConfig");
+                }
+                return seasonConfig;
+            });
+            builder.Bind<IProgressService, ProgressService>();
 
             // XP & Season progress persistence for IProgressService
-            builder.Register<IProgressRepository, PlayerPrefsProgressRepository>(Lifetime.Singleton);
-
-
-            // Level editor
-            builder.Register<ILevelEditorService, LevelEditorService>(Lifetime.Singleton);
+            builder.Bind<IProgressRepository, PlayerPrefsProgressRepository>();
 
             // Power-ups
-            builder.Register<IPowerUpService>(resolver =>
+            IPowerUpService powerUpService = null;
+            container.BindFactory<IPowerUpService>(() =>
             {
-                var events = resolver.Resolve<IEventAggregator>();
-                var animation = resolver.Resolve<IAnimationService>();
-                var storage = resolver.Resolve<IChargeStorageService>();
-                var random = resolver.Resolve<IRandomProvider>();
-                return new PowerUpService(events, animation, storage, random);
-            }, Lifetime.Singleton);
+                if (powerUpService == null)
+                {
+                    var events = container.Resolve<IEventAggregator>();
+                    var animation = container.Resolve<IAnimationService>();
+                    var storage = container.Resolve<IChargeStorageService>();
+                    var random = container.Resolve<IRandomProvider>();
+                    powerUpService = new PowerUpService(events, animation, storage, random);
+                }
+                return powerUpService;
+            });
 
-            builder.Register<IChargeStorageService, PlayerPrefsChargeStorage>(Lifetime.Singleton);
+            builder.Bind<IChargeStorageService, PlayerPrefsChargeStorage>();
 
-            builder.Register<IRandomProvider>(resolver => new SystemRandomProvider(), Lifetime.Singleton);
+            IRandomProvider randomProvider = null;
+            container.BindFactory<IRandomProvider>(() =>
+            {
+                if (randomProvider == null)
+                {
+                    randomProvider = new SystemRandomProvider();
+                }
+                return randomProvider;
+            });
 
             // Multi-pour orchestration
-            builder.Register<IMultiPourService, MultiPourService>(Lifetime.Singleton);
+            builder.Bind<IMultiPourService, MultiPourService>();
 
             // Input handler service
-            builder.Register<IInputHandlerService, InputHandlerService>(Lifetime.Singleton);
+            builder.Bind<IInputHandlerService, InputHandlerService>();
 
-            // Input handler subsystem — composed from 3 focused services.
-            // Register the focused interfaces so consumers (MoldPoolInitializer,
-            // GameManager) can depend on the smallest contract they need.
-            builder.Register<IMoldLookupCache, MoldLookupCache>(Lifetime.Singleton);
-            builder.Register<IInputHandlerDefaults, InputHandlerDefaults>(Lifetime.Singleton);
-            builder.Register<IMoldInputRouter, MoldInputRouter>(Lifetime.Singleton);
+            // Input handler subsystem
+            builder.Bind<IMoldLookupCache, MoldLookupCache>();
+            builder.Bind<IInputHandlerDefaults, InputHandlerDefaults>();
+            builder.Bind<IMoldInputRouter, MoldInputRouter>();
 
             // Developer tools — PourSystemController implements 3 focused
             // interfaces (IPourSimulator / IPourHistoryService / IPourDebugController)
-            // plus the IPourSystemController facade. Register all 4 so consumers
-            // can depend on the smallest contract that fits their need.
-            builder.Register<PourSystemController>(Lifetime.Singleton)
-                   .As<IPourSimulator>()
-                   .As<IPourHistoryService>()
-                   .As<IPourDebugController>()
-                   .AsSelf();
+            // plus the IPourSystemController facade.
+            builder.Bind<PourSystemController>();
+
+            container.BindFactory<IPourSimulator>(() => container.Resolve<PourSystemController>());
+            container.BindFactory<IPourHistoryService>(() => container.Resolve<PourSystemController>());
+            container.BindFactory<IPourDebugController>(() => container.Resolve<PourSystemController>());
         }
     }
 }

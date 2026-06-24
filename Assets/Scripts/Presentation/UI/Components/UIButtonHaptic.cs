@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using PuzzleGame.Application.Interfaces;
-using VContainer;
+using Nexus.Core;
 
 namespace PuzzleGame.Presentation.UI.Components
 {

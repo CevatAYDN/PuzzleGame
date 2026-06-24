@@ -3,7 +3,7 @@ using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Logging;
 using UnityEngine;
 using UnityEngine.UI;
-using VContainer;
+using Nexus.Core;
 
 namespace PuzzleGame.Presentation.UI
 {

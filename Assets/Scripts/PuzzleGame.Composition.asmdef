@@ -6,7 +6,7 @@
         "PuzzleGame.Application",
         "PuzzleGame.Infrastructure",
         "PuzzleGame.Presentation",
-        "VContainer",
+        "com.nexus.core",
         "PrimeTween.Runtime",
         "Unity.TextMeshPro",
         "Unity.InputSystem",
