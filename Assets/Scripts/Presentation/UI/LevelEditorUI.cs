@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Logging;
+using Nexus.Core;
 
 namespace PuzzleGame.Presentation.UI
 {
@@ -43,7 +44,7 @@ namespace PuzzleGame.Presentation.UI
         private float _statusTimer;
         private readonly List<EditorLevelEntryView> _entryViews = new List<EditorLevelEntryView>();
 
-        [VContainer.Inject]
+        [Inject]
         public void Construct(ILevelEditorService editor, IEventAggregator events)
         {
             _editor = editor;

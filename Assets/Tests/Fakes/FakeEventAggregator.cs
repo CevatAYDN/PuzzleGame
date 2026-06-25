@@ -21,14 +21,14 @@ namespace PuzzleGame.Tests.Fakes
         /// <summary>If true, Subscribe immediately calls the handler with a default instance.</summary>
         public bool FireOnSubscribe { get; set; }
 
-        public void Subscribe<T>(Action<T> handler)
+        public void Subscribe<T>(Action<T> handler) where T : struct
         {
             SubscribeCallCount++;
             if (FireOnSubscribe)
                 handler(default);
         }
 
-        public IDisposable SubscribeToken<T>(Action<T> handler)
+        public IDisposable SubscribeToken<T>(Action<T> handler) where T : struct
         {
             SubscribeCallCount++;
             if (FireOnSubscribe)
@@ -36,12 +36,12 @@ namespace PuzzleGame.Tests.Fakes
             return new AnonymousDisposable(() => Unsubscribe(handler));
         }
 
-        public void Unsubscribe<T>(Action<T> handler)
+        public void Unsubscribe<T>(Action<T> handler) where T : struct
         {
             UnsubscribeCallCount++;
         }
 
-        public void Publish<T>(T eventArgs)
+        public void Publish<T>(T eventArgs) where T : struct
         {
             PublishCallCount++;
             PublishedEvents.Add(eventArgs);
@@ -53,7 +53,7 @@ namespace PuzzleGame.Tests.Fakes
             PublishedEvents.Clear();
         }
 
-        public void Clear<T>()
+        public void Clear<T>() where T : struct
         {
             ClearCallCount++;
             PublishedEvents.RemoveAll(e => e is T);

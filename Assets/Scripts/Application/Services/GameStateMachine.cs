@@ -47,6 +47,7 @@ namespace PuzzleGame.Application.Services
             // Default guard'lar — her kural CanTransitionTo() içinde override edilebilir
             // Boot → her yere
             _rules[(GameState.Boot, GameState.Menu)] = () => true;
+            _rules[(GameState.Boot, GameState.Playing)] = () => true;
             // Menu → Playing/LevelLoading
             _rules[(GameState.Menu, GameState.LevelLoading)] = () => true;
             // LevelLoading → Playing

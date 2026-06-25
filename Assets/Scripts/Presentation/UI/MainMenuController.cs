@@ -327,30 +327,31 @@ namespace PuzzleGame.Presentation.UI
     /// WorldMapController subscribes to show itself (then user picks a biome).
     /// Decouples main menu from world map.
     /// </summary>
-    public class ShowWorldMapRequestEvent { }
+    public readonly struct ShowWorldMapRequestEvent { }
 
     /// <summary>
     /// Published by WorldMapController when a biome card is clicked.
     /// LevelSelectUI subscribes to show itself, filtered to the selected biome.
     /// </summary>
-    public class ShowLevelSelectRequestEvent
+    public readonly struct ShowLevelSelectRequestEvent
     {
-        public Biome BiomeFilter { get; set; } = Biome.CrystalMines;
+        public Biome BiomeFilter { get; }
+        public ShowLevelSelectRequestEvent(Biome biomeFilter) => BiomeFilter = biomeFilter;
     }
 
     /// <summary>
     /// Published by LevelSelectUI when "Back" is clicked.
     /// MainMenuController subscribes to reactivate its root panel.
     /// </summary>
-    public class HideLevelSelectRequestEvent { }
+    public readonly struct HideLevelSelectRequestEvent { }
 
     /// <summary>
     /// Published by MainMenuController when "Sound" is clicked.
     /// SettingsSoundController subscribes to show itself.
     /// </summary>
-    public class ShowSoundPanelRequestEvent { }
+    public readonly struct ShowSoundPanelRequestEvent { }
 
-    public class ShowSettingsRequestEvent { }
-    public class ShowPrivacyRequestEvent { }
-    public class HidePrivacyRequestEvent { }
+    public readonly struct ShowSettingsRequestEvent { }
+    public readonly struct ShowPrivacyRequestEvent { }
+    public readonly struct HidePrivacyRequestEvent { }
 }

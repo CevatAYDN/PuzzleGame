@@ -4,6 +4,7 @@ using UnityEngine.UI;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Domain.Interfaces;
+using Nexus.Core;
 
 namespace PuzzleGame.Presentation.UI
 {
@@ -28,7 +29,7 @@ namespace PuzzleGame.Presentation.UI
         private IProgressService _progress;
         private ILocalizationService _localization;
 
-        [VContainer.Inject]
+        [Inject]
         public void Construct(IProgressService progress, ILocalizationService localization)
         {
             _progress = progress;

@@ -5,9 +5,9 @@ namespace PuzzleGame.Presentation
 {
     /// <summary>
     /// Ensures a single <see cref="CameraEffectsController"/> exists in the active scene.
-    /// VContainer's RegisterComponentInHierarchy throws if the component is missing, breaking
-    /// boot on misconfigured scenes. This bootstrap auto-adds it to the Main Camera (or creates
-    /// a fallback GameObject) so the rest of the DI graph can resolve.
+    /// Nexus DI can't resolve missing scene components without explicit registration.
+    /// This bootstrap auto-adds it to the Main Camera (or creates a fallback GameObject)
+    /// so the rest of the DI graph can resolve.
     /// </summary>
     public static class CameraEffectsBootstrap
     {

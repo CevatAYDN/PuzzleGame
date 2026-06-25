@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using Nexus.Core;
 using PuzzleGame.Domain;
@@ -31,6 +32,8 @@ namespace PuzzleGame.Installers
             builder.BindInstance(installer.economyConfig);
             builder.BindInstance(installer.wobbleConfig);
             builder.BindInstance(installer.levelCatalog);
+            // Also register as IEnumerable<LevelData> for ScriptableObjectLevelRepository constructor
+            container.BindInstance<IEnumerable<LevelData>>(installer.levelCatalog);
 
             // Camera singleton via closure factory
             Camera camera = null;

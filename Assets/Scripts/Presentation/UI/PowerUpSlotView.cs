@@ -33,7 +33,8 @@ namespace PuzzleGame.Presentation.UI
             if (chargesText != null)
                 chargesText.text = "0";
 
-            activateButton.interactable = false;
+            if (activateButton != null)
+                activateButton.interactable = false;
         }
 
         public void Refresh(int charges, bool canAfford)

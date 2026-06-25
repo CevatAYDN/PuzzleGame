@@ -22,7 +22,7 @@ namespace PuzzleGame.Installers
             // ErrorIndicator — bootstrap ensures it exists (auto-creates if scene is misconfigured)
             var errorIndicator = ErrorIndicatorBootstrap.EnsureExists();
             builder.BindInstance(errorIndicator);
-            container.BindFactory<IErrorIndicatorService>(() => container.Resolve<ErrorIndicatorController>());
+            container.BindInstance<IErrorIndicatorService>(errorIndicator);
 
             // Camera effects
             var cameraEffects = CameraEffectsBootstrap.EnsureExists();
@@ -35,37 +35,37 @@ namespace PuzzleGame.Installers
             builder.Bind<MoldPoolInitializer>();
 
             // Game manager (MonoBehaviour in hierarchy)
-            GameplayLifecycle.FindOrThrow<GameManager>(builder);
+            GameInstaller.FindOrThrow<GameManager>(builder);
 
             // Game lifecycle bootstrapper
             builder.Bind<GameLifecycleBootstrapper>();
 
             // Play-test bootstrapper (optional)
-            GameplayLifecycle.FindOptional<PlayTestBootstrap>(builder);
+            GameInstaller.FindOptional<PlayTestBootstrap>(builder);
 
             // Presentation controllers — POCOs, scoped to scene lifetime via the container
             builder.Bind<LevelFlowController>();
             builder.Bind<WinLoseEvaluator>();
 
             // UI components (MonoBehaviours that may or may not be in scene)
-            GameplayLifecycle.FindOrThrow<HudPresenter>(builder);
-            GameplayLifecycle.FindOrThrow<PowerUpUI>(builder);
-            GameplayLifecycle.FindOrThrow<AchievementNotificationUI>(builder);
+            GameInstaller.FindOrThrow<HudPresenter>(builder);
+            GameInstaller.FindOrThrow<PowerUpUI>(builder);
+            GameInstaller.FindOrThrow<AchievementNotificationUI>(builder);
 
             // Consent flow UI — MonoBehaviours live on the consent scene prefab
-            GameplayLifecycle.FindOrThrow<AgeGateModal>(builder);
-            GameplayLifecycle.FindOrThrow<ConsentModal>(builder);
-            GameplayLifecycle.FindOrThrow<SettingsPrivacyController>(builder);
-            GameplayLifecycle.FindOrThrow<SettingsSoundController>(builder);
+            GameInstaller.FindOrThrow<AgeGateModal>(builder);
+            GameInstaller.FindOrThrow<ConsentModal>(builder);
+            GameInstaller.FindOrThrow<SettingsPrivacyController>(builder);
+            GameInstaller.FindOrThrow<SettingsSoundController>(builder);
 
             // Main menu — entry point after onboarding; manages Play/Daily/Settings/Privacy buttons
-            GameplayLifecycle.FindOrThrow<MainMenuController>(builder);
+            GameInstaller.FindOrThrow<MainMenuController>(builder);
 
             // World map — shows 2 biome cards (Crystal Mines + Volcanic Forge) with progress
-            GameplayLifecycle.FindOrThrow<WorldMapController>(builder);
+            GameInstaller.FindOrThrow<WorldMapController>(builder);
 
             // Daily challenge — entry screen with streak/countdown/play
-            GameplayLifecycle.FindOrThrow<DailyChallengeController>(builder);
+            GameInstaller.FindOrThrow<DailyChallengeController>(builder);
 
             // AI art provider — reads from BiomeArtCatalog ScriptableObject (optional, returns defaults if empty)
             IBiomeArtProvider biomeArtProvider = null;

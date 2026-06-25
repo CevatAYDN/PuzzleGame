@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Logging;
 using PuzzleGame.Domain.Models;
+using Nexus.Core;
 
 namespace PuzzleGame.Presentation.UI
 {
@@ -22,7 +23,7 @@ namespace PuzzleGame.Presentation.UI
         private ICoinWallet _wallet;
         private IAnimationService _animationService;
 
-        [VContainer.Inject]
+        [Inject]
         public void Construct(
             IPowerUpService powerUpService,
             ICoinWallet wallet,

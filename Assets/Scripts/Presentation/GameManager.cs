@@ -31,8 +31,8 @@ namespace PuzzleGame
 
         [Header("Error Reporting")]
         [SerializeField] private string diErrorMessage =
-            "VContainer DI failed — GameInstaller (LifetimeScope) not found or not configured.\n" +
-            "Fix: Tools > PuzzleGame > Open Editor > Scene tab > 'Setup Current Scene (GameManager + DI)'";
+            "Nexus DI failed — GameInstaller (Root) not found or not configured.\n" +
+            "Fix: Ensure GameInstaller (Nexus Root) is present in the scene and ContextData is assigned.";
 
         // Configurations moved to GameLifecycleBootstrapper
         private IEventAggregator _events;
@@ -212,8 +212,8 @@ namespace PuzzleGame
             // — the next LevelSelectedEvent after a scene change would never be
             // handled, and the game would appear frozen.
             //
-            // Per-scope cleanup should be the responsibility of the LifetimeScope
-            // itself (VContainer handles it when the scope is disposed). If scene-
+            // Per-scope cleanup should be the responsibility of the context scope
+            // itself (Nexus handles it when the context is disposed). If scene-
             // scoped subscribers are needed in the future, introduce a separate
             // IScopedEventAggregator rather than nuking the global one here.
             MoldLogger.LogDebug("Scene unloaded — leaving EventAggregator subscriptions intact.");

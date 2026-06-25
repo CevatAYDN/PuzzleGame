@@ -68,7 +68,7 @@ namespace PuzzleGame.Application.Events
                 _listPool.Push(list);
         }
 
-        public void Subscribe<T>(Action<T> handler)
+        public void Subscribe<T>(Action<T> handler) where T : struct
         {
             if (handler == null) return;
 
@@ -84,7 +84,7 @@ namespace PuzzleGame.Application.Events
         /// Subscribes and returns an IDisposable token. Dispose() auto-unsubscribes.
         /// Preferred over manual Subscribe/Unsubscribe for RAII-style cleanup (Fix #9).
         /// </summary>
-        public IDisposable SubscribeToken<T>(Action<T> handler)
+        public IDisposable SubscribeToken<T>(Action<T> handler) where T : struct
         {
             Subscribe(handler);
             return new SubscriptionToken<T>(this, handler);
@@ -93,7 +93,7 @@ namespace PuzzleGame.Application.Events
         /// <summary>
         /// RAII token that auto-unsubscribes when disposed.
         /// </summary>
-        private sealed class SubscriptionToken<T> : IDisposable
+        private sealed class SubscriptionToken<T> : IDisposable where T : struct
         {
             private readonly EventAggregator _aggregator;
             private Action<T> _handler;
@@ -117,7 +117,7 @@ namespace PuzzleGame.Application.Events
             }
         }
 
-        public void Unsubscribe<T>(Action<T> handler)
+        public void Unsubscribe<T>(Action<T> handler) where T : struct
         {
             if (handler == null) return;
 
@@ -139,7 +139,7 @@ namespace PuzzleGame.Application.Events
             }
         }
 
-        public void Publish<T>(T eventArgs)
+        public void Publish<T>(T eventArgs) where T : struct
         {
             List<ISubscription> snapshot = GetTempList();
 
@@ -198,7 +198,7 @@ namespace PuzzleGame.Application.Events
         // Fix #26: Event-type bazlı cleanup — sadece belirli bir event tipini temizler.
         // Clear() tümünü silmek için kullanılır, bu metot ise belirli bir event tipine
         // abone olanları seçici olarak temizler.
-        public void Clear<T>()
+        public void Clear<T>() where T : struct
         {
             var type = typeof(T);
             if (_subscribers.TryGetValue(type, out var list))

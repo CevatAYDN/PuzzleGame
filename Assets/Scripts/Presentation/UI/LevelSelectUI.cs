@@ -7,6 +7,7 @@ using PuzzleGame.Application.Configuration;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Application.Events;
+using Nexus.Core;
 
 namespace PuzzleGame.Presentation.UI
 {
@@ -42,7 +43,7 @@ namespace PuzzleGame.Presentation.UI
         private LevelButtonView[] _buttons;
         private Biome _currentBiome = Biome.CrystalMines;
 
-        [VContainer.Inject]
+        [Inject]
         public void Construct(ILevelRepository repository, ILevelProgressService progress, IEventAggregator eventAggregator)
         {
             _repository = repository;

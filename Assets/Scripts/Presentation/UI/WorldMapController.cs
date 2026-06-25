@@ -62,7 +62,7 @@ namespace PuzzleGame.Presentation.UI
         private void OnBiomeCardClicked(Biome biome)
         {
             MoldLogger.LogInfo($"{LogTag} Biome card clicked: {biome}");
-            _events?.Publish(new ShowLevelSelectRequestEvent { BiomeFilter = biome });
+            _events?.Publish(new ShowLevelSelectRequestEvent(biome));
         }
 
         private void RefreshCards()
@@ -90,6 +90,6 @@ namespace PuzzleGame.Presentation.UI
     /// Published by WorldMapController when "Back" is clicked.
     /// MainMenuController subscribes to reactivate its root panel.
     /// </summary>
-    public class HideWorldMapRequestEvent { }
+    public readonly struct HideWorldMapRequestEvent { }
 
 }

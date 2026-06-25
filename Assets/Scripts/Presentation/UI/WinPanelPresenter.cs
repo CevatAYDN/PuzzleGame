@@ -7,6 +7,7 @@ using PuzzleGame.Application.Events;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Application.Configuration;
+using Nexus.Core;
 
 namespace PuzzleGame.Presentation.UI
 {
@@ -44,7 +45,7 @@ namespace PuzzleGame.Presentation.UI
         private LevelData _currentLevel;
         private readonly StringBuilder _sb = new StringBuilder(64);
 
-        [VContainer.Inject]
+        [Inject]
         public void Construct(
             IEventAggregator events,
             ILocalizationService localization,

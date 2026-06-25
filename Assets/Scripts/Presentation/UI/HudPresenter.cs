@@ -4,6 +4,7 @@ using UnityEngine;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Events;
 using PuzzleGame.Domain.Models;
+using Nexus.Core;
 
 namespace PuzzleGame.Presentation.UI
 {
@@ -21,7 +22,7 @@ namespace PuzzleGame.Presentation.UI
 
         private IEventAggregator _events;
 
-        [VContainer.Inject]
+        [Inject]
         public void Construct(IEventAggregator events)
         {
             _events = events;
@@ -54,7 +55,7 @@ namespace PuzzleGame.Presentation.UI
         public void ShowDIError(string message)
         {
             if (_diErrorPanel != null) _diErrorPanel.SetActive(true);
-            if (_diErrorText != null) _diErrorText.text = message ?? "VContainer DI failed.";
+            if (_diErrorText != null) _diErrorText.text = message ?? "Nexus DI failed.";
         }
 
         private void OnGameStateChanged(GameStateChangedEvent e)

@@ -249,5 +249,5 @@ namespace PuzzleGame.Presentation.UI
     /// Published by SettingsController when "Back" is clicked (no sub-panel active).
     /// MainMenuController subscribes to hide the settings panel and show main menu.
     /// </summary>
-    public class HideSettingsRequestEvent { }
+    public readonly struct HideSettingsRequestEvent { }
 }

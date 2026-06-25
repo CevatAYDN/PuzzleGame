@@ -87,7 +87,7 @@ namespace PuzzleGame.Presentation.UI
                 return;
             }
             MoldLogger.LogInfo($"{LogTag} Play clicked — entering daily challenge (seed={state.Seed}).");
-            _events?.Publish(new DailyChallengeStartedEvent { Seed = state.Seed });
+            _events?.Publish(new DailyChallengeStartedEvent(state.Seed));
             gameObject.SetActive(false);
         }
 
@@ -117,20 +117,21 @@ namespace PuzzleGame.Presentation.UI
     /// Published by MainMenuController when "Daily Challenge" is clicked.
     /// DailyChallengeController subscribes to navigate to the daily challenge screen.
     /// </summary>
-    public class ShowDailyChallengeRequestEvent { }
+    public readonly struct ShowDailyChallengeRequestEvent { }
 
     /// <summary>
     /// Published by DailyChallengeController when "Back" is clicked.
     /// MainMenuController subscribes to reactivate its root panel.
     /// </summary>
-    public class HideDailyChallengeRequestEvent { }
+    public readonly struct HideDailyChallengeRequestEvent { }
 
     /// <summary>
     /// Published by DailyChallengeController when "Play" is clicked.
     /// GameManager/LevelFlowController subscribes to load the daily challenge level with the given seed.
     /// </summary>
-    public class DailyChallengeStartedEvent
+    public readonly struct DailyChallengeStartedEvent
     {
-        public int Seed { get; set; }
+        public int Seed { get; }
+        public DailyChallengeStartedEvent(int seed) => Seed = seed;
     }
 }

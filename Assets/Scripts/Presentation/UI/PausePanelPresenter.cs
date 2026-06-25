@@ -5,6 +5,7 @@ using PuzzleGame.Application.Events;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Application.Configuration;
+using Nexus.Core;
 
 namespace PuzzleGame.Presentation.UI
 {
@@ -23,7 +24,7 @@ namespace PuzzleGame.Presentation.UI
         private IGameStateMachine _stateMachine;
         private LevelData _currentLevel;
 
-        [VContainer.Inject]
+        [Inject]
         public void Construct(IEventAggregator events, IGameStateMachine stateMachine)
         {
             _events = events;

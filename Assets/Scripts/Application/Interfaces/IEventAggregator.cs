@@ -9,18 +9,18 @@ namespace PuzzleGame.Application.Interfaces
     /// </summary>
     public interface IEventAggregator
     {
-        void Subscribe<T>(Action<T> handler);
+        void Subscribe<T>(Action<T> handler) where T : struct;
 
         /// <summary>
         /// Subscribes and returns an IDisposable token. Dispose() auto-unsubscribes.
         /// Preferred over manual Subscribe/Unsubscribe for RAII-style cleanup.
         /// </summary>
-        IDisposable SubscribeToken<T>(Action<T> handler);
-        void Unsubscribe<T>(Action<T> handler);
-        void Publish<T>(T eventArgs);
+        IDisposable SubscribeToken<T>(Action<T> handler) where T : struct;
+        void Unsubscribe<T>(Action<T> handler) where T : struct;
+        void Publish<T>(T eventArgs) where T : struct;
         void Clear();
 
         /// <summary>Clears only subscriptions of the specified type.</summary>
-        void Clear<T>();
+        void Clear<T>() where T : struct;
     }
 }

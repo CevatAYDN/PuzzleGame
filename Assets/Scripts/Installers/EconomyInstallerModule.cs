@@ -60,7 +60,7 @@ namespace PuzzleGame.Installers
 
             // Crash reporting
             builder.Bind<ICrashReportingService, NoOpCrashReportingService>();
-            // Note: CrashReporter.Current callback is run during GameplayLifecycle.OnInitializeAsync
+            // Note: CrashReporter.Current callback is run during GameInstaller.OnInitializeAsync
 
             // Ads with singleton closure caching
             IAdService adService = null;

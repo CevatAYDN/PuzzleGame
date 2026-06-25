@@ -210,8 +210,8 @@ namespace PuzzleGame.Editor
             {
                 EditorGUILayout.LabelField("Setup Current Scene (DI)", EditorStyles.miniBoldLabel);
                 EditorGUILayout.HelpBox(
-                    "Mevcut sahneye GameManager + GameInstaller (VContainer DI) ekler.\n" +
-                    "Sahne sekmesinde Play dediğinizde VContainer hatası alıyorsanız bu butonu kullanın.",
+"Mevcut sahneye GameManager + GameInstaller (Nexus DI) ekler.\n" +
+"Sahne sekmesinde Play dediğinizde Nexus hatası alıyorsanız bu butonu kullanın.",
                     MessageType.Info);
 
                 GUI.backgroundColor = new Color(0.2f, 0.6f, 0.9f);

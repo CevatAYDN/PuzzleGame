@@ -9,7 +9,7 @@ namespace PuzzleGame.Infrastructure.Implementations
     /// in a single frame update, reducing Native-to-Managed MonoBehaviour.Update overhead.
     /// Handles registration and unregistration safely during updates.
     ///
-    /// No longer a singleton — managed by VContainer DI (Lifetime.Singleton).
+    /// No longer a singleton — managed by Nexus DI.
     ///
     /// Fix #5: Uses HashSet for O(1) Contains/Remove instead of List O(n).
     /// Deferred add/remove buffers remain as Lists since they are small and processed once per frame.

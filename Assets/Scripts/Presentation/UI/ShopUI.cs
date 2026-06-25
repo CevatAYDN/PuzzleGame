@@ -6,6 +6,7 @@ using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Logging;
 using PuzzleGame.Domain.Interfaces;
+using Nexus.Core;
 
 namespace PuzzleGame.Presentation.UI
 {
@@ -39,7 +40,7 @@ namespace PuzzleGame.Presentation.UI
         private readonly List<ShopItemView> _itemViews = new List<ShopItemView>();
         private CosmeticItemData _selectedItem;
 
-        [VContainer.Inject]
+        [Inject]
         public void Construct(
             ICosmeticShopService shop,
             ICoinWallet wallet,

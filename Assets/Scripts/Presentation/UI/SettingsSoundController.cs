@@ -143,5 +143,5 @@ namespace PuzzleGame.Presentation.UI
     /// Published by SettingsSoundController when "Back" is clicked.
     /// MainMenuController subscribes to reactivate its root panel.
     /// </summary>
-    public class HideSoundPanelRequestEvent { }
+    public readonly struct HideSoundPanelRequestEvent { }
 }

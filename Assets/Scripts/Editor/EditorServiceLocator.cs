@@ -10,7 +10,7 @@ namespace PuzzleGame.Editor
     /// Decouples editor GUI classes from concrete service instantiations.
     /// </summary>
     [Obsolete("EditorServiceLocator is a Service Locator anti-pattern. " +
-              "Prefer VContainer DI (GameInstaller) for runtime services. " +
+              "Prefer Nexus DI (GameInstaller) for runtime services. " +
               "For editor-only use cases, construct dependencies explicitly or use a factory.")]
     public static class EditorServiceLocator
     {

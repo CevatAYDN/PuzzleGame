@@ -29,7 +29,7 @@ namespace PuzzleGame.Installers
 #else
             builder.Bind<IAssetProvider, ResourcesAssetProvider>();
 #endif
-            // Note: IAssetProvider.Initialize() is run in GameplayLifecycle.OnInitializeAsync
+            // Note: IAssetProvider.Initialize() is run in GameInstaller.OnInitializeAsync
 
             // Particle and streaming
             builder.Bind<IParticleFactory, ParticleFactory>();

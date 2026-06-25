@@ -3,6 +3,7 @@ using UnityEngine;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Domain.Models;
+using Nexus.Core;
 
 namespace PuzzleGame.Presentation.UI
 {
@@ -30,7 +31,7 @@ namespace PuzzleGame.Presentation.UI
             25, 50, 100, 200, 10, 75, 50, 200, 100, 75, 50, 50
         };
 
-        [VContainer.Inject]
+        [Inject]
         public void Construct(IAchievementService achievementService, ICoinWallet wallet)
         {
             _achievementService = achievementService;

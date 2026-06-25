@@ -5,6 +5,7 @@ using PuzzleGame.Domain.Services;
 using PuzzleGame.Application.Configuration;
 using PuzzleGame.Application.Interfaces;
 using PuzzleGame.Application.Services;
+using PuzzleGame.Application.Events;
 using PuzzleGame.Infrastructure.Implementations;
 using PuzzleGame.Infrastructure.Pool;
 using PuzzleGame.Infrastructure;
@@ -23,7 +24,19 @@ namespace PuzzleGame.Installers
             builder.Bind<IRendererService, RendererService>();
             builder.Bind<IPoolManager, PoolManager>();
             builder.Bind<IColorAdapter, ColorAdapter>();
-            builder.Bind<IEventAggregator, EventAggregator>();
+
+            // Nexus-powered event aggregator (bridges IEventAggregator to ISignalBus)
+            // Uses a factory so the ISignalBus is resolved lazily after context configuration
+            IEventAggregator eventAggregator = null;
+            container.BindFactory<IEventAggregator>(() =>
+            {
+                if (eventAggregator == null)
+                {
+                    var signalBus = container.Resolve<ISignalBus>();
+                    eventAggregator = new NexusEventAggregator(signalBus);
+                }
+                return eventAggregator;
+            });
             builder.Bind<IShaderOptimizer, ShaderOptimizer>();
 
             // UpdateManager MonoBehaviour

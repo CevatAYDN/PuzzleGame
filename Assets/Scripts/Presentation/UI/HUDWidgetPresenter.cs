@@ -8,6 +8,7 @@ using PuzzleGame.Application.Logging;
 using PuzzleGame.Domain.Models;
 using PuzzleGame.Domain.Interfaces;
 using PuzzleGame.Application.Configuration;
+using Nexus.Core;
 
 namespace PuzzleGame.Presentation.UI
 {
@@ -39,7 +40,7 @@ namespace PuzzleGame.Presentation.UI
         private int _lastMoveCount = -1;
         private int _lastLevelNumber = -1;
 
-        [VContainer.Inject]
+        [Inject]
         public void Construct(
             IGameHistoryManager history,
             ILocalizationService localization,
